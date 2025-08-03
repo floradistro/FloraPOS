@@ -59,10 +59,11 @@ export function ViewportRing({ isLoading = false }: ViewportRingProps) {
   
   return (
     <div className="viewport-ring fixed pointer-events-none z-[9999]" style={{
-      top: 'env(safe-area-inset-top, 0px)',
-      left: 'env(safe-area-inset-left, 0px)', 
-      right: 'env(safe-area-inset-right, 0px)',
-      bottom: 'env(safe-area-inset-bottom, 0px)'
+      // Position to wrap entire app content, excluding iOS status bars
+      top: '0px', // Start at absolute top (above iOS status bar)
+      left: '0px', 
+      right: '0px',
+      bottom: '0px' // End at absolute bottom (below our status bar)
     }}>
       {/* Perfect border following device screen shape */}
       <div 
@@ -78,7 +79,7 @@ export function ViewportRing({ isLoading = false }: ViewportRingProps) {
           transform: 'translate3d(0, 0, 0)',
           willChange: 'opacity',
           boxSizing: 'border-box',
-          // Ensure perfect PWA fit
+          // Ensure perfect PWA fit - wrap entire viewport
           margin: '0',
           padding: '0'
         }}
