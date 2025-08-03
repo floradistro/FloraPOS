@@ -64,18 +64,23 @@ export function ViewportRing({ isLoading = false }: ViewportRingProps) {
       right: 'env(safe-area-inset-right, 0px)',
       bottom: 'env(safe-area-inset-bottom, 0px)'
     }}>
-      {/* SVG for perfect uniform thickness */}
+      {/* Perfect border following device screen shape */}
       <div 
         className={`absolute inset-0 ${status.style}`}
         style={{
           border: `1px solid ${status.color}`,
-          borderRadius: '0px',
+          // iPad Pro/Air: ~28px, iPad Mini: ~24px, iPhone: ~16px
+          borderRadius: 'clamp(16px, 2.5vw, 32px)', 
           opacity: 0.6,
           pointerEvents: 'none',
           WebkitBackfaceVisibility: 'hidden',
           backfaceVisibility: 'hidden',
           transform: 'translate3d(0, 0, 0)',
-          willChange: 'opacity'
+          willChange: 'opacity',
+          boxSizing: 'border-box',
+          // Ensure perfect PWA fit
+          margin: '0',
+          padding: '0'
         }}
       />
     </div>
