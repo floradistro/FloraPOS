@@ -90,12 +90,22 @@
   
   /* Hide iOS status bar area completely */
   .viewport-container {
-    position: relative;
-    top: calc(-1 * env(safe-area-inset-top, 0px));
-    height: calc(100vh + env(safe-area-inset-top, 0px));
-    height: calc(100dvh + env(safe-area-inset-top, 0px));
-    padding-top: env(safe-area-inset-top, 0px);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100vh;
+    height: 100dvh;
     background: black;
+    /* Push content up to cover status bar */
+    margin-top: calc(-1 * env(safe-area-inset-top, -20px));
+    padding-top: 0;
+  }
+  
+  /* Ensure header starts at very top */
+  .viewport-container > div:first-child {
+    padding-top: env(safe-area-inset-top, 20px);
   }
 }
 
