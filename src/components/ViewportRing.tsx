@@ -58,15 +58,16 @@ export function ViewportRing({ isLoading = false }: ViewportRingProps) {
   const status = getStatusConfig()
   
   return (
-    <div className="viewport-ring fixed inset-0 pointer-events-none z-[9999]">
+    <div className="viewport-ring fixed pointer-events-none z-[9999]" style={{
+      top: 'max(env(safe-area-inset-top), 8px)',
+      left: 'max(env(safe-area-inset-left), 8px)', 
+      right: 'max(env(safe-area-inset-right), 8px)',
+      bottom: 'max(env(safe-area-inset-bottom), 8px)'
+    }}>
       {/* SVG for perfect uniform thickness */}
       <div 
-        className={`absolute ${status.style}`}
+        className={`absolute inset-0 ${status.style}`}
         style={{
-          top: '0px',
-          left: '0px',
-          right: '0px',
-          bottom: '0px',
           border: `1px solid ${status.color}`,
           borderRadius: '24px',
           opacity: 0.6,
