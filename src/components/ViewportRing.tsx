@@ -58,18 +58,17 @@ export function ViewportRing({ isLoading = false }: ViewportRingProps) {
   const status = getStatusConfig()
   
   return (
-    <div className="fixed inset-0 pointer-events-none z-50 opacity-60">
-      {/* Top border - at absolute edge */}
-      <div className={`absolute top-0 left-0 right-0 h-px ${status.color} ${status.style}`} />
-      
-      {/* Right border - at absolute edge */}
-      <div className={`absolute top-0 right-0 bottom-0 w-px ${status.color} ${status.style}`} />
-      
-      {/* Bottom border - at absolute edge */}
-      <div className={`absolute bottom-0 left-0 right-0 h-px ${status.color} ${status.style}`} />
-      
-      {/* Left border - at absolute edge */}
-      <div className={`absolute top-0 left-0 bottom-0 w-px ${status.color} ${status.style}`} />
+    <div className="viewport-ring fixed inset-0 pointer-events-none z-50 opacity-60">
+      {/* Rounded border that follows iPad screen shape */}
+      <div 
+        className={`absolute inset-0 ${status.color} ${status.style}`}
+        style={{
+          border: '1px solid currentColor',
+          borderRadius: 'max(12px, env(display-cutout-radius, 12px))',
+          margin: '2px',
+          background: 'transparent'
+        }}
+      />
     </div>
   )
 } 
