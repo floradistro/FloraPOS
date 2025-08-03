@@ -9,6 +9,7 @@ import { Cart } from '../components/Cart'
 import { AppWrapper } from '../components/AppWrapper'
 import { StatusBar } from '../components/StatusBar'
 import { TopStatusBar } from '../components/TopStatusBar'
+import { StatusProvider, SyncedStatusBar } from '../components/SyncedStatusBars'
 import SettingsPanel from '../components/SettingsPanel'
 import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
@@ -154,7 +155,8 @@ export default function FloraDistrosPOS() {
 
   return (
     <AppWrapper>
-      <div className="h-screen bg-background-primary text-text-primary flex flex-col relative">
+      <StatusProvider isLoading={isProductsLoading}>
+        <div className="h-screen bg-background-primary text-text-primary flex flex-col relative">
         {/* Menu Drawer */}
         <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'
@@ -216,7 +218,7 @@ export default function FloraDistrosPOS() {
         )}
 
         {/* Top Status Bar */}
-        <TopStatusBar isLoading={isProductsLoading} />
+        <SyncedStatusBar />
 
         {/* Header */}
                   <div className="bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30">
@@ -473,12 +475,16 @@ export default function FloraDistrosPOS() {
           productCount={productCount}
         />
 
+        {/* Bottom Status Indicator */}
+        <SyncedStatusBar />
+
         {/* Settings Panel */}
         <SettingsPanel 
           isOpen={isSettingsOpen} 
           onClose={() => setIsSettingsOpen(false)} 
         />
       </div>
+      </StatusProvider>
     </AppWrapper>
   )
 } 

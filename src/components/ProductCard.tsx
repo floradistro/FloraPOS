@@ -176,7 +176,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
   if (isListView) {
     // List View - Expandable Layout
     return (
-      <div className={`relative ${isOddRow ? 'bg-black/80' : 'bg-black/85'} border-b border-neutral-600/20 hover:bg-neutral-800 hover:shadow-white/20 hover:shadow-2xl transition-all duration-500 ease-out group transform hover:scale-[1.002]`}>
+      <div className={`relative ${isOddRow ? 'bg-black/80' : 'bg-black/85'} border-b border-neutral-600/20 hover:bg-neutral-800 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:z-10 transition-all duration-500 ease-out group transform hover:scale-[1.002]`}>
         {/* Main Row - Always Visible */}
         <div 
           className="flex items-center w-full gap-4 px-3 py-2 min-h-[50px] cursor-pointer"
@@ -481,7 +481,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
 
   // Grid View Layout
       return (
-      <div className={`relative ${isOddRow ? 'bg-black/80' : 'bg-black/85'} border-b border-neutral-600/20 hover:bg-neutral-800 hover:shadow-white/20 hover:shadow-2xl transition-all duration-500 ease-out cursor-pointer group flex flex-col h-full transform hover:scale-[1.02] hover:-translate-y-1 overflow-visible`}>
+      <div className={`relative ${isOddRow ? 'bg-black/80' : 'bg-black/85'} border-b border-neutral-600/20 hover:bg-neutral-800 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:z-10 transition-all duration-500 ease-out cursor-pointer group flex flex-col h-full transform hover:scale-[1.02] hover:-translate-y-1 overflow-visible`}>
       {/* Main Content Area - Fixed Height */}
       <div className="flex gap-2 p-2 flex-1">
         {/* Product Image */}
