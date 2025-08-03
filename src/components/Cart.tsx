@@ -734,7 +734,7 @@ export function Cart({
         /* Checkout Form View */
         <form onSubmit={handleCheckoutSubmit} className="flex-1 flex flex-col">
           {/* Checkout Header */}
-          <div className="px-2 py-4">
+          <div className="px-2">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsCheckoutView(false)}
@@ -746,7 +746,7 @@ export function Cart({
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto px-2 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto px-2 space-y-6">
             {/* Order Summary */}
             <div className="space-y-3">
               <h3 className="font-medium text-text-primary">Order Summary</h3>
@@ -865,7 +865,7 @@ export function Cart({
           </div>
 
           {/* Submit Button */}
-          <div className="p-6 border-t border-border">
+          <div className="px-2 border-t border-border">
             <button
               type="submit"
               disabled={createOrderMutation.isPending}
@@ -937,7 +937,7 @@ export function Cart({
           </div>
 
           {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto px-2 py-4">
+          <div className="flex-1 overflow-y-auto px-2">
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={`${item.id}-${item.selectedVariation}`} className="flex gap-3">
