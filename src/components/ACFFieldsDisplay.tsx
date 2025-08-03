@@ -19,9 +19,9 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
 
   if (loading) {
     return (
-      <div className="mt-3 p-2 bg-background-secondary/50 rounded border border-white/[0.04]">
-        <div className="text-xs text-text-tertiary animate-pulse">
-          Loading product details...
+      <div className="mt-3 p-3 bg-black/40 rounded-lg border border-gray-600/30 font-mono backdrop-blur-sm">
+        <div className="text-xs text-gray-400 animate-pulse">
+          // Loading product details...
         </div>
       </div>
     )
@@ -29,9 +29,9 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
 
   if (error) {
     return (
-      <div className="mt-3 p-2 bg-red-500/10 rounded border border-red-500/20">
+      <div className="mt-3 p-3 bg-red-500/10 rounded-lg border border-red-500/30 font-mono backdrop-blur-sm">
         <div className="text-xs text-red-400">
-          Failed to load product details
+          // Error: Failed to load product details
         </div>
       </div>
     )
@@ -45,12 +45,12 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
     switch (field.type) {
       case 'boolean':
         return (
-          <span className={`px-2 py-1 rounded text-xs ${
+          <span className={`px-2 py-1 rounded-md text-xs font-mono font-bold ${
             field.value === 'Yes' 
-              ? 'bg-green-500/20 text-green-400' 
-              : 'bg-red-500/20 text-red-400'
+              ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+              : 'bg-red-500/20 text-red-300 border border-red-500/30'
           }`}>
-            {field.value}
+            {field.value === 'Yes' ? 'true' : 'false'}
           </span>
         )
       
@@ -67,7 +67,7 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
             </div>
           )
         }
-        return <span className="text-text-tertiary text-xs">No image</span>
+        return <span className="text-gray-500 text-xs font-mono">null</span>
       
       case 'url':
         return (
@@ -75,9 +75,9 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
             href={field.value} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 text-xs underline"
+            className="text-blue-400 hover:text-blue-300 text-xs font-mono underline decoration-dotted hover:decoration-solid transition-all duration-200"
           >
-            View Link
+            {field.value}
           </a>
         )
       
@@ -87,9 +87,9 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
             {field.value.split(', ').map((item: string, index: number) => (
               <span 
                 key={index}
-                className="px-2 py-1 bg-background-tertiary text-text-secondary rounded text-xs"
+                className="px-2 py-1 bg-gray-700/50 text-cyan-300 rounded-md text-xs font-mono border border-gray-600/40 hover:border-cyan-400/40 transition-all duration-200"
               >
-                {item}
+                "{item}"
               </span>
             ))}
           </div>
@@ -97,7 +97,7 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
       
       case 'number':
         return (
-          <span className="font-mono text-primary text-sm">
+          <span className="font-mono text-orange-400 text-sm font-semibold">
             {typeof field.value === 'number' ? field.value.toLocaleString() : field.value}
           </span>
         )
@@ -105,10 +105,10 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
       case 'object':
         return (
           <details className="cursor-pointer">
-            <summary className="text-xs text-text-tertiary hover:text-text-secondary">
-              View Object
+            <summary className="text-xs text-gray-400 hover:text-gray-300 font-mono transition-colors duration-200">
+              &#123;...&#125;
             </summary>
-            <pre className="text-xs text-text-tertiary mt-1 p-2 bg-background-tertiary rounded overflow-auto max-h-20">
+            <pre className="text-xs text-gray-300 mt-2 p-3 bg-black/60 rounded-md overflow-auto max-h-32 border border-gray-600/30 font-mono">
               {field.value}
             </pre>
           </details>
@@ -116,8 +116,8 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
       
       default:
         return (
-          <span className="text-text-primary text-sm">
-            {String(field.value)}
+          <span className="text-gray-200 text-sm font-mono">
+            "{String(field.value)}"
           </span>
         )
     }
@@ -143,12 +143,12 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
         }).map((field: ACFField) => (
           <div 
             key={field.key}
-            className="flex flex-col gap-1 p-2 bg-background-secondary/50 rounded border border-white/[0.04]"
+            className="flex flex-col gap-1 p-3 bg-black/40 rounded-lg border border-gray-600/30 font-mono text-sm backdrop-blur-sm hover:border-gray-500/40 transition-all duration-300"
           >
-            <div className="text-xs text-text-secondary font-medium">
-              {field.label}
+            <div className="text-xs text-gray-400 font-semibold tracking-wide uppercase">
+              {field.label.replace(/_/g, ' ')}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 text-gray-200">
               {renderFieldValue(field)}
             </div>
           </div>

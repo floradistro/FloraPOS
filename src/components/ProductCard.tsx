@@ -185,7 +185,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
   if (isListView) {
     // List View - Expandable Layout
     return (
-      <div className={`relative ${isEvenRow ? 'bg-black/10' : 'bg-black/35'} hover:bg-vscode-bgTertiary transition-all duration-300 group border-b border-white/[0.04]`}>
+      <div className={`relative ${isEvenRow ? 'bg-black/10' : 'bg-black/35'} hover:bg-vscode-bgTertiary transition-all duration-500 ease-out group border-b border-white/[0.04] hover:border-white/[0.08] hover:shadow-lg hover:shadow-black/20 transform hover:scale-[1.002]`}>
         {/* Main Row - Always Visible */}
         <div 
           className="flex items-center w-full gap-4 px-3 py-2 min-h-[50px] cursor-pointer"
@@ -209,17 +209,17 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
           </div>
 
           {/* Product Image */}
-          <div className="w-10 h-10 flex-shrink-0 relative">
+          <div className="w-10 h-10 flex-shrink-0 relative group-hover:scale-105 transition-transform duration-300 ease-out">
             {product.images?.[0] ? (
               <Image
                 src={product.images[0].src}
                 alt={product.images[0].alt || product.name}
                 fill
-                className="object-contain rounded"
+                className="object-contain rounded transition-all duration-300 group-hover:brightness-110"
                 sizes="40px"
               />
             ) : (
-              <div className="w-full h-full bg-vscode-bgTertiary flex items-center justify-center border border-white/[0.04] rounded">
+              <div className="w-full h-full bg-vscode-bgTertiary flex items-center justify-center border border-white/[0.04] rounded transition-all duration-300 group-hover:border-white/[0.08]">
                 <span className="text-vscode-textMuted text-xs">No img</span>
               </div>
             )}
@@ -285,7 +285,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
 
         {/* Expanded Content */}
         {isExpanded && (
-          <div className="px-3 pb-3 bg-vscode-bgTertiary/50 border-t border-white/[0.04]">
+          <div className="px-3 pb-3 bg-vscode-bgTertiary/50 border-t border-white/[0.04] animate-in slide-in-from-top-2 duration-300 ease-out">
             <div className="flex gap-4 pt-3">
               {/* Left Column - Product Details */}
               <div className="flex-1">
@@ -342,18 +342,18 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                                 handleVariationSelect(variationKey)
                               }}
                               disabled={isOutOfStock}
-                              className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
+                              className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
                                 isOutOfStock 
                                   ? 'cursor-not-allowed text-gray-600' 
                                   : isSelected
-                                  ? 'text-white border border-white'
-                                  : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
+                                  ? 'text-white border border-white shadow-sm shadow-white/20'
+                                  : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                               }`}
                             >
                               {grams}g
                             </button>
                             {index < array.length - 1 && (
-                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10"></div>
+                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
                             )}
                           </div>
                         )
@@ -381,12 +381,12 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                                     handleVariationSelect(variationKey)
                                   }}
                                   disabled={isOutOfStock}
-                                  className={`w-full flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
+                                  className={`w-full flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
                                     isOutOfStock 
                                       ? 'cursor-not-allowed text-gray-600' 
                                       : isSelected
-                                      ? 'text-white border border-white'
-                                      : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
+                                      ? 'text-white border border-white shadow-sm shadow-white/20'
+                                      : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                                   }`}
                                   title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
                                 >
@@ -394,7 +394,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                                   <div className="text-xs opacity-70">({totalGrams}g)</div>
                                 </button>
                                 {index < array.length - 1 && (
-                                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-white/10"></div>
+                                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
                                 )}
                               </div>
                             )
@@ -427,18 +427,18 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                                 handleVariationSelect(variationKey)
                               }}
                               disabled={isOutOfStock}
-                              className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
+                              className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
                                 isOutOfStock 
                                   ? 'cursor-not-allowed text-gray-600' 
                                   : isSelected
-                                  ? 'text-white border border-white'
-                                  : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
+                                  ? 'text-white border border-white shadow-sm shadow-white/20'
+                                  : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                               }`}
                             >
                               {qty} units
                             </button>
                             {index < array.length - 1 && (
-                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10"></div>
+                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
                             )}
                           </div>
                         )
@@ -471,10 +471,10 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                          handleAddToCart(e)
                        }}
                       disabled={isOutOfStock}
-                      className={`px-4 py-2 rounded text-sm font-medium transition-colors flex items-center gap-2 ${
+                      className={`px-4 py-2 rounded text-sm font-medium transition-all duration-300 ease-out flex items-center gap-2 active:scale-95 ${
                         isOutOfStock 
                           ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-                          : 'bg-blue-500 text-white hover:bg-blue-600 shadow-lg'
+                          : 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-500/25 transform hover:scale-105'
                       }`}
                     >
                       <Plus className="w-4 h-4" />
@@ -492,26 +492,26 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
 
   // Grid View Layout
       return (
-      <div className={`relative ${isEvenRow ? 'bg-black/10' : 'bg-black/35'} hover:bg-vscode-bgTertiary transition-all duration-300 cursor-pointer group border border-white/[0.04] hover:border-white/[0.12] flex flex-col h-full`}>
+      <div className={`relative ${isEvenRow ? 'bg-black/10' : 'bg-black/35'} hover:bg-vscode-bgTertiary transition-all duration-500 ease-out cursor-pointer group border border-white/[0.04] hover:border-white/[0.12] flex flex-col h-full hover:shadow-xl hover:shadow-black/25 transform hover:scale-[1.02] hover:-translate-y-1`}>
       {/* Main Content Area - Fixed Height */}
       <div className="flex gap-2 p-2 flex-1">
         {/* Product Image */}
-        <div className="w-20 h-20 flex-shrink-0 relative">
+        <div className="w-20 h-20 flex-shrink-0 relative group-hover:scale-105 transition-transform duration-300 ease-out">
           {product.images?.[0] ? (
             <Image
               src={product.images[0].src}
               alt={product.images[0].alt || product.name}
               fill
-              className="object-contain"
+              className="object-contain transition-all duration-300 group-hover:brightness-110"
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
             />
           ) : (
-            <div className="w-full h-full bg-vscode-bgTertiary flex items-center justify-center border border-white/[0.04]">
+            <div className="w-full h-full bg-vscode-bgTertiary flex items-center justify-center border border-white/[0.04] transition-all duration-300 group-hover:border-white/[0.08]">
               <span className="text-vscode-textMuted text-sm">No image</span>
             </div>
           )}
           {hasDiscount && (
-            <div className="absolute top-1 right-1 bg-vscode-accent text-white px-1 py-0.5 text-xs font-medium">
+            <div className="absolute top-1 right-1 bg-vscode-accent text-white px-1 py-0.5 text-xs font-medium animate-pulse">
               Sale
             </div>
           )}
@@ -589,18 +589,18 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                   <button
                     onClick={() => handleVariationSelect(variationKey)}
                     disabled={isOutOfStock}
-                    className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
+                    className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
                       isOutOfStock 
                         ? 'cursor-not-allowed text-gray-600' 
                         : isSelected
-                        ? 'text-white border border-white'
-                        : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
+                        ? 'text-white border border-white shadow-sm shadow-white/20'
+                        : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                     }`}
                   >
                     {grams}g
                   </button>
                   {index < array.length - 1 && (
-                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10"></div>
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
                   )}
                 </div>
               )
@@ -621,26 +621,26 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                             const totalGrams = parseFloat((parseInt(count) * gramsPerPreroll).toFixed(1))
                             const availability = getPrerollAvailability(parseInt(count))
                             return (
-                              <div key={count} className="flex-1 relative">
-                                <button
-                                  onClick={() => handleVariationSelect(variationKey)}
-                                  disabled={isOutOfStock}
-                                  className={`w-full flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
-                                    isOutOfStock 
-                                      ? 'cursor-not-allowed text-gray-600' 
-                                      : isSelected
-                                      ? 'text-white border border-white'
-                                      : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
-                                  }`}
-                                  title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
-                                >
-                                  <div>{count}x</div>
-                                  <div className="text-xs opacity-70">({totalGrams}g)</div>
-                                </button>
-                                {index < array.length - 1 && (
-                                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-white/10"></div>
-                                )}
-                              </div>
+                                                  <div key={count} className="flex-1 relative">
+                      <button
+                        onClick={() => handleVariationSelect(variationKey)}
+                        disabled={isOutOfStock}
+                        className={`w-full flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
+                          isOutOfStock 
+                            ? 'cursor-not-allowed text-gray-600' 
+                            : isSelected
+                            ? 'text-white border border-white shadow-sm shadow-white/20'
+                            : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
+                        }`}
+                        title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
+                      >
+                        <div>{count}x</div>
+                        <div className="text-xs opacity-70">({totalGrams}g)</div>
+                      </button>
+                      {index < array.length - 1 && (
+                        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
+                      )}
+                    </div>
                             )
                           })}
                         </div>
@@ -687,18 +687,18 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                   <button
                     onClick={() => handleVariationSelect(variationKey)}
                     disabled={isOutOfStock}
-                    className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
+                    className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
                       isOutOfStock 
                         ? 'cursor-not-allowed text-gray-600' 
                         : isSelected
-                        ? 'text-white border border-white'
-                        : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
+                        ? 'text-white border border-white shadow-sm shadow-white/20'
+                        : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                     }`}
                   >
                     {qty} units
                   </button>
                   {index < array.length - 1 && (
-                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10"></div>
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
                   )}
                 </div>
               )
@@ -719,10 +719,10 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
         <button
           onClick={handleAddToCart}
           disabled={isOutOfStock}
-          className={`absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
+          className={`absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium transition-all duration-300 ease-out flex items-center gap-1 active:scale-95 ${
             isOutOfStock 
               ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-              : 'bg-blue-500 text-white hover:bg-blue-600 shadow-lg'
+              : 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-500/25 transform hover:scale-105'
           }`}
         >
           <Plus className="w-3 h-3" />
