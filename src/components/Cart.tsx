@@ -669,7 +669,7 @@ export function Cart({
 
   if (items.length === 0) {
     return (
-      <div className="w-80 bg-black flex flex-col mr-2">
+      <div className="w-80 bg-black flex flex-col">
         <div className="flex-1 relative">
           <MatrixRain width={320} height={400} className="absolute inset-0 w-full h-full" />
           
@@ -729,7 +729,7 @@ export function Cart({
   }
 
   return (
-    <div className="w-80 bg-black flex flex-col mr-2">
+    <div className="w-80 bg-black flex flex-col">
       {isCheckoutView ? (
         /* Checkout Form View */
         <form onSubmit={handleCheckoutSubmit} className="flex-1 flex flex-col">

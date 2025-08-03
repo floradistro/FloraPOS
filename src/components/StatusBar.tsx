@@ -37,7 +37,7 @@ export function StatusBar({ store, user, cartItemCount = 0, productCount }: Stat
 
 
   return (
-    <div className="bg-black px-4 py-2 mx-2 mb-2 flex items-center justify-between text-sm text-text-secondary flex-shrink-0">
+    <div className="bg-black px-2 py-2 flex items-center justify-between text-sm text-text-secondary flex-shrink-0">
       {/* Left Section */}
       <div className="flex items-center space-x-2">
         {/* Store Info */}

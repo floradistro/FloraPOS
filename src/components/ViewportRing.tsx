@@ -63,13 +63,12 @@ export function ViewportRing({ isLoading = false }: ViewportRingProps) {
       <div 
         className={`absolute ${status.style}`}
         style={{
-          top: '8px',
-          left: '8px',
-          right: '8px',
-          bottom: '8px',
-          outline: `2px solid ${status.color}`,
-          outlineOffset: '-2px',
-          borderRadius: '16px',
+          top: '0px',
+          left: '0px',
+          right: '0px',
+          bottom: '0px',
+          border: `1px solid ${status.color}`,
+          borderRadius: '24px',
           opacity: 0.6,
           pointerEvents: 'none',
           WebkitBackfaceVisibility: 'hidden',
