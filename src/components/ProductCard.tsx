@@ -470,14 +470,13 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                          handleAddToCart(e)
                        }}
                       disabled={isOutOfStock}
-                      className={`px-4 py-2 rounded text-sm font-medium transition-all duration-300 ease-out flex items-center gap-2 active:scale-95 ${
+                      className={`w-8 h-8 rounded-full transition-all duration-300 ease-out flex items-center justify-center active:scale-95 ${
                         isOutOfStock 
-                          ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-                          : 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-500/25 transform hover:scale-105'
+                          ? 'bg-gray-400/50 cursor-not-allowed text-gray-600' 
+                          : 'bg-white/10 text-white hover:bg-white/20 hover:shadow-lg hover:shadow-white/10 transform hover:scale-110'
                       }`}
                     >
                       <Plus className="w-4 h-4" />
-                      Add to Cart
                     </button>
                   </div>
                 )}
@@ -712,14 +711,13 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
         <button
           onClick={handleAddToCart}
           disabled={isOutOfStock}
-          className={`absolute bottom-3 right-3 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ease-out flex items-center gap-1.5 active:scale-95 shadow-md ${
+          className={`absolute bottom-3 right-3 w-7 h-7 rounded-full transition-all duration-300 ease-out flex items-center justify-center active:scale-95 shadow-md ${
             isOutOfStock 
-              ? 'bg-vscode-textMuted cursor-not-allowed text-vscode-bg' 
-              : 'bg-vscode-accent text-white hover:bg-vscode-accentHover hover:shadow-vscode-lg transform hover:scale-105'
+              ? 'bg-gray-400/50 cursor-not-allowed text-gray-600' 
+              : 'bg-white/10 text-white hover:bg-white/20 hover:shadow-lg hover:shadow-white/10 transform hover:scale-110'
           }`}
         >
           <Plus className="w-3 h-3" />
-          Add
         </button>
       )}
     </div>
