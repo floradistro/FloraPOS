@@ -35,6 +35,7 @@ export default function FloraDistrosPOS() {
   const [isCustomerViewOpen, setIsCustomerViewOpen] = useState(false)
   const [customerSearchQuery, setCustomerSearchQuery] = useState('')
   const [isListView, setIsListView] = useState(false)
+  const [isCheckingOut, setIsCheckingOut] = useState(false)
 
   // Sync location with authenticated store
   useEffect(() => {
@@ -154,7 +155,7 @@ export default function FloraDistrosPOS() {
 
   return (
     <AppWrapper>
-              <ViewportRing isLoading={isProductsLoading} />
+              <ViewportRing isLoading={isProductsLoading} isCheckingOut={isCheckingOut} />
         {/* iOS Status Bar Cover */}
         <div className="fixed top-0 left-0 right-0 h-[44px] bg-black z-[40]" style={{ height: 'env(safe-area-inset-top, 44px)' }} />
         <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative" style={{ 
@@ -342,10 +343,14 @@ export default function FloraDistrosPOS() {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex min-h-0">
+        <div className={`flex-1 min-h-0 ${
+          isCustomerViewOpen 
+            ? 'grid grid-cols-[1fr_2fr_320px] gap-0' 
+            : 'flex'
+        }`}>
           {/* Customer View Panel */}
           {isCustomerViewOpen && (
-            <div className="w-80 bg-black border-r border-white/[0.04] flex-shrink-0">
+            <div className="bg-black border-r border-white/[0.04]">
                               <div className="px-2 py-6 border-b border-white/[0.04]">
                 <div className="relative">
                   <input
@@ -449,7 +454,9 @@ export default function FloraDistrosPOS() {
           )}
 
           {/* Products Grid */}
-          <div className="flex-1 px-0 pb-6 overflow-y-auto relative bg-black">
+          <div className={`px-0 pb-6 overflow-y-auto relative bg-black ${
+            isCustomerViewOpen ? '' : 'flex-1'
+          }`}>
             <ProductGrid
               category={activeCategory === 'all' ? null : mainCategories.find(cat => cat.slug === activeCategory)?.id || null}
               searchQuery={searchQuery}
@@ -469,6 +476,7 @@ export default function FloraDistrosPOS() {
             assignedCustomer={assignedCustomer}
             onAssignCustomer={handleAssignCustomer}
             onUnassignCustomer={handleUnassignCustomer}
+            onCheckoutStatusChange={setIsCheckingOut}
           />
         </div>
 

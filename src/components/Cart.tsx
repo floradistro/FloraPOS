@@ -37,6 +37,7 @@ interface CartProps {
   assignedCustomer: Customer | null
   onAssignCustomer: (customer: Customer) => void
   onUnassignCustomer: () => void
+  onCheckoutStatusChange?: (isCheckingOut: boolean) => void
 }
 
 // Helper function to format variation display
@@ -78,7 +79,8 @@ export function Cart({
   onRemoveItem, 
   assignedCustomer, 
   onAssignCustomer, 
-  onUnassignCustomer 
+  onUnassignCustomer,
+  onCheckoutStatusChange
 }: CartProps) {
   const { currentLocation } = useLocation()
   const [isCheckoutView, setIsCheckoutView] = useState(false)
@@ -164,6 +166,7 @@ export function Cart({
     mutationFn: async (orderData: CreateOrderData) => {
       console.log('🚀 Creating order with data:', orderData)
       console.log('💰 Passing calculated total to API:', total)
+      onCheckoutStatusChange?.(true) // Start checkout glow
       return floraAPI.createOrder(orderData, total)
     },
     onSuccess: async (data) => {
@@ -178,10 +181,12 @@ export function Cart({
       setCustomerEmail('')
       // Invalidate products to refresh virtual pre-roll counts
       await queryClient.invalidateQueries({ queryKey: ['products'] })
+      onCheckoutStatusChange?.(false) // End checkout glow
     },
     onError: (error) => {
       console.error('❌ Order creation failed:', error)
       toast.error(`Failed to create order: ${error.message}`)
+      onCheckoutStatusChange?.(false) // End checkout glow on error
     },
   })
 
