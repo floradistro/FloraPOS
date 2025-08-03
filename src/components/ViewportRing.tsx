@@ -61,16 +61,23 @@ export function ViewportRing({ isLoading = false }: ViewportRingProps) {
     <div className="viewport-ring fixed inset-0 pointer-events-none z-[9999]">
       {/* SVG for perfect uniform thickness */}
       <svg 
-        className={`absolute inset-0 w-full h-full ${status.style}`}
-        style={{ opacity: 0.6 }}
+        className={`absolute w-full h-full ${status.style}`}
+        style={{ 
+          opacity: 0.6,
+          position: 'absolute',
+          top: '2px',
+          left: '2px',
+          width: 'calc(100% - 4px)',
+          height: 'calc(100% - 4px)'
+        }}
       >
         <rect
           x="1"
           y="1"
           width="calc(100% - 2px)"
           height="calc(100% - 2px)"
-          rx="24"
-          ry="24"
+          rx="20"
+          ry="20"
           fill="none"
           stroke={status.color}
           strokeWidth="1.5"
