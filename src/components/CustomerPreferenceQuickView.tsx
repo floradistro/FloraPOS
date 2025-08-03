@@ -125,7 +125,7 @@ export default function CustomerPreferenceQuickView({ customer, onAddPreference 
   const hasMorePreferences = preferences.length > 3
 
   return (
-    <div className="bg-neutral-900/65 border border-white/[0.04] rounded">
+    <div className="bg-neutral-900/65 rounded">
       {/* Header - always visible */}
       <div className="flex items-center justify-between p-3">
         <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ export default function CustomerPreferenceQuickView({ customer, onAddPreference 
           {!showAddForm ? (
             <button
               onClick={() => setShowAddForm(true)}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary hover:bg-neutral-800/65 hover:border-white/[0.08] transition-all duration-300 ease-out"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-neutral-900/65 rounded text-sm text-text-primary hover:bg-neutral-800/65 transition-all duration-300 ease-out"
             >
               <Plus className="h-3 w-3" />
               <span>Add Preference</span>

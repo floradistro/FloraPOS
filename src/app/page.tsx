@@ -318,7 +318,7 @@ export default function FloraDistrosPOS() {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 px-3 py-1.5 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="flex-1 px-3 py-1.5 bg-neutral-900/65 rounded text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <button
                 onClick={() => {
@@ -353,7 +353,7 @@ export default function FloraDistrosPOS() {
                     placeholder="Search customers..."
                     value={customerSearchQuery}
                     onChange={(e) => setCustomerSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full px-3 py-2 bg-neutral-900/65 rounded text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   <svg className="absolute right-3 top-2.5 w-4 h-4 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

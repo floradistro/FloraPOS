@@ -690,7 +690,7 @@ export function Cart({
         {/* Customer Assignment Section - Only show when customer is assigned */}
         {assignedCustomer && (
           <div className="px-2 py-1">
-            <div className="flex items-center justify-between p-3 bg-neutral-900/65 border border-white/[0.04] rounded">
+            <div className="flex items-center justify-between p-3 bg-neutral-900/65 rounded">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                   <span className="text-xs font-medium text-primary">
@@ -869,7 +869,7 @@ export function Cart({
             <button
               type="submit"
               disabled={createOrderMutation.isPending}
-              className="w-full px-3 py-3 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary hover:bg-neutral-800/65 hover:border-white/[0.08] disabled:bg-neutral-900/40 disabled:text-text-tertiary disabled:border-white/[0.02] transition-all duration-300 ease-out active:scale-95 font-medium flex items-center justify-center gap-2"
+              className="w-full px-3 py-3 bg-neutral-900/65 rounded text-sm text-text-primary hover:bg-neutral-800/65 disabled:bg-neutral-900/40 disabled:text-text-tertiary transition-all duration-300 ease-out active:scale-95 font-medium flex items-center justify-center gap-2"
             >
               {createOrderMutation.isPending ? (
                 <>
@@ -885,10 +885,10 @@ export function Cart({
       ) : (
         <>
           {/* Customer Section */}
-          <div className="px-2 py-4">
+          <div className="px-2">
             {assignedCustomer ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-neutral-900/65 border border-white/[0.04] rounded">
+                <div className="flex items-center justify-between p-3 bg-neutral-900/65 rounded">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                       <span className="text-xs font-medium text-primary">
@@ -917,7 +917,7 @@ export function Cart({
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-between p-3 bg-neutral-900/65 border border-white/[0.04] rounded">
+              <div className="flex items-center justify-between p-3 bg-neutral-900/65 rounded">
                 <div className="flex items-center gap-3">
                   <User className="w-8 h-8 text-text-secondary" />
                   <div>
@@ -927,7 +927,7 @@ export function Cart({
                 </div>
                 <button 
                   onClick={() => setIsScannerOpen(true)}
-                  className="flex items-center gap-2 px-3 py-1 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary hover:bg-neutral-800/65 hover:border-white/[0.08] transition-all duration-300 ease-out"
+                  className="flex items-center gap-2 px-3 py-1 bg-neutral-900/65 rounded text-sm text-text-primary hover:bg-neutral-800/65 transition-all duration-300 ease-out"
                 >
                   <User className="w-4 h-4" />
                   <span className="text-sm">Scan ID</span>
@@ -1012,7 +1012,7 @@ export function Cart({
           </div>
 
           {/* Footer */}
-          <div className="px-2 py-4">
+          <div className="px-2">
             <div className="space-y-2 mb-3">
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Subtotal</span>
@@ -1039,7 +1039,7 @@ export function Cart({
 
             <button
               onClick={() => setIsCheckoutView(true)}
-              className="w-full px-3 py-2.5 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary hover:bg-neutral-800/65 hover:border-white/[0.08] transition-all duration-300 ease-out active:scale-95 font-medium"
+              className="w-full px-3 py-2.5 bg-neutral-900/65 rounded text-sm text-text-primary hover:bg-neutral-800/65 transition-all duration-300 ease-out active:scale-95 font-medium"
             >
               Checkout
             </button>
