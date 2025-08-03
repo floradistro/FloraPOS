@@ -13,25 +13,11 @@ import SettingsPanel from '../components/SettingsPanel'
 import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
 import { FloraProduct, floraAPI, FloraCustomer } from '../lib/woocommerce'
+import { Customer } from '../types/auth'
 
 interface CartItem extends FloraProduct {
   selectedVariation: string
   cartQuantity: number
-}
-
-interface Customer {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  dateOfBirth: string
-  address: string
-  totalOrders: number
-  totalSpent: number
-  loyaltyPoints: number
-  status: 'active' | 'inactive' | 'vip'
-  avatar?: string
 }
 
 export default function FloraDistrosPOS() {
@@ -409,12 +395,11 @@ export default function FloraDistrosPOS() {
                                 email: customer.email,
                                 phone: customerPhone,
                                 dateOfBirth: '',
-                                address: `${customer.billing?.address_1 || ''} ${customer.billing?.city || ''}`.trim(),
-                                totalOrders: ordersCount,
                                 totalSpent: totalSpent,
-                                loyaltyPoints: loyaltyPoints, // Use real loyalty points
-                                status: customer.is_paying_customer ? 'active' : 'inactive',
-                                avatar: customer.avatar_url
+                                orderCount: ordersCount,
+                                loyaltyPoints: loyaltyPoints,
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString()
                               })
                             }
                           }}
