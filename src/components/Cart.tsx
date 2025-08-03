@@ -669,7 +669,7 @@ export function Cart({
 
   if (items.length === 0) {
     return (
-      <div className="w-80 bg-black border-l border-border flex flex-col">
+      <div className="w-80 bg-black flex flex-col">
         <div className="flex-1 relative">
           <MatrixRain width={320} height={400} className="absolute inset-0 w-full h-full" />
           
@@ -729,12 +729,12 @@ export function Cart({
   }
 
   return (
-    <div className="w-80 bg-black border-l border-white/[0.04] flex flex-col">
+    <div className="w-80 bg-black flex flex-col">
       {isCheckoutView ? (
         /* Checkout Form View */
         <form onSubmit={handleCheckoutSubmit} className="flex-1 flex flex-col">
           {/* Checkout Header */}
-          <div className="px-2 py-4 border-b border-white/[0.04]">
+          <div className="px-2 py-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsCheckoutView(false)}
@@ -885,7 +885,7 @@ export function Cart({
       ) : (
         <>
           {/* Customer Section */}
-          <div className="px-2 py-4 border-b border-white/[0.04]">
+          <div className="px-2 py-4">
             {assignedCustomer ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg">
@@ -1012,7 +1012,7 @@ export function Cart({
           </div>
 
           {/* Footer */}
-          <div className="px-2 py-4 border-t border-white/[0.04]">
+          <div className="px-2 py-4">
             <div className="space-y-2 mb-3">
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Subtotal</span>
@@ -1031,7 +1031,7 @@ export function Cart({
                   <span className="text-text-primary">${tax.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-base font-semibold pt-1 border-t border-white/[0.04]">
+              <div className="flex justify-between text-base font-semibold pt-1">
                 <span className="text-text-primary">Total</span>
                 <span className="text-text-primary">${total.toFixed(2)}</span>
               </div>

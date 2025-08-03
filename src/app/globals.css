@@ -144,21 +144,21 @@
 
 /* Custom VSCode scrollbar - vertical only */
 ::-webkit-scrollbar {
-  width: 2px;
+  width: 3px;
   height: 0px; /* Disable horizontal scrollbar */
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-secondary-bg);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-accent);
+  background: rgba(255, 255, 255, 0.3);
   border-radius: 0px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-accent-hover);
+  background: rgba(255, 255, 255, 0.5);
 }
 
 /* Completely hide horizontal scrollbars */
