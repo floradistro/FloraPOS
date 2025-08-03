@@ -7,14 +7,16 @@ export const metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'POS',
     startupImage: '/logo.png',
   },
   other: {
     'mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
     'apple-touch-fullscreen': 'yes',
+    'format-detection': 'telephone=no',
   },
 }
 

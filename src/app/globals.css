@@ -18,6 +18,9 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
+    height: 100%;
+    height: 100vh;
+    height: 100dvh;
   }
   
   /* Prevent pull-to-refresh and overscroll */
@@ -27,13 +30,50 @@
     position: fixed;
     width: 100%;
     height: 100%;
+    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
+    margin: 0;
+    padding: 0;
+    /* Hide iOS status bar */
+    -webkit-app-region: no-drag;
   }
   
   /* Main app container should handle scrolling */
   #__next {
+    height: 100%;
     height: 100vh;
     height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow: hidden;
+    position: relative;
+  }
+}
+
+/* PWA Standalone mode optimizations */
+@media (display-mode: standalone) {
+  /* Remove iOS status bar completely */
+  html, body {
+    height: 100vh;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    /* Prevent iOS gestures */
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    position: fixed;
+    width: 100%;
+  }
+  
+  #__next {
+    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
   }
 }
@@ -64,11 +104,13 @@
   }
 }
 
-/* iPad specific rounded corners */
+/* iPad specific rounded corners and fullscreen */
 @media (max-width: 1024px) and (orientation: landscape) {
   .viewport-container {
     border-radius: 12px;
     overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
   }
 }
 
@@ -76,6 +118,38 @@
   .viewport-container {
     border-radius: 12px;
     overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+/* Remove any gaps in PWA mode */
+@media (display-mode: standalone) {
+  .viewport-container {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    height: 100dvh;
+    position: relative;
+  }
+  
+  /* Ensure no gap above header */
+  .header-nav {
+    margin-top: 0;
+    padding-top: 0;
+  }
+  
+  /* Hide iOS system elements completely */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -100px;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: transparent;
+    z-index: 9999;
+    pointer-events: none;
   }
 }
 

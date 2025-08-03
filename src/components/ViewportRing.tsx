@@ -59,21 +59,17 @@ export function ViewportRing({ isLoading = false }: ViewportRingProps) {
   
   return (
     <div className="fixed inset-0 pointer-events-none z-50 opacity-60">
-      {/* Top border - respects safe area */}
-      <div className={`absolute left-0 right-0 h-px ${status.color} ${status.style}`} 
-           style={{ top: 'max(env(safe-area-inset-top), 0px)' }} />
+      {/* Top border - at absolute edge */}
+      <div className={`absolute top-0 left-0 right-0 h-px ${status.color} ${status.style}`} />
       
-      {/* Right border - respects safe area */}
-      <div className={`absolute top-0 bottom-0 w-px ${status.color} ${status.style}`}
-           style={{ right: 'max(env(safe-area-inset-right), 0px)' }} />
+      {/* Right border - at absolute edge */}
+      <div className={`absolute top-0 right-0 bottom-0 w-px ${status.color} ${status.style}`} />
       
-      {/* Bottom border - respects safe area */}
-      <div className={`absolute left-0 right-0 h-px ${status.color} ${status.style}`}
-           style={{ bottom: 'max(env(safe-area-inset-bottom), 0px)' }} />
+      {/* Bottom border - at absolute edge */}
+      <div className={`absolute bottom-0 left-0 right-0 h-px ${status.color} ${status.style}`} />
       
-      {/* Left border - respects safe area */}
-      <div className={`absolute top-0 bottom-0 w-px ${status.color} ${status.style}`}
-           style={{ left: 'max(env(safe-area-inset-left), 0px)' }} />
+      {/* Left border - at absolute edge */}
+      <div className={`absolute top-0 left-0 bottom-0 w-px ${status.color} ${status.style}`} />
     </div>
   )
 } 

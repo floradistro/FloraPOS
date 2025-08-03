@@ -218,8 +218,8 @@ export default function FloraDistrosPOS() {
 
 
 
-        {/* Header */}
-                  <div className="bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30">
+                  {/* Header */}
+                  <div className="header-nav bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30">
           <div className="flex items-center justify-between gap-2">
             {/* Logo */}
             <div className="flex-shrink-0">
