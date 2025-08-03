@@ -10,6 +10,61 @@ export interface User {
   updatedAt: string
 }
 
+// Add customer preference types
+export interface CustomerPreference {
+  id: string
+  customerId: string
+  category: string  // Changed from PreferenceCategory to string to support more flexible categories
+  value: string
+  notes?: string
+  addedBy: string
+  addedAt: string
+  updatedAt: string
+  // ACF field integration
+  acfFieldKey?: string  // Maps to ACF field key like 'strain_type', 'effects', etc.
+  productId?: number    // If preference was learned from a specific product
+}
+
+export enum PreferenceCategory {
+  // Real ACF fields from your system only
+  THCA_PERCENT = 'thca_%',
+  NOSE = 'nose',
+  EFFECTS = 'effects', 
+  TERPENE = 'terpene',
+  STRAIN_TYPE = 'strain_type',
+  LINEAGE = 'lineage',
+  // Only one manual category for anything else
+  CUSTOM = 'custom'
+}
+
+export const ACF_PREFERENCE_MAPPING: Record<string, PreferenceCategory> = {
+  // Direct mapping to your actual ACF fields
+  'thca_%': PreferenceCategory.THCA_PERCENT,
+  'nose': PreferenceCategory.NOSE,
+  'effects': PreferenceCategory.EFFECTS,
+  'terpene': PreferenceCategory.TERPENE,
+  'strain_type': PreferenceCategory.STRAIN_TYPE,
+  'lineage': PreferenceCategory.LINEAGE
+}
+
+export interface Customer {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  phone?: string
+  dateOfBirth?: string
+  loyaltyPoints?: number
+  totalSpent?: number
+  orderCount?: number
+  lastOrderDate?: string
+  preferences?: CustomerPreference[]
+  tags?: string[]
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Store {
   id: string
   name: string

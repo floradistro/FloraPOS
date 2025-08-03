@@ -7,50 +7,19 @@ import { MatrixRain } from './MatrixRain'
 import { FloraProduct, floraAPI, CreateOrderData } from '../lib/woocommerce'
 import { useLocation } from '@/contexts/LocationContext'
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { useTaxRates, calculateTaxAmount, type TaxRate } from '@/hooks/useTaxRates'
+import CustomerPreferenceQuickView from './CustomerPreferenceQuickView'
+import QuickAddToPreferences from './QuickAddToPreferences'
+import { Customer as CustomerType, CustomerPreference } from '@/types/auth'
 
-// Helper function to format variation display
-function formatVariationDisplay(variation: string): string {
-  if (!variation || variation === 'default') return ''
-  
-  if (variation.includes('flower-')) {
-    const grams = variation.replace('flower-', '')
-    return `${grams}g Flower`
-  }
-  
-  if (variation.includes('preroll-')) {
-    const count = variation.replace('preroll-', '')
-    return `${count}x Pre-rolls`
-  }
-  
-  if (variation.includes('qty-')) {
-    const qty = variation.replace('qty-', '')
-    return `${qty} units`
-  }
-  
-  return variation
-}
-
-// Main page cart item interface (matches the one in page.tsx)
-interface CartItem extends FloraProduct {
-  selectedVariation: string
-  cartQuantity: number
-}
-
-interface Customer {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
-  dateOfBirth: string
-  address: string
-  totalOrders: number
-  totalSpent: number
-  loyaltyPoints: number
-  status: 'active' | 'inactive' | 'vip'
+// Extended Customer interface for Cart component compatibility
+interface Customer extends CustomerType {
+  address?: string
+  totalOrders?: number
+  totalSpent?: number
+  status?: 'active' | 'inactive' | 'vip'
   avatar?: string
   orderHistory?: Array<{
     id: number
@@ -70,6 +39,39 @@ interface CartProps {
   onUnassignCustomer: () => void
 }
 
+// Helper function to format variation display
+function formatVariationDisplay(variation: string, item?: CartItem): string {
+  if (!variation || variation === 'default') return ''
+  
+  if (variation.includes('flower-')) {
+    const grams = variation.replace('flower-', '')
+    return `${grams}g Flower`
+  }
+  
+  if (variation.includes('preroll-')) {
+    const count = variation.replace('preroll-', '')
+    if (item) {
+      const gramsPerPreroll = item.mli_preroll_conversion || 0.7
+      const totalGrams = parseFloat((parseInt(count) * gramsPerPreroll).toFixed(1))
+      return `${count}x Pre-rolls (${totalGrams}g)`
+    }
+    return `${count}x Pre-rolls`
+  }
+  
+  if (variation.includes('qty-')) {
+    const qty = variation.replace('qty-', '')
+    return `${qty} units`
+  }
+  
+  return variation
+}
+
+// Main page cart item interface (matches the one in page.tsx)
+interface CartItem extends FloraProduct {
+  selectedVariation: string
+  cartQuantity: number
+}
+
 export function Cart({ 
   items, 
   onUpdateQuantity, 
@@ -85,8 +87,65 @@ export function Cart({
   const [cashReceived, setCashReceived] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   
+  // Handle adding preference from cart item
+  const handleAddPreference = async (preference: Omit<CustomerPreference, 'id' | 'addedAt' | 'updatedAt'>) => {
+    if (!assignedCustomer) return
+    
+    try {
+      // Call the API to save the preference
+      const response = await fetch(`/api/customers/${assignedCustomer.id}/preferences`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(preference),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save preference')
+      }
+
+      const result = await response.json()
+      console.log('Preference saved successfully:', result)
+      
+      // Update the local customer data to include the new preference
+      const newPreference: CustomerPreference = {
+        ...preference,
+        id: Date.now().toString(), // Temporary ID until we get the real one
+        addedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      
+      // Update the assigned customer with the new preference
+      const updatedCustomer = {
+        ...assignedCustomer,
+        preferences: [...(assignedCustomer.preferences || []), newPreference]
+      }
+      
+      onAssignCustomer(updatedCustomer)
+      
+      toast.success(`Added ${preference.category} preference for ${assignedCustomer.firstName}`)
+    } catch (error) {
+      console.error('Failed to add preference:', error)
+      toast.error('Failed to add preference')
+    }
+  }
+  
   // Fetch tax rates for the current location
   const { data: taxRatesData, isLoading: taxRatesLoading } = useTaxRates()
+  
+  const queryClient = useQueryClient()
+  
+  // Fetch all products to get current virtual pre-roll counts
+  const { data: currentProducts } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      // Get all flower products to check virtual pre-roll counts
+      const products = await floraAPI.getProducts({ category: 25, per_page: 100 })
+      return products
+    },
+    staleTime: 30000, // Consider data fresh for 30 seconds
+  })
   
   const subtotal = items.reduce((total, item) => {
     const price = parseFloat(item.price) || 0
@@ -107,7 +166,7 @@ export function Cart({
       console.log('💰 Passing calculated total to API:', total)
       return floraAPI.createOrder(orderData, total)
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log('✅ Order created successfully:', data)
       toast.success(`Order #${data.id} completed successfully!`)
       // Clear cart after successful checkout
@@ -117,6 +176,8 @@ export function Cart({
       setPaymentMethod('cash')
       setCashReceived('')
       setCustomerEmail('')
+      // Invalidate products to refresh virtual pre-roll counts
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
     },
     onError: (error) => {
       console.error('❌ Order creation failed:', error)
@@ -148,6 +209,7 @@ export function Cart({
       payment_method: paymentMethod,
       payment_method_title: paymentMethod === 'cash' ? 'Cash' : 'Card',
       set_paid: true,
+      status: 'processing', // Add this to trigger inventory deduction
       total: total.toFixed(2),
       created_via: 'pos',
       meta_data: [
@@ -174,6 +236,14 @@ export function Cart({
         {
           key: '_pos_terminal_id',
           value: currentLocation.terminalId
+        },
+        {
+          key: '_pos_location_id',
+          value: currentLocation.id
+        },
+        {
+          key: '_pos_location_name',
+          value: currentLocation.name
         },
         {
           key: '_cashier_name',
@@ -209,7 +279,7 @@ export function Cart({
         state: '',
         postcode: '',
         country: 'US',
-        email: assignedCustomer?.email || customerEmail || '',
+        email: assignedCustomer?.email || customerEmail || 'pos@floracannabis.com',
         phone: assignedCustomer?.phone || ''
       },
       shipping: {
@@ -225,32 +295,163 @@ export function Cart({
       shipping_lines: [],
       line_items: items.map(item => {
         const itemPrice = parseFloat(item.price) || 0
-        const itemTotal = (itemPrice * item.cartQuantity).toFixed(2)
         
-        console.log(`📦 Line item: ${item.name}, Price: $${itemPrice}, Qty: ${item.cartQuantity}, Total: $${itemTotal}`)
+        // For quantity-based products, extract the real quantity from the variation
+        let actualQuantity = item.cartQuantity
+        let itemTotal = itemPrice * item.cartQuantity
+        
+        if (item.selectedVariation && item.selectedVariation.startsWith('qty-')) {
+          const qtyFromVariation = parseInt(item.selectedVariation.replace('qty-', '')) || 1
+          actualQuantity = qtyFromVariation
+          // For qty variations, item.price already includes the total price for all units
+          itemTotal = itemPrice // Don't multiply by cartQuantity
+        } else if (item.selectedVariation && item.selectedVariation.startsWith('flower-')) {
+          // Extract grams from flower variation (e.g., flower-3.5 -> 3.5)
+          const gramsFromVariation = parseFloat(item.selectedVariation.replace('flower-', '')) || 1
+          // Since WooCommerce API only accepts integers, we'll send 1 and store actual grams in metadata
+          actualQuantity = 1 // WooCommerce requires integer
+          // For flower variations, item.price is the total for the grams selected
+          itemTotal = itemPrice // Don't multiply by cartQuantity
+          
+          console.log(`🌿 Flower item: ${item.name}, Grams: ${gramsFromVariation}g (sending qty: 1 with metadata)`)
+        } else if (item.selectedVariation && item.selectedVariation.startsWith('preroll-')) {
+          // Extract count from preroll variation (e.g., preroll-2 -> 2)
+          const prerollCount = parseInt(item.selectedVariation.replace('preroll-', '')) || 1
+          const gramsPerPreroll = item.mli_preroll_conversion || 0.7
+          const totalGrams = prerollCount * gramsPerPreroll
+          
+          // Send quantity as 1 for WooCommerce, actual gram calculation handled by plugin
+          actualQuantity = 1
+          // For preroll variations, item.price is the total for the count selected
+          itemTotal = itemPrice // Don't multiply by cartQuantity
+          
+          console.log(`🚬 Preroll item: ${item.name}, Count: ${prerollCount} × ${gramsPerPreroll}g = ${totalGrams}g total`)
+        }
+        
+        console.log(`📦 Line item: ${item.name}, Price: $${itemPrice}, Cart Qty: ${item.cartQuantity}, Actual Qty: ${actualQuantity}, Total: $${itemTotal.toFixed(2)}`)
         
         const lineItem: any = {
           product_id: item.id,
-          quantity: item.cartQuantity,
-          total: itemTotal,
-          subtotal: itemTotal
+          quantity: actualQuantity, // Use actual quantity for inventory deduction
+          total: itemTotal.toFixed(2),
+          subtotal: itemTotal.toFixed(2)
         }
         
         // Add variation and location metadata
         const metaData: Array<{key: string, value: string}> = []
         
+        // Always add location information for inventory deduction
+        // Store in the format the Addify plugin expects
+        metaData.push({
+          key: 'selected_location',
+          value: JSON.stringify({
+            selected_value: currentLocation.id,
+            selected_text: `${currentLocation.name} Location`
+          })
+        })
+        
+        // Also add the location ID directly for backup
+        metaData.push({
+          key: '_location_id',
+          value: currentLocation.id
+        })
+        
+        // Add location name for reference
+        metaData.push({
+          key: '_location_name',
+          value: currentLocation.name
+        })
+        
         if (item.selectedVariation !== 'default') {
-          metaData.push({
-            key: 'variation',
-            value: item.selectedVariation
-          })
-          metaData.push({
-            key: 'selected_location',
-            value: JSON.stringify({
-              selected_value: currentLocation.id,
-              selected_text: `${currentLocation.name} Location`
+          // For flower variations, store the grams and flag for decimal processing
+          if (item.selectedVariation && item.selectedVariation.startsWith('flower-')) {
+            const grams = parseFloat(item.selectedVariation.replace('flower-', '')) || 1
+            // Add both variation and _selected_variation for compatibility
+            metaData.push({
+              key: 'variation',
+              value: item.selectedVariation
             })
-          })
+            metaData.push({
+              key: '_selected_variation',
+              value: item.selectedVariation
+            })
+            metaData.push({
+              key: '_variation_type',
+              value: 'flower_grams'
+            })
+            metaData.push({
+              key: '_flower_grams',
+              value: grams.toString()
+            })
+            metaData.push({
+              key: '_quantity_is_grams',
+              value: 'yes'
+            })
+          }
+          
+          // For preroll variations, store the count and gram equivalent
+          if (item.selectedVariation.startsWith('preroll-')) {
+            const count = parseInt(item.selectedVariation.replace('preroll-', '')) || 1
+            const gramsPerPreroll = item.mli_preroll_conversion || 0.7 // Use product-specific conversion or default
+            
+            // Add both variation and _selected_variation for compatibility
+            metaData.push({
+              key: 'variation',
+              value: item.selectedVariation
+            })
+            metaData.push({
+              key: '_selected_variation',
+              value: item.selectedVariation
+            })
+            metaData.push({
+              key: '_variation_type',
+              value: 'preroll_grams'
+            })
+            metaData.push({
+              key: '_preroll_count',
+              value: count.toString()
+            })
+            metaData.push({
+              key: '_grams_per_preroll',
+              value: gramsPerPreroll.toString()
+            })
+            metaData.push({
+              key: '_quantity_is_grams',
+              value: 'yes'
+            })
+            
+            // Add virtual pre-roll metadata if available
+            // Get current product data to ensure we have the latest virtual pre-roll count
+            const currentProduct = currentProducts?.find(p => p.id === item.id)
+            const virtualAvailable = currentProduct?.virtual_preroll_count || item.virtual_preroll_count || 0
+            
+            console.log(`🔍 Virtual pre-roll check for ${item.name}:`, {
+              productId: item.id,
+              virtualAvailable: virtualAvailable,
+              cartItemValue: item.virtual_preroll_count,
+              currentProductValue: currentProduct?.virtual_preroll_count,
+              hasVirtual: virtualAvailable > 0
+            })
+            
+            if (virtualAvailable > 0) {
+              metaData.push({
+                key: '_virtual_prerolls_available',
+                value: virtualAvailable.toString()
+              })
+              // Signal to Addify to use virtual pre-rolls first
+              metaData.push({
+                key: '_use_virtual_prerolls',
+                value: 'yes'
+              })
+              console.log(`✅ Added virtual pre-roll metadata: ${virtualAvailable} available`)
+            } else {
+              console.log(`❌ No virtual pre-rolls available for ${item.name}`)
+            }
+            
+            console.log(`🚬 Preroll metadata: ${count} prerolls × ${gramsPerPreroll}g = ${count * gramsPerPreroll}g total`)
+            console.log(`   Virtual available: ${virtualAvailable}`)
+            console.log(`   Final metadata:`, metaData)
+          }
         }
         
         if (metaData.length > 0) {
@@ -362,7 +563,9 @@ export function Cart({
            totalSpent: totalSpent,
            loyaltyPoints: loyaltyPoints,
            status: matchedCustomer.is_paying_customer ? 'active' : 'inactive',
-           avatar: matchedCustomer.avatar_url
+           avatar: matchedCustomer.avatar_url,
+           createdAt: matchedCustomer.date_created || new Date().toISOString(),
+           updatedAt: matchedCustomer.date_modified || new Date().toISOString()
          })
         
         toast.success(`Customer ${firstName} ${lastName} assigned to cart`)
@@ -420,21 +623,23 @@ export function Cart({
            const createdCustomer = await response.json()
            console.log('✅ Created new customer:', createdCustomer)
            
-           // Assign the new customer to cart
-           onAssignCustomer({
-             id: createdCustomer.id.toString(),
-             firstName: firstName,
-             lastName: lastName,
-             email: createdCustomer.email,
-             phone: phone,
-             dateOfBirth: dateOfBirth,
-             address: address,
-             totalOrders: 0,
-             totalSpent: 0,
-             loyaltyPoints: 0,
-             status: 'active',
-             avatar: createdCustomer.avatar_url
-           })
+                     // Assign the new customer to cart
+          onAssignCustomer({
+            id: createdCustomer.id.toString(),
+            firstName: firstName,
+            lastName: lastName,
+            email: createdCustomer.email,
+            phone: phone,
+            dateOfBirth: dateOfBirth,
+            address: address,
+            totalOrders: 0,
+            totalSpent: 0,
+            loyaltyPoints: 0,
+            status: 'active',
+            avatar: createdCustomer.avatar_url,
+            createdAt: createdCustomer.date_created || new Date().toISOString(),
+            updatedAt: createdCustomer.date_modified || new Date().toISOString()
+          })
            
            toast.success(`New customer ${firstName} ${lastName} created and assigned to cart`)
          } else {
@@ -498,7 +703,7 @@ export function Cart({
                   </p>
                   <p className="text-xs text-text-secondary">{assignedCustomer.email}</p>
                   <p className="text-xs font-medium text-green-400">
-                    {assignedCustomer.loyaltyPoints > 0 ? `${assignedCustomer.loyaltyPoints.toLocaleString()} chips` : '0 chips'}
+                    {(assignedCustomer.loyaltyPoints || 0) > 0 ? `${(assignedCustomer.loyaltyPoints || 0).toLocaleString()} chips` : '0 chips'}
                   </p>
                 </div>
               </div>
@@ -525,68 +730,22 @@ export function Cart({
 
   return (
     <div className="w-80 bg-background-primary border-l border-white/[0.04] flex flex-col">
-      {/* Header */}
-              <div className="px-2 py-6 border-b border-white/[0.04]">
-        {isCheckoutView ? (
-          <div className="flex items-center gap-3 mb-2">
-            <button
-              onClick={() => setIsCheckoutView(false)}
-              className="text-text-secondary hover:text-text-primary transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h2 className="text-lg font-semibold text-text-primary">Checkout</h2>
-          </div>
-        ) : (
-          <>
-            <h2 className="text-lg font-semibold text-text-primary mb-2">Cart ({items.length})</h2>
-            
-            {/* Customer Assignment */}
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-text-primary">Customer</span>
-              {!assignedCustomer && (
-                <button 
-                  onClick={() => setIsScannerOpen(true)}
-                  className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
-                >
-                  <User className="w-4 h-4" />
-                  <span className="text-sm">Scan ID</span>
-                </button>
-              )}
-            </div>
-            
-            {assignedCustomer ? (
-              <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-primary">
-                      {assignedCustomer.firstName.charAt(0)}{assignedCustomer.lastName.charAt(0)}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-text-primary">
-                      {assignedCustomer.firstName} {assignedCustomer.lastName}
-                    </p>
-                    <p className="text-xs text-text-secondary">{assignedCustomer.email}</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={onUnassignCustomer}
-                  className="text-error hover:text-error/80 transition-colors p-1"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <p className="text-sm text-text-secondary mb-4">No customer assigned</p>
-            )}
-          </>
-        )}
-      </div>
-
       {isCheckoutView ? (
         /* Checkout Form View */
         <form onSubmit={handleCheckoutSubmit} className="flex-1 flex flex-col">
+          {/* Checkout Header */}
+          <div className="px-2 py-4 border-b border-white/[0.04]">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsCheckoutView(false)}
+                className="text-text-secondary hover:text-text-primary transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h2 className="text-lg font-semibold text-text-primary">Checkout</h2>
+            </div>
+          </div>
+          
           <div className="flex-1 overflow-y-auto px-2 py-6 space-y-6">
             {/* Order Summary */}
             <div className="space-y-3">
@@ -595,7 +754,7 @@ export function Cart({
                 {items.map((item) => (
                   <div key={`${item.id}-${item.selectedVariation}`} className="flex justify-between text-sm">
                     <span className="text-text-secondary">
-                      {item.name} {formatVariationDisplay(item.selectedVariation) && `(${formatVariationDisplay(item.selectedVariation)})`} × {item.cartQuantity}
+                      {item.name} {formatVariationDisplay(item.selectedVariation, item) && `(${formatVariationDisplay(item.selectedVariation, item)})`} × {item.cartQuantity}
                     </span>
                     <span className="text-text-primary font-medium">
                       ${(parseFloat(item.price) * item.cartQuantity).toFixed(2)}
@@ -725,8 +884,60 @@ export function Cart({
         </form>
       ) : (
         <>
+          {/* Customer Section */}
+          <div className="px-2 py-4 border-b border-white/[0.04]">
+            {assignedCustomer ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-medium text-primary">
+                        {assignedCustomer.firstName.charAt(0)}{assignedCustomer.lastName.charAt(0)}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-text-primary">
+                        {assignedCustomer.firstName} {assignedCustomer.lastName}
+                      </p>
+                      <p className="text-xs text-text-secondary">{assignedCustomer.email}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={onUnassignCustomer}
+                    className="text-error hover:text-error/80 transition-colors p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                {/* Customer Preferences Quick View */}
+                <CustomerPreferenceQuickView 
+                  customer={assignedCustomer} 
+                  onAddPreference={handleAddPreference}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg">
+                <div className="flex items-center gap-3">
+                  <User className="w-8 h-8 text-text-secondary" />
+                  <div>
+                    <p className="text-sm font-medium text-text-primary">No customer assigned</p>
+                    <p className="text-xs text-text-secondary">Scan ID to assign customer</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsScannerOpen(true)}
+                  className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors px-3 py-1 rounded"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="text-sm">Scan ID</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto px-2 py-6">
+          <div className="flex-1 overflow-y-auto px-2 py-4">
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={`${item.id}-${item.selectedVariation}`} className="flex gap-3">
@@ -746,14 +957,25 @@ export function Cart({
                       <h3 className="text-sm font-medium text-text-primary mb-1 line-clamp-2">
                         {item.name}
                       </h3>
-                      {formatVariationDisplay(item.selectedVariation) && (
+                      {formatVariationDisplay(item.selectedVariation, item) && (
                         <p className="text-xs text-text-secondary mb-1">
-                          {formatVariationDisplay(item.selectedVariation)}
+                          {formatVariationDisplay(item.selectedVariation, item)}
                         </p>
                       )}
-                      <p className="text-primary font-medium text-sm mt-1">
-                        ${(parseFloat(item.price) * item.cartQuantity).toFixed(2)}
-                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-primary font-medium text-sm">
+                          ${(parseFloat(item.price) * item.cartQuantity).toFixed(2)}
+                        </p>
+                        {assignedCustomer && (
+                          <QuickAddToPreferences
+                            customer={assignedCustomer}
+                            productId={item.id}
+                            productName={item.name}
+                            onAddPreference={handleAddPreference}
+                            className="ml-2"
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -790,8 +1012,8 @@ export function Cart({
           </div>
 
           {/* Footer */}
-          <div className="px-2 py-6 border-t border-white/[0.04]">
-            <div className="space-y-2 mb-4">
+          <div className="px-2 py-4 border-t border-white/[0.04]">
+            <div className="space-y-2 mb-3">
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary">Subtotal</span>
                 <span className="text-text-primary">${subtotal.toFixed(2)}</span>
@@ -809,7 +1031,7 @@ export function Cart({
                   <span className="text-text-primary">${tax.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-base font-semibold pt-2 border-t border-white/[0.04]">
+              <div className="flex justify-between text-base font-semibold pt-1 border-t border-white/[0.04]">
                 <span className="text-text-primary">Total</span>
                 <span className="text-text-primary">${total.toFixed(2)}</span>
               </div>
@@ -817,7 +1039,7 @@ export function Cart({
 
             <button
               onClick={() => setIsCheckoutView(true)}
-                              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-full font-medium transition-colors"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 px-4 rounded-full font-medium transition-colors"
             >
               Checkout
             </button>

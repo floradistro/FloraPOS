@@ -6,7 +6,12 @@ import { ACFFieldsDisplay } from './ACFFieldsDisplay'
 import { ProductLineage } from './ProductLineage'
 import { ProductNameSideInfo } from './ProductNameSideInfo'
 import { ProductCharacteristics } from './ProductCharacteristics'
+import { VirtualPrerollSection } from './VirtualPrerollSection'
 import { useACFFields } from '../hooks/useACFFields'
+import { useVirtualPrerolls } from '../hooks/useVirtualPrerolls'
+import { useLocation } from '../contexts/LocationContext'
+import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '@/contexts/AuthContext'
 
 // Helper functions
 function getStockStatus(product: FloraProduct): 'instock' | 'outofstock' | 'onbackorder' {
@@ -60,6 +65,15 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
   // Get ACF fields for strain type (only for list view)
   const { acfFields = [] } = useACFFields(isListView ? product.id : null)
   
+  // Virtual pre-rolls conversion hook
+  const { convertToPrerolls } = useVirtualPrerolls()
+  
+  // Get current location
+  const { currentLocation } = useLocation()
+  
+  // Query client for refreshing products
+  const queryClient = useQueryClient()
+  
   // Helper function to get strain type
   const getStrainType = () => {
     const strainField = acfFields.find((field: any) => field.key === 'strain_type')
@@ -103,6 +117,22 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
       return `${product.stock_quantity} in stock`
     }
     return 'In Stock'
+  }
+  
+  // Get pre-roll availability text
+  const getPrerollAvailability = (count: number) => {
+    const virtualAvailable = product.virtual_preroll_count || 0
+    const gramsNeeded = count * (product.mli_preroll_conversion || 0.7)
+    const canMakeFromFlower = product.stock_quantity >= gramsNeeded
+    
+    if (virtualAvailable >= count) {
+      return `${virtualAvailable} ready`
+    } else if (virtualAvailable > 0 && canMakeFromFlower) {
+      return `${virtualAvailable} ready + make ${count - virtualAvailable}`
+    } else if (canMakeFromFlower) {
+      return 'Make fresh'
+    }
+    return 'Not available'
   }
 
   const isOutOfStock = stockStatus === 'outofstock'
@@ -336,6 +366,9 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                           {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice]) => {
                             const variationKey = `preroll-${count}`
                             const isSelected = selectedVariation === variationKey
+                            const gramsPerPreroll = product.mli_preroll_conversion || 0.7
+                            const totalGrams = parseFloat((parseInt(count) * gramsPerPreroll).toFixed(1))
+                            const availability = getPrerollAvailability(parseInt(count))
                             return (
                               <button
                                 key={count}
@@ -344,18 +377,23 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                                   handleVariationSelect(variationKey)
                                 }}
                                 disabled={isOutOfStock}
-                                className={`flex-1 justify-center px-2 py-1 rounded text-sm font-medium transition-colors ${
+                                className={`flex-1 flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-colors ${
                                   isOutOfStock 
                                     ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
                                     : isSelected
                                     ? 'bg-primary text-white'
                                     : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
                                 }`}
+                                title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
                               >
-                                {count}x
+                                <div>{count}x</div>
+                                <div className="text-xs opacity-70">({totalGrams}g)</div>
                               </button>
                             )
                           })}
+                        </div>
+                        <div className="text-xs text-vscode-textMuted text-center">
+                          {product.mli_preroll_conversion || 0.7}g per pre-roll
                         </div>
                       </>
                     )}
@@ -396,6 +434,21 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                     </div>
                   </div>
                 )}
+
+                {/* Virtual Pre-Roll Section for flower products */}
+                <VirtualPrerollSection 
+                  product={product}
+                  linkedPrerollProduct={product.linkedPrerollProduct}
+                  onConvert={async (count) => {
+                    try {
+                      await convertToPrerolls(product.id, count, currentLocation?.id)
+                      // Invalidate products query to refresh inventory
+                      await queryClient.invalidateQueries({ queryKey: ['products'] })
+                    } catch (error) {
+                      console.error('Conversion failed:', error)
+                    }
+                  }}
+                />
 
                 {/* Add to Cart Button for Expanded View */}
                 {(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') && selectedVariation !== 'default' && (
@@ -548,20 +601,25 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                 {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice]) => {
                   const variationKey = `preroll-${count}`
                   const isSelected = selectedVariation === variationKey
+                  const gramsPerPreroll = product.mli_preroll_conversion || 0.7
+                  const totalGrams = parseFloat((parseInt(count) * gramsPerPreroll).toFixed(1))
+                  const availability = getPrerollAvailability(parseInt(count))
                   return (
                     <button
                       key={count}
                       onClick={() => handleVariationSelect(variationKey)}
                       disabled={isOutOfStock}
-                      className={`flex-1 justify-center px-2 py-1 rounded text-sm font-medium transition-colors ${
+                      className={`flex-1 flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-colors ${
                         isOutOfStock 
                           ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
                           : isSelected
                           ? 'bg-primary text-white'
                           : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
                       }`}
+                      title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
                     >
-                      {count}x
+                      <div>{count}x</div>
+                      <div className="text-xs opacity-70">({totalGrams}g)</div>
                     </button>
                   )
                 })}
@@ -579,6 +637,21 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
               {getStockText()}
             </span>
           </div>
+          
+          {/* Virtual Pre-Roll Section for flower products */}
+          <VirtualPrerollSection 
+            product={product}
+            linkedPrerollProduct={product.linkedPrerollProduct}
+            onConvert={async (count) => {
+              try {
+                await convertToPrerolls(product.id, count, currentLocation?.id)
+                // Invalidate products query to refresh inventory
+                await queryClient.invalidateQueries({ queryKey: ['products'] })
+              } catch (error) {
+                console.error('Conversion failed:', error)
+              }
+            }}
+          />
         </div>
       )}
       

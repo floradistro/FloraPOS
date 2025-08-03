@@ -82,8 +82,9 @@ export default function FloraDistrosPOS() {
   const handleAddToCart = (product: FloraProduct, selectedVariation?: string) => {
     const variation = selectedVariation || 'default'
     
-    // Calculate the correct price based on the selected variation
+    // Calculate the correct price and quantity based on the selected variation
     let price = parseFloat(product.sale_price || product.price || '0')
+    let cartQuantity = 1 // Default quantity
     
     if (variation && variation !== 'default') {
       if (product.mli_product_type === 'weight' && product.pricing_tiers) {
@@ -93,10 +94,16 @@ export default function FloraDistrosPOS() {
         } else if (variation.includes('flower-')) {
           const grams = variation.replace('flower-', '')
           price = product.pricing_tiers[grams] || price
+          // For flower products, cartQuantity stays 1 as the price is for the total grams
+          // The actual grams will be extracted from the variation in the cart
+          cartQuantity = 1
         }
       } else if (product.mli_product_type === 'quantity' && product.pricing_tiers) {
         const qty = variation.replace('qty-', '')
         price = product.pricing_tiers[qty] || price
+        // For quantity products, pricing tiers already include total price
+        // so cartQuantity stays 1, but we store the actual quantity in metadata
+        cartQuantity = 1
       }
     }
     
@@ -106,13 +113,13 @@ export default function FloraDistrosPOS() {
 
     if (existingItemIndex >= 0) {
       const updatedItems = [...cartItems]
-      updatedItems[existingItemIndex].cartQuantity += 1
+      updatedItems[existingItemIndex].cartQuantity += cartQuantity // Add the actual quantity instead of always 1
       setCartItems(updatedItems)
     } else {
       const newItem: CartItem = { 
         ...product, 
         price: price.toString(), // Override the price with the variation-specific price
-        cartQuantity: 1, 
+        cartQuantity: cartQuantity, 
         selectedVariation: variation 
       }
       setCartItems([...cartItems, newItem])

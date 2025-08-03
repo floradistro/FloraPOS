@@ -6,6 +6,7 @@ import { floraAPI, FloraProduct } from '../lib/woocommerce'
 import { ProductCard } from './ProductCard'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { findLinkedPrerollProducts, isVirtualPrerollProduct } from '../lib/virtual-product-helpers'
 
 interface ProductGridProps {
   category: number | null
@@ -24,12 +25,28 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: ['products', category, searchQuery, store?.id],
     queryFn: async (): Promise<FloraProduct[]> => {
-      return floraAPI.getProducts({
+      const allProducts = await floraAPI.getProducts({
         category: category || undefined,
         search: searchQuery || undefined,
         storeId: store?.id,
-        per_page: 50
+        per_page: 100 // Increased to get all products including virtual ones
       })
+      
+      // Separate flower products and virtual products
+      const flowerProducts = allProducts.filter(p => !isVirtualPrerollProduct(p))
+      const virtualProducts = allProducts.filter(p => isVirtualPrerollProduct(p))
+      
+      // Enhance flower products with linked virtual products
+      const enhancedProducts = flowerProducts.map(flower => {
+        const linkedVirtual = findLinkedPrerollProducts(flower, allProducts)[0]
+        return {
+          ...flower,
+          linkedPrerollProduct: linkedVirtual
+        }
+      })
+      
+      // Only return non-virtual products (flowers) for display
+      return enhancedProducts
     },
     enabled: !!store?.id, // Only fetch when we have a store
     staleTime: 5 * 60 * 1000, // 5 minutes

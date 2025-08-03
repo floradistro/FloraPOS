@@ -15,7 +15,7 @@ export function ProductCharacteristics({ productId }: ProductCharacteristicsProp
   // Define priority fields for different product types
   const priorityFields = [
     'nose', 'effects', 'terpene',           // Cannabis flower characteristics
-    'strength_mg', 'acf_effects', 'effects', // Edibles characteristics  
+    'strength_mg', 'acf_effects',           // Edibles characteristics  
     'flavor', 'potency', 'type',            // General product characteristics
     'brand', 'category', 'strength'         // Additional important fields
   ]

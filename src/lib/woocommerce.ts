@@ -22,6 +22,7 @@ export interface FloraProduct {
   id: number
   name: string
   slug: string
+  sku?: string
   description: string
   short_description: string
   price: string
@@ -54,6 +55,12 @@ export interface FloraProduct {
   weight_options?: number[] // parsed from mli_weight_options
   pricing_tiers?: Record<string, number> // parsed from mli_pricing_tiers (flower pricing)
   preroll_pricing_tiers?: Record<string, number> // parsed preroll pricing from mli_pricing_tiers
+  // Virtual Pre-Roll fields
+  virtual_preroll_count?: number // Current virtual pre-roll inventory
+  preroll_target?: number // Target pre-rolls to maintain
+  linkedPrerollProduct?: FloraProduct // Linked virtual pre-roll product
+  total_prerolls_converted?: number // Lifetime conversions
+  total_prerolls_sold?: number // Lifetime sales
   // ACF (Advanced Custom Fields) support
   acf?: Record<string, any> // All ACF fields
   acf_fields?: Array<{
@@ -62,6 +69,11 @@ export interface FloraProduct {
     value: any
     type: string
   }> // Parsed and formatted ACF fields
+  // WooCommerce metadata
+  meta_data?: Array<{
+    key: string
+    value: any
+  }>
 }
 
 export interface FloraStore {
@@ -91,6 +103,7 @@ export interface CreateOrderData {
   payment_method: 'cash' | 'card'
   payment_method_title: string
   set_paid: boolean
+  status?: string // Add status property to control order status
   total?: string // Total amount for the order
   customer_id?: number // Optional customer ID for loyalty points
   created_via?: string // Order source tracking
@@ -592,16 +605,22 @@ export class FloraAPI {
     try {
       console.log('🛒 Creating order with data:', orderData)
       
-      const response = await fetch(`${this.baseUrl}${ENDPOINTS.WC_ORDERS}`, {
+      // Use our local API route instead of calling WooCommerce directly
+      const response = await fetch('/api/orders', {
         method: 'POST',
         headers: {
-          'Authorization': createAuthHeader(),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(orderData)
       })
 
-      const order = await handleResponse<{ id: number; status: string; customer_id: number; total: string }>(response)
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('❌ Order creation failed:', errorData)
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+
+      const order = await response.json()
       console.log('✅ Order created successfully:', order)
       console.log('🔍 Order total field:', order.total, 'typeof:', typeof order.total)
       
@@ -1153,6 +1172,12 @@ export class FloraAPI {
     const mli_preroll_conversion = parseFloat(getMetaValue('mli_preroll_conversion') || '0.7')
     const mli_pricing_tiers = getMetaValue('mli_pricing_tiers')
 
+    // Parse Virtual Pre-Roll metadata
+    const virtual_preroll_count = parseInt(getMetaValue('_virtual_preroll_count') || '0', 10)
+    const preroll_target = parseInt(getMetaValue('_preroll_target') || '10', 10) // Default target: 10
+    const total_prerolls_converted = parseInt(getMetaValue('_total_prerolls_converted') || '0', 10)
+    const total_prerolls_sold = parseInt(getMetaValue('_total_prerolls_sold') || '0', 10)
+
     // Parse weight options into array
     const weight_options = mli_weight_options 
       ? mli_weight_options.split(',').map(w => parseFloat(w.trim())).filter(w => !isNaN(w))
@@ -1185,6 +1210,7 @@ export class FloraAPI {
       id: product.id,
       name: product.name,
       slug: product.slug,
+      sku: product.sku || '',
       description: product.description || '',
       short_description: product.short_description || '',
       price: product.price || '0',
@@ -1206,9 +1232,16 @@ export class FloraAPI {
       weight_options,
       pricing_tiers,
       preroll_pricing_tiers,
+      // Virtual Pre-Roll fields
+      virtual_preroll_count,
+      preroll_target,
+      total_prerolls_converted,
+      total_prerolls_sold,
       // ACF fields (will be populated later if available)
       acf: undefined,
-      acf_fields: []
+      acf_fields: [],
+      // Preserve original meta_data for virtual product detection
+      meta_data: product.meta_data || []
     }
   }
 }

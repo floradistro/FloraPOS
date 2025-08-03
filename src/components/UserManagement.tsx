@@ -47,6 +47,7 @@ const UserManagement = () => {
   const loadUsers = async () => {
     try {
       // Mock users for demonstration - in reality, this would come from your API
+      // NOTE: POS user management is now handled by Addify Multi-Location Inventory plugin
       const mockUsers: User[] = [
         {
           id: 1,
@@ -162,6 +163,9 @@ const UserManagement = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">POS Users</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Note: POS user management is now handled by Addify Multi-Location Inventory plugin in WordPress admin.
+          </p>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
