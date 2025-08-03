@@ -156,7 +156,7 @@ export default function FloraDistrosPOS() {
     <AppWrapper>
       <div className="h-screen bg-background-primary text-text-primary flex flex-col relative">
         {/* Menu Drawer */}
-        <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-background-secondary border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
+        <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
           <div className="px-2 py-6">
@@ -310,13 +310,13 @@ export default function FloraDistrosPOS() {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 px-3 py-1.5 bg-background-tertiary border border-white/[0.04] rounded text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="flex-1 px-3 py-1.5 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <button
                 onClick={() => {
                   window.location.reload()
                 }}
-                className="p-1.5 bg-background-tertiary hover:bg-background-secondary border border-white/[0.04] rounded text-text-secondary hover:text-text-primary transition-colors"
+                className="p-1.5 bg-neutral-900/65 hover:bg-background-secondary border border-white/[0.04] rounded text-text-secondary hover:text-text-primary transition-colors"
                 title="Refresh app"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -337,7 +337,7 @@ export default function FloraDistrosPOS() {
         <div className="flex-1 flex min-h-0">
           {/* Customer View Panel */}
           {isCustomerViewOpen && (
-            <div className="w-80 bg-background-secondary border-r border-white/[0.04] flex-shrink-0">
+            <div className="w-80 bg-black border-r border-white/[0.04] flex-shrink-0">
                               <div className="px-2 py-6 border-b border-white/[0.04]">
                 <h3 className="text-lg font-semibold text-text-primary mb-3">Customer Directory</h3>
                 <div className="relative">
@@ -442,7 +442,7 @@ export default function FloraDistrosPOS() {
           )}
 
           {/* Products Grid */}
-          <div className="flex-1 px-0 pb-6 overflow-y-auto">
+          <div className="flex-1 px-0 pb-6 overflow-y-auto relative bg-black">
             <ProductGrid
               category={activeCategory === 'all' ? null : mainCategories.find(cat => cat.slug === activeCategory)?.id || null}
               searchQuery={searchQuery}

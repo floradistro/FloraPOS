@@ -8,6 +8,7 @@ import { StatusBar } from '@/components/StatusBar'
 import { TopStatusBar } from '@/components/TopStatusBar'
 import SettingsPanel from '@/components/SettingsPanel'
 import Image from 'next/image'
+import React from 'react'
 
 interface Order {
   id: number
@@ -353,7 +354,7 @@ export default function OrdersPage() {
     <AppWrapper>
       <div className="h-screen bg-background-primary text-text-primary flex flex-col relative overflow-hidden">
         {/* Menu Drawer */}
-        <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-background-secondary border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
+        <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
           <div className="px-2 py-6">
@@ -460,7 +461,7 @@ export default function OrdersPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={handleSearchKeyPress}
                   placeholder="Search orders, customers, emails..."
-                  className="w-full px-3 py-1.5 pl-9 bg-background-tertiary border border-white/[0.04] rounded text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full px-3 py-1.5 pl-9 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <svg className="absolute left-3 top-2 w-4 h-4 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -477,7 +478,7 @@ export default function OrdersPage() {
                   setStatusFilter(e.target.value)
                   setTimeout(fetchOrders, 300)
                 }}
-                className="px-2 py-1.5 bg-background-tertiary border border-white/[0.04] rounded text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="px-2 py-1.5 bg-neutral-900/65 border border-white/[0.04] rounded text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
@@ -492,7 +493,7 @@ export default function OrdersPage() {
                 className={`px-3 py-1.5 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                   showAdvancedFilters
                     ? 'bg-primary text-white'
-                    : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
+                    : 'bg-neutral-900/65 text-text-secondary hover:bg-background-tertiary/80'
                 }`}
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -634,51 +635,61 @@ export default function OrdersPage() {
           )}
 
           {/* Orders List */}
-          <div className="flex-1 overflow-hidden min-h-0">
+          <div className="flex-1 overflow-hidden min-h-0 bg-black">
             {loading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-[#858585] text-sm">Loading orders...</div>
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
+                <Image
+                  src="/logo.png"
+                  alt="Loading"
+                  width={120}
+                  height={120}
+                  className="logo-fade-animation"
+                  priority
+                />
               </div>
             ) : orders.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-                <div className="text-[#858585] text-sm">No orders found</div>
+                <div className="text-text-secondary text-sm">No orders found</div>
               </div>
             ) : (
               <div className="h-full overflow-auto">
                 <table className="w-full">
-                  <thead className="bg-[#2d2d30] sticky top-0 z-10 border-b border-[#3e3e42]">
+                  <thead className="bg-black sticky top-0 z-10 border-b border-white/[0.04]">
                     <tr>
                       <th className="w-8 px-3 py-2"></th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-[#858585] uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                         Order
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-[#858585] uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                         Date
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-[#858585] uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                         Customer
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-[#858585] uppercase tracking-wider">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-3 py-2 text-right text-xs font-medium text-[#858585] uppercase tracking-wider">
+                      <th className="px-3 py-2 text-right text-xs font-medium text-text-tertiary uppercase tracking-wider">
                         Total
                       </th>
-                      <th className="px-3 py-2 text-center text-xs font-medium text-[#858585] uppercase tracking-wider">
+                      <th className="px-3 py-2 text-center text-xs font-medium text-text-tertiary uppercase tracking-wider">
                         Items
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {orders.map((order, index) => (
-                      <>
+                      <React.Fragment key={order.id}>
                         <tr 
-                          key={order.id} 
-                          className="border-b border-[#3e3e42] hover:bg-[#2a2d2e] transition-colors cursor-pointer"
+                          className={`border-b border-white/[0.04] transition-colors cursor-pointer ${
+                            expandedOrders.has(order.id) 
+                              ? 'bg-neutral-800/80 border-neutral-700/60 shadow-sm' 
+                              : `hover:bg-black/30 ${index % 2 === 0 ? 'bg-neutral-900/65' : 'bg-black/80'}`
+                          }`}
                           onClick={() => toggleOrderExpansion(order.id)}
                         >
                           <td className="px-3 py-3">
-                            <button className="text-[#858585] hover:text-[#cccccc] transition-colors">
+                            <button className="text-text-tertiary hover:text-text-primary transition-colors">
                               <svg 
                                 className={`w-3 h-3 transition-transform ${expandedOrders.has(order.id) ? 'rotate-90' : ''}`} 
                                 fill="currentColor" 
@@ -689,31 +700,44 @@ export default function OrdersPage() {
                             </button>
                           </td>
                           <td className="px-3 py-3">
-                            <div className="text-sm font-medium text-[#569cd6]">#{order.number}</div>
+                            <div className={`text-sm font-medium ${
+                              expandedOrders.has(order.id) ? 'text-white font-bold' : 'text-primary'
+                            }`}>#{order.number}</div>
                           </td>
                           <td className="px-3 py-3">
-                            <div className="text-sm text-[#d4d4d4]">{formatDate(order.date_created)}</div>
+                            <div className={`text-sm ${
+                              expandedOrders.has(order.id) ? 'text-white font-medium' : 'text-text-primary'
+                            }`}>{formatDate(order.date_created)}</div>
                           </td>
                           <td className="px-3 py-3">
-                            <div className="text-sm text-[#d4d4d4]">
+                            <div className={`text-sm ${
+                              expandedOrders.has(order.id) ? 'text-white font-medium' : 'text-text-primary'
+                            }`}>
                               {order.billing.first_name} {order.billing.last_name}
                             </div>
-                            <div className="text-xs text-[#858585]">{order.billing.email}</div>
+                            <div className={`text-xs ${
+                              expandedOrders.has(order.id) ? 'text-neutral-200 font-medium' : 'text-text-secondary'
+                            }`}>{order.billing.email}</div>
                           </td>
                           <td className="px-3 py-3">
-                            <span className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full border ${getStatusColor(order.status)}`}>
-                              {getStatusIcon(order.status)}
+                            <span className="text-xs font-medium text-neutral-400">
                               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                             </span>
                           </td>
                           <td className="px-3 py-3 text-right">
-                            <div className="text-sm font-medium text-[#b5cea8]">
+                            <div className={`text-sm font-medium ${
+                              expandedOrders.has(order.id) ? 'text-white font-bold' : 'text-green-400'
+                            }`}>
                               ${parseFloat(order.total).toFixed(2)}
                             </div>
-                            <div className="text-xs text-[#858585]">{order.currency}</div>
+                            <div className={`text-xs ${
+                              expandedOrders.has(order.id) ? 'text-neutral-200' : 'text-text-secondary'
+                            }`}>{order.currency}</div>
                           </td>
                           <td className="px-3 py-3 text-center">
-                            <div className="text-sm text-[#d4d4d4]">
+                            <div className={`text-sm ${
+                              expandedOrders.has(order.id) ? 'text-white font-medium' : 'text-text-primary'
+                            }`}>
                               {order.line_items.length}
                             </div>
                           </td>
@@ -721,34 +745,33 @@ export default function OrdersPage() {
                         
                         {/* Expanded Order Details */}
                         {expandedOrders.has(order.id) && (
-                          <tr>
+                          <tr className="bg-neutral-800/80 border-neutral-700/60">
                             <td colSpan={7} className="px-0 py-0">
-                              <div className="bg-[#252526] border-l-2 border-[#007acc] mx-3 mb-2 rounded p-3">
+                              <div className="bg-neutral-800/60 border-l-4 border-neutral-600 mx-3 mb-2 rounded p-4">
                                 
                                 {/* Compact Info Grid */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs mb-3">
                                   
                                   {/* Customer & Contact */}
                                   <div className="space-y-1">
-                                    <div className="text-[#858585] uppercase tracking-wide font-medium">Customer</div>
-                                    <div className="text-[#d4d4d4]">{order.billing.first_name} {order.billing.last_name}</div>
-                                    <div className="text-[#569cd6]">{order.billing.email}</div>
-                                    {order.billing.phone && <div className="text-[#d4d4d4]">{order.billing.phone}</div>}
+                                    <div className="text-neutral-300 uppercase tracking-wide font-bold">Customer</div>
+                                    <div className="text-white font-medium">{order.billing.first_name} {order.billing.last_name}</div>
+                                    <div className="text-neutral-200 font-medium">{order.billing.email}</div>
+                                    {order.billing.phone && <div className="text-white font-medium">{order.billing.phone}</div>}
                                   </div>
 
                                   {/* Order Info */}
                                   <div className="space-y-1">
-                                    <div className="text-[#858585] uppercase tracking-wide font-medium">Order Details</div>
-                                    <div className="text-[#d4d4d4]">{formatDate(order.date_created)}</div>
+                                    <div className="text-neutral-300 uppercase tracking-wide font-bold">Order Details</div>
+                                    <div className="text-white font-medium">{formatDate(order.date_created)}</div>
                                     <div className="flex items-center gap-2">
-                                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full border ${getStatusColor(order.status)}`}>
-                                        {getStatusIcon(order.status)}
+                                      <span className="text-xs font-medium text-neutral-300">
                                         {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                                       </span>
                                     </div>
-                                    <div className="text-[#b5cea8] font-semibold">${parseFloat(order.total).toFixed(2)} {order.currency}</div>
+                                    <div className="text-green-300 font-bold text-base">${parseFloat(order.total).toFixed(2)} {order.currency}</div>
                                     {order.processed_by_staff && (
-                                      <div className="text-[#569cd6] text-xs">
+                                      <div className="text-neutral-200 text-sm font-medium">
                                         Processed by: {staffMembers.find(s => s.name === order.processed_by_staff)?.name || order.processed_by_staff}
                                       </div>
                                     )}
@@ -756,24 +779,24 @@ export default function OrdersPage() {
 
                                   {/* Points & Actions */}
                                   <div className="space-y-2">
-                                    <div className="text-[#858585] uppercase tracking-wide font-medium">Points & Actions</div>
+                                    <div className="text-neutral-300 uppercase tracking-wide font-bold">Points & Actions</div>
                                     
                                     {/* Compact Points Display */}
                                     <div className="flex gap-2 text-xs">
                                       {order.points_earned && order.points_earned > 0 && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-500/10 text-emerald-300 rounded border border-emerald-500/20">
-                                          <div className="w-1 h-1 rounded-full bg-emerald-400"></div>
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-500/20 text-emerald-200 rounded border border-emerald-400/40 font-medium">
+                                          <div className="w-1 h-1 rounded-full bg-emerald-300"></div>
                                           +{order.points_earned}
                                         </span>
                                       )}
                                       {order.points_redeemed && order.points_redeemed > 0 && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-sky-500/10 text-sky-300 rounded border border-sky-500/20">
-                                          <div className="w-1 h-1 rounded-full bg-sky-400"></div>
+                                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-sky-500/20 text-sky-200 rounded border border-sky-400/40 font-medium">
+                                          <div className="w-1 h-1 rounded-full bg-sky-300"></div>
                                           -{order.points_redeemed}
                                         </span>
                                       )}
                                       {(!order.points_earned || order.points_earned === 0) && (!order.points_redeemed || order.points_redeemed === 0) && (
-                                        <span className="text-[#858585]">No points activity</span>
+                                        <span className="text-neutral-300 font-medium">No points activity</span>
                                       )}
                                     </div>
 
@@ -782,11 +805,11 @@ export default function OrdersPage() {
                                       <button
                                         onClick={() => handleRefund(order.id)}
                                         disabled={refundingOrders.has(order.id)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/30 text-rose-300 rounded text-xs font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/40 hover:border-rose-400/60 text-rose-200 rounded text-xs font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
                                         {refundingOrders.has(order.id) ? (
                                           <>
-                                            <div className="w-3 h-3 border border-rose-400/30 border-t-rose-400 rounded-full animate-spin"></div>
+                                            <div className="w-3 h-3 border border-rose-300/50 border-t-rose-300 rounded-full animate-spin"></div>
                                             Processing...
                                           </>
                                         ) : (
@@ -822,7 +845,7 @@ export default function OrdersPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -832,7 +855,7 @@ export default function OrdersPage() {
         </div>
 
         {/* Status Bar - Matching POS Layout */}
-        <div className="bg-vscode-bgSecondary border-t border-border-light px-2 py-1 flex items-center justify-between text-xs text-text-secondary flex-shrink-0">
+        <div className="bg-black border-t border-border-light px-2 py-1 flex items-center justify-between text-xs text-text-secondary flex-shrink-0">
           {/* Left Section */}
           <div className="flex items-center space-x-2">
             {/* Store Info */}

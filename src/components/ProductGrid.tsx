@@ -7,6 +7,7 @@ import { ProductCard } from './ProductCard'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { findLinkedPrerollProducts, isVirtualPrerollProduct } from '../lib/virtual-product-helpers'
+import Image from 'next/image'
 
 interface ProductGridProps {
   category: number | null
@@ -78,7 +79,7 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
 
   if (!store?.id) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 bg-black">
         <p className="text-text-secondary">Please select a store to view products</p>
       </div>
     )
@@ -86,16 +87,22 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="ml-2 text-text-secondary">Loading products for {store.name}...</span>
+      <div className="absolute inset-x-0 top-0 -bottom-6 flex items-center justify-center bg-black">
+        <Image
+          src="/logo.png"
+          alt="Loading"
+          width={120}
+          height={120}
+          className="logo-fade-animation"
+          priority
+        />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 bg-black">
         <p className="text-red-400">Error loading products. Please try again.</p>
       </div>
     )
@@ -105,7 +112,7 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
 
   if (filteredProducts.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 bg-black min-h-full">
         <p className="text-text-secondary">
           {store.name ? `No products found at ${store.name}` : 'No products found'}
         </p>
@@ -128,7 +135,7 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
   }
 
   return (
-    <div className={`pb-8 ${
+    <div className={`pb-8 min-h-full ${
       isListView 
         ? 'flex flex-col gap-0' 
         : `grid grid-cols-1 sm:grid-cols-2 gap-0 items-stretch ${

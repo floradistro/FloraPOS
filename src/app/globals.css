@@ -394,6 +394,23 @@ body {
   }
 }
 
+/* Smooth fade in/out animation for logo */
+@keyframes smoothFade {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.logo-fade-animation {
+  animation: smoothFade 2s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
 .pixelate-animation {
   animation: pixelate 2.5s ease-in-out infinite;
   image-rendering: -webkit-optimize-contrast;

@@ -185,7 +185,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
   if (isListView) {
     // List View - Expandable Layout
     return (
-      <div className={`relative ${isEvenRow ? 'bg-black/40' : 'bg-black/80'} hover:bg-black/30 transition-all duration-500 ease-out group border-b border-vscode-border/30 hover:border-vscode-border/60 hover:shadow-vscode-lg transform hover:scale-[1.002]`}>
+      <div className={`relative ${isEvenRow ? 'bg-neutral-900/65' : 'bg-black/80'} hover:bg-black/30 transition-all duration-500 ease-out group border-b border-vscode-border/30 hover:border-vscode-border/60 hover:shadow-vscode-lg transform hover:scale-[1.002]`}>
         {/* Main Row - Always Visible */}
         <div 
           className="flex items-center w-full gap-4 px-3 py-2 min-h-[50px] cursor-pointer"
@@ -491,7 +491,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
 
   // Grid View Layout
       return (
-      <div className={`relative ${isEvenRow ? 'bg-black/40' : 'bg-black/80'} hover:bg-black/30 transition-all duration-500 ease-out cursor-pointer group border border-vscode-border/40 hover:border-vscode-border/80 flex flex-col h-full hover:shadow-vscode-xl transform hover:scale-[1.02] hover:-translate-y-1 overflow-visible`}>
+      <div className={`relative ${isEvenRow ? 'bg-neutral-900/65' : 'bg-black/80'} hover:bg-black/30 transition-all duration-500 ease-out cursor-pointer group border border-vscode-border/40 hover:border-vscode-border/80 flex flex-col h-full hover:shadow-vscode-xl transform hover:scale-[1.02] hover:-translate-y-1 overflow-visible`}>
       {/* Main Content Area - Fixed Height */}
       <div className="flex gap-2 p-2 flex-1">
         {/* Product Image */}
