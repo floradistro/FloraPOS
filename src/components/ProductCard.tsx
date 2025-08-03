@@ -430,7 +430,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                                 isOutOfStock 
                                   ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
                                   : isSelected
-                                  ? 'text-white bg-white/15 shadow-lg shadow-white/10 transform -translate-y-0.5 border border-transparent'
+                                  ? 'text-white bg-white/15 shadow-lg shadow-white/10 border border-transparent'
                                   : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                               }`}
                             >
@@ -491,7 +491,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
 
   // Grid View Layout
       return (
-      <div className={`relative ${isEvenRow ? 'bg-black/10' : 'bg-black/35'} hover:bg-vscode-bgTertiary transition-all duration-500 ease-out cursor-pointer group border border-white/[0.04] hover:border-white/[0.12] flex flex-col h-full hover:shadow-xl hover:shadow-black/25 transform hover:scale-[1.02] hover:-translate-y-1`}>
+      <div className={`relative ${isEvenRow ? 'bg-black/10' : 'bg-black/35'} hover:bg-vscode-bgTertiary transition-all duration-500 ease-out cursor-pointer group border border-white/[0.04] hover:border-white/[0.12] flex flex-col h-full hover:shadow-xl hover:shadow-black/25 transform hover:scale-[1.02] hover:-translate-y-1 overflow-visible`}>
       {/* Main Content Area - Fixed Height */}
       <div className="flex gap-2 p-2 flex-1">
         {/* Product Image */}
@@ -574,9 +574,9 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
       
       {/* Weight/Quantity Selectors - Aligned at Bottom */}
       {(product.mli_product_type === 'weight' && product.pricing_tiers) && (
-        <div className="w-full space-y-1 px-2 pb-12 pt-2 mt-auto">
+        <div className="w-full space-y-1 px-2 pb-12 pt-3 mt-auto">
 
-          <div className="flex gap-1 text-xs">
+          <div className="flex gap-1 text-xs overflow-visible">
             {Object.entries(product.pricing_tiers || {}).map(([grams, totalPrice], index, array) => {
               const variationKey = `flower-${grams}`
               const isSelected = selectedVariation === variationKey
@@ -589,7 +589,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                       isOutOfStock 
                         ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
                         : isSelected
-                        ? 'text-white bg-white/15 shadow-lg shadow-white/10 transform -translate-y-0.5 border border-transparent'
+                        ? 'text-white bg-white/15 shadow-lg shadow-white/10 border border-transparent'
                         : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                     }`}
                   >
@@ -607,7 +607,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
           {product.preroll_pricing_tiers && (
             <>
               <div className="h-2"></div>
-                                      <div className="flex gap-1 text-xs">
+                                      <div className="flex gap-1 text-xs overflow-visible">
                           {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice], index, array) => {
                             const variationKey = `preroll-${count}`
                             const isSelected = selectedVariation === variationKey
@@ -623,7 +623,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                           isOutOfStock 
                             ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
                             : isSelected
-                            ? 'text-white bg-white/15 shadow-lg shadow-white/10 transform -translate-y-0.5 border border-transparent'
+                            ? 'text-white bg-white/15 shadow-lg shadow-white/10 border border-transparent'
                             : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                         }`}
                         title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
@@ -670,8 +670,8 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
       )}
       
       {(product.mli_product_type === 'quantity' && product.pricing_tiers) && (
-        <div className="w-full space-y-1 px-2 pb-12 pt-2 mt-auto">
-          <div className="flex gap-1 text-xs">
+        <div className="w-full space-y-1 px-2 pb-12 pt-3 mt-auto">
+          <div className="flex gap-1 text-xs overflow-visible">
             {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit], index, array) => {
               const variationKey = `qty-${qty}`
               const isSelected = selectedVariation === variationKey
@@ -684,7 +684,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                       isOutOfStock 
                         ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
                         : isSelected
-                        ? 'text-white bg-white/15 shadow-lg shadow-white/10 transform -translate-y-0.5 border border-transparent'
+                        ? 'text-white bg-white/15 shadow-lg shadow-white/10 border border-transparent'
                         : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                     }`}
                   >
