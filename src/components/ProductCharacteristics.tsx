@@ -14,10 +14,8 @@ export function ProductCharacteristics({ productId }: ProductCharacteristicsProp
 
   // Define priority fields for different product types
   const priorityFields = [
-    'nose', 'effects', 'terpene',           // Cannabis flower characteristics
-    'strength_mg', 'acf_effects',           // Edibles characteristics  
-    'flavor', 'potency', 'type',            // General product characteristics
-    'brand', 'category', 'strength'         // Additional important fields
+    'flavor', 'potency', 'type',                // General product characteristics
+    'brand', 'category', 'strength'             // Additional important fields
   ]
 
   // Find the top 3 most important fields that exist for this product
@@ -46,9 +44,9 @@ export function ProductCharacteristics({ productId }: ProductCharacteristicsProp
         'grid-cols-3'
       }`}>
         {topFields.map((field) => (
-          <div key={field.key} className="bg-background-secondary/30 border border-white/[0.04] rounded-md p-2">
-            <span className="text-text-tertiary block">{field.label}</span>
-            <span className="text-text-primary font-medium">{field.value}</span>
+          <div key={field.key} className="bg-white/[0.02] rounded-md p-3">
+            <span className="text-text-tertiary font-mono text-xs block mb-1">{field.label}:</span>
+            <span className="text-text-primary font-mono text-sm">{field.value}</span>
           </div>
         ))}
       </div>

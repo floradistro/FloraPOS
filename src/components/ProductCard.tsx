@@ -414,7 +414,6 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                 
                 {(product.mli_product_type === 'quantity' && product.pricing_tiers) && (
                   <div className="space-y-2">
-                    <div className="text-xs text-vscode-textMuted">Quantity Pricing</div>
                     <div className="flex gap-1 text-xs">
                       {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit], index, array) => {
                         const variationKey = `qty-${qty}`
@@ -427,12 +426,12 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                                 handleVariationSelect(variationKey)
                               }}
                               disabled={isOutOfStock}
-                              className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
+                              className={`w-full justify-center px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 ${
                                 isOutOfStock 
-                                  ? 'cursor-not-allowed text-gray-600' 
+                                  ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
                                   : isSelected
-                                  ? 'text-white border border-white shadow-sm shadow-white/20'
-                                  : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
+                                  ? 'text-white bg-white/15 shadow-lg shadow-white/10 transform -translate-y-0.5 border border-transparent'
+                                  : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                               }`}
                             >
                               {qty} units
@@ -575,11 +574,8 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
       
       {/* Weight/Quantity Selectors - Aligned at Bottom */}
       {(product.mli_product_type === 'weight' && product.pricing_tiers) && (
-        <div className="w-full space-y-1 px-2 pb-2 pt-2 mt-auto">
-          {/* Flower Pricing */}
-          <div className="text-xs text-vscode-textMuted">
-            {product.preroll_pricing_tiers ? 'Flower (grams)' : 'Weight Options (grams)'}
-          </div>
+        <div className="w-full space-y-1 px-2 pb-12 pt-2 mt-auto">
+
           <div className="flex gap-1 text-xs">
             {Object.entries(product.pricing_tiers || {}).map(([grams, totalPrice], index, array) => {
               const variationKey = `flower-${grams}`
@@ -589,12 +585,12 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                   <button
                     onClick={() => handleVariationSelect(variationKey)}
                     disabled={isOutOfStock}
-                    className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
+                    className={`w-full justify-center px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 ${
                       isOutOfStock 
-                        ? 'cursor-not-allowed text-gray-600' 
+                        ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
                         : isSelected
-                        ? 'text-white border border-white shadow-sm shadow-white/20'
-                        : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
+                        ? 'text-white bg-white/15 shadow-lg shadow-white/10 transform -translate-y-0.5 border border-transparent'
+                        : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                     }`}
                   >
                     {grams}g
@@ -610,9 +606,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
           {/* Preroll Pricing (if available) */}
           {product.preroll_pricing_tiers && (
             <>
-              <div className="text-xs text-vscode-textMuted">
-                Pre-rolls (count)
-              </div>
+              <div className="h-2"></div>
                                       <div className="flex gap-1 text-xs">
                           {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice], index, array) => {
                             const variationKey = `preroll-${count}`
@@ -625,12 +619,12 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                       <button
                         onClick={() => handleVariationSelect(variationKey)}
                         disabled={isOutOfStock}
-                        className={`w-full flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
+                        className={`w-full flex-col justify-center px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 ${
                           isOutOfStock 
-                            ? 'cursor-not-allowed text-gray-600' 
+                            ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
                             : isSelected
-                            ? 'text-white border border-white shadow-sm shadow-white/20'
-                            : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
+                            ? 'text-white bg-white/15 shadow-lg shadow-white/10 transform -translate-y-0.5 border border-transparent'
+                            : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                         }`}
                         title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
                       >
@@ -676,8 +670,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
       )}
       
       {(product.mli_product_type === 'quantity' && product.pricing_tiers) && (
-        <div className="w-full space-y-1 px-2 pb-2 pt-2 mt-auto">
-          <div className="text-xs text-vscode-textMuted">Quantity Pricing</div>
+        <div className="w-full space-y-1 px-2 pb-12 pt-2 mt-auto">
           <div className="flex gap-1 text-xs">
             {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit], index, array) => {
               const variationKey = `qty-${qty}`
@@ -687,12 +680,12 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                   <button
                     onClick={() => handleVariationSelect(variationKey)}
                     disabled={isOutOfStock}
-                    className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
+                    className={`w-full justify-center px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 ${
                       isOutOfStock 
-                        ? 'cursor-not-allowed text-gray-600' 
+                        ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
                         : isSelected
-                        ? 'text-white border border-white shadow-sm shadow-white/20'
-                        : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
+                        ? 'text-white bg-white/15 shadow-lg shadow-white/10 transform -translate-y-0.5 border border-transparent'
+                        : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
                     }`}
                   >
                     {qty} units
@@ -714,12 +707,12 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
         </div>
       )}
       
-      {/* Add Button - Positioned in selector area */}
+      {/* Add Button - Positioned in selector area with proper spacing */}
       {(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') && selectedVariation !== 'default' && (
         <button
           onClick={handleAddToCart}
           disabled={isOutOfStock}
-          className={`absolute bottom-1 right-1 px-2 py-1 rounded text-xs font-medium transition-all duration-300 ease-out flex items-center gap-1 active:scale-95 ${
+          className={`absolute bottom-3 right-3 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ease-out flex items-center gap-1.5 active:scale-95 shadow-md ${
             isOutOfStock 
               ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
               : 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-500/25 transform hover:scale-105'
