@@ -331,27 +331,31 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                       {product.preroll_pricing_tiers ? 'Flower (grams)' : 'Weight Options (grams)'}
                     </div>
                     <div className="flex gap-1 text-xs">
-                      {Object.entries(product.pricing_tiers || {}).map(([grams, totalPrice]) => {
+                      {Object.entries(product.pricing_tiers || {}).map(([grams, totalPrice], index, array) => {
                         const variationKey = `flower-${grams}`
                         const isSelected = selectedVariation === variationKey
                         return (
-                          <button
-                            key={grams}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleVariationSelect(variationKey)
-                            }}
-                            disabled={isOutOfStock}
-                            className={`flex-1 justify-center px-2 py-1 rounded text-sm font-medium transition-colors ${
-                              isOutOfStock 
-                                ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-                                : isSelected
-                                ? 'bg-primary text-white'
-                                : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
-                            }`}
-                          >
-                            {grams}g
-                          </button>
+                          <div key={grams} className="flex-1 relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleVariationSelect(variationKey)
+                              }}
+                              disabled={isOutOfStock}
+                              className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
+                                isOutOfStock 
+                                  ? 'cursor-not-allowed text-gray-600' 
+                                  : isSelected
+                                  ? 'text-white border border-white'
+                                  : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
+                              }`}
+                            >
+                              {grams}g
+                            </button>
+                            {index < array.length - 1 && (
+                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10"></div>
+                            )}
+                          </div>
                         )
                       })}
                     </div>
@@ -363,32 +367,36 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                           Pre-rolls (count)
                         </div>
                         <div className="flex gap-1 text-xs">
-                          {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice]) => {
+                          {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice], index, array) => {
                             const variationKey = `preroll-${count}`
                             const isSelected = selectedVariation === variationKey
                             const gramsPerPreroll = product.mli_preroll_conversion || 0.7
                             const totalGrams = parseFloat((parseInt(count) * gramsPerPreroll).toFixed(1))
                             const availability = getPrerollAvailability(parseInt(count))
                             return (
-                              <button
-                                key={count}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleVariationSelect(variationKey)
-                                }}
-                                disabled={isOutOfStock}
-                                className={`flex-1 flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-colors ${
-                                  isOutOfStock 
-                                    ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-                                    : isSelected
-                                    ? 'bg-primary text-white'
-                                    : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
-                                }`}
-                                title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
-                              >
-                                <div>{count}x</div>
-                                <div className="text-xs opacity-70">({totalGrams}g)</div>
-                              </button>
+                              <div key={count} className="flex-1 relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleVariationSelect(variationKey)
+                                  }}
+                                  disabled={isOutOfStock}
+                                  className={`w-full flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
+                                    isOutOfStock 
+                                      ? 'cursor-not-allowed text-gray-600' 
+                                      : isSelected
+                                      ? 'text-white border border-white'
+                                      : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
+                                  }`}
+                                  title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
+                                >
+                                  <div>{count}x</div>
+                                  <div className="text-xs opacity-70">({totalGrams}g)</div>
+                                </button>
+                                {index < array.length - 1 && (
+                                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-white/10"></div>
+                                )}
+                              </div>
                             )
                           })}
                         </div>
@@ -408,27 +416,31 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                   <div className="space-y-2">
                     <div className="text-xs text-vscode-textMuted">Quantity Pricing</div>
                     <div className="flex gap-1 text-xs">
-                      {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit]) => {
+                      {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit], index, array) => {
                         const variationKey = `qty-${qty}`
                         const isSelected = selectedVariation === variationKey
                         return (
-                          <button
-                            key={qty}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleVariationSelect(variationKey)
-                            }}
-                            disabled={isOutOfStock}
-                            className={`flex-1 justify-center px-2 py-1 rounded text-sm font-medium transition-colors ${
-                              isOutOfStock 
-                                ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-                                : isSelected
-                                ? 'bg-primary text-white'
-                                : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
-                            }`}
-                          >
-                            {qty} units
-                          </button>
+                          <div key={qty} className="flex-1 relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleVariationSelect(variationKey)
+                              }}
+                              disabled={isOutOfStock}
+                              className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
+                                isOutOfStock 
+                                  ? 'cursor-not-allowed text-gray-600' 
+                                  : isSelected
+                                  ? 'text-white border border-white'
+                                  : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
+                              }`}
+                            >
+                              {qty} units
+                            </button>
+                            {index < array.length - 1 && (
+                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10"></div>
+                            )}
+                          </div>
                         )
                       })}
                     </div>
@@ -569,24 +581,28 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
             {product.preroll_pricing_tiers ? 'Flower (grams)' : 'Weight Options (grams)'}
           </div>
           <div className="flex gap-1 text-xs">
-            {Object.entries(product.pricing_tiers || {}).map(([grams, totalPrice]) => {
+            {Object.entries(product.pricing_tiers || {}).map(([grams, totalPrice], index, array) => {
               const variationKey = `flower-${grams}`
               const isSelected = selectedVariation === variationKey
               return (
-                <button
-                  key={grams}
-                  onClick={() => handleVariationSelect(variationKey)}
-                  disabled={isOutOfStock}
-                  className={`flex-1 justify-center px-2 py-1 rounded text-sm font-medium transition-colors ${
-                    isOutOfStock 
-                      ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-                      : isSelected
-                      ? 'bg-primary text-white'
-                      : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
-                  }`}
-                >
-                  {grams}g
-                </button>
+                <div key={grams} className="flex-1 relative">
+                  <button
+                    onClick={() => handleVariationSelect(variationKey)}
+                    disabled={isOutOfStock}
+                    className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
+                      isOutOfStock 
+                        ? 'cursor-not-allowed text-gray-600' 
+                        : isSelected
+                        ? 'text-white border border-white'
+                        : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
+                    }`}
+                  >
+                    {grams}g
+                  </button>
+                  {index < array.length - 1 && (
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10"></div>
+                  )}
+                </div>
               )
             })}
           </div>
@@ -597,33 +613,37 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
               <div className="text-xs text-vscode-textMuted">
                 Pre-rolls (count)
               </div>
-              <div className="flex gap-1 text-xs">
-                {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice]) => {
-                  const variationKey = `preroll-${count}`
-                  const isSelected = selectedVariation === variationKey
-                  const gramsPerPreroll = product.mli_preroll_conversion || 0.7
-                  const totalGrams = parseFloat((parseInt(count) * gramsPerPreroll).toFixed(1))
-                  const availability = getPrerollAvailability(parseInt(count))
-                  return (
-                    <button
-                      key={count}
-                      onClick={() => handleVariationSelect(variationKey)}
-                      disabled={isOutOfStock}
-                      className={`flex-1 flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-colors ${
-                        isOutOfStock 
-                          ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-                          : isSelected
-                          ? 'bg-primary text-white'
-                          : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
-                      }`}
-                      title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
-                    >
-                      <div>{count}x</div>
-                      <div className="text-xs opacity-70">({totalGrams}g)</div>
-                    </button>
-                  )
-                })}
-              </div>
+                                      <div className="flex gap-1 text-xs">
+                          {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice], index, array) => {
+                            const variationKey = `preroll-${count}`
+                            const isSelected = selectedVariation === variationKey
+                            const gramsPerPreroll = product.mli_preroll_conversion || 0.7
+                            const totalGrams = parseFloat((parseInt(count) * gramsPerPreroll).toFixed(1))
+                            const availability = getPrerollAvailability(parseInt(count))
+                            return (
+                              <div key={count} className="flex-1 relative">
+                                <button
+                                  onClick={() => handleVariationSelect(variationKey)}
+                                  disabled={isOutOfStock}
+                                  className={`w-full flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
+                                    isOutOfStock 
+                                      ? 'cursor-not-allowed text-gray-600' 
+                                      : isSelected
+                                      ? 'text-white border border-white'
+                                      : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
+                                  }`}
+                                  title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
+                                >
+                                  <div>{count}x</div>
+                                  <div className="text-xs opacity-70">({totalGrams}g)</div>
+                                </button>
+                                {index < array.length - 1 && (
+                                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-white/10"></div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
             </>
           )}
           
@@ -659,24 +679,28 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
         <div className="w-full space-y-1 px-2 pb-2 pt-2 mt-auto">
           <div className="text-xs text-vscode-textMuted">Quantity Pricing</div>
           <div className="flex gap-1 text-xs">
-            {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit]) => {
+            {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit], index, array) => {
               const variationKey = `qty-${qty}`
               const isSelected = selectedVariation === variationKey
               return (
-                <button
-                  key={qty}
-                  onClick={() => handleVariationSelect(variationKey)}
-                  disabled={isOutOfStock}
-                  className={`flex-1 justify-center px-2 py-1 rounded text-sm font-medium transition-colors ${
-                    isOutOfStock 
-                      ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-                      : isSelected
-                      ? 'bg-primary text-white'
-                      : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
-                  }`}
-                >
-                  {qty} units
-                </button>
+                <div key={qty} className="flex-1 relative">
+                  <button
+                    onClick={() => handleVariationSelect(variationKey)}
+                    disabled={isOutOfStock}
+                    className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-colors bg-transparent ${
+                      isOutOfStock 
+                        ? 'cursor-not-allowed text-gray-600' 
+                        : isSelected
+                        ? 'text-white border border-white'
+                        : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50'
+                    }`}
+                  >
+                    {qty} units
+                  </button>
+                  {index < array.length - 1 && (
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10"></div>
+                  )}
+                </div>
               )
             })}
           </div>
