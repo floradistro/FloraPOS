@@ -58,18 +58,29 @@ export function ViewportRing({ isLoading = false }: ViewportRingProps) {
   const status = getStatusConfig()
   
   return (
-    <div className="viewport-ring fixed inset-0 pointer-events-none z-[9999] opacity-60">
-      {/* Rounded border that follows iPad screen shape */}
-      <div 
-        className={`absolute inset-0 ${status.style}`}
-        style={{
-          border: `1px solid ${status.color}`,
-          borderRadius: 'max(24px, env(display-cutout-radius, 24px))',
-          margin: '2px',
-          background: 'transparent',
-          color: status.color
-        }}
-      />
+    <div className="viewport-ring fixed inset-0 pointer-events-none z-[9999]">
+      {/* SVG for perfect uniform thickness */}
+      <svg 
+        className={`absolute inset-0 w-full h-full ${status.style}`}
+        style={{ opacity: 0.6 }}
+      >
+        <rect
+          x="1"
+          y="1"
+          width="calc(100% - 2px)"
+          height="calc(100% - 2px)"
+          rx="24"
+          ry="24"
+          fill="none"
+          stroke={status.color}
+          strokeWidth="1.5"
+          vectorEffect="non-scaling-stroke"
+          style={{
+            width: 'calc(100% - 2px)',
+            height: 'calc(100% - 2px)'
+          }}
+        />
+      </svg>
     </div>
   )
 } 
