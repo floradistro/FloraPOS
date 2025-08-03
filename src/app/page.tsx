@@ -238,60 +238,70 @@ export default function FloraDistrosPOS() {
             </div>
             
             {/* Category Selector */}
-            <div className="flex gap-1">
-              {mainCategories.map((category) => (
-                <button
-                  key={category.slug}
-                  onClick={() => {
-                    console.log(`🏷️ Category clicked: ${category.name} (slug: ${category.slug}, id: ${category.id})`)
-                    setActiveCategory(category.slug)
-                  }}
-                  className={`px-2 py-1 rounded text-sm font-medium transition-colors ${
-                    activeCategory === category.slug
-                      ? 'bg-primary text-white'
-                      : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
-                  }`}
-                >
-                  {category.name}
-                </button>
+            <div className="flex items-center">
+              {mainCategories.map((category, index) => (
+                <div key={category.slug} className="flex items-center">
+                  <button
+                    onClick={() => {
+                      console.log(`🏷️ Category clicked: ${category.name} (slug: ${category.slug}, id: ${category.id})`)
+                      setActiveCategory(category.slug)
+                    }}
+                    className={`px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 flex items-center justify-center ${
+                      activeCategory === category.slug
+                        ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
+                        : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                  {index < mainCategories.length - 1 && (
+                    <div className="w-px h-4 bg-vscode-border/60 mx-1"></div>
+                  )}
+                </div>
               ))}
             </div>
             
-            {/* Customer View Toggle */}
-            <button
-              onClick={() => setIsCustomerViewOpen(!isCustomerViewOpen)}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors flex items-center gap-2 ${
-                isCustomerViewOpen
-                  ? 'bg-primary text-white'
-                  : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-              </svg>
-              Customers
-            </button>
+            {/* Navigation Controls */}
+            <div className="flex items-center">
+              {/* Customer View Toggle */}
+              <button
+                onClick={() => setIsCustomerViewOpen(!isCustomerViewOpen)}
+                className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 flex items-center gap-2 ${
+                  isCustomerViewOpen
+                    ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
+                    : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                Customers
+              </button>
 
-            {/* List View Toggle */}
-            <button
-              onClick={() => setIsListView(!isListView)}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors flex items-center gap-2 ${
-                isListView
-                  ? 'bg-primary text-white'
-                  : 'bg-background-tertiary text-text-secondary hover:bg-background-tertiary/80'
-              }`}
-            >
-              {isListView ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                </svg>
-              )}
-              {isListView ? 'List' : 'Grid'}
-            </button>
+              {/* Divider */}
+              <div className="w-px h-4 bg-vscode-border/60 mx-2"></div>
+
+              {/* List View Toggle */}
+              <button
+                onClick={() => setIsListView(!isListView)}
+                className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 flex items-center gap-2 ${
+                  isListView
+                    ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
+                    : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
+                }`}
+              >
+                {isListView ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                )}
+                {isListView ? 'List' : 'Grid'}
+              </button>
+            </div>
 
             {/* Search */}
             <div className="flex-1 max-w-sm flex items-center gap-2">

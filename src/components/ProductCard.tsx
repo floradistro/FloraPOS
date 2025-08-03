@@ -185,7 +185,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
   if (isListView) {
     // List View - Expandable Layout
     return (
-      <div className={`relative ${isEvenRow ? 'bg-black/10' : 'bg-black/35'} hover:bg-vscode-bgTertiary transition-all duration-500 ease-out group border-b border-white/[0.04] hover:border-white/[0.08] hover:shadow-lg hover:shadow-black/20 transform hover:scale-[1.002]`}>
+      <div className={`relative ${isEvenRow ? 'bg-black/40' : 'bg-black/80'} hover:bg-black/30 transition-all duration-500 ease-out group border-b border-vscode-border/30 hover:border-vscode-border/60 hover:shadow-vscode-lg transform hover:scale-[1.002]`}>
         {/* Main Row - Always Visible */}
         <div 
           className="flex items-center w-full gap-4 px-3 py-2 min-h-[50px] cursor-pointer"
@@ -219,7 +219,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                 sizes="40px"
               />
             ) : (
-              <div className="w-full h-full bg-vscode-bgTertiary flex items-center justify-center border border-white/[0.04] rounded transition-all duration-300 group-hover:border-white/[0.08]">
+              <div className="w-full h-full bg-vscode-bgTertiary flex items-center justify-center border border-vscode-border/30 rounded transition-all duration-300 group-hover:border-vscode-border/50">
                 <span className="text-vscode-textMuted text-xs">No img</span>
               </div>
             )}
@@ -285,7 +285,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
 
         {/* Expanded Content */}
         {isExpanded && (
-          <div className="px-3 pb-3 bg-vscode-bgTertiary/50 border-t border-white/[0.04] animate-in slide-in-from-top-2 duration-300 ease-out">
+          <div className="px-3 pb-3 bg-black/80 border-t border-vscode-border/30 animate-in slide-in-from-top-2 duration-300 ease-out">
             <div className="flex gap-4 pt-3">
               {/* Left Column - Product Details */}
               <div className="flex-1">
@@ -491,7 +491,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
 
   // Grid View Layout
       return (
-      <div className={`relative ${isEvenRow ? 'bg-black/10' : 'bg-black/35'} hover:bg-vscode-bgTertiary transition-all duration-500 ease-out cursor-pointer group border border-white/[0.04] hover:border-white/[0.12] flex flex-col h-full hover:shadow-xl hover:shadow-black/25 transform hover:scale-[1.02] hover:-translate-y-1 overflow-visible`}>
+      <div className={`relative ${isEvenRow ? 'bg-black/40' : 'bg-black/80'} hover:bg-black/30 transition-all duration-500 ease-out cursor-pointer group border border-vscode-border/40 hover:border-vscode-border/80 flex flex-col h-full hover:shadow-vscode-xl transform hover:scale-[1.02] hover:-translate-y-1 overflow-visible`}>
       {/* Main Content Area - Fixed Height */}
       <div className="flex gap-2 p-2 flex-1">
         {/* Product Image */}
@@ -505,7 +505,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
             />
           ) : (
-            <div className="w-full h-full bg-vscode-bgTertiary flex items-center justify-center border border-white/[0.04] transition-all duration-300 group-hover:border-white/[0.08]">
+            <div className="w-full h-full bg-vscode-bgTertiary flex items-center justify-center border border-vscode-border/30 transition-all duration-300 group-hover:border-vscode-border/50">
               <span className="text-vscode-textMuted text-sm">No image</span>
             </div>
           )}
@@ -621,10 +621,10 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                         disabled={isOutOfStock}
                         className={`w-full flex-col justify-center px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 ${
                           isOutOfStock 
-                            ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
+                            ? 'cursor-not-allowed text-vscode-textMuted bg-transparent border border-transparent' 
                             : isSelected
-                            ? 'text-white bg-white/15 shadow-lg shadow-white/10 border border-transparent'
-                            : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
+                            ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
+                            : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
                         }`}
                         title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
                       >
@@ -632,7 +632,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                         <div className="text-xs opacity-70">({totalGrams}g)</div>
                       </button>
                       {index < array.length - 1 && (
-                        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
+                        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-vscode-border/20 transition-all duration-300 group-hover:bg-vscode-border/40"></div>
                       )}
                     </div>
                             )
@@ -682,16 +682,16 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                     disabled={isOutOfStock}
                     className={`w-full justify-center px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 ${
                       isOutOfStock 
-                        ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
+                        ? 'cursor-not-allowed text-vscode-textMuted bg-transparent border border-transparent' 
                         : isSelected
-                        ? 'text-white bg-white/15 shadow-lg shadow-white/10 border border-transparent'
-                        : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
+                        ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
+                        : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
                     }`}
                   >
                     {qty} units
                   </button>
                   {index < array.length - 1 && (
-                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-vscode-border/20 transition-all duration-300 group-hover:bg-vscode-border/40"></div>
                   )}
                 </div>
               )
@@ -714,8 +714,8 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
           disabled={isOutOfStock}
           className={`absolute bottom-3 right-3 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 ease-out flex items-center gap-1.5 active:scale-95 shadow-md ${
             isOutOfStock 
-              ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-              : 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-500/25 transform hover:scale-105'
+              ? 'bg-vscode-textMuted cursor-not-allowed text-vscode-bg' 
+              : 'bg-vscode-accent text-white hover:bg-vscode-accentHover hover:shadow-vscode-lg transform hover:scale-105'
           }`}
         >
           <Plus className="w-3 h-3" />
