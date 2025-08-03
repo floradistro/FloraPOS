@@ -9,6 +9,12 @@ export const metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'POS',
+    startupImage: '/logo.png',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-touch-fullscreen': 'yes',
   },
 }
 
@@ -18,6 +24,7 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: '#1a1a1a',
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({

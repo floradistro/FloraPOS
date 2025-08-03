@@ -1,20 +1,12 @@
 'use client'
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
+import { useState, useEffect } from 'react'
 
-interface StatusState {
-  color: string
-  style: string
-}
-
-export const StatusContext = createContext<StatusState>({ color: 'bg-gray-500', style: '' })
-
-interface StatusProviderProps {
+interface ViewportRingProps {
   isLoading?: boolean
-  children: ReactNode
 }
 
-export function StatusProvider({ isLoading = false, children }: StatusProviderProps) {
+export function ViewportRing({ isLoading = false }: ViewportRingProps) {
   const [connectionStatus, setConnectionStatus] = useState<'online' | 'offline' | 'error'>('online')
 
   useEffect(() => {
@@ -30,7 +22,7 @@ export function StatusProvider({ isLoading = false, children }: StatusProviderPr
     }
   }, [])
 
-  const getStatusConfig = (): StatusState => {
+  const getStatusConfig = () => {
     // Loading state overrides connection status
     if (isLoading) {
       return {
@@ -64,15 +56,24 @@ export function StatusProvider({ isLoading = false, children }: StatusProviderPr
   }
 
   const status = getStatusConfig()
-
+  
   return (
-    <StatusContext.Provider value={status}>
-      {children}
-    </StatusContext.Provider>
+    <div className="fixed inset-0 pointer-events-none z-50 opacity-60">
+      {/* Top border - respects safe area */}
+      <div className={`absolute left-0 right-0 h-px ${status.color} ${status.style}`} 
+           style={{ top: 'max(env(safe-area-inset-top), 0px)' }} />
+      
+      {/* Right border - respects safe area */}
+      <div className={`absolute top-0 bottom-0 w-px ${status.color} ${status.style}`}
+           style={{ right: 'max(env(safe-area-inset-right), 0px)' }} />
+      
+      {/* Bottom border - respects safe area */}
+      <div className={`absolute left-0 right-0 h-px ${status.color} ${status.style}`}
+           style={{ bottom: 'max(env(safe-area-inset-bottom), 0px)' }} />
+      
+      {/* Left border - respects safe area */}
+      <div className={`absolute top-0 bottom-0 w-px ${status.color} ${status.style}`}
+           style={{ left: 'max(env(safe-area-inset-left), 0px)' }} />
+    </div>
   )
-}
-
-export function SyncedStatusBar() {
-  const status = useContext(StatusContext)
-  return <div className={`w-full ${status.color} ${status.style} h-0.5`} />
 } 

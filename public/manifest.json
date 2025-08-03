@@ -7,6 +7,9 @@
   "orientation": "any",
   "theme_color": "#1a1a1a",
   "background_color": "#1a1a1a",
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
   "icons": [
     {
       "src": "/logo.png",
