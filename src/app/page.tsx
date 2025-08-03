@@ -220,8 +220,8 @@ export default function FloraDistrosPOS() {
 
 
 
-                  {/* Header */}
-                  <div className="header-nav bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30">
+                                      {/* Header */}
+                    <div className="header-nav bg-black border-b border-white/[0.04] px-4 py-1 flex-shrink-0 relative z-30 mx-2 mt-2">
           <div className="flex items-center justify-between gap-2">
             {/* Logo */}
             <div className="flex-shrink-0">
@@ -444,7 +444,7 @@ export default function FloraDistrosPOS() {
           )}
 
           {/* Products Grid */}
-          <div className="flex-1 px-0 pb-6 overflow-y-auto relative bg-black">
+          <div className="flex-1 px-2 pb-6 overflow-y-auto relative bg-black">
             <ProductGrid
               category={activeCategory === 'all' ? null : mainCategories.find(cat => cat.slug === activeCategory)?.id || null}
               searchQuery={searchQuery}
