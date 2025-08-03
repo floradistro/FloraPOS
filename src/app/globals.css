@@ -124,7 +124,7 @@
 /* iPad specific rounded corners and fullscreen */
 @media (max-width: 1024px) and (orientation: landscape) {
   .viewport-container {
-    border-radius: 12px;
+    border-radius: 24px;
     overflow: hidden;
     height: 100vh;
     height: 100dvh;
@@ -133,7 +133,7 @@
 
 @media (max-width: 834px) and (orientation: portrait) {
   .viewport-container {
-    border-radius: 12px;
+    border-radius: 24px;
     overflow: hidden;
     height: 100vh;
     height: 100dvh;
@@ -149,7 +149,7 @@
     height: 100dvh;
     position: relative;
     /* Force rounded corners to match device */
-    border-radius: max(12px, env(display-cutout-radius, 12px));
+    border-radius: max(24px, env(display-cutout-radius, 24px));
     overflow: hidden;
   }
   
@@ -161,7 +161,7 @@
   
   /* iPad rounded viewport ring */
   .viewport-ring {
-    border-radius: max(12px, env(display-cutout-radius, 12px));
+    border-radius: max(24px, env(display-cutout-radius, 24px));
   }
   
   /* Force fullscreen behind status bar */
