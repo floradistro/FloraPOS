@@ -135,7 +135,7 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
   }
 
   return (
-    <div className={`pb-8 min-h-full bg-neutral-800/20 ${
+    <div className={`h-full ${
       isListView 
         ? 'flex flex-col gap-0' 
         : `grid grid-cols-1 sm:grid-cols-2 items-stretch ${
