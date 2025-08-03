@@ -58,7 +58,7 @@ export function ViewportRing({ isLoading = false }: ViewportRingProps) {
   const status = getStatusConfig()
   
   return (
-    <div className="viewport-ring fixed inset-0 pointer-events-none z-50 opacity-60">
+    <div className="viewport-ring fixed inset-0 pointer-events-none z-[9999] opacity-60">
       {/* Rounded border that follows iPad screen shape */}
       <div 
         className={`absolute inset-0 ${status.style}`}

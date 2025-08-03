@@ -156,7 +156,7 @@ export default function FloraDistrosPOS() {
     <AppWrapper>
               <ViewportRing isLoading={isProductsLoading} />
         {/* iOS Status Bar Cover */}
-        <div className="fixed top-0 left-0 right-0 h-[44px] bg-black z-[9998]" style={{ height: 'env(safe-area-inset-top, 44px)' }} />
+        <div className="fixed top-0 left-0 right-0 h-[44px] bg-black z-[40]" style={{ height: 'env(safe-area-inset-top, 44px)' }} />
         <div className="viewport-container h-screen bg-background-primary text-text-primary flex flex-col relative">
         {/* Menu Drawer */}
         <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${

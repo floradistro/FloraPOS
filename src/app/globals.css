@@ -175,6 +175,7 @@
   /* iPad rounded viewport ring */
   .viewport-ring {
     border-radius: max(24px, env(display-cutout-radius, 24px));
+    z-index: 9999 !important;
   }
   
   /* Force fullscreen behind status bar */
