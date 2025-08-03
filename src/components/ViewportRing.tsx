@@ -59,17 +59,17 @@ export function ViewportRing({ isLoading = false }: ViewportRingProps) {
   
   return (
     <div className="viewport-ring fixed pointer-events-none z-[9999]" style={{
-      top: 'max(env(safe-area-inset-top), 8px)',
-      left: 'max(env(safe-area-inset-left), 8px)', 
-      right: 'max(env(safe-area-inset-right), 8px)',
-      bottom: 'max(env(safe-area-inset-bottom), 8px)'
+      top: 'env(safe-area-inset-top, 0px)',
+      left: 'env(safe-area-inset-left, 0px)', 
+      right: 'env(safe-area-inset-right, 0px)',
+      bottom: 'env(safe-area-inset-bottom, 0px)'
     }}>
       {/* SVG for perfect uniform thickness */}
       <div 
         className={`absolute inset-0 ${status.style}`}
         style={{
           border: `1px solid ${status.color}`,
-          borderRadius: '24px',
+          borderRadius: '0px',
           opacity: 0.6,
           pointerEvents: 'none',
           WebkitBackfaceVisibility: 'hidden',
