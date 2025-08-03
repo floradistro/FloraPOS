@@ -426,7 +426,7 @@ export default function OrdersPage() {
         <TopStatusBar isLoading={loading} />
 
         {/* Header Navigation */}
-        <div className="bg-background-secondary border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30">
+        <div className="bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30">
           <div className="flex items-center justify-between gap-2">
             {/* Logo & Menu */}
             <div className="flex items-center gap-3">
