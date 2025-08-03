@@ -125,7 +125,7 @@ export default function CustomerPreferenceQuickView({ customer, onAddPreference 
   const hasMorePreferences = preferences.length > 3
 
   return (
-    <div className="bg-background-secondary rounded-lg border border-white/[0.04]">
+    <div className="bg-neutral-900/65 border border-white/[0.04] rounded">
       {/* Header - always visible */}
       <div className="flex items-center justify-between p-3">
         <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ export default function CustomerPreferenceQuickView({ customer, onAddPreference 
           {!isLoading && (
             <button
               onClick={() => fetchPreferences()}
-              className="p-1 text-text-secondary hover:text-text-primary transition-colors rounded hover:bg-background-tertiary"
+              className="p-1 text-text-secondary hover:text-text-primary transition-colors rounded hover:bg-neutral-800/65"
               title="Refresh preferences"
             >
               <RefreshCw className="h-3 w-3" />
@@ -150,7 +150,7 @@ export default function CustomerPreferenceQuickView({ customer, onAddPreference 
           {preferences.length > 0 && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1 text-text-secondary hover:text-text-primary transition-colors rounded hover:bg-background-tertiary"
+              className="p-1 text-text-secondary hover:text-text-primary transition-colors rounded hover:bg-neutral-800/65"
               title={isExpanded ? "Show less" : "Show all"}
             >
               {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
@@ -228,7 +228,7 @@ export default function CustomerPreferenceQuickView({ customer, onAddPreference 
           {!showAddForm ? (
             <button
               onClick={() => setShowAddForm(true)}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs text-white bg-blue-600 hover:bg-blue-700 rounded transition-all duration-200"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary hover:bg-neutral-800/65 hover:border-white/[0.08] transition-all duration-300 ease-out"
             >
               <Plus className="h-3 w-3" />
               <span>Add Preference</span>

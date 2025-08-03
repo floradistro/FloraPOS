@@ -138,12 +138,15 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
     <div className={`pb-8 min-h-full bg-neutral-800/20 ${
       isListView 
         ? 'flex flex-col gap-0' 
-        : `grid grid-cols-1 sm:grid-cols-2 gap-px items-stretch ${
+        : `grid grid-cols-1 sm:grid-cols-2 items-stretch ${
             isCustomerViewOpen 
               ? 'md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2' 
               : 'md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3'
           }`
-    }`}>
+    }`} style={{
+      gap: isListView ? '0px' : '2px',
+      backgroundColor: isListView ? 'transparent' : 'rgb(64 64 64 / 0.2)'
+    }}>
       {filteredProducts.map((product: FloraProduct, index: number) => (
         <ProductCard
           key={product.id}

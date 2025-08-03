@@ -690,7 +690,7 @@ export function Cart({
         {/* Customer Assignment Section - Only show when customer is assigned */}
         {assignedCustomer && (
           <div className="px-2 py-1">
-            <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-neutral-900/65 border border-white/[0.04] rounded">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                   <span className="text-xs font-medium text-primary">
@@ -869,7 +869,7 @@ export function Cart({
             <button
               type="submit"
               disabled={createOrderMutation.isPending}
-              className="w-full bg-primary hover:bg-primary/90 disabled:bg-primary/50 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              className="w-full px-3 py-3 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary hover:bg-neutral-800/65 hover:border-white/[0.08] disabled:bg-neutral-900/40 disabled:text-text-tertiary disabled:border-white/[0.02] transition-all duration-300 ease-out active:scale-95 font-medium flex items-center justify-center gap-2"
             >
               {createOrderMutation.isPending ? (
                 <>
@@ -888,7 +888,7 @@ export function Cart({
           <div className="px-2 py-4">
             {assignedCustomer ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-neutral-900/65 border border-white/[0.04] rounded">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                       <span className="text-xs font-medium text-primary">
@@ -917,7 +917,7 @@ export function Cart({
                 />
               </div>
             ) : (
-              <div className="flex items-center justify-between p-3 bg-background-secondary rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-neutral-900/65 border border-white/[0.04] rounded">
                 <div className="flex items-center gap-3">
                   <User className="w-8 h-8 text-text-secondary" />
                   <div>
@@ -927,7 +927,7 @@ export function Cart({
                 </div>
                 <button 
                   onClick={() => setIsScannerOpen(true)}
-                  className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors px-3 py-1 rounded"
+                  className="flex items-center gap-2 px-3 py-1 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary hover:bg-neutral-800/65 hover:border-white/[0.08] transition-all duration-300 ease-out"
                 >
                   <User className="w-4 h-4" />
                   <span className="text-sm">Scan ID</span>
@@ -1039,7 +1039,7 @@ export function Cart({
 
             <button
               onClick={() => setIsCheckoutView(true)}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 px-4 rounded-full font-medium transition-colors"
+              className="w-full px-3 py-2.5 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary hover:bg-neutral-800/65 hover:border-white/[0.08] transition-all duration-300 ease-out active:scale-95 font-medium"
             >
               Checkout
             </button>

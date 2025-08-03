@@ -344,7 +344,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                               {grams}g
                             </button>
                             {index < array.length - 1 && (
-                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
+                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
                             )}
                           </div>
                         )
@@ -385,7 +385,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                                   <div className="text-xs opacity-70">({totalGrams}g)</div>
                                 </button>
                                 {index < array.length - 1 && (
-                                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
+                                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
                                 )}
                               </div>
                             )
@@ -428,7 +428,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                               {qty} units
                             </button>
                             {index < array.length - 1 && (
-                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
+                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
                             )}
                           </div>
                         )
@@ -481,7 +481,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
 
   // Grid View Layout
       return (
-      <div className={`relative ${isOddRow ? 'bg-black/80' : 'bg-black/85'} border-b border-neutral-600/20 hover:border-transparent hover:bg-neutral-800 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:z-10 transition-all duration-500 ease-out cursor-pointer group flex flex-col h-full transform hover:scale-[1.02] hover:-translate-y-1 overflow-visible`}>
+      <div className={`relative ${isOddRow ? 'bg-black/80' : 'bg-black/85'} hover:border-transparent hover:bg-neutral-800 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:z-10 transition-all duration-500 ease-out cursor-pointer group flex flex-col h-full transform hover:scale-[1.02] hover:-translate-y-1 overflow-visible`}>
       {/* Main Content Area - Fixed Height */}
       <div className="flex gap-2 p-2 flex-1">
         {/* Product Image */}
@@ -586,7 +586,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                     {grams}g
                   </button>
                   {index < array.length - 1 && (
-                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-white/10 transition-all duration-300 group-hover:bg-white/20"></div>
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
                   )}
                 </div>
               )
@@ -622,7 +622,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                         <div className="text-xs opacity-70">({totalGrams}g)</div>
                       </button>
                       {index < array.length - 1 && (
-                        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-vscode-border/20 transition-all duration-300 group-hover:bg-vscode-border/40"></div>
+                        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
                       )}
                     </div>
                             )
@@ -681,7 +681,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                     {qty} units
                   </button>
                   {index < array.length - 1 && (
-                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-vscode-border/20 transition-all duration-300 group-hover:bg-vscode-border/40"></div>
+                    <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
                   )}
                 </div>
               )

@@ -224,7 +224,10 @@ export default function FloraDistrosPOS() {
 
 
                                                           {/* Header */}
-                     <div className="header-nav bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30">
+                     <div className="header-nav bg-black border-b border-white/[0.04] px-4 py-1 flex-shrink-0 relative z-30" style={{
+          paddingLeft: 'max(16px, env(safe-area-inset-left))',
+          paddingRight: 'max(16px, env(safe-area-inset-right))'
+        }}>
           <div className="flex items-center justify-between gap-2">
             {/* Logo */}
             <div className="flex-shrink-0">
@@ -344,14 +347,13 @@ export default function FloraDistrosPOS() {
           {isCustomerViewOpen && (
             <div className="w-80 bg-black border-r border-white/[0.04] flex-shrink-0">
                               <div className="px-2 py-6 border-b border-white/[0.04]">
-                <h3 className="text-lg font-semibold text-text-primary mb-3">Customer Directory</h3>
                 <div className="relative">
                   <input
                     type="text"
                     placeholder="Search customers..."
                     value={customerSearchQuery}
                     onChange={(e) => setCustomerSearchQuery(e.target.value)}
-                    className="w-full px-3 py-2 bg-background-tertiary border border-white/[0.04] rounded text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full px-3 py-2 bg-neutral-900/65 border border-white/[0.04] rounded text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   <svg className="absolute right-3 top-2.5 w-4 h-4 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

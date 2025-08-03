@@ -37,9 +37,12 @@ export function StatusBar({ store, user, cartItemCount = 0, productCount }: Stat
 
 
   return (
-    <div className="bg-black px-2 py-2 flex items-center justify-between text-sm text-text-secondary flex-shrink-0">
+    <div className="bg-black px-4 py-2 flex items-center justify-between text-sm text-text-secondary flex-shrink-0" style={{
+      paddingLeft: 'max(16px, env(safe-area-inset-left))',
+      paddingRight: 'max(16px, env(safe-area-inset-right))'
+    }}>
       {/* Left Section */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-3">
         {/* Store Info */}
         {store && (
           <div className="flex items-center">
@@ -63,7 +66,7 @@ export function StatusBar({ store, user, cartItemCount = 0, productCount }: Stat
       </div>
 
       {/* Center Section */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-3">
         {/* User Info */}
         {user && (
           <div className="flex items-center">
@@ -73,7 +76,7 @@ export function StatusBar({ store, user, cartItemCount = 0, productCount }: Stat
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-3">
         {/* System Info */}
         <div className="flex items-center">
           <span>POS</span>
