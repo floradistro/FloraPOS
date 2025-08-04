@@ -171,7 +171,7 @@ export default function FloraDistrosPOS() {
           }} />
         <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative" style={{ 
           height: '100dvh', 
-          paddingTop: 'env(safe-area-inset-top, 44px)',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)'
         }}>
         {/* Menu Drawer */}
