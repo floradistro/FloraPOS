@@ -77,15 +77,15 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
 
   return (
     <>
-      {/* Single border element that wraps the entire viewport */}
+      {/* Single border element that wraps the entire screen */}
       <div
         className={`siri-border-wrapper ${isLoading ? 'siri-loading' : 'siri-idle'} ${className}`}
         style={{
           position: 'fixed',
-          top: `calc(env(safe-area-inset-top, 0px) + ${thickness/2}px)`,
-          left: `calc(env(safe-area-inset-left, 0px) + ${thickness/2}px)`,
-          right: `calc(env(safe-area-inset-right, 0px) + ${thickness/2}px)`,
-          bottom: `calc(env(safe-area-inset-bottom, 0px) + ${thickness/2}px)`,
+          top: `${thickness/2}px`,
+          left: `${thickness/2}px`,
+          right: `${thickness/2}px`,
+          bottom: `${thickness/2}px`,
           zIndex,
           pointerEvents: 'none',
           border: `${thickness}px solid currentColor`,
@@ -182,27 +182,40 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
           }
         }
 
-        /* iPad Pro specific optimizations - Fine-tune positioning */
+        /* iPad Pro specific optimizations - Absolute screen edge positioning */
         @media screen and (min-width: 1024px) and (orientation: portrait),
                screen and (min-height: 1024px) and (orientation: landscape) {
           .siri-border-wrapper {
             filter: blur(0.5px);
-            /* Adjust for iPad PWA mode */
-            top: calc(env(safe-area-inset-top, 0px) + ${thickness/2}px - 1px);
-            left: calc(env(safe-area-inset-left, 0px) + ${thickness/2}px - 1px);
-            right: calc(env(safe-area-inset-right, 0px) + ${thickness/2}px - 1px);
-            bottom: calc(env(safe-area-inset-bottom, 0px) + ${thickness/2}px - 1px);
+            /* Position at absolute screen edges, over system UI */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: ${thickness/2}px;
           }
         }
 
-        /* Specific adjustments for iPad Pro models in PWA mode */
+        /* Absolute positioning for all PWA modes */
         @supports (display-mode: fullscreen) or (display-mode: standalone) {
           .siri-border-wrapper {
-            /* Fine-tune for PWA fullscreen mode */
-            top: calc(env(safe-area-inset-top, 0px) + ${thickness/2}px - 2px);
-            left: calc(env(safe-area-inset-left, 0px) + ${thickness/2}px - 2px);
-            right: calc(env(safe-area-inset-right, 0px) + ${thickness/2}px - 2px);
-            bottom: calc(env(safe-area-inset-bottom, 0px) + ${thickness/2}px - 2px);
+            /* Absolute screen edge positioning */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: ${thickness/2}px;
+          }
+        }
+
+        /* Force absolute positioning on iPad regardless of mode */
+        @media (hover: none) and (pointer: coarse) and (min-width: 1024px) {
+          .siri-border-wrapper {
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            margin: ${thickness/2}px !important;
           }
         }
       `}</style>
