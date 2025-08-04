@@ -8,8 +8,8 @@ import { ProductGrid } from '../components/ProductGrid'
 import { Cart } from '../components/Cart'
 import { AppWrapper } from '../components/AppWrapper'
 import { StatusBar } from '../components/StatusBar'
-import { ViewportRing } from '../components/ViewportRing'
 import SettingsPanel from '../components/SettingsPanel'
+import SiriGlowBorder from '../components/SiriGlowBorder'
 import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
 import { FloraProduct, floraAPI, FloraCustomer } from '../lib/woocommerce'
@@ -153,11 +153,17 @@ export default function FloraDistrosPOS() {
     setIsMenuOpen(false)
   }
 
-  return (
-    <AppWrapper>
-              <ViewportRing isLoading={isProductsLoading} isCheckingOut={isCheckingOut} />
-        {/* iOS Status Bar Cover */}
-        <div className="fixed top-0 left-0 right-0 h-[44px] bg-black z-[40]" style={{ height: 'env(safe-area-inset-top, 44px)' }} />
+      return (
+      <AppWrapper>
+        {/* Siri Glow Border Effect */}
+        <SiriGlowBorder 
+          isLoading={isProductsLoading || isCheckingOut} 
+          thickness={4}
+          zIndex={100}
+        />
+        
+          {/* iOS Status Bar Cover */}
+          <div className="fixed top-0 left-0 right-0 h-[44px] bg-black z-[40]" style={{ height: 'env(safe-area-inset-top, 44px)' }} />
         <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative" style={{ 
           height: '100dvh', 
           paddingBottom: 'env(safe-area-inset-bottom, 0px)' 
