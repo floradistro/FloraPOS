@@ -162,17 +162,10 @@ export default function FloraDistrosPOS() {
           zIndex={100}
         />
         
-          {/* iOS Status Bar Cover */}
-          <div className="fixed top-0 left-0 right-0 h-[44px] bg-black z-[40]" style={{ 
-            height: 'env(safe-area-inset-top, 44px)',
-            paddingTop: '4px',
-            paddingLeft: '4px',
-            paddingRight: '4px'
-          }} />
         <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative" style={{ 
           height: '100vh', 
           minHeight: '100vh',
-          paddingTop: 'env(safe-area-inset-top, 44px)',
+          paddingTop: '0px',
           paddingBottom: '0px'
         }}>
         {/* Menu Drawer */}
@@ -245,8 +238,8 @@ export default function FloraDistrosPOS() {
 
                                                           {/* Header */}
                      <div className="header-nav bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30" style={{
-          paddingLeft: 'max(16px, env(safe-area-inset-left) + 8px)',
-          paddingRight: 'max(16px, env(safe-area-inset-right) + 8px)'
+          paddingLeft: '16px',
+          paddingRight: '16px'
         }}>
           <div className="flex items-center justify-between gap-2">
             {/* Logo */}
