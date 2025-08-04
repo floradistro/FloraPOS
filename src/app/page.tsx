@@ -165,7 +165,7 @@ export default function FloraDistrosPOS() {
           bottom: 0,
           height: '100vh',
           width: '100vw',
-          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingTop: 'env(safe-area-inset-top, 44px)', /* 44px fallback for iOS status bar */
           paddingLeft: 'env(safe-area-inset-left, 0px)',
           paddingRight: 'env(safe-area-inset-right, 0px)',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',

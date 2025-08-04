@@ -357,7 +357,7 @@ export default function OrdersPage() {
         left: 0,
         right: 0,
         bottom: 0,
-        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingTop: 'env(safe-area-inset-top, 44px)', /* 44px fallback for iOS status bar */
         paddingLeft: 'env(safe-area-inset-left, 0px)',
         paddingRight: 'env(safe-area-inset-right, 0px)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)'
