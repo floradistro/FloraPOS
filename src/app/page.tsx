@@ -237,7 +237,7 @@ export default function FloraDistrosPOS() {
 
 
         {/* Header */}
-        <div className="header-nav bg-black border-b border-white/[0.04] px-4 py-1 flex-shrink-0 relative z-30">
+        <div className="header-nav bg-black px-4 py-1 flex-shrink-0 relative z-30">
           <div className="flex items-center justify-between gap-2">
             {/* Logo */}
             <div className="flex-shrink-0">
@@ -360,7 +360,7 @@ export default function FloraDistrosPOS() {
           {/* Customer View Panel */}
           {isCustomerViewOpen && (
             <div className="bg-black border-r border-white/[0.04]">
-                              <div className="px-2 py-6 border-b border-white/[0.04]">
+                              <div className="px-2 py-6">
                 <div className="relative">
                   <input
                     type="text"
@@ -463,7 +463,7 @@ export default function FloraDistrosPOS() {
           )}
 
           {/* Products Grid */}
-          <div className={`px-0 pb-6 relative bg-black ${
+          <div className={`px-0 pb-0 relative bg-black ${
             isCustomerViewOpen ? '' : 'flex-1'
           } ${
             isListView ? 'overflow-hidden' : 'overflow-y-auto'
@@ -491,15 +491,29 @@ export default function FloraDistrosPOS() {
           />
         </div>
 
-        {/* VSCode-style Status Bar */}
-        <StatusBar
-          store={store ? { name: store.name, address: store.address } : undefined}
-          user={user ? { name: `${user.firstName} ${user.lastName}`, role: user.role } : undefined}
-          cartItemCount={cartItems.length}
-          productCount={productCount}
-        />
 
 
+
+
+        {/* VSCode-style Status Bar - Matches Header Nav */}
+        <div className="bg-black px-6 pt-2 pb-6 flex items-center justify-between text-xs text-text-secondary flex-shrink-0">
+          {/* Left Section */}
+          <div className="flex items-center gap-4">
+            {store && <span>{store.name}</span>}
+            <span>{productCount} products available</span>
+          </div>
+
+          {/* Center Section */}
+          <div className="flex items-center">
+            {user && <span>Hello, {user.firstName}</span>}
+          </div>
+
+          {/* Right Section */}
+          <div className="flex items-center gap-4">
+            <span>POS</span>
+            <span className="font-mono">{new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+          </div>
+        </div>
 
         {/* Settings Panel */}
         <SettingsPanel 
