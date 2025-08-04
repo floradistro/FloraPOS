@@ -9,7 +9,7 @@ import { Cart } from '../components/Cart'
 import { AppWrapper } from '../components/AppWrapper'
 import { StatusBar } from '../components/StatusBar'
 import SettingsPanel from '../components/SettingsPanel'
-import SiriGlowBorder from '../components/SiriGlowBorder'
+// import SiriGlowBorder from '../components/SiriGlowBorder' // Temporarily disabled
 import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
 import { FloraProduct, floraAPI, FloraCustomer } from '../lib/woocommerce'
@@ -497,8 +497,8 @@ export default function FloraDistrosPOS() {
           onClose={() => setIsSettingsOpen(false)} 
         />
 
-        {/* Siri Glow Border */}
-        <SiriGlowBorder isLoading={isProductsLoading || isCheckingOut} />
+        {/* Siri Glow Border - Temporarily disabled as it forces content within viewport bounds */}
+        {/* <SiriGlowBorder isLoading={isProductsLoading || isCheckingOut} /> */}
       </div>
     </AppWrapper>
     </>
