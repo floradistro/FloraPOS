@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createWooHeaders } from '@/lib/woocommerce'
 
+export const dynamic = 'force-dynamic'
+
 const FLORA_API_URL = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'http://api.floradistro.com'
 
 export async function POST(request: NextRequest) {

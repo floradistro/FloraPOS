@@ -2,12 +2,24 @@
 
 import { usePWA } from '@/hooks/usePWA'
 import { pwaUtils } from '@/lib/pwa-utils'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function PWATestPage() {
   const pwa = usePWA()
-  const [deviceInfo, setDeviceInfo] = useState(pwaUtils.getDeviceInfo())
+  const [deviceInfo, setDeviceInfo] = useState({
+    isIPad: false,
+    screenWidth: 0,
+    screenHeight: 0,
+    devicePixelRatio: 1,
+    orientation: 'portrait' as 'portrait' | 'landscape',
+    isRetina: false
+  })
   const [cacheCleared, setCacheCleared] = useState(false)
+
+  useEffect(() => {
+    // Get device info after component mounts
+    setDeviceInfo(pwaUtils.getDeviceInfo())
+  }, [])
 
   const handleClearCache = async () => {
     try {
@@ -147,10 +159,10 @@ export default function PWATestPage() {
           <div className="bg-gray-800 rounded p-4">
             <p className="text-sm text-gray-400 mb-2">CSS Variables:</p>
             <code className="text-xs block space-y-1">
-              <div>--safe-area-inset-top: {getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-top') || '0px'}</div>
-              <div>--safe-area-inset-right: {getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-right') || '0px'}</div>
-              <div>--safe-area-inset-bottom: {getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-bottom') || '0px'}</div>
-              <div>--safe-area-inset-left: {getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-left') || '0px'}</div>
+              <div>--safe-area-inset-top: {typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-top') || '0px' : '0px'}</div>
+              <div>--safe-area-inset-right: {typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-right') || '0px' : '0px'}</div>
+              <div>--safe-area-inset-bottom: {typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-bottom') || '0px' : '0px'}</div>
+              <div>--safe-area-inset-left: {typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-left') || '0px' : '0px'}</div>
             </code>
           </div>
         </section>

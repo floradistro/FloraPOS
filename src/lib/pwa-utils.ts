@@ -59,7 +59,7 @@ export const pwaUtils = {
       screenWidth,
       screenHeight,
       devicePixelRatio,
-      orientation: screenWidth > screenHeight ? 'landscape' : 'portrait',
+      orientation: (screenWidth > screenHeight ? 'landscape' : 'portrait') as 'landscape' | 'portrait',
       isRetina: devicePixelRatio > 1,
     }
   },
