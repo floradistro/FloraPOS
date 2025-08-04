@@ -36,8 +36,8 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Flora POS" />
       </head>
-      <body className="font-sf-pro antialiased" style={{ backgroundColor: '#000000' }}>
-        <div className="min-h-screen text-text-primary" style={{ backgroundColor: '#000000' }}>
+      <body className="font-sf-pro antialiased">
+        <div className="min-h-screen bg-background text-text-primary">
           <Providers>
             {children}
           </Providers>
