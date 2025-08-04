@@ -156,15 +156,19 @@ export default function FloraDistrosPOS() {
       return (
       <>
         <AppWrapper>
-        {/* Main App Container - Positioned within safe areas, independent of Siri border */}
+        {/* Main App Container - Properly positioned for PWA mode */}
         <div className="app-content-container bg-background-primary text-text-primary flex flex-col" style={{ 
           position: 'fixed',
-          top: 'env(safe-area-inset-top, 0px)',
-          left: 'env(safe-area-inset-left, 0px)',
-          right: 'env(safe-area-inset-right, 0px)',
-          bottom: 'env(safe-area-inset-bottom, 0px)',
-          height: 'calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
-          width: 'calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: '100vh',
+          width: '100vw',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingLeft: 'env(safe-area-inset-left, 0px)',
+          paddingRight: 'env(safe-area-inset-right, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           zIndex: 10
         }}>
         {/* Menu Drawer - Positioned within app content area */}

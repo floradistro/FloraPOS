@@ -12,6 +12,7 @@ export const viewport = {
   initialScale: 1,
   themeColor: '#0a0a0a',
   colorScheme: 'dark',
+  viewportFit: 'cover', // Essential for PWA safe areas
 }
 
 export default function RootLayout({
@@ -22,10 +23,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#0a0a0a" />
-
-
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="font-sf-pro antialiased">
         <div className="min-h-screen bg-background text-text-primary">

@@ -352,7 +352,15 @@ export default function OrdersPage() {
   return (
     <AppWrapper>
       <div className="h-screen bg-background-primary text-text-primary flex flex-col relative overflow-hidden" style={{ 
-        paddingTop: 'env(safe-area-inset-top, 44px)'
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)'
       }}>
         {/* Menu Drawer */}
         <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
