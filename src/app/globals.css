@@ -2,75 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for Safe Areas */
-:root {
-  --safe-area-inset-top: env(safe-area-inset-top, 0px);
-  --safe-area-inset-right: env(safe-area-inset-right, 0px);
-  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-inset-left: env(safe-area-inset-left, 0px);
-  
-  /* iPad Pro PWA status bar height */
-  --ios-status-bar-height: 0px;
-}
-
-/* iPad Pro PWA Status Bar - Only in standalone mode */
-@media (display-mode: standalone) {
-  :root {
-    --ios-status-bar-height: 44px;
-  }
-  
-  /* iPad Pro specific status bar adjustments */
-  @media screen and (min-width: 834px) and (min-height: 1194px),
-         screen and (min-width: 1194px) and (min-height: 834px),
-         screen and (min-width: 1024px) and (min-height: 1366px),
-         screen and (min-width: 1366px) and (min-height: 1024px),
-         screen and (min-width: 1668px) and (min-height: 2388px),
-         screen and (min-width: 2388px) and (min-height: 1668px),
-         screen and (min-width: 1668px) and (min-height: 2224px),
-         screen and (min-width: 2224px) and (min-height: 1668px) {
-    :root {
-      --ios-status-bar-height: max(44px, env(safe-area-inset-top, 44px));
-    }
-  }
-}
-
-/* Apply status bar padding to app container */
-@media (display-mode: standalone) {
-  .pwa-status-bar-padding {
-    padding-top: var(--ios-status-bar-height) !important;
-  }
-  
-  .pwa-safe-top {
-    top: var(--ios-status-bar-height) !important;
-  }
-  
-  /* Utility classes for status bar aware positioning */
-  .pwa-mt-status {
-    margin-top: var(--ios-status-bar-height) !important;
-  }
-  
-  .pwa-pt-status {
-    padding-top: var(--ios-status-bar-height) !important;
-  }
-  
-  .pwa-h-status {
-    height: var(--ios-status-bar-height) !important;
-  }
-  
-  .pwa-min-h-status {
-    min-height: var(--ios-status-bar-height) !important;
-  }
-  
-  /* Header positioning accounting for status bar */
-  .pwa-header-fixed {
-    position: fixed !important;
-    top: var(--ios-status-bar-height) !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 40 !important;
-  }
-}
-
 /* DonGraffiti Font */
 @font-face {
   font-family: 'DonGraffiti';
@@ -80,75 +11,761 @@
   font-display: swap;
 }
 
-/* Clean Full Screen PWA Setup */
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  height: 100dvh;
-  width: 100vw;
-  overflow: hidden;
-  background: #000000;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  overscroll-behavior: none;
-  touch-action: pan-x pan-y;
-}
-
-/* iPad Pro Specific Optimizations */
-@supports (-webkit-touch-callout: none) {
+/* iPad PWA Optimizations */
+@supports (display-mode: fullscreen) {
+  /* Remove iOS Safari UI elements */
+  html {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    height: 100%;
+    height: 100vh;
+    height: 100dvh;
+  }
+  
+  /* Prevent pull-to-refresh and overscroll */
   body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
     position: fixed;
     width: 100%;
     height: 100%;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    /* Hide iOS status bar completely */
+    -webkit-app-region: no-drag;
+    padding-top: 0 !important;
+  }
+  
+  /* Main app container should handle scrolling */
+  #__next {
+    height: 100%;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow: hidden;
+    position: relative;
   }
 }
 
-#__next {
-  height: 100vh;
-  height: 100dvh;
-  width: 100vw;
-  overflow: hidden;
+/* Additional iOS status bar hiding for PWA */
+@media (display-mode: fullscreen) or (display-mode: standalone) {
+  /* Force hide status bar area */
+  html, body {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+  
+  /* Override any safe area insets for top */
+  * {
+    --safe-area-inset-top: 0px !important;
+  }
+  
+  /* Aggressive iOS status bar hiding */
+  .status-bar,
+  .status-bar-overlay,
+  .ios-status-bar {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
 }
 
-/* PWA Viewport Container */
-.viewport-container {
-  height: 100vh !important;
-  height: 100dvh !important;
-  width: 100vw !important;
-  padding-top: var(--safe-area-inset-top);
-  padding-bottom: var(--safe-area-inset-bottom);
-  padding-left: var(--safe-area-inset-left);
-  padding-right: var(--safe-area-inset-right);
-  overflow: hidden;
-}
-
-/* iOS PWA Status Bar Optimization */
-@supports (height: 100dvh) {
-  .viewport-container {
+/* Force fullscreen on iOS devices */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific fullscreen */
+  html {
+    height: 100vh !important;
     height: 100dvh !important;
   }
+  
+  body {
+    height: 100vh !important;
+    height: 100dvh !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+  
+  /* Hide any iOS UI elements */
+  body::before,
+  body::after {
+    display: none !important;
+  }
 }
 
-/* Disable iOS bounce effect */
-.no-bounce {
-  overscroll-behavior-y: none;
-  -webkit-overflow-scrolling: touch;
+/* Webkit specific status bar hiding */
+@media screen and (-webkit-min-device-pixel-ratio: 2) {
+  html {
+    -webkit-text-size-adjust: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Force viewport to start at absolute top */
+  body {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+    transform: translateY(0) !important;
+  }
 }
 
-/* Scrollable containers */
-[data-scrollable] {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-}
-
-/* iPad Pro landscape safe areas */
-@media screen and (orientation: landscape) {
+/* PWA Standalone mode optimizations */
+@media (display-mode: standalone) {
+  /* Force true fullscreen - hide iOS status bar completely */
+  html {
+    height: 100vh;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    background: black;
+  }
+  
+  body {
+    /* Prevent iOS gestures and claim full screen */
+    height: 100vh;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+    background: black;
+  }
+  
+  #__next {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    position: relative;
+    background: black;
+  }
+  
+  /* Hide iOS status bar area completely */
   .viewport-container {
-    padding-left: max(var(--safe-area-inset-left), 20px);
-    padding-right: max(var(--safe-area-inset-right), 20px);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100vh;
+    height: 100dvh;
+    background: black;
+    /* Push content up to cover status bar */
+    margin-top: calc(-1 * env(safe-area-inset-top, -20px));
+    padding-top: 0;
+  }
+  
+  /* Ensure header starts at very top */
+  .viewport-container > div:first-child {
+    padding-top: env(safe-area-inset-top, 20px);
+  }
+}
+
+/* Safe area insets for devices with notches/rounded corners */
+@supports (padding: max(0px)) {
+  .safe-area-inset-top {
+    padding-top: max(env(safe-area-inset-top), 0px);
+  }
+  
+  .safe-area-inset-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+  
+  .safe-area-inset-left {
+    padding-left: max(env(safe-area-inset-left), 0px);
+  }
+  
+  .safe-area-inset-right {
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+  
+  .safe-area-insets {
+    padding-top: max(env(safe-area-inset-top), 0px);
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+    padding-left: max(env(safe-area-inset-left), 0px);
+    padding-right: max(env(safe-area-inset-right), 0px);
+  }
+}
+
+/* iPad specific rounded corners and fullscreen */
+@media (max-width: 1024px) and (orientation: landscape) {
+  .viewport-container {
+    border-radius: 24px;
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+@media (max-width: 834px) and (orientation: portrait) {
+  .viewport-container {
+    border-radius: 24px;
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+/* Remove any gaps in PWA mode */
+@media (display-mode: standalone) {
+  .viewport-container {
+    margin: 0;
+    padding: 0;
+    /* Force rounded corners to match device */
+    border-radius: max(24px, env(display-cutout-radius, 24px));
+    overflow: hidden;
+  }
+  
+  /* Ensure no gap above header */
+  .header-nav {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    position: relative;
+    z-index: 10;
+  }
+  
+  /* iPad rounded viewport ring - clean base */
+  .viewport-ring {
+    border-radius: max(24px, env(display-cutout-radius, 24px));
+    z-index: 9999 !important;
+    border: none;
+    outline: none;
+    background: transparent;
+  }
+  
+  /* Force fullscreen behind status bar */
+  html, body {
+    background: black !important;
+  }
+  
+  /* Create black overlay for status bar area */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 44px);
+    background: black;
+    z-index: 9999;
+    pointer-events: none;
+  }
+}
+
+/* VSCode Dark Theme CSS Custom Properties */
+:root {
+  --color-primary-bg: #1E1E1E;
+  --color-secondary-bg: #252526;
+  --color-tertiary-bg: #2D2D30;
+  --color-sidebar-bg: #333333;
+  --color-panel-bg: #3C3C3C;
+  --color-dark-bg: #181818;
+  --color-overlay-bg: #2D2D30;
+  --color-text-primary: #CCCCCC;
+  --color-text-secondary: #969696;
+  --color-text-muted: #6A6A6A;
+  --color-border-light: #3E3E3E;
+  --color-border-default: #454545;
+  --color-border-hover: #5A5A5A;
+  --color-accent: #F14C4C;
+  --color-accent-hover: #FF6B6B;
+  --color-accent-dark: #D32F2F;
+  --cannabis-sage: #87A96B;
+}
+
+@layer base {
+  /* Mobile-First Performance Optimizations */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* PWA Full Screen Support */
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+  }
+  
+  body {
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background-color: var(--color-primary-bg);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+    /* PWA Full Screen Support */
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    /* Hide browser UI on mobile */
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Mobile touch targets */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+    -webkit-touch-action: manipulation;
+  }
+
+  /* Optimize images for mobile */
+  img {
+    content-visibility: auto;
+    contain-intrinsic-size: 400px;
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* VSCode Dark Theme Typography Scales */
+.text-luxury-xs { 
+  font-size: 0.75rem; 
+  letter-spacing: 0.05em; 
+  font-weight: 300; 
+}
+
+.text-luxury-sm { 
+  font-size: 0.875rem; 
+  letter-spacing: 0.025em; 
+  font-weight: 300; 
+}
+
+.text-luxury-base { 
+  font-size: 1rem; 
+  letter-spacing: 0.015em; 
+  font-weight: 300; 
+}
+
+.text-luxury-lg { 
+  font-size: 1.125rem; 
+  letter-spacing: 0.01em; 
+  font-weight: 300; 
+}
+
+.text-luxury-xl { 
+  font-size: 1.25rem; 
+  letter-spacing: 0.005em; 
+  font-weight: 300; 
+}
+
+.text-luxury-2xl { 
+  font-size: 1.5rem; 
+  letter-spacing: 0em; 
+  font-weight: 200; 
+}
+
+.text-luxury-3xl { 
+  font-size: 1.875rem; 
+  letter-spacing: -0.005em; 
+  font-weight: 200; 
+}
+
+.text-luxury-4xl { 
+  font-size: 2.25rem; 
+  letter-spacing: -0.01em; 
+  font-weight: 200; 
+}
+
+/* Luxury Brand Spacing */
+.tracking-luxury-tight { letter-spacing: -0.025em; }
+.tracking-luxury-normal { letter-spacing: 0.015em; }
+.tracking-luxury-wide { letter-spacing: 0.05em; }
+.tracking-luxury-wider { letter-spacing: 0.1em; }
+
+/* Custom scrollbar to match product grid gaps and theme */
+::-webkit-scrollbar {
+  width: 2px; /* Match product grid gap width */
+  height: 0px; /* Disable horizontal scrollbar */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* Invisible track like dividers */
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.6); /* Blue scroll indicator */
+  border-radius: 0px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.8); /* Brighter blue on hover */
+}
+
+/* Completely hide horizontal scrollbars */
+::-webkit-scrollbar:horizontal {
+  display: none;
+}
+
+/* Focus states with subtle red accent */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Utility classes */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gpu-accelerated {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .smooth-transition {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, opacity;
+  }
+
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  .will-change-opacity {
+    will-change: opacity;
+  }
+
+  .will-change-auto {
+    will-change: auto;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  /* Touch targets */
+  button, a, .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Disable hover effects on touch devices */
+  @media (hover: none) {
+    .hover\:scale-105:hover,
+    .hover\:scale-110:hover,
+    .hover\:scale-\[1\.02\]:hover {
+      transform: none !important;
+    }
+  }
+  
+  /* Better tap feedback */
+  button:active, a:active, .clickable:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* Clean body styles for better fixed positioning */
+html, body {
+  position: relative;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  height: 100%;
+  width: 100%;
+}
+
+/* Ensure no horizontal overflow anywhere */
+*, *::before, *::after {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Strict horizontal scroll prevention */
+html {
+  overflow-x: hidden !important;
+}
+
+body {
+  overflow-x: hidden !important;
+  width: 100vw;
+  max-width: 100vw;
+}
+
+/* Prevent any container from causing horizontal scroll */
+.container, main, div, section {
+  overflow-x: hidden;
+}
+
+/* VSCode glass card effect */
+.flora-glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--color-border-default);
+}
+
+.flora-glass:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border-color: var(--color-border-hover);
+}
+
+/* VSCode button styles */
+.flora-btn-primary {
+  background: linear-gradient(135deg, var(--color-secondary-bg) 0%, var(--color-tertiary-bg) 100%);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+  font-weight: 500;
+  letter-spacing: 0.015em;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flora-btn-primary:hover {
+  background: linear-gradient(135deg, var(--color-tertiary-bg) 0%, var(--color-panel-bg) 100%);
+  border-color: var(--color-border-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.flora-btn-secondary {
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
+  border: 1px solid var(--color-accent);
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flora-btn-secondary:hover {
+  background: linear-gradient(135deg, var(--color-accent-hover) 0%, var(--color-accent) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 32px rgba(241, 76, 76, 0.3);
+}
+
+/* PWA Full Screen Styles */
+@media (display-mode: fullscreen) {
+  html, body {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+  }
+  
+  /* Hide any remaining browser UI */
+  .pwa-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+}
+
+/* PWA Standalone Mode */
+@media (display-mode: standalone) {
+  html, body {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+  }
+  
+  /* Adjust for iOS safe areas */
+  .pwa-safe-area {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Mobile viewport adjustments */
+@media screen and (max-width: 768px) {
+  html {
+    /* Prevent zoom on input focus */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  
+  /* Hide address bar on mobile browsers */
+  body {
+    height: 100dvh; /* Dynamic viewport height */
+    min-height: 100dvh;
+  }
+}
+
+/* Prevent pull-to-refresh and horizontal scroll */
+body {
+  overscroll-behavior-y: contain;
+  overscroll-behavior-x: none;
+  touch-action: pan-y; /* Only allow vertical touch panning */
+}
+
+/* Claude-style pixelate animation */
+@keyframes pixelate {
+  0%, 100% {
+    filter: blur(0px) opacity(1) brightness(1);
+    transform: scale(1);
+  }
+  25% {
+    filter: blur(1px) opacity(0.7) brightness(0.9);
+    transform: scale(0.98);
+  }
+  50% {
+    filter: blur(2px) opacity(0.5) brightness(0.8);
+    transform: scale(0.95);
+  }
+  75% {
+    filter: blur(1px) opacity(0.7) brightness(0.9);
+    transform: scale(0.98);
+  }
+}
+
+/* Smooth fade in/out animation for logo */
+@keyframes smoothFade {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.logo-fade-animation {
+  animation: smoothFade 2s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.pixelate-animation {
+  animation: pixelate 2.5s ease-in-out infinite;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Text flash thinking animation for Flora Distro */
+@keyframes textFlash {
+  0%, 85%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+    text-shadow: none;
+  }
+  90% {
+    opacity: 1;
+    filter: brightness(1.5);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+  95% {
+    opacity: 1;
+    filter: brightness(2);
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  }
+}
+
+.flora-distro-text {
+  font-family: 'DonGraffiti', serif;
+  font-size: 2.5rem;
+  color: #CCCCCC;
+  font-weight: normal;
+  text-align: center;
+  margin: 0;
+}
+
+.text-animated {
+  animation: textFlash 2.5s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+
+/* PWA Fullscreen Edge-to-Edge Styles */
+@media (display-mode: fullscreen) {
+  html, body {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow: hidden;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    /* Handle safe areas on devices with notches */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Ensure main container uses full viewport */
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  
+  .h-screen {
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+@media (display-mode: standalone) {
+  html, body {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  
+  .h-screen {
+    height: 100vh;
+    height: 100dvh;
   }
 }
 
