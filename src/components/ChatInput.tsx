@@ -317,7 +317,10 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                                     ✓ {toolName}
                                   </div>
                                 )
-                                i++ // Skip the ✓ line
+                                // Skip the next line if it's just a checkmark
+                                if (nextLine && (nextLine.trim() === '✓' || nextLine.startsWith('✓'))) {
+                                  i++
+                                }
                               } else if (shouldAnimate) {
                                 processedLines.push(
                                   <div key={i} className="text-sm mb-1">
@@ -339,7 +342,10 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                                     ✓ {toolName}
                                   </div>
                                 )
-                                i++ // Skip the ✓ line
+                                // Skip the next line if it's just a checkmark
+                                if (nextLine && (nextLine.trim() === '✓' || nextLine.startsWith('✓'))) {
+                                  i++
+                                }
                               } else if (shouldAnimate) {
                                 processedLines.push(
                                   <div key={i} className="text-sm mb-1">
@@ -382,11 +388,32 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                                 )
                               }
                             } else if (line.includes('completed') || line.includes('complete')) {
+                              const cleanLine = line
+                                .replace('completed', 'complete')
+                                .replace('Adaptive tool complete', 'adaptive tool complete')
+                                .replace('✅', '')  // Remove green emoji
+                                .replace(/^✓\s*/, '')  // Remove existing checkmark at start
+                                .trim()
                               processedLines.push(
                                 <div key={i} className="text-sm mb-1">
-                                  ✓ {line.replace('completed', 'complete').replace('Adaptive tool complete', 'adaptive tool complete')}
+                                  ✓ {cleanLine}
                                 </div>
                               )
+                            } else if (line.startsWith('✅') || (line.includes('✅') && (line.includes('complete') || line.includes('tool')))) {
+                              // Handle lines that start with green emoji or contain completion info with emoji
+                              const cleanLine = line
+                                .replace('✅', '')  // Remove green emoji
+                                .replace(/^✓\s*/, '')  // Remove existing checkmark
+                                .replace('completed', 'complete')
+                                .replace('Adaptive tool complete', 'adaptive tool complete')
+                                .trim()
+                              if (cleanLine) {
+                                processedLines.push(
+                                  <div key={i} className="text-sm mb-1">
+                                    ✓ {cleanLine}
+                                  </div>
+                                )
+                              }
                             } else if (line.startsWith('✓') || line.startsWith('❌')) {
                               // Skip standalone checkmarks since they're handled above
                               continue
