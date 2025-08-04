@@ -25,13 +25,13 @@ interface SiriGlowBorderProps {
 
 // Detect iPad Pro model and return appropriate corner radius
 const getIPadCornerRadius = (): number => {
-  if (typeof window === 'undefined') return 20 // Default for SSR
+  if (typeof window === 'undefined') return 25 // Default for SSR
   
   // Check if we're on an iPad
   const isIPad = /iPad/.test(navigator.userAgent) || 
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   
-  if (!isIPad) return 20 // Default for non-iPad devices
+  if (!isIPad) return 25 // Default for non-iPad devices
   
   // Get screen dimensions to determine iPad model
   const screenWidth = window.screen.width
@@ -39,18 +39,18 @@ const getIPadCornerRadius = (): number => {
   const maxDimension = Math.max(screenWidth, screenHeight)
   const minDimension = Math.min(screenWidth, screenHeight)
   
-  // iPad Pro 12.9" - 2048 x 2732 pixels
+  // iPad Pro 12.9" - 2048 x 2732 pixels (increased radius)
   if (maxDimension >= 2732 && minDimension >= 2048) {
-    return 80
+    return 85
   }
   
-  // iPad Pro 11" - 1668 x 2388 pixels
+  // iPad Pro 11" - 1668 x 2388 pixels (increased radius)
   if (maxDimension >= 2388 && minDimension >= 1668) {
-    return 76
+    return 81
   }
   
   // Other iPad models - use default
-  return 20
+  return 25
 }
 
 export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
@@ -60,7 +60,7 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
   className = ''
 }) => {
   const [mounted, setMounted] = useState(false)
-  const [cornerRadius, setCornerRadius] = useState(20)
+  const [cornerRadius, setCornerRadius] = useState(25)
 
   useEffect(() => {
     setMounted(true)
@@ -82,10 +82,10 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
         className={`siri-border-wrapper ${isLoading ? 'siri-loading' : 'siri-idle'} ${className}`}
         style={{
           position: 'fixed',
-          top: `${thickness/2}px`,
-          left: `${thickness/2}px`,
-          right: `${thickness/2}px`,
-          bottom: `${thickness/2}px`,
+          top: `${thickness}px`,
+          left: `${thickness}px`,
+          right: `${thickness}px`,
+          bottom: `${thickness}px`,
           zIndex,
           pointerEvents: 'none',
           border: `${thickness}px solid currentColor`,
@@ -188,11 +188,10 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
           .siri-border-wrapper {
             filter: blur(0.5px);
             /* Position at absolute screen edges, over system UI */
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            margin: ${thickness/2}px;
+            top: ${thickness}px;
+            left: ${thickness}px;
+            right: ${thickness}px;
+            bottom: ${thickness}px;
           }
         }
 
@@ -200,22 +199,20 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
         @supports (display-mode: fullscreen) or (display-mode: standalone) {
           .siri-border-wrapper {
             /* Absolute screen edge positioning */
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            margin: ${thickness/2}px;
+            top: ${thickness}px;
+            left: ${thickness}px;
+            right: ${thickness}px;
+            bottom: ${thickness}px;
           }
         }
 
         /* Force absolute positioning on iPad regardless of mode */
         @media (hover: none) and (pointer: coarse) and (min-width: 1024px) {
           .siri-border-wrapper {
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            margin: ${thickness/2}px !important;
+            top: ${thickness}px !important;
+            left: ${thickness}px !important;
+            right: ${thickness}px !important;
+            bottom: ${thickness}px !important;
           }
         }
       `}</style>

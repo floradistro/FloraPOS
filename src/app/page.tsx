@@ -163,15 +163,29 @@ export default function FloraDistrosPOS() {
         />
         
           {/* iOS Status Bar Cover */}
-          <div className="fixed top-0 left-0 right-0 h-[44px] bg-black z-[40]" style={{ height: 'env(safe-area-inset-top, 44px)' }} />
+          <div className="fixed top-0 left-0 right-0 h-[44px] bg-black z-[40]" style={{ 
+            height: 'env(safe-area-inset-top, 44px)',
+            paddingTop: '4px',
+            paddingLeft: '4px',
+            paddingRight: '4px'
+          }} />
         <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative" style={{ 
           height: '100dvh', 
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)' 
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingTop: '4px',
+          paddingLeft: '4px',
+          paddingRight: '4px'
         }}>
         {/* Menu Drawer */}
         <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}>
+        }`} style={{
+          marginTop: '4px',
+          marginLeft: '4px',
+          height: 'calc(100vh - 8px)',
+          borderTopLeftRadius: '20px',
+          borderBottomLeftRadius: '20px'
+        }}>
           <div className="px-2 py-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-text-primary">Menu</h2>
@@ -232,8 +246,9 @@ export default function FloraDistrosPOS() {
 
                                                           {/* Header */}
                      <div className="header-nav bg-black border-b border-white/[0.04] px-4 py-1 flex-shrink-0 relative z-30" style={{
-          paddingLeft: 'max(16px, env(safe-area-inset-left))',
-          paddingRight: 'max(16px, env(safe-area-inset-right))'
+          paddingLeft: 'max(20px, env(safe-area-inset-left) + 4px)',
+          paddingRight: 'max(20px, env(safe-area-inset-right) + 4px)',
+          marginTop: '4px'
         }}>
           <div className="flex items-center justify-between gap-2">
             {/* Logo */}
