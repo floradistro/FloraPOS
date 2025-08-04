@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Siri Glow Border Animations */
+@keyframes siriPulse {
+  0%, 100% {
+    opacity: 0.8;
+    filter: hue-rotate(0deg) brightness(1.2);
+  }
+  25% {
+    opacity: 1;
+    filter: hue-rotate(90deg) brightness(1.5);
+  }
+  50% {
+    opacity: 0.9;
+    filter: hue-rotate(180deg) brightness(1.3);
+  }
+  75% {
+    opacity: 1;
+    filter: hue-rotate(270deg) brightness(1.4);
+  }
+}
+
+@keyframes idlePulse {
+  0%, 100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
 /* DonGraffiti Font */
 @font-face {
   font-family: 'DonGraffiti';

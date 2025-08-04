@@ -155,12 +155,6 @@ export default function FloraDistrosPOS() {
 
       return (
       <>
-        {/* Siri Glow Border Effect - Completely independent, outside all wrappers */}
-        <SiriGlowBorder 
-          isLoading={false} // Always idle - completely independent of app state
-          thickness={4}
-        />
-        
         <AppWrapper>
         {/* Main App Container - Positioned within safe areas, independent of Siri border */}
         <div className="app-content-container bg-background-primary text-text-primary flex flex-col" style={{ 
@@ -235,9 +229,6 @@ export default function FloraDistrosPOS() {
 
 
 
-        {/* Header Spacer */}
-        <div className="bg-black" style={{ height: '18px' }}></div>
-        
         {/* Header */}
         <div className="header-nav bg-black border-b border-white/[0.04] px-4 py-1 flex-shrink-0 relative z-30">
           <div className="flex items-center justify-between gap-2">
@@ -508,6 +499,9 @@ export default function FloraDistrosPOS() {
           isOpen={isSettingsOpen} 
           onClose={() => setIsSettingsOpen(false)} 
         />
+
+        {/* Siri Glow Border */}
+        <SiriGlowBorder isLoading={isProductsLoading || isCheckingOut} />
       </div>
     </AppWrapper>
     </>
