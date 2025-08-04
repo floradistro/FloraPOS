@@ -39,8 +39,8 @@ export default function PWATestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-8 viewport-container">
-      <div className="max-w-4xl mx-auto space-y-8" data-scrollable>
+    <div className="min-h-screen bg-black text-white viewport-container">
+      <div className="max-w-4xl mx-auto space-y-8 p-8" data-scrollable>
         <h1 className="text-3xl font-bold mb-8">PWA Test Page</h1>
 
         {/* PWA Status */}
@@ -165,7 +165,32 @@ export default function PWATestPage() {
               <div>--safe-area-inset-left: {typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--safe-area-inset-left') || '0px' : '0px'}</div>
             </code>
           </div>
+          
+          {/* Status Bar Height Demo */}
+          <div className="bg-gray-800 rounded p-4 mt-4">
+            <p className="text-sm text-gray-400 mb-2">PWA Status Bar:</p>
+            <code className="text-xs block space-y-1">
+              <div>--ios-status-bar-height: {typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--ios-status-bar-height') || '0px' : '0px'}</div>
+              <div>PWA Mode: {pwa.isInstalled ? 'Yes' : 'No'}</div>
+              <div>Display Mode: {typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</div>
+            </code>
+          </div>
         </section>
+
+        {/* Status Bar Visual Demo */}
+        {pwa.isInstalled && (
+          <section className="bg-gray-900 rounded-lg p-6 space-y-4">
+            <h2 className="text-xl font-semibold mb-4">Status Bar Visual Test</h2>
+            <div 
+              className="bg-red-500/20 border-2 border-red-500 rounded p-4 text-center"
+              style={{ height: 'var(--ios-status-bar-height, 44px)' }}
+            >
+              <span className="text-red-400 text-sm">
+                This box should match the status bar height: {typeof window !== 'undefined' ? getComputedStyle(document.documentElement).getPropertyValue('--ios-status-bar-height') || '0px' : '0px'}
+              </span>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   )

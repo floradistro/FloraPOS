@@ -8,6 +8,67 @@
   --safe-area-inset-right: env(safe-area-inset-right, 0px);
   --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  
+  /* iPad Pro PWA status bar height */
+  --ios-status-bar-height: 0px;
+}
+
+/* iPad Pro PWA Status Bar - Only in standalone mode */
+@media (display-mode: standalone) {
+  :root {
+    --ios-status-bar-height: 44px;
+  }
+  
+  /* iPad Pro specific status bar adjustments */
+  @media screen and (min-width: 834px) and (min-height: 1194px),
+         screen and (min-width: 1194px) and (min-height: 834px),
+         screen and (min-width: 1024px) and (min-height: 1366px),
+         screen and (min-width: 1366px) and (min-height: 1024px),
+         screen and (min-width: 1668px) and (min-height: 2388px),
+         screen and (min-width: 2388px) and (min-height: 1668px),
+         screen and (min-width: 1668px) and (min-height: 2224px),
+         screen and (min-width: 2224px) and (min-height: 1668px) {
+    :root {
+      --ios-status-bar-height: max(44px, env(safe-area-inset-top, 44px));
+    }
+  }
+}
+
+/* Apply status bar padding to app container */
+@media (display-mode: standalone) {
+  .pwa-status-bar-padding {
+    padding-top: var(--ios-status-bar-height) !important;
+  }
+  
+  .pwa-safe-top {
+    top: var(--ios-status-bar-height) !important;
+  }
+  
+  /* Utility classes for status bar aware positioning */
+  .pwa-mt-status {
+    margin-top: var(--ios-status-bar-height) !important;
+  }
+  
+  .pwa-pt-status {
+    padding-top: var(--ios-status-bar-height) !important;
+  }
+  
+  .pwa-h-status {
+    height: var(--ios-status-bar-height) !important;
+  }
+  
+  .pwa-min-h-status {
+    min-height: var(--ios-status-bar-height) !important;
+  }
+  
+  /* Header positioning accounting for status bar */
+  .pwa-header-fixed {
+    position: fixed !important;
+    top: var(--ios-status-bar-height) !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 40 !important;
+  }
 }
 
 /* DonGraffiti Font */

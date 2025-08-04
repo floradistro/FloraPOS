@@ -39,8 +39,9 @@ export default function PWAInstaller() {
       {isIPadPro && isInstalled && (
         <button
           onClick={toggleFullscreen}
-          className="fixed top-2 left-2 z-50 bg-black/20 backdrop-blur-sm hover:bg-black/30 text-white/90 p-2 rounded-lg transition-all duration-200"
+          className="fixed top-2 left-2 z-50 bg-black/20 backdrop-blur-sm hover:bg-black/30 text-white/90 p-2 rounded-lg transition-all duration-200 pwa-safe-top"
           aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          style={{ top: 'calc(var(--ios-status-bar-height, 0px) + 8px)' }}
         >
           {isFullscreen ? (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
