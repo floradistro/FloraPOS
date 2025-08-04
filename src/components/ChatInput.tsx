@@ -286,26 +286,48 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                           const lines = msg.content.split('\n')
                           const processedLines = []
                           
+                          // Find the last (most recent) action line to determine what should be animating
+                          let lastActionIndex = -1
+                          for (let i = lines.length - 1; i >= 0; i--) {
+                            const line = lines[i]
+                            if (line.startsWith('Using tool:') || line.startsWith('Trying ') || 
+                                line.startsWith('Analyzing results') || line.startsWith('Reviewing results') ||
+                                (line.startsWith('Executing') && line.includes('adaptive'))) {
+                              lastActionIndex = i
+                              break
+                            }
+                          }
+                          
                           for (let i = 0; i < lines.length; i++) {
                             const line = lines[i]
                             const nextLine = lines[i + 1]
                             
-                            // Check if this tool line is completed (next line has ✓)
-                            const isCompleted = nextLine && (nextLine.trim() === '✓' || nextLine.startsWith('✓'))
+                            // Check if this tool line is completed (next line has ✓ or there's a newer action)
+                            const isCompleted = (nextLine && (nextLine.trim() === '✓' || nextLine.startsWith('✓'))) || 
+                                               (i < lastActionIndex && !msg.isStreaming)
+                            
+                            // Only animate if this is the current/last action and message is still streaming
+                            const shouldAnimate = i === lastActionIndex && msg.isStreaming
                             
                             if (line.startsWith('Using tool:')) {
                               const toolName = line.replace('Using tool: ', '').replace('...', '')
                               if (isCompleted) {
                                 processedLines.push(
-                                  <div key={i} className="text-green-400 text-sm mb-1">
+                                  <div key={i} className="text-sm mb-1">
                                     ✓ {toolName}
                                   </div>
                                 )
                                 i++ // Skip the ✓ line
+                              } else if (shouldAnimate) {
+                                processedLines.push(
+                                  <div key={i} className="text-sm mb-1">
+                                    <span className="animate-dots">{toolName}</span>
+                                  </div>
+                                )
                               } else {
                                 processedLines.push(
-                                  <div key={i} className="text-blue-400 text-sm mb-1">
-                                    <span className="animate-dots">{toolName}</span>
+                                  <div key={i} className="text-sm mb-1">
+                                    ✓ {toolName}
                                   </div>
                                 )
                               }
@@ -313,34 +335,56 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                               const toolName = line.replace('Trying ', '').replace('...', '')
                               if (isCompleted) {
                                 processedLines.push(
-                                  <div key={i} className="text-green-400 text-sm mb-1">
+                                  <div key={i} className="text-sm mb-1">
                                     ✓ {toolName}
                                   </div>
                                 )
                                 i++ // Skip the ✓ line
+                              } else if (shouldAnimate) {
+                                processedLines.push(
+                                  <div key={i} className="text-sm mb-1">
+                                    <span className="animate-dots">trying {toolName}</span>
+                                  </div>
+                                )
                               } else {
                                 processedLines.push(
-                                  <div key={i} className="text-blue-400 text-sm mb-1">
-                                    <span className="animate-dots">trying {toolName}</span>
+                                  <div key={i} className="text-sm mb-1">
+                                    ✓ {toolName}
                                   </div>
                                 )
                               }
                             } else if (line.startsWith('Analyzing results') || line.startsWith('Reviewing results')) {
-                              processedLines.push(
-                                <div key={i} className="text-gray-400 text-sm mb-1">
-                                  <span className="animate-dots">analyzing results</span>
-                                </div>
-                              )
+                              if (shouldAnimate) {
+                                processedLines.push(
+                                  <div key={i} className="text-sm mb-1">
+                                    <span className="animate-dots">analyzing results</span>
+                                  </div>
+                                )
+                              } else {
+                                processedLines.push(
+                                  <div key={i} className="text-sm mb-1">
+                                    ✓ analyzing results
+                                  </div>
+                                )
+                              }
                             } else if (line.startsWith('Executing') && line.includes('adaptive')) {
+                              if (shouldAnimate) {
+                                processedLines.push(
+                                  <div key={i} className="text-sm mb-1">
+                                    <span className="animate-dots">adapting strategy</span>
+                                  </div>
+                                )
+                              } else {
+                                processedLines.push(
+                                  <div key={i} className="text-sm mb-1">
+                                    ✓ adapting strategy
+                                  </div>
+                                )
+                              }
+                            } else if (line.includes('completed') || line.includes('complete')) {
                               processedLines.push(
-                                <div key={i} className="text-yellow-400 text-sm mb-1">
-                                  <span className="animate-dots">adapting strategy</span>
-                                </div>
-                              )
-                            } else if (line.includes('completed')) {
-                              processedLines.push(
-                                <div key={i} className="text-green-400 text-sm mb-1">
-                                  ✓ {line.replace('completed', 'complete')}
+                                <div key={i} className="text-sm mb-1">
+                                  ✓ {line.replace('completed', 'complete').replace('Adaptive tool complete', 'adaptive tool complete')}
                                 </div>
                               )
                             } else if (line.startsWith('✓') || line.startsWith('❌')) {

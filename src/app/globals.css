@@ -29,7 +29,7 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-/* VSCode-style animated dots for loading states */
+/* VSCode-style animated dots for loading states only */
 @keyframes dots {
   0% { content: ''; }
   25% { content: '.'; }
@@ -38,6 +38,7 @@
   100% { content: ''; }
 }
 
+/* Animate loading states */
 .animate-dots::after {
   content: '';
   animation: dots 1.5s ease-in-out infinite;
