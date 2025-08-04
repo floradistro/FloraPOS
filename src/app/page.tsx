@@ -156,7 +156,7 @@ export default function FloraDistrosPOS() {
       return (
       <>
         <AppWrapper>
-        {/* Main App Container - Full screen PWA mode */}
+        {/* Main App Container - Black status bar, no bottom gap */}
         <div className="app-content-container bg-background-primary text-text-primary flex flex-col" style={{
           position: 'fixed',
           top: 0,
@@ -165,12 +165,13 @@ export default function FloraDistrosPOS() {
           bottom: 0,
           height: '100vh',
           width: '100vw',
-          paddingTop: 'env(safe-area-inset-top, 20px)',
+          paddingTop: 'env(safe-area-inset-top, 44px)', // Black status bar height
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           paddingLeft: 'env(safe-area-inset-left, 0px)',
           paddingRight: 'env(safe-area-inset-right, 0px)',
           boxSizing: 'border-box',
-          zIndex: 1 // Below Siri ring
+          zIndex: 1, // Below Siri ring
+          overflow: 'hidden' // Prevent any overflow causing gaps
         }}>
         {/* Menu Drawer - Positioned within app content area */}
         <div className={`absolute left-0 top-0 bottom-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${

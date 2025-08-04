@@ -71,21 +71,31 @@
   }
 }
 
-/* Full screen PWA mode - App takes entire viewport */
+/* Full screen PWA mode - Black status bar, no bottom gap */
 @media (display-mode: standalone) {
   html, body {
-    height: 100vh;
-    height: 100dvh;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    width: 100vw !important;
     overflow: hidden;
+    background: black;
   }
   
-  /* App content in full screen mode */
+  /* App content in PWA mode with black status bar */
   .app-content-container {
-    /* In PWA mode, content can use full viewport since Siri ring provides the visual boundary */
-    padding-top: env(safe-area-inset-top, 20px) !important;
+    /* Black status bar means content stays under it */
+    padding-top: env(safe-area-inset-top, 44px) !important; /* iOS status bar height */
     padding-bottom: env(safe-area-inset-bottom, 0px) !important;
     padding-left: env(safe-area-inset-left, 0px) !important;
     padding-right: env(safe-area-inset-right, 0px) !important;
+    /* Ensure no bottom gap */
+    height: 100vh !important;
+    height: 100dvh !important;
   }
 }
 
@@ -383,9 +393,13 @@ textarea:focus-visible {
   }
 }
 
-/* Clean body styles for full screen PWA mode */
+/* Clean body styles for full screen PWA mode - no bottom gap */
 html, body {
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   overflow-x: hidden; /* Prevent horizontal scroll */
   height: 100vh;
   height: 100dvh; /* Dynamic viewport height */
