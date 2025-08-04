@@ -146,10 +146,6 @@ export function OrdersView({
       {/* Header */}
       <div className="px-4 py-4 border-b border-white/[0.04]">
         <div className="flex items-center gap-3">
-          <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-            <path fillRule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6.5a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 016 11.5V5z" clipRule="evenodd" />
-          </svg>
           <h2 className="text-lg font-semibold text-text-primary">Orders Management</h2>
           <span className="text-sm text-text-secondary">({filteredOrders.length} orders)</span>
         </div>
