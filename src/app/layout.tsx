@@ -32,7 +32,7 @@ export default function RootLayout({
         <meta httpEquiv="Expires" content="0" />
         {/* Enable full screen PWA mode with black status bar */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Flora POS" />
       </head>
