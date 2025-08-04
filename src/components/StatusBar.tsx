@@ -40,8 +40,7 @@ export function StatusBar({ store, user, cartItemCount = 0, productCount }: Stat
     <div className="bg-black px-4 py-2 flex items-center justify-between text-sm text-text-secondary flex-shrink-0" style={{
       paddingLeft: 'max(20px, env(safe-area-inset-left) + 4px)',
       paddingRight: 'max(20px, env(safe-area-inset-right) + 4px)',
-      paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4px)',
-      marginBottom: '4px'
+      paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 4px)'
     }}>
       {/* Left Section */}
       <div className="flex items-center space-x-3">
