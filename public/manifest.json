@@ -1,39 +1,61 @@
 {
-  "name": "POS System",
-  "short_name": "POS",
-  "description": "Point of Sale System - Real Cannabis Anywhere",
+  "name": "POS System - Flora",
+  "short_name": "Flora POS",
+  "description": "Point of Sale System - Optimized for iPad Pro",
   "start_url": "/",
+  "scope": "/",
   "display": "fullscreen",
   "orientation": "any",
-  "theme_color": "#1a1a1a",
-  "background_color": "#1a1a1a",
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a",
+  "categories": ["business", "productivity"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "display_override": ["fullscreen", "standalone"],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "edge_side_panel": {
-    "preferred_width": 400
+    "preferred_width": 0
+  },
+  "viewport": {
+    "width": "device-width",
+    "initial_scale": 1,
+    "minimum_scale": 1,
+    "maximum_scale": 1,
+    "user_scalable": "no",
+    "viewport_fit": "cover"
+  },
+  "apple": {
+    "capable": "yes",
+    "status_bar_style": "black-translucent",
+    "title": "Flora POS"
   },
   "icons": [
     {
       "src": "/logo.png",
-      "sizes": "48x48",
+      "sizes": "120x120",
       "type": "image/png",
       "purpose": "any"
     },
     {
       "src": "/logo.png",
-      "sizes": "72x72",
+      "sizes": "152x152",
       "type": "image/png",
       "purpose": "any"
     },
     {
       "src": "/logo.png",
-      "sizes": "96x96",
+      "sizes": "167x167",
       "type": "image/png",
       "purpose": "any"
     },
     {
       "src": "/logo.png",
-      "sizes": "144x144",
+      "sizes": "180x180",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/logo.png",
@@ -46,38 +68,37 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    }
-  ],
-  "categories": ["business", "productivity", "utilities"],
-  "scope": "/",
-  "lang": "en-US",
-  "dir": "ltr",
-  "prefer_related_applications": false,
-  "display_override": ["fullscreen", "standalone", "minimal-ui"],
-  "shortcuts": [
-    {
-      "name": "Products",
-      "short_name": "Products",
-      "description": "View all products",
-      "url": "/?view=products",
-      "icons": [
-        {
-          "src": "/logo.png",
-          "sizes": "96x96"
-        }
-      ]
     },
     {
-      "name": "Customers",
-      "short_name": "Customers",
-      "description": "Manage customers",
-      "url": "/?view=customers",
-      "icons": [
-        {
-          "src": "/logo.png",
-          "sizes": "96x96"
-        }
-      ]
+      "src": "/logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo.png",
+      "sizes": "2388x1668",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Flora POS on iPad Pro"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Sale",
+      "short_name": "Sale",
+      "description": "Start a new sale",
+      "url": "/?action=new-sale",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Inventory",
+      "short_name": "Stock",
+      "description": "Check inventory",
+      "url": "/?view=inventory",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
     }
   ]
 } 

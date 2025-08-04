@@ -1,9 +1,11 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { LoginForm } from '../components/LoginForm'
 import PWAInstaller from '../components/PWAInstaller'
 import { Loader2 } from 'lucide-react'
+import { pwaUtils } from '@/lib/pwa-utils'
 
 interface AppWrapperProps {
   children: React.ReactNode
@@ -11,6 +13,13 @@ interface AppWrapperProps {
 
 export function AppWrapper({ children }: AppWrapperProps) {
   const { isAuthenticated, isLoading } = useAuth()
+
+  useEffect(() => {
+    // Initialize iPad Pro optimizations when app loads
+    if (typeof window !== 'undefined') {
+      pwaUtils.initializeIPadOptimizations()
+    }
+  }, [])
 
   if (isLoading) {
     return (
