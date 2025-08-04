@@ -11,6 +11,7 @@ import { OrdersView } from '../components/OrdersView'
 import { StatusBar } from '../components/StatusBar'
 import SettingsPanel from '../components/SettingsPanel'
 import SiriGlowBorder from '../components/SiriGlowBorder'
+import BottomDrawer from '../components/BottomDrawer'
 import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
 import { FloraProduct, floraAPI, FloraCustomer } from '../lib/woocommerce'
@@ -38,6 +39,7 @@ export default function FloraDistrosPOS() {
   const [isOrdersViewOpen, setIsOrdersViewOpen] = useState(false)
   const [isListView, setIsListView] = useState(false)
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const [isBottomDrawerOpen, setIsBottomDrawerOpen] = useState(false)
 
   // Orders filter states
   const [orderStatusFilter, setOrderStatusFilter] = useState('all')
@@ -609,6 +611,12 @@ export default function FloraDistrosPOS() {
 
         {/* Siri Glow Border - Locks to viewport edge OVER iOS status bar */}
         <SiriGlowBorder isLoading={isProductsLoading || isCheckingOut} />
+
+        {/* Bottom Drawer */}
+        <BottomDrawer 
+          isOpen={isBottomDrawerOpen} 
+          onToggle={() => setIsBottomDrawerOpen(!isBottomDrawerOpen)}
+        />
       </div>
     </AppWrapper>
     </>
