@@ -70,8 +70,8 @@ export default function SiriGlowDemo() {
         </div>
       </div>
 
-      {/* Siri Glow Border */}
-      <SiriGlowBorder isLoading={isLoading} />
+      {/* Siri Glow Border - Temporarily disabled */}
+      {/* <SiriGlowBorder isLoading={isLoading} /> */}
     </div>
   )
 }

@@ -4,7 +4,8 @@ import { Providers } from './providers'
 export const metadata = {
   title: 'Flora POS',
   description: 'Point of Sale System - Optimized for iPad Pro',
-
+  // Force cache refresh
+  version: '1.0.1',
 }
 
 export const viewport = {
@@ -25,6 +26,10 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#0a0a0a" />
+        {/* Force cache refresh */}
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
         {/* PWA mode disabled to show iOS system UI */}
         {/* <meta name="apple-mobile-web-app-capable" content="yes" /> */}
         {/* <meta name="apple-mobile-web-app-status-bar-style" content="default" /> */}
