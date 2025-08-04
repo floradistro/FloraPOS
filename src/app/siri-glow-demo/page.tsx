@@ -70,8 +70,8 @@ export default function SiriGlowDemo() {
         </div>
       </div>
 
-      {/* Siri Glow Border - Temporarily disabled */}
-      {/* <SiriGlowBorder isLoading={isLoading} /> */}
+      {/* Siri Glow Border - Locks to viewport edge OVER iOS status bar */}
+      <SiriGlowBorder isLoading={isLoading} />
     </div>
   )
 }

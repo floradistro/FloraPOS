@@ -9,7 +9,7 @@ import { Cart } from '../components/Cart'
 import { AppWrapper } from '../components/AppWrapper'
 import { StatusBar } from '../components/StatusBar'
 import SettingsPanel from '../components/SettingsPanel'
-// import SiriGlowBorder from '../components/SiriGlowBorder' // Temporarily disabled
+import SiriGlowBorder from '../components/SiriGlowBorder'
 import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
 import { FloraProduct, floraAPI, FloraCustomer } from '../lib/woocommerce'
@@ -156,13 +156,21 @@ export default function FloraDistrosPOS() {
       return (
       <>
         <AppWrapper>
-        {/* Main App Container - Respects iOS safe areas */}
-        <div className="app-content-container bg-background-primary text-text-primary flex flex-col h-screen w-screen" style={{
-          paddingTop: 'env(safe-area-inset-top, 0px)',
+        {/* Main App Container - Full screen PWA mode */}
+        <div className="app-content-container bg-background-primary text-text-primary flex flex-col" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: '100vh',
+          width: '100vw',
+          paddingTop: 'env(safe-area-inset-top, 20px)',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           paddingLeft: 'env(safe-area-inset-left, 0px)',
           paddingRight: 'env(safe-area-inset-right, 0px)',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          zIndex: 1 // Below Siri ring
         }}>
         {/* Menu Drawer - Positioned within app content area */}
         <div className={`absolute left-0 top-0 bottom-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
@@ -497,8 +505,8 @@ export default function FloraDistrosPOS() {
           onClose={() => setIsSettingsOpen(false)} 
         />
 
-        {/* Siri Glow Border - Temporarily disabled as it forces content within viewport bounds */}
-        {/* <SiriGlowBorder isLoading={isProductsLoading || isCheckingOut} /> */}
+        {/* Siri Glow Border - Locks to viewport edge OVER iOS status bar */}
+        <SiriGlowBorder isLoading={isProductsLoading || isCheckingOut} />
       </div>
     </AppWrapper>
     </>

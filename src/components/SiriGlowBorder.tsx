@@ -16,25 +16,28 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
       className={`siri-border ${isLoading ? 'active' : 'idle'} ${className}`}
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 9999,
+        top: '2px',
+        left: '2px',
+        right: '2px', 
+        bottom: '2px',
+        zIndex: 10000, // Above everything, including status bar
         pointerEvents: 'none',
         border: '3px solid transparent',
-        borderRadius: '20px',
-        margin: '2px',
+        borderRadius: '28px', // iPad Pro corner radius
         background: isLoading 
-          ? 'linear-gradient(45deg, #007AFF, #5856D6, #AF52DE, #FF2D55, #5AC8FA) border-box'
-          : 'rgba(255, 255, 255, 0.2) border-box',
+          ? 'linear-gradient(45deg, #007AFF, #5856D6, #AF52DE, #FF2D55, #5AC8FA, #34C759) border-box'
+          : 'rgba(255, 255, 255, 0.15) border-box',
         WebkitMask: 'linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)',
-        WebkitMaskComposite: 'subtract',
+        WebkitMaskComposite: 'xor',
         mask: 'linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)',
-        maskComposite: 'subtract',
+        maskComposite: 'exclude',
         animation: isLoading 
-          ? 'siriPulse 2s ease-in-out infinite' 
-          : 'idlePulse 4s ease-in-out infinite',
+          ? 'siriGlow 3s ease-in-out infinite' 
+          : 'idleGlow 6s ease-in-out infinite',
+        // Ensure it renders over status bar but within viewport
+        transform: 'translateZ(0)',
+        willChange: 'transform, opacity',
+        boxSizing: 'border-box',
       }}
     />
   )

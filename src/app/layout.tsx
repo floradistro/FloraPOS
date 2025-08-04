@@ -30,10 +30,11 @@ export default function RootLayout({
         <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
-        {/* PWA mode disabled to show iOS system UI */}
-        {/* <meta name="apple-mobile-web-app-capable" content="yes" /> */}
-        {/* <meta name="apple-mobile-web-app-status-bar-style" content="default" /> */}
-        {/* <meta name="mobile-web-app-capable" content="yes" /> */}
+        {/* Enable full screen PWA mode */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Flora POS" />
       </head>
       <body className="font-sf-pro antialiased">
         <div className="min-h-screen bg-background text-text-primary">

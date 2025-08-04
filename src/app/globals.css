@@ -2,32 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Siri Glow Border Animations */
-@keyframes siriPulse {
+/* Siri Glow Border Animations - Locks to viewport edge OVER status bar */
+@keyframes siriGlow {
   0%, 100% {
-    opacity: 0.8;
-    filter: hue-rotate(0deg) brightness(1.2);
+    opacity: 0.9;
+    filter: hue-rotate(0deg) brightness(1.3) saturate(1.5);
+    transform: translateZ(0) scale(1);
   }
   25% {
     opacity: 1;
-    filter: hue-rotate(90deg) brightness(1.5);
+    filter: hue-rotate(90deg) brightness(1.6) saturate(1.8);
+    transform: translateZ(0) scale(1.002);
   }
   50% {
-    opacity: 0.9;
-    filter: hue-rotate(180deg) brightness(1.3);
+    opacity: 0.95;
+    filter: hue-rotate(180deg) brightness(1.4) saturate(1.6);
+    transform: translateZ(0) scale(1.001);
   }
   75% {
     opacity: 1;
-    filter: hue-rotate(270deg) brightness(1.4);
+    filter: hue-rotate(270deg) brightness(1.5) saturate(1.7);
+    transform: translateZ(0) scale(1.002);
   }
 }
 
-@keyframes idlePulse {
+@keyframes idleGlow {
   0%, 100% {
-    opacity: 0.2;
+    opacity: 0.15;
+    transform: translateZ(0) scale(1);
   }
   50% {
-    opacity: 0.4;
+    opacity: 0.25;
+    transform: translateZ(0) scale(1.001);
   }
 }
 
@@ -65,7 +71,23 @@
   }
 }
 
-/* PWA mode disabled - app runs in Safari with system UI visible */
+/* Full screen PWA mode - App takes entire viewport */
+@media (display-mode: standalone) {
+  html, body {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  
+  /* App content in full screen mode */
+  .app-content-container {
+    /* In PWA mode, content can use full viewport since Siri ring provides the visual boundary */
+    padding-top: env(safe-area-inset-top, 20px) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    padding-left: env(safe-area-inset-left, 0px) !important;
+    padding-right: env(safe-area-inset-right, 0px) !important;
+  }
+}
 
 /* Webkit specific optimizations */
 @media screen and (-webkit-min-device-pixel-ratio: 2) {
@@ -111,14 +133,17 @@
   }
 }
 
-/* App container safe area handling */
+/* App container - Content stays UNDER status bar */
 .app-content-container {
-  /* Always respect safe areas */
-  padding-top: env(safe-area-inset-top, 0px) !important;
+  /* Content respects safe areas and stays under status bar */
+  padding-top: env(safe-area-inset-top, 44px) !important; /* iOS status bar height */
   padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   padding-left: env(safe-area-inset-left, 0px) !important;
   padding-right: env(safe-area-inset-right, 0px) !important;
   box-sizing: border-box;
+  /* Ensure content is below Siri ring */
+  position: relative;
+  z-index: 1;
 }
 
 /* iPad specific styling */
@@ -358,16 +383,16 @@ textarea:focus-visible {
   }
 }
 
-/* Clean body styles with proper safe area handling */
+/* Clean body styles for full screen PWA mode */
 html, body {
   position: relative;
   overflow-x: hidden; /* Prevent horizontal scroll */
-  height: 100%;
-  width: 100%;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height */
+  width: 100vw;
   margin: 0;
   padding: 0;
-  /* Critical: Respect iOS safe areas to prevent status bar overlap */
-  padding-top: env(safe-area-inset-top);
+  /* Full screen PWA - no padding, Siri ring handles the border */
   box-sizing: border-box;
   background: black;
 }
