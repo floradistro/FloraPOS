@@ -54,9 +54,9 @@ const getIPadCornerRadius = (): number => {
 }
 
 export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
-  isLoading,
+  isLoading = false, // Default to idle state
   thickness = 3,
-  zIndex = 9999,
+  zIndex = 9999, // Ignored - always uses fixed z-index
   className = ''
 }) => {
   const [mounted, setMounted] = useState(false)
@@ -82,15 +82,19 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
         className={`siri-border-wrapper ${isLoading ? 'siri-loading' : 'siri-idle'} ${className}`}
         style={{
           position: 'fixed',
-          top: `${thickness/2}px`,
-          left: `${thickness/2}px`,
-          right: `${thickness/2}px`,
-          bottom: `${thickness/2}px`,
-          zIndex,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 9999, // Fixed z-index, independent of props
           pointerEvents: 'none',
           border: `${thickness}px solid currentColor`,
           borderRadius: `${cornerRadius}px`,
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          margin: `${thickness/2}px`,
+          // Force absolute viewport positioning, ignore all other positioning
+          transform: 'translateZ(0)', // Force GPU layer
+          willChange: 'transform'
         }}
       />
 
@@ -196,17 +200,19 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
           }
         }
 
-        /* Absolute positioning for all PWA modes - True viewport edge */
-        @supports (display-mode: fullscreen) or (display-mode: standalone) {
-          .siri-border-wrapper {
-            /* Absolute screen edge positioning - independent of app content */
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            margin: ${thickness/2}px;
-          }
+        /* Absolute positioning for all modes - Completely independent */
+        .siri-border-wrapper {
+          /* Force absolute screen edge positioning regardless of context */
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          margin: ${thickness/2}px !important;
+          z-index: 9999 !important;
+          /* Completely ignore parent positioning */
+          transform: translateZ(0) !important;
+          will-change: transform !important;
         }
 
         /* Force absolute positioning on iPad regardless of mode */

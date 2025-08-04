@@ -154,14 +154,14 @@ export default function FloraDistrosPOS() {
   }
 
       return (
-      <AppWrapper>
-        {/* Siri Glow Border Effect - True viewport edge, independent positioning */}
+      <>
+        {/* Siri Glow Border Effect - Completely independent, outside all wrappers */}
         <SiriGlowBorder 
-          isLoading={isProductsLoading || isCheckingOut} 
+          isLoading={false} // Always idle - completely independent of app state
           thickness={4}
-          zIndex={100}
         />
         
+        <AppWrapper>
         {/* Main App Container - Positioned within safe areas, independent of Siri border */}
         <div className="app-content-container bg-background-primary text-text-primary flex flex-col" style={{ 
           position: 'fixed',
@@ -507,5 +507,6 @@ export default function FloraDistrosPOS() {
         />
       </div>
     </AppWrapper>
+    </>
   )
 } 
