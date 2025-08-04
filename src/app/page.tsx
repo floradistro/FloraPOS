@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
 import { FloraProduct, floraAPI, FloraCustomer } from '../lib/woocommerce'
 import { Customer } from '../types/auth'
+import { autoSetupScrollHandling, globalScrollUnlock } from '../utils/scrollUtils'
 
 interface CartItem extends FloraProduct {
   selectedVariation: string
@@ -53,6 +54,24 @@ export default function FloraDistrosPOS() {
       syncWithStore(store.id)
     }
   }, [store?.id, syncWithStore])
+
+  // Setup global scroll handling for iPad
+  useEffect(() => {
+    // Setup scroll handling for all scrollable containers
+    autoSetupScrollHandling()
+    
+    // Add global touch handler to unlock scroll if it gets stuck
+    const handleGlobalTouch = () => {
+      globalScrollUnlock()
+    }
+    
+    // Add emergency scroll unlock on any touch
+    document.addEventListener('touchstart', handleGlobalTouch, { passive: true })
+    
+    return () => {
+      document.removeEventListener('touchstart', handleGlobalTouch)
+    }
+  }, [])
 
   // Fetch customers data
   const { data: customers = [], isLoading: customersLoading } = useQuery({
@@ -450,7 +469,7 @@ export default function FloraDistrosPOS() {
                 </div>
               </div>
               
-              <div className="overflow-y-auto flex-1">
+              <div className="overflow-y-auto flex-1 scrollable-container">
                 {customersLoading ? (
                   <div className="flex items-center justify-center p-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
@@ -538,7 +557,7 @@ export default function FloraDistrosPOS() {
           )}
 
           {/* Products Grid / Orders View */}
-          <div className={`px-0 pb-0 relative bg-black ${
+          <div className={`px-0 pb-0 relative bg-black scrollable-container ${
             isCustomerViewOpen ? '' : 'flex-1'
           } ${
             isListView ? 'overflow-hidden' : 'overflow-y-auto'

@@ -1,12 +1,13 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { floraAPI, FloraProduct } from '../lib/woocommerce'
 import { ProductCard } from './ProductCard'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { findLinkedPrerollProducts, isVirtualPrerollProduct } from '../lib/virtual-product-helpers'
+import { setupTouchScrolling, unlockScroll } from '../utils/scrollUtils'
 import Image from 'next/image'
 import SiriGlowBorder from './SiriGlowBorder'
 
@@ -23,6 +24,7 @@ interface ProductGridProps {
 export function ProductGrid({ category, searchQuery, onAddToCart, onProductCountChange, onLoadingChange, isCustomerViewOpen = false, isListView = false }: ProductGridProps) {
   const { store } = useAuth()
   const [globalSelectedProduct, setGlobalSelectedProduct] = useState<{ productId: number; variation: string } | null>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
 
   // Get preloaded products from cache
   const { data: cachedProductsByCategory, isLoading, error } = useQuery<{
@@ -84,6 +86,20 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
       onLoadingChange(!isDataAvailable)
     }
   }, [isDataAvailable, onLoadingChange])
+
+  // Setup iPad scroll handling
+  useEffect(() => {
+    const gridElement = gridRef.current
+    if (!gridElement) return
+
+    // Setup touch scrolling for iPad
+    const cleanup = setupTouchScrolling(gridElement)
+    
+    // Initial scroll unlock
+    unlockScroll(gridElement)
+    
+    return cleanup
+  }, [])
 
   if (!store?.id) {
     return (
@@ -150,18 +166,20 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
   }
 
   return (
-    <div className={`${
-      isListView 
-        ? 'overflow-y-auto h-full' 
-        : `h-full grid grid-cols-1 sm:grid-cols-2 items-stretch ${
-            isCustomerViewOpen 
-              ? 'md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2' 
-              : 'md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3'
-          }`
-    }`} style={{
-      gap: isListView ? '0px' : '2px',
-      backgroundColor: isListView ? 'transparent' : 'rgb(64 64 64 / 0.2)'
-    }}>
+    <div 
+      ref={gridRef}
+      className={`scrollable-container ${
+        isListView 
+          ? 'overflow-y-auto h-full' 
+          : `h-full grid grid-cols-1 sm:grid-cols-2 items-stretch ${
+              isCustomerViewOpen 
+                ? 'md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2' 
+                : 'md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3'
+            }`
+      }`} style={{
+        gap: isListView ? '0px' : '2px',
+        backgroundColor: isListView ? 'transparent' : 'rgb(64 64 64 / 0.2)'
+      }}>
       {isListView ? (
         <div className="min-h-full p-2">
           {filteredProducts.map((product: FloraProduct, index: number) => (

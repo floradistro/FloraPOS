@@ -753,7 +753,7 @@ export function Cart({
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto px-2 space-y-6">
+          <div className="flex-1 overflow-y-auto scrollable-container px-2 space-y-6">
             {/* Order Summary */}
             <div className="space-y-3">
               <h3 className="font-medium text-text-primary">Order Summary</h3>
@@ -944,7 +944,7 @@ export function Cart({
           </div>
 
           {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto px-2">
+          <div className="flex-1 overflow-y-auto scrollable-container px-2">
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={`${item.id}-${item.selectedVariation}`} className="flex gap-3">
