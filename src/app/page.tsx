@@ -536,8 +536,6 @@ export default function FloraDistrosPOS() {
           </div>
         </div>
 
-
-
         {/* Settings Panel */}
         <SettingsPanel 
           isOpen={isSettingsOpen} 
