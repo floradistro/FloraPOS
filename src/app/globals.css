@@ -224,6 +224,21 @@
     z-index: 30;
   }
   
+  /* iPad PWA specific spacing - 24 points (48px on Retina) from Siri border */
+  @media (display-mode: standalone) and (hover: none) and (pointer: coarse) and (min-width: 768px) {
+    .header-nav {
+      margin-top: 48px !important; /* 24 points = 48px on Retina displays */
+    }
+  }
+  
+  /* Additional iPad Pro specific targeting */
+  @media (display-mode: standalone) and (hover: none) and (pointer: coarse) and 
+         (min-width: 1024px) and (min-height: 1366px) {
+    .header-nav {
+      margin-top: 48px !important; /* 24 points = 48px on Retina displays */
+    }
+  }
+  
   /* Force fullscreen behind status bar for Siri border */
   html, body {
     background: black !important;
