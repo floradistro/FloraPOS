@@ -243,9 +243,9 @@ export default function FloraDistrosPOS() {
 
 
                                                           {/* Header */}
-                     <div className="header-nav bg-black border-b border-white/[0.04] px-4 py-1 flex-shrink-0 relative z-30" style={{
-          paddingLeft: 'max(20px, env(safe-area-inset-left) + 4px)',
-          paddingRight: 'max(20px, env(safe-area-inset-right) + 4px)'
+                     <div className="header-nav bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30" style={{
+          paddingLeft: 'max(8px, env(safe-area-inset-left) + 4px)',
+          paddingRight: 'max(8px, env(safe-area-inset-right) + 4px)'
         }}>
           <div className="flex items-center justify-between gap-2">
             {/* Logo */}
