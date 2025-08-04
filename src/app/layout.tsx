@@ -7,14 +7,14 @@ export const metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'black',
     title: 'POS',
     startupImage: '/logo.png',
   },
   other: {
     'mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+    'apple-mobile-web-app-status-bar-style': 'black',
     'apple-touch-fullscreen': 'yes',
     'format-detection': 'telephone=no',
   },
@@ -41,7 +41,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, minimal-ui" />
         <meta name="theme-color" content="#000000" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
         <meta name="apple-mobile-web-app-title" content="POS" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-touch-fullscreen" content="yes" />
@@ -52,18 +52,53 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/logo.png" />
         <style dangerouslySetInnerHTML={{
           __html: `
-            /* Inline critical CSS for status bar hiding */
+            /* PWA Full Screen Setup for iOS */
             html, body { 
-              padding-top: 0 !important; 
-              margin-top: 0 !important; 
+              margin: 0 !important;
+              padding: 0 !important;
               height: 100vh !important;
               height: 100dvh !important;
+              width: 100vw !important;
+              overflow: hidden !important;
+              background: #000000 !important;
+              -webkit-touch-callout: none;
+              -webkit-user-select: none;
+              -webkit-tap-highlight-color: transparent;
+            }
+            
+            #__next {
+              height: 100vh !important;
+              height: 100dvh !important;
+              width: 100vw !important;
               overflow: hidden !important;
             }
-            /* Hide iOS status bar immediately */
+            
+            /* iOS PWA Status Bar - Force Black */
             @media (display-mode: standalone) {
-              html { padding-top: 0 !important; }
-              body { padding-top: 0 !important; margin-top: 0 !important; }
+              html { 
+                padding-top: 0 !important; 
+                background: #000000 !important;
+              }
+              body { 
+                padding-top: 0 !important; 
+                margin-top: 0 !important; 
+                background: #000000 !important;
+              }
+            }
+            
+            /* iPad specific optimizations */
+            @media (min-width: 768px) and (max-width: 1024px) {
+              html, body {
+                height: 100vh !important;
+                height: 100dvh !important;
+              }
+            }
+            
+            /* Ensure full viewport usage */
+            .viewport-container {
+              height: 100vh !important;
+              height: 100dvh !important;
+              padding-bottom: env(safe-area-inset-bottom, 0px) !important;
             }
           `
         }} />

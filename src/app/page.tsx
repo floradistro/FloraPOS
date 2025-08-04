@@ -54,7 +54,7 @@ export default function FloraDistrosPOS() {
       })
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes,
   })
 
   const mainCategories = [
@@ -162,9 +162,7 @@ export default function FloraDistrosPOS() {
           zIndex={100}
         />
         
-        <div className="viewport-container bg-background-primary text-text-primary flex flex-col h-screen" style={{ 
-          paddingTop: 'env(safe-area-inset-top, 44px)'
-        }}>
+        <div className="viewport-container bg-background-primary text-text-primary flex flex-col">
         {/* Menu Drawer */}
         <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'
@@ -352,14 +350,14 @@ export default function FloraDistrosPOS() {
         </div>
 
         {/* Main Content Area */}
-        <div className={`flex-1 overflow-hidden ${
+        <div className={`flex-1 overflow-hidden min-h-0 ${
           isCustomerViewOpen 
             ? 'grid grid-cols-[1fr_2fr_320px] gap-0' 
             : 'flex'
         }`}>
           {/* Customer View Panel */}
           {isCustomerViewOpen && (
-            <div className="bg-black border-r border-white/[0.04]">
+            <div className="bg-black border-r border-white/[0.04] flex flex-col">
                               <div className="px-2 py-6 border-b border-white/[0.04]">
                 <div className="relative">
                   <input
@@ -489,13 +487,55 @@ export default function FloraDistrosPOS() {
           />
         </div>
 
-        {/* VSCode-style Status Bar */}
-        <StatusBar
-          store={store ? { name: store.name, address: store.address } : undefined}
-          user={user ? { name: `${user.firstName} ${user.lastName}`, role: user.role } : undefined}
-          cartItemCount={cartItems.length}
-          productCount={productCount}
-        />
+        {/* Bottom Status Bar - Matching Orders Layout */}
+        <div className="bg-black px-2 py-2 flex items-center justify-between text-sm text-text-secondary flex-shrink-0 border-t border-white/[0.04]">
+          {/* Left Section */}
+          <div className="flex items-center space-x-2">
+            {/* Store Info */}
+            {store && (
+              <div className="flex items-center">
+                <span>{store.name}</span>
+              </div>
+            )}
+
+            {/* Cart Count */}
+            {store && (
+              <div className="flex items-center">
+                <span>{cartItems.length} items</span>
+              </div>
+            )}
+
+            {/* Customer Status */}
+            {assignedCustomer && (
+              <div className="flex items-center">
+                <span>Customer: {assignedCustomer.firstName}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Center Section */}
+          <div className="flex items-center space-x-2">
+            {/* User Info */}
+            {user && (
+              <div className="flex items-center">
+                <span>Hello, {user.firstName}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Right Section */}
+          <div className="flex items-center space-x-2">
+            {/* System Info */}
+            <div className="flex items-center">
+              <span>POS System</span>
+            </div>
+
+            {/* Current Time */}
+            <div className="flex items-center">
+              <span className="font-mono">{new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+            </div>
+          </div>
+        </div>
 
 
 
