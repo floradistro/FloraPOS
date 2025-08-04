@@ -273,11 +273,11 @@ export class ClaudeAgent {
           // Add to conversation exactly like working route
           allMessages.push({
             role: 'assistant',
-            content: claudeContent
+            content: assistantResponse || 'Using tools to gather data...'
           })
           allMessages.push({
             role: 'user',
-            content: toolResults
+            content: JSON.stringify(toolResults)
           })
           
           // Continue if we need more data
