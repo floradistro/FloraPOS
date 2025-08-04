@@ -240,21 +240,6 @@ export const toolSchemas: Record<string, ToolSchema> = {
         order: { type: 'string', enum: ['asc', 'desc'], description: 'Order direction' }
       }
     }
-  },
-
-  // Location Stock
-  get_location_stock: {
-    name: 'get_location_stock',
-    description: 'Get stock for a specific location',
-    input_schema: {
-      type: 'object',
-      properties: {
-        location_id: { type: 'integer', description: 'Location ID' },
-        per_page: { type: 'integer', description: 'Items per page', default: 20 },
-        page: { type: 'integer', description: 'Page number', default: 1 }
-      },
-      required: ['location_id']
-    }
   }
 }
 
