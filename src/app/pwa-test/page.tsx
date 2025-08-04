@@ -40,6 +40,44 @@ export default function PWATestPage() {
 
   return (
     <div className="min-h-screen bg-black text-white viewport-container">
+      {/* Siri Status Ring - Only show in PWA mode on iPad */}
+      {pwa.isInstalled && deviceInfo.isIPad && (
+        <div 
+          className="fixed top-0 left-0 right-0 z-50 flex justify-center items-center pointer-events-none"
+          style={{ 
+            height: 'var(--ios-status-bar-height, 44px)',
+            paddingTop: 'env(safe-area-inset-top, 0px)'
+          }}
+        >
+          <div className="relative">
+            {/* Rotating outer ring */}
+            <div className="absolute -inset-3 siri-ring-rotate">
+              <div className="w-14 h-14 rounded-full border border-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20"></div>
+            </div>
+            
+            {/* Outer glow */}
+            <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20 blur-md"></div>
+            
+            {/* Main Siri ring with custom animations */}
+            <div className="relative w-8 h-8 rounded-full siri-ring">
+              {/* Ring border with gradient */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 p-[2px]">
+                <div className="w-full h-full rounded-full bg-black/90 backdrop-blur-sm"></div>
+              </div>
+              
+              {/* Inner pulsing core */}
+              <div className="absolute inset-2 rounded-full bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 opacity-90"></div>
+              
+              {/* Subtle inner glow */}
+              <div className="absolute inset-1 rounded-full bg-white/10 animate-pulse"></div>
+            </div>
+            
+            {/* Subtle outer pulse ring */}
+            <div className="absolute -inset-4 rounded-full border border-white/5 animate-ping" style={{ animationDuration: '3s' }}></div>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-4xl mx-auto space-y-8 p-8" data-scrollable>
         <h1 className="text-3xl font-bold mb-8">PWA Test Page</h1>
 
