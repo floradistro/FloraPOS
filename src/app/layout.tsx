@@ -76,11 +76,9 @@ export default function RootLayout({
             /* iOS PWA Status Bar - Force Black */
             @media (display-mode: standalone) {
               html { 
-                padding-top: 0 !important; 
                 background: #000000 !important;
               }
               body { 
-                padding-top: 0 !important; 
                 margin-top: 0 !important; 
                 background: #000000 !important;
               }

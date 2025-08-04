@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { AppWrapper } from '@/components/AppWrapper'
 import { StatusBar } from '@/components/StatusBar'
-import { TopStatusBar } from '@/components/TopStatusBar'
 import SettingsPanel from '@/components/SettingsPanel'
 import Image from 'next/image'
 import React from 'react'
@@ -424,9 +423,6 @@ export default function OrdersPage() {
             onClick={() => setIsMenuOpen(false)}
           />
         )}
-
-        {/* Top Status Bar */}
-        <TopStatusBar isLoading={loading} />
 
         {/* Header Navigation */}
         <div className="bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30">
