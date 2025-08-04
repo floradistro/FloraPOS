@@ -1,0 +1,32 @@
+{
+  "name": "@posv1/claude-agent",
+  "version": "1.0.0",
+  "description": "Modular Claude AI agent for Flora Distro business intelligence",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest"
+  },
+  "keywords": [
+    "claude",
+    "ai",
+    "woocommerce",
+    "business-intelligence",
+    "flora-distro"
+  ],
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./tools": "./tools/index.ts",
+    "./schema": "./schema/toolSchemas.ts",
+    "./prompts": "./prompts/system.ts",
+    "./types": "./types.ts"
+  }
+}

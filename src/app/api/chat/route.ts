@@ -7,48 +7,35 @@ const WOO_CONSUMER_KEY = process.env.WOO_CONSUMER_KEY || 'ck_bb8e5fe3d405e6ed6b8
 const WOO_CONSUMER_SECRET = process.env.WOO_CONSUMER_SECRET || 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678'
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 
-const SYSTEM_PROMPT = `You are a business intelligence assistant for Flora Distro cannabis dispensary with MANDATORY WooCommerce API access.
+const SYSTEM_PROMPT = `You are a helpful business intelligence assistant for Flora Distro cannabis dispensary. You have access to real-time data and should respond naturally like a knowledgeable human colleague would.
 
-🚨 CRITICAL RULES:
-1. NEVER make up or use mock data - ALWAYS use real API data via tools
-2. You MUST call multiple tools (up to 25) to gather comprehensive context
-3. DO NOT provide any analysis until you've gathered ALL relevant data
-4. Chain tools together: get_locations → get_location_stock(for EACH location) → get_products → analyze
-5. If ANY data is mentioned in your response, it MUST come from actual API calls
+CRITICAL: Do NOT use any markdown formatting in your responses. This means no asterisks, no hash symbols, no bullet points, no emojis, no symbols, and no structured formatting whatsoever. Write in plain natural text like you are speaking to someone in person.
 
-MANDATORY MULTI-STEP PROCESS:
-Step 1: Initial discovery (get_locations, get_categories, get_products)
-Step 2: Deep dive based on Step 1 results (get_location_stock for EACH location found)
-Step 3: Additional context (get specific products, check inventory across locations)
-Step 4: Only THEN provide analysis
+Always use real data from the tools, never make up numbers or information. Use multiple tools to gather comprehensive context before providing analysis.
 
-REQUIRED TOOL SEQUENCES:
-- Location overview: get_locations → get_location_stock(for EACH) → get_products → summarize
-- Inventory analysis: get_products → get_locations → get_product_locations(for key products) → analyze
-- Business overview: get_locations → get_products → get_orders → get_customers → analyze
+For efficiency, prioritize bulk endpoints when possible. Use bulk_get_inventory instead of multiple individual calls. Use get_products to get product IDs first, then bulk_get_inventory for inventory data.
 
-⚠️ NEVER stop after one tool call. ALWAYS continue gathering data until you have COMPLETE information.
+For location analysis, use get_products then bulk_get_inventory with location filters. For multi-location comparison, use get_products then get_multi_location_stock.
 
-RESPONSE RULES:
-- In your FIRST response, ONLY make tool calls, do NOT provide any text analysis
-- In your SECOND response, make MORE tool calls based on first results
-- ONLY provide analysis after making AT LEAST 5-10 tool calls
-- If asked about locations, you MUST call get_location_stock for EACH location ID returned by get_locations
+The location IDs you'll need are Charlotte Monroe (30), Salisbury (31), Chesterfield (34), and Bon Air (35).
 
-TOOL USAGE PATTERNS:
-- Always start broad, then drill down with specific queries
-- Use parallel tool calls whenever possible for efficiency
-- If one tool returns IDs, use those IDs in follow-up tool calls
-- Never stop at one tool call - always gather comprehensive context
-- Continue calling tools until you have ALL the data needed
+Approach each request by first gathering data through appropriate tools, then providing clear analysis in conversational language. If your first approach doesn't give sufficient data, try alternative tools or broader searches.
+
+Keep responses conversational and helpful, like you're talking to a colleague who asked you to look something up. Write in normal sentences without any special formatting.
+
+BULK ENDPOINT USAGE:
+- bulk_get_inventory: Get inventory for multiple products (up to 100)
+- bulk_update_stock: Update multiple inventory items (up to 50)
+- get_location_inventory_summary: Get all inventory for a specific location
+- get_multi_location_stock: Get stock across all locations for products
 
 API GUIDELINES:
-- Default to per_page: 10 for products to avoid timeouts
+- Default to per_page: 50 for products to get more IDs for bulk operations
 - Known locations: Charlotte Monroe (ID: 30), others via get_locations
-- If a tool returns empty results, try alternative approaches
-- Chain tools: get_locations → get_location_stock(for each) → analyze
+- Use bulk endpoints whenever dealing with multiple products/inventory items
+- Chain efficiently: get_products → bulk_get_inventory → analyze
 
-Your responses must be 100% based on real API data. No exceptions.`
+Your responses must be 100% based on real API data using the most efficient bulk endpoints available.`
 
 // Execute WooCommerce API calls with retry logic
 async function executeWooCommerceTool(toolName: string, parameters: any, retryCount = 0): Promise<any> {
@@ -278,6 +265,35 @@ async function executeToolCalls(toolCalls: any[], controller: any, encoder: Text
             statusMessage += ` - Sample: "${sample.name}" ($${sample.price})`
           } else if (toolCall.name === 'get_location_stock' && itemCount > 0) {
             statusMessage += ` at location ${toolCall.input.location_id}`
+          } else if (toolCall.name === 'bulk_get_inventory' && result.data) {
+            const productCount = Object.keys(result.data).length
+            const totalInventoryItems = Object.values(result.data).reduce((sum: number, inventories: any) => 
+              sum + (Array.isArray(inventories) ? inventories.length : 0), 0)
+            statusMessage += ` - ${productCount} products, ${totalInventoryItems} inventory records`
+            if (toolCall.input.location_id) {
+              statusMessage += ` at location ${toolCall.input.location_id}`
+            } else {
+              statusMessage += ` across all locations`
+            }
+          } else if (toolCall.name === 'bulk_update_stock' && result.data) {
+            const successCount = result.data.successful_updates || 0
+            const totalCount = result.data.total_updates || 0
+            statusMessage += ` - ${successCount}/${totalCount} updates successful`
+            if (result.data.errors && result.data.errors.length > 0) {
+              statusMessage += `, ${result.data.errors.length} errors`
+            }
+          } else if (toolCall.name === 'get_multi_location_stock' && result.data) {
+            const productCount = Object.keys(result.data).length
+            const locationSet = new Set()
+            Object.values(result.data).forEach((inventories: any) => {
+              if (Array.isArray(inventories)) {
+                inventories.forEach((inv: any) => locationSet.add(inv.location_name))
+              }
+            })
+            statusMessage += ` - ${productCount} products across ${locationSet.size} locations`
+          } else if (toolCall.name === 'get_location_inventory_summary' && result.data) {
+            const productCount = Object.keys(result.data).length
+            statusMessage += ` - ${productCount} products with inventory`
           }
           
           controller.enqueue(encoder.encode(`data: {"type": "text", "content": "${statusMessage}\\n"}\n\n`))
