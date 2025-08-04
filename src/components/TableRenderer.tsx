@@ -88,10 +88,11 @@ export default function TableRenderer({ json }: TableRendererProps) {
 
   // Export functions
   const exportToCSV = () => {
-    const headers = columns.map(col => col.id).join(',')
+    const headers = columns.map(col => col.id || '').join(',')
     const rows = data.map(row => 
       columns.map(col => {
-        const value = row[col.id]
+        const columnId = col.id || ''
+        const value = columnId ? row[columnId] : ''
         // Escape quotes and wrap in quotes if contains comma
         const stringValue = String(value || '')
         return stringValue.includes(',') || stringValue.includes('"') 
