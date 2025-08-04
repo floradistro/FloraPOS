@@ -158,24 +158,11 @@
     background: black;
   }
   
-  /* Hide iOS status bar area completely */
-  .viewport-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 100vh;
-    height: 100dvh;
+  /* App content container - positioned within safe areas */
+  .app-content-container {
+    /* Content positioning handled inline in component */
     background: black;
-    /* Push content up to cover status bar */
-    margin-top: calc(-1 * env(safe-area-inset-top, -20px));
-    padding-top: 0;
-  }
-  
-  /* Ensure header starts at very top */
-  .viewport-container > div:first-child {
-    padding-top: env(safe-area-inset-top, 20px);
+    overflow: hidden;
   }
 }
 
@@ -205,58 +192,44 @@
   }
 }
 
-/* iPad specific rounded corners and fullscreen */
+/* iPad specific rounded corners for app content */
 @media (max-width: 1024px) and (orientation: landscape) {
-  .viewport-container {
-    border-radius: 24px;
+  .app-content-container {
+    border-radius: 20px;
     overflow: hidden;
-    height: 100vh;
-    height: 100dvh;
   }
 }
 
 @media (max-width: 834px) and (orientation: portrait) {
-  .viewport-container {
-    border-radius: 24px;
+  .app-content-container {
+    border-radius: 20px;
     overflow: hidden;
-    height: 100vh;
-    height: 100dvh;
   }
 }
 
-/* Remove any gaps in PWA mode */
+/* PWA mode optimizations - Separate Siri border and app content */
 @media (display-mode: standalone) {
-  .viewport-container {
-    margin: 0;
-    padding: 0;
-    /* Force rounded corners to match device */
-    border-radius: max(24px, env(display-cutout-radius, 24px));
+  /* App content positioned within safe areas */
+  .app-content-container {
+    /* Force rounded corners to match device, but smaller than Siri border */
+    border-radius: max(20px, calc(env(display-cutout-radius, 24px) - 4px));
     overflow: hidden;
   }
   
-  /* Ensure no gap above header */
+  /* Header navigation positioned properly within app content */
   .header-nav {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
+    margin-top: 0;
+    padding-top: 0;
     position: relative;
-    z-index: 10;
+    z-index: 30;
   }
   
-  /* iPad rounded viewport ring - clean base */
-  .viewport-ring {
-    border-radius: max(24px, env(display-cutout-radius, 24px));
-    z-index: 9999 !important;
-    border: none;
-    outline: none;
-    background: transparent;
-  }
-  
-  /* Force fullscreen behind status bar */
+  /* Force fullscreen behind status bar for Siri border */
   html, body {
     background: black !important;
   }
   
-  /* Create black overlay for status bar area */
+  /* Create black background for status bar area - lower z-index than Siri border */
   body::before {
     content: '';
     position: fixed;
@@ -265,7 +238,7 @@
     right: 0;
     height: env(safe-area-inset-top, 44px);
     background: black;
-    z-index: 9999;
+    z-index: 5;
     pointer-events: none;
   }
 }

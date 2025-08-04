@@ -155,33 +155,28 @@ export default function FloraDistrosPOS() {
 
       return (
       <AppWrapper>
-        {/* Siri Glow Border Effect - True viewport edge */}
+        {/* Siri Glow Border Effect - True viewport edge, independent positioning */}
         <SiriGlowBorder 
           isLoading={isProductsLoading || isCheckingOut} 
           thickness={4}
           zIndex={100}
         />
         
-        {/* Main App Container - Respects safe areas */}
-        <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative" style={{ 
+        {/* Main App Container - Positioned within safe areas, independent of Siri border */}
+        <div className="app-content-container bg-background-primary text-text-primary flex flex-col" style={{ 
           position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          paddingTop: 'env(safe-area-inset-top, 0px)',
-          paddingLeft: 'env(safe-area-inset-left, 0px)',
-          paddingRight: 'env(safe-area-inset-right, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)'
-        }}>
-        {/* Menu Drawer - Positioned to respect safe areas */}
-        <div className={`fixed left-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
-          isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`} style={{
           top: 'env(safe-area-inset-top, 0px)',
+          left: 'env(safe-area-inset-left, 0px)',
+          right: 'env(safe-area-inset-right, 0px)',
           bottom: 'env(safe-area-inset-bottom, 0px)',
-          paddingTop: 'env(safe-area-inset-top, 0px)'
+          height: 'calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+          width: 'calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))',
+          zIndex: 10
         }}>
+        {/* Menu Drawer - Positioned within app content area */}
+        <div className={`absolute left-0 top-0 bottom-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
+          isMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
           <div className="px-2 py-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-text-primary">Menu</h2>
@@ -233,7 +228,7 @@ export default function FloraDistrosPOS() {
         {/* Overlay */}
         {isMenuOpen && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            className="absolute inset-0 bg-black bg-opacity-50 z-40"
             onClick={() => setIsMenuOpen(false)}
           />
         )}

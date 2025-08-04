@@ -196,14 +196,15 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
           }
         }
 
-        /* Absolute positioning for all PWA modes */
+        /* Absolute positioning for all PWA modes - True viewport edge */
         @supports (display-mode: fullscreen) or (display-mode: standalone) {
           .siri-border-wrapper {
-            /* Absolute screen edge positioning */
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            /* Absolute screen edge positioning - independent of app content */
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
             margin: ${thickness/2}px;
           }
         }
