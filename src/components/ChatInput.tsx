@@ -296,83 +296,55 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                             if (line.startsWith('Using tool:')) {
                               const toolName = line.replace('Using tool: ', '').replace('...', '')
                               if (isCompleted) {
-                                // Show completed state
                                 processedLines.push(
-                                  <div key={i} className="flex items-center gap-3 mb-2 p-2 bg-green-500/5 rounded-lg border border-green-500/20 animate-fade-in">
-                                    <div className="w-4 h-4 bg-green-400 rounded-full flex items-center justify-center">
-                                      <svg className="w-2.5 h-2.5 text-green-900" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                      </svg>
-                                    </div>
-                                    <span className="text-green-300 text-sm font-medium">{toolName}</span>
+                                  <div key={i} className="text-green-400 text-sm mb-1">
+                                    ✓ {toolName}
                                   </div>
                                 )
-                                i++ // Skip the ✓ line since we handled it
+                                i++ // Skip the ✓ line
                               } else {
-                                // Show loading state
                                 processedLines.push(
-                                  <div key={i} className="flex items-center gap-3 mb-2 p-2 bg-blue-500/5 rounded-lg border border-blue-500/20">
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
-                                      <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                                      <div className="w-0.5 h-0.5 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                                    </div>
-                                    <span className="text-blue-300 text-sm font-medium animate-flash">{toolName}</span>
+                                  <div key={i} className="text-blue-400 text-sm mb-1">
+                                    <span className="animate-dots">{toolName}</span>
                                   </div>
                                 )
                               }
                             } else if (line.startsWith('Trying ')) {
                               const toolName = line.replace('Trying ', '').replace('...', '')
                               if (isCompleted) {
-                                // Show completed state
                                 processedLines.push(
-                                  <div key={i} className="flex items-center gap-3 mb-2 p-2 bg-green-500/5 rounded-lg border border-green-500/20 animate-fade-in">
-                                    <div className="w-4 h-4 bg-green-400 rounded-full flex items-center justify-center">
-                                      <svg className="w-2.5 h-2.5 text-green-900" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                      </svg>
-                                    </div>
-                                    <span className="text-green-300 text-sm font-medium">{toolName}</span>
+                                  <div key={i} className="text-green-400 text-sm mb-1">
+                                    ✓ {toolName}
                                   </div>
                                 )
                                 i++ // Skip the ✓ line
                               } else {
                                 processedLines.push(
-                                  <div key={i} className="flex items-center gap-3 mb-2 p-2 bg-blue-500/5 rounded-lg border border-blue-500/20">
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
-                                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                                    </div>
-                                    <span className="text-blue-300 text-sm animate-flash">Trying {toolName}</span>
+                                  <div key={i} className="text-blue-400 text-sm mb-1">
+                                    <span className="animate-dots">trying {toolName}</span>
                                   </div>
                                 )
                               }
                             } else if (line.startsWith('Analyzing results') || line.startsWith('Reviewing results')) {
                               processedLines.push(
-                                <div key={i} className="flex items-center gap-3 mb-2 p-2 bg-gray-500/5 rounded-lg">
-                                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                                  <span className="text-gray-300 text-sm animate-pulse">{line}</span>
+                                <div key={i} className="text-gray-400 text-sm mb-1">
+                                  <span className="animate-dots">analyzing results</span>
                                 </div>
                               )
                             } else if (line.startsWith('Executing') && line.includes('adaptive')) {
                               processedLines.push(
-                                <div key={i} className="flex items-center gap-3 mb-2 p-2 bg-yellow-500/5 rounded-lg border border-yellow-500/20">
-                                  <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
-                                  <span className="text-yellow-300 text-sm animate-pulse">Adapting strategy...</span>
+                                <div key={i} className="text-yellow-400 text-sm mb-1">
+                                  <span className="animate-dots">adapting strategy</span>
                                 </div>
                               )
                             } else if (line.includes('completed')) {
                               processedLines.push(
-                                <div key={i} className="flex items-center gap-2 mb-2 p-2 bg-green-500/5 rounded-lg border border-green-500/20">
-                                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                                  <span className="text-green-300 text-sm">{line}</span>
+                                <div key={i} className="text-green-400 text-sm mb-1">
+                                  ✓ {line.replace('completed', 'complete')}
                                 </div>
                               )
-                            } else if (line.includes('bulk_get_inventory') || line.includes('bulk_update_stock')) {
-                              processedLines.push(<div key={i} className="text-blue-400 text-xs opacity-60 font-mono bg-blue-500/10 px-2 py-1 rounded">{line}</div>)
                             } else if (line.startsWith('✓') || line.startsWith('❌')) {
-                              // Skip standalone checkmarks/x marks since they're handled above
+                              // Skip standalone checkmarks since they're handled above
                               continue
                             } else if (line.trim() === '') {
                               processedLines.push(<div key={i} className="h-1"></div>)
