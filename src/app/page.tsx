@@ -156,21 +156,8 @@ export default function FloraDistrosPOS() {
       return (
       <>
         <AppWrapper>
-        {/* Main App Container - Properly positioned for PWA mode */}
-        <div className="app-content-container bg-background-primary text-text-primary flex flex-col" style={{ 
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: '100vh',
-          width: '100vw',
-          paddingTop: 'env(safe-area-inset-top, 44px)', /* 44px fallback for iOS status bar */
-          paddingLeft: 'env(safe-area-inset-left, 0px)',
-          paddingRight: 'env(safe-area-inset-right, 0px)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-          zIndex: 10
-        }}>
+        {/* Main App Container - Natural flow with iOS system UI */}
+        <div className="app-content-container bg-background-primary text-text-primary flex flex-col h-screen w-screen">
         {/* Menu Drawer - Positioned within app content area */}
         <div className={`absolute left-0 top-0 bottom-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'

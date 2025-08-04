@@ -65,23 +65,7 @@
   }
 }
 
-/* PWA mode specific styles */
-@media (display-mode: standalone) {
-  /* In PWA mode, ensure proper safe area handling */
-  html, body {
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-  }
-  
-  /* Ensure proper safe area padding with better fallbacks */
-  .app-content-container {
-    padding-top: env(safe-area-inset-top, 44px) !important; /* 44px = iOS status bar height */
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-    padding-left: env(safe-area-inset-left, 0px) !important;
-    padding-right: env(safe-area-inset-right, 0px) !important;
-  }
-}
+/* PWA mode disabled - app runs in Safari with system UI visible */
 
 /* Webkit specific optimizations */
 @media screen and (-webkit-min-device-pixel-ratio: 2) {
