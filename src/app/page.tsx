@@ -162,11 +162,8 @@ export default function FloraDistrosPOS() {
           zIndex={100}
         />
         
-        <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative" style={{ 
-          height: '100vh', 
-          minHeight: '100vh',
-          paddingTop: 'env(safe-area-inset-top, 44px)',
-          paddingBottom: '0px'
+        <div className="viewport-container bg-background-primary text-text-primary flex flex-col h-screen" style={{ 
+          paddingTop: 'env(safe-area-inset-top, 44px)'
         }}>
         {/* Menu Drawer */}
         <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
@@ -355,11 +352,11 @@ export default function FloraDistrosPOS() {
         </div>
 
         {/* Main Content Area */}
-        <div className={`flex-1 min-h-0 ${
+        <div className={`flex-1 overflow-hidden ${
           isCustomerViewOpen 
             ? 'grid grid-cols-[1fr_2fr_320px] gap-0' 
             : 'flex'
-        }`} style={{ height: '100%' }}>
+        }`}>
           {/* Customer View Panel */}
           {isCustomerViewOpen && (
             <div className="bg-black border-r border-white/[0.04]">
