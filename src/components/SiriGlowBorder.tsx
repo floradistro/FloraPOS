@@ -1,5 +1,5 @@
 /**
- * SiriGlowBorder Component - PWA Viewport Border Effect
+ * SiriGlowBorder Component - Viewport Border Effect
  * 
  * Usage:
  * <SiriGlowBorder isLoading={true} />

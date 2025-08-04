@@ -159,7 +159,7 @@ export default function SiriGlowDemo() {
             <p>• <strong>iPad Pro 11":</strong> 76px corner radius</p>
             <p>• <strong>iPad Pro 12.9":</strong> 80px corner radius</p>
             <p>• <strong>Other devices:</strong> 20px default radius</p>
-            <p>• Optimized for iPad PWA performance</p>
+            <p>• Optimized for iPad performance</p>
           </div>
         </div>
       </div>

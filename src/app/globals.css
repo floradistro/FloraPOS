@@ -11,110 +11,11 @@
   font-display: swap;
 }
 
-/* Siri Status Ring Animations */
-@keyframes siri-pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-}
 
-@keyframes siri-glow {
-  0%, 100% {
-    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5), 0 0 10px rgba(147, 51, 234, 0.3);
-  }
-  33% {
-    box-shadow: 0 0 5px rgba(147, 51, 234, 0.5), 0 0 10px rgba(236, 72, 153, 0.3);
-  }
-  66% {
-    box-shadow: 0 0 5px rgba(236, 72, 153, 0.5), 0 0 10px rgba(59, 130, 246, 0.3);
-  }
-}
 
-@keyframes siri-rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
 
-.siri-ring {
-  animation: siri-pulse 2s ease-in-out infinite, siri-glow 3s ease-in-out infinite;
-}
 
-.siri-ring-rotate {
-  animation: siri-rotate 8s linear infinite;
-}
 
-/* iPad PWA Optimizations */
-@supports (display-mode: fullscreen) {
-  /* Remove iOS Safari UI elements */
-  html {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    height: 100%;
-    height: 100vh;
-    height: 100dvh;
-  }
-  
-  /* Prevent pull-to-refresh and overscroll */
-  body {
-    overscroll-behavior: none;
-    -webkit-overflow-scrolling: touch;
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    /* Hide iOS status bar completely */
-    -webkit-app-region: no-drag;
-    padding-top: 0 !important;
-  }
-  
-  /* Main app container should handle scrolling */
-  #__next {
-    height: 100%;
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for mobile */
-    overflow: hidden;
-    position: relative;
-  }
-}
-
-/* Additional iOS status bar hiding for PWA */
-@media (display-mode: fullscreen) or (display-mode: standalone) {
-  /* Force hide status bar area */
-  html, body {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-  }
-  
-  /* Override any safe area insets for top */
-  * {
-    --safe-area-inset-top: 0px !important;
-  }
-  
-  /* Aggressive iOS status bar hiding */
-  .status-bar,
-  .status-bar-overlay,
-  .ios-status-bar {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
-  }
-}
 
 /* iOS device optimizations - Allow app content to position within safe areas */
 @supports (-webkit-touch-callout: none) {
@@ -153,51 +54,7 @@
   }
 }
 
-/* PWA Standalone mode optimizations */
-@media (display-mode: standalone) {
-  /* Force true fullscreen - hide iOS status bar completely */
-  html {
-    height: 100vh;
-    height: 100dvh;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
-    background: black;
-  }
-  
-  body {
-    /* Prevent iOS gestures but allow app content positioning */
-    height: 100vh;
-    height: 100dvh;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    overscroll-behavior: none;
-    -webkit-overflow-scrolling: touch;
-    /* Remove fixed positioning - let app content handle positioning */
-    position: relative;
-    width: 100%;
-    background: black;
-  }
-  
-  #__next {
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    position: relative;
-    background: black;
-  }
-  
-  /* App content container - positioned within safe areas */
-  .app-content-container {
-    /* Content positioning handled inline in component */
-    background: black;
-    overflow: hidden;
-  }
-}
+
 
 /* Safe area insets for devices with notches/rounded corners */
 @supports (padding: max(0px)) {
@@ -240,56 +97,7 @@
   }
 }
 
-/* PWA mode optimizations - Separate Siri border and app content */
-@media (display-mode: standalone) {
-  /* App content positioned within safe areas */
-  .app-content-container {
-    /* Force rounded corners to match device, but smaller than Siri border */
-    border-radius: max(20px, calc(env(display-cutout-radius, 24px) - 4px));
-    overflow: hidden;
-  }
-  
-  /* Header navigation positioned properly within app content */
-  .header-nav {
-    margin-top: 0;
-    padding-top: 0;
-    position: relative;
-    z-index: 30;
-  }
-  
-  /* iPad PWA specific spacing - 24 points (48px on Retina) from Siri border */
-  @media (display-mode: standalone) and (hover: none) and (pointer: coarse) and (min-width: 768px) {
-    .header-nav {
-      margin-top: 48px !important; /* 24 points = 48px on Retina displays */
-    }
-  }
-  
-  /* Additional iPad Pro specific targeting */
-  @media (display-mode: standalone) and (hover: none) and (pointer: coarse) and 
-         (min-width: 1024px) and (min-height: 1366px) {
-    .header-nav {
-      margin-top: 48px !important; /* 24 points = 48px on Retina displays */
-    }
-  }
-  
-  /* Force fullscreen behind status bar for Siri border */
-  html, body {
-    background: black !important;
-  }
-  
-  /* Create black background for status bar area - lower z-index than Siri border */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-top, 44px);
-    background: black;
-    z-index: 5;
-    pointer-events: none;
-  }
-}
+
 
 /* VSCode Dark Theme CSS Custom Properties */
 :root {
@@ -326,10 +134,6 @@
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    /* PWA Full Screen Support */
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
   }
   
   body {
@@ -337,10 +141,6 @@
     background-color: var(--color-primary-bg);
     color: var(--color-text-primary);
     min-height: 100vh;
-    /* PWA Full Screen Support */
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
     margin: 0;
     padding: 0;
     /* Hide browser UI on mobile */
@@ -597,43 +397,7 @@ body {
   box-shadow: 0 8px 32px rgba(241, 76, 76, 0.3);
 }
 
-/* PWA Full Screen Styles */
-@media (display-mode: fullscreen) {
-  html, body {
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-  }
-  
-  /* Hide any remaining browser UI */
-  .pwa-fullscreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-  }
-}
 
-/* PWA Standalone Mode */
-@media (display-mode: standalone) {
-  html, body {
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-  }
-  
-  /* Adjust for iOS safe areas */
-  .pwa-safe-area {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-}
 
 /* Mobile viewport adjustments */
 @media screen and (max-width: 768px) {
@@ -736,62 +500,7 @@ body {
   animation-delay: 0.3s;
 }
 
-/* PWA Fullscreen Edge-to-Edge Styles */
-@media (display-mode: fullscreen) {
-  html, body {
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for mobile */
-    overflow: hidden;
-  }
-  
-  body {
-    margin: 0;
-    padding: 0;
-    /* Handle safe areas on devices with notches */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-  
-  /* Ensure main container uses full viewport */
-  .min-h-screen {
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-  
-  .h-screen {
-    height: 100vh;
-    height: 100dvh;
-  }
-}
 
-@media (display-mode: standalone) {
-  html, body {
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-  }
-  
-  body {
-    margin: 0;
-    padding: 0;
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-  
-  .min-h-screen {
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-  
-  .h-screen {
-    height: 100vh;
-    height: 100dvh;
-  }
-}
 
 
 
