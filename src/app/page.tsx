@@ -169,8 +169,9 @@ export default function FloraDistrosPOS() {
             paddingLeft: '4px',
             paddingRight: '4px'
           }} />
-        <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative min-h-screen" style={{ 
-          height: '100dvh', 
+        <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative" style={{ 
+          height: '100vh', 
+          minHeight: '100vh',
           paddingTop: 'env(safe-area-inset-top, 44px)',
           paddingBottom: '0px'
         }}>
@@ -244,8 +245,8 @@ export default function FloraDistrosPOS() {
 
                                                           {/* Header */}
                      <div className="header-nav bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30" style={{
-          paddingLeft: 'max(8px, env(safe-area-inset-left) + 4px)',
-          paddingRight: 'max(8px, env(safe-area-inset-right) + 4px)'
+          paddingLeft: 'max(16px, env(safe-area-inset-left) + 8px)',
+          paddingRight: 'max(16px, env(safe-area-inset-right) + 8px)'
         }}>
           <div className="flex items-center justify-between gap-2">
             {/* Logo */}
