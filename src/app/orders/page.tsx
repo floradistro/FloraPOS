@@ -352,7 +352,9 @@ export default function OrdersPage() {
 
   return (
     <AppWrapper>
-      <div className="h-screen bg-background-primary text-text-primary flex flex-col relative overflow-hidden">
+      <div className="h-screen bg-background-primary text-text-primary flex flex-col relative overflow-hidden" style={{ 
+        paddingTop: 'env(safe-area-inset-top, 44px)'
+      }}>
         {/* Menu Drawer */}
         <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'
