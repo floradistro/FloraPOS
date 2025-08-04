@@ -96,7 +96,7 @@
   .app-content-container {
     /* Black status bar means content has padding for status bar */
     padding-top: env(safe-area-inset-top, 44px) !important; /* iOS status bar height */
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important; /* Use safe area for bottom */
+    padding-bottom: 0px !important; /* Zero bottom padding - no gap */
     padding-left: env(safe-area-inset-left, 0px) !important;
     padding-right: env(safe-area-inset-right, 0px) !important;
     /* Normal viewport height */
@@ -151,11 +151,11 @@
   }
 }
 
-/* App container - Content stays UNDER status bar, normal viewport */
+/* App container - Content stays UNDER status bar, zero bottom padding */
 .app-content-container {
   /* Content respects safe areas and stays under status bar */
   padding-top: env(safe-area-inset-top, 44px) !important; /* iOS status bar height */
-  padding-bottom: env(safe-area-inset-bottom, 0px) !important; /* Use safe area for bottom */
+  padding-bottom: 0px !important; /* Zero bottom padding - no gap */
   padding-left: env(safe-area-inset-left, 0px) !important;
   padding-right: env(safe-area-inset-right, 0px) !important;
   box-sizing: border-box;
