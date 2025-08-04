@@ -80,7 +80,7 @@
     left: 0;
     right: 0;
     height: env(safe-area-inset-bottom, 34px);
-    background: #1E1E1E;
+    background: #000000;
     z-index: 9999;
     pointer-events: none;
   }
@@ -98,7 +98,7 @@
     height: 100dvh !important;
     width: 100vw !important;
     overflow: hidden !important;
-    background: #1E1E1E !important; /* Match app background */
+    background: #000000 !important; /* Pure black for iOS status bar */
     overscroll-behavior: none !important;
   }
   
@@ -423,14 +423,14 @@ html, body {
   right: 0;
   bottom: 0;
   overflow: hidden; /* Prevent all scrolling */
-  height: 100vh;
-  height: 100dvh; /* Dynamic viewport height */
+  height: 100vh !important;
+  height: 100dvh !important; /* Dynamic viewport height */
   width: 100vw;
   margin: 0;
   padding: 0;
   /* Full screen PWA - no padding, Siri ring handles the border */
   box-sizing: border-box;
-  background: #1E1E1E; /* Match app background, not black */
+  background: #000000 !important; /* Pure black for iOS status bar */
 }
 
 /* Ensure no horizontal overflow anywhere */

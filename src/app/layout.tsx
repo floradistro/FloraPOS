@@ -25,7 +25,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-        <meta name="theme-color" content="#0a0a0a" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="msapplication-navbutton-color" content="#000000" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="format-detection" content="telephone=no" />
         {/* Force cache refresh */}
         <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -33,12 +35,11 @@ export default function RootLayout({
         <meta httpEquiv="Expires" content="0" />
         {/* Enable full screen PWA mode with black status bar */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="Flora POS" />
       </head>
-      <body className="font-sf-pro antialiased">
-        <div className="min-h-screen bg-background text-text-primary">
+      <body className="font-sf-pro antialiased" style={{background: '#000000'}}>
+        <div className="min-h-screen text-text-primary" style={{background: '#000000', minHeight: '100vh', minHeight: '100dvh'}}>
           <Providers>
             {children}
           </Providers>

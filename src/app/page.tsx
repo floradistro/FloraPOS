@@ -157,12 +157,13 @@ export default function FloraDistrosPOS() {
       <>
         <AppWrapper>
         {/* Main App Container - Black status bar, no bottom gap */}
-        <div className="app-content-container bg-background-primary text-text-primary flex flex-col" style={{
+        <div className="app-content-container text-text-primary flex flex-col" style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
+          background: '#1E1E1E',
           height: '100vh',
           width: '100vw',
           paddingTop: 'env(safe-area-inset-top, 44px)', // Black status bar height
