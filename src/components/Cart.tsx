@@ -9,6 +9,7 @@ import { useLocation } from '@/contexts/LocationContext'
 import { useState } from 'react'
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
+import { useDataRefresh } from '../hooks/useDataRefresh'
 import { useTaxRates, calculateTaxAmount, type TaxRate } from '@/hooks/useTaxRates'
 import CustomerPreferenceQuickView from './CustomerPreferenceQuickView'
 import QuickAddToPreferences from './QuickAddToPreferences'
@@ -83,6 +84,7 @@ export function Cart({
   onCheckoutStatusChange
 }: CartProps) {
   const { currentLocation } = useLocation()
+  const { refreshAllData } = useDataRefresh()
   const [isCheckoutView, setIsCheckoutView] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash')
@@ -179,8 +181,8 @@ export function Cart({
       setPaymentMethod('cash')
       setCashReceived('')
       setCustomerEmail('')
-      // Invalidate products to refresh virtual pre-roll counts
-      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      // Refresh all cached data to reflect inventory changes after order
+      await refreshAllData()
       onCheckoutStatusChange?.(false) // End checkout glow
     },
     onError: (error) => {

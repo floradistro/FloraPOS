@@ -1,13 +1,14 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { floraAPI, FloraProduct } from '../lib/woocommerce'
 import { ProductCard } from './ProductCard'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { findLinkedPrerollProducts, isVirtualPrerollProduct } from '../lib/virtual-product-helpers'
 import Image from 'next/image'
+import SiriGlowBorder from './SiriGlowBorder'
 
 interface ProductGridProps {
   category: number | null
@@ -23,36 +24,40 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
   const { store } = useAuth()
   const [globalSelectedProduct, setGlobalSelectedProduct] = useState<{ productId: number; variation: string } | null>(null)
 
-  const { data: products = [], isLoading, error } = useQuery({
-    queryKey: ['products', category, searchQuery, store?.id],
-    queryFn: async (): Promise<FloraProduct[]> => {
-      const allProducts = await floraAPI.getProducts({
-        category: category || undefined,
-        search: searchQuery || undefined,
-        storeId: store?.id,
-        per_page: 100 // Increased to get all products including virtual ones
-      })
-      
-      // Separate flower products and virtual products
-      const flowerProducts = allProducts.filter(p => !isVirtualPrerollProduct(p))
-      const virtualProducts = allProducts.filter(p => isVirtualPrerollProduct(p))
-      
-      // Enhance flower products with linked virtual products
-      const enhancedProducts = flowerProducts.map(flower => {
-        const linkedVirtual = findLinkedPrerollProducts(flower, allProducts)[0]
-        return {
-          ...flower,
-          linkedPrerollProduct: linkedVirtual
-        }
-      })
-      
-      // Only return non-virtual products (flowers) for display
-      return enhancedProducts
-    },
-    enabled: !!store?.id, // Only fetch when we have a store
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
+  // Get preloaded products from cache
+  const { data: cachedProductsByCategory, isLoading, error } = useQuery<{
+    all: FloraProduct[]
+    [key: number]: FloraProduct[]
+  }>({
+    queryKey: ['all-products-preload', store?.id],
+    enabled: false, // Don't refetch, just use cached data
+    staleTime: Infinity, // Never consider stale
   })
+
+  // Process products from cache
+  const products = useMemo(() => {
+    if (!cachedProductsByCategory) return []
+    
+    // Get products for the selected category or all products
+    const categoryProducts = category 
+      ? cachedProductsByCategory[category] || []
+      : cachedProductsByCategory.all || []
+    
+    // Separate flower products and virtual products
+    const flowerProducts = categoryProducts.filter((p: FloraProduct) => !isVirtualPrerollProduct(p))
+    
+    // Enhance flower products with linked virtual products
+    const enhancedProducts = flowerProducts.map((flower: FloraProduct) => {
+      const linkedVirtual = findLinkedPrerollProducts(flower, categoryProducts)[0]
+      return {
+        ...flower,
+        linkedPrerollProduct: linkedVirtual
+      }
+    })
+    
+    // Only return non-virtual products (flowers) for display
+    return enhancedProducts
+  }, [cachedProductsByCategory, category])
 
   // Calculate filtered products for consistent hook usage
   const filteredProducts = products.filter((product: FloraProduct) => {
@@ -70,12 +75,15 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
     }
   }, [filteredProducts.length, onProductCountChange])
 
+  // Check if data is available (no loading since we use cached data)
+  const isDataAvailable = !!cachedProductsByCategory
+
   // Notify parent about loading state changes
   useEffect(() => {
     if (onLoadingChange) {
-      onLoadingChange(isLoading)
+      onLoadingChange(!isDataAvailable)
     }
-  }, [isLoading, onLoadingChange])
+  }, [isDataAvailable, onLoadingChange])
 
   if (!store?.id) {
     return (
@@ -85,11 +93,25 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
     )
   }
 
-  if (isLoading) {
+  if (!isDataAvailable) {
     return (
-      <div className="flex items-center justify-center h-64 bg-black">
-        <div className="text-text-secondary">Loading products...</div>
-      </div>
+      <>
+        <SiriGlowBorder isLoading={true} />
+        <div className="fixed inset-0 flex items-center justify-center bg-black z-40">
+          <div className="text-center">
+            <Image
+              src="/logo.png"
+              alt="Loading"
+              width={120}
+              height={120}
+              className="logo-fade-animation mx-auto mb-6"
+              priority
+            />
+            <h2 className="flora-distro-text text-animated">Flora Distro</h2>
+            <p className="text-text-secondary mt-2">Loading products...</p>
+          </div>
+        </div>
+      </>
     )
   }
 
@@ -141,7 +163,7 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
       backgroundColor: isListView ? 'transparent' : 'rgb(64 64 64 / 0.2)'
     }}>
       {isListView ? (
-        <div className="min-h-full">
+        <div className="min-h-full p-2">
           {filteredProducts.map((product: FloraProduct, index: number) => (
             <ProductCard
               key={product.id}

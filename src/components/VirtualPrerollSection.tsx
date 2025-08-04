@@ -5,6 +5,9 @@ import { FloraProduct } from '../lib/woocommerce'
 import { useLocation } from '../contexts/LocationContext'
 import { Loader2, Package, AlertCircle, Plus, Minus } from 'lucide-react'
 import { useVirtualPrerolls } from '../hooks/useVirtualPrerolls'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useDataRefresh } from '../hooks/useDataRefresh'
+import toast from 'react-hot-toast'
 
 interface VirtualPrerollSectionProps {
   product: FloraProduct
@@ -21,11 +24,40 @@ export function VirtualPrerollSection({
 }: VirtualPrerollSectionProps) {
   const { currentLocation } = useLocation()
   const { checkVirtualInventory } = useVirtualPrerolls()
-  const [isConverting, setIsConverting] = useState(false)
+  const { refreshInventory } = useDataRefresh()
   const [prerollCount, setPrerollCount] = useState(1)
   const [showConversionUI, setShowConversionUI] = useState(false)
   const [inventoryInfo, setInventoryInfo] = useState<any>(null)
   const [loading, setLoading] = useState(false)
+
+  // Create mutation for virtual preroll conversion
+  const conversionMutation = useMutation({
+    mutationFn: async (count: number) => {
+      if (onConvert) {
+        return await onConvert(count)
+      }
+      throw new Error('No conversion function provided')
+    },
+    onSuccess: async () => {
+      toast.success(`Successfully converted ${prerollCount} pre-rolls!`)
+      setPrerollCount(1)
+      setShowConversionUI(false)
+      onConversionSuccess?.()
+      
+      // Refresh inventory data after conversion
+      await refreshInventory()
+      
+      // Refresh inventory info
+      if (product.id && currentLocation?.id) {
+        const newInfo = await checkVirtualInventory(product.id, currentLocation.id)
+        setInventoryInfo(newInfo)
+      }
+    },
+    onError: (error) => {
+      console.error('Conversion failed:', error)
+      toast.error('Failed to convert pre-rolls. Please try again.')
+    }
+  })
 
   // Check if this is a float product
   const isFloatProduct = product.meta_data?.some(m => m.key === 'mli_is_float_product' && m.value === 'yes')
@@ -57,21 +89,7 @@ export function VirtualPrerollSection({
   const handleConvert = async () => {
     if (!onConvert || prerollCount <= 0) return
     
-    setIsConverting(true)
-    try {
-      await onConvert(prerollCount)
-      setPrerollCount(1)
-      setShowConversionUI(false)
-      onConversionSuccess?.()
-      
-      // Refresh inventory info
-      const newInfo = await checkVirtualInventory(product.id, currentLocation?.id)
-      setInventoryInfo(newInfo)
-    } catch (error) {
-      console.error('Conversion failed:', error)
-    } finally {
-      setIsConverting(false)
-    }
+    conversionMutation.mutate(prerollCount)
   }
 
   if (loading) {
@@ -165,14 +183,14 @@ export function VirtualPrerollSection({
           <div className="flex gap-2">
             <button
               onClick={handleConvert}
-              disabled={isConverting || prerollCount > maxPrerolls}
+              disabled={conversionMutation.isPending || prerollCount > maxPrerolls}
               className={`flex-1 py-1.5 px-3 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                isConverting || prerollCount > maxPrerolls
+                conversionMutation.isPending || prerollCount > maxPrerolls
                   ? 'bg-gray-400 cursor-not-allowed text-gray-600'
                   : 'bg-blue-500 text-white hover:bg-blue-600'
               }`}
             >
-              {isConverting ? (
+              {conversionMutation.isPending ? (
                 <>
                   <Loader2 className="w-3 h-3 animate-spin" />
                   Converting...

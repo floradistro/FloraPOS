@@ -7,6 +7,7 @@ import { RefreshCw } from 'lucide-react'
 import { ProductGrid } from '../components/ProductGrid'
 import { Cart } from '../components/Cart'
 import { AppWrapper } from '../components/AppWrapper'
+import { OrdersView } from '../components/OrdersView'
 import { StatusBar } from '../components/StatusBar'
 import SettingsPanel from '../components/SettingsPanel'
 import SiriGlowBorder from '../components/SiriGlowBorder'
@@ -29,13 +30,20 @@ export default function FloraDistrosPOS() {
   const [searchQuery, setSearchQuery] = useState('')
   const [assignedCustomer, setAssignedCustomer] = useState<Customer | null>(null)
   const [productCount, setProductCount] = useState<number>(0)
-  const [isProductsLoading, setIsProductsLoading] = useState<boolean>(true)
+  const [isProductsLoading, setIsProductsLoading] = useState<boolean>(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isCustomerViewOpen, setIsCustomerViewOpen] = useState(false)
   const [customerSearchQuery, setCustomerSearchQuery] = useState('')
+  const [isOrdersViewOpen, setIsOrdersViewOpen] = useState(false)
   const [isListView, setIsListView] = useState(false)
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+
+  // Orders filter states
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all')
+  const [orderDateFrom, setOrderDateFrom] = useState('')
+  const [orderDateTo, setOrderDateTo] = useState('')
+  const [orderPaymentFilter, setOrderPaymentFilter] = useState('all')
 
   // Sync location with authenticated store
   useEffect(() => {
@@ -56,9 +64,6 @@ export default function FloraDistrosPOS() {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   })
-
-  // Global loading state - wait for all critical data to load
-  const isAppLoading = isProductsLoading || customersLoading
 
   const mainCategories = [
     { name: 'All', slug: 'all', id: null },
@@ -158,20 +163,6 @@ export default function FloraDistrosPOS() {
 
       return (
       <>
-        {/* Global Loading Overlay */}
-        {isAppLoading && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black z-50">
-            <Image
-              src="/logo.png"
-              alt="Loading"
-              width={120}
-              height={120}
-              className="logo-fade-animation"
-              priority
-            />
-          </div>
-        )}
-        
         <AppWrapper>
         {/* Main App Container - Black status bar, no bottom gap */}
         <div className="app-content-container text-text-primary flex flex-col" style={{
@@ -210,15 +201,6 @@ export default function FloraDistrosPOS() {
             
             {/* Menu Items */}
             <nav className="space-y-2">
-              <button 
-                onClick={() => window.location.href = '/orders'}
-                className="w-full text-left px-4 py-3 hover:bg-background-tertiary rounded-lg transition-colors flex items-center gap-3">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Orders
-              </button>
-              
               <button 
                 onClick={handleOpenSettings}
                 className="w-full text-left px-4 py-3 hover:bg-background-tertiary rounded-lg transition-colors flex items-center gap-3">
@@ -272,45 +254,119 @@ export default function FloraDistrosPOS() {
               </button>
             </div>
             
-            {/* Category Selector */}
-            <div className="flex items-center">
-              {mainCategories.map((category, index) => (
-                <div key={category.slug} className="flex items-center">
-                  <button
-                    onClick={() => {
-                      console.log(`🏷️ Category clicked: ${category.name} (slug: ${category.slug}, id: ${category.id})`)
-                      setActiveCategory(category.slug)
-                    }}
-                    className={`px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 flex items-center justify-center ${
-                      activeCategory === category.slug
-                        ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
-                        : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
-                    }`}
+            {/* Category Selector / Order Filters - Fixed Width */}
+            <div className="flex items-center flex-1 justify-center">
+              {isOrdersViewOpen ? (
+                /* Order Filters */
+                <div className="flex items-center gap-2">
+                  {/* Status Filter */}
+                  <select
+                    value={orderStatusFilter}
+                    onChange={(e) => setOrderStatusFilter(e.target.value)}
+                    className="px-3 py-1 rounded-xl text-sm bg-neutral-900/65 text-text-primary border border-white/[0.04] focus:outline-none focus:ring-1 focus:ring-primary"
                   >
-                    {category.name}
-                  </button>
-                  {index < mainCategories.length - 1 && (
-                    <div className="w-px h-4 bg-vscode-border/60 mx-1"></div>
-                  )}
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="refunded">Refunded</option>
+                  </select>
+
+                  {/* Date From */}
+                  <input
+                    type="date"
+                    value={orderDateFrom}
+                    onChange={(e) => setOrderDateFrom(e.target.value)}
+                    className="px-3 py-1 rounded-xl text-sm bg-neutral-900/65 text-text-primary border border-white/[0.04] focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="From Date"
+                  />
+
+                  {/* Date To */}
+                  <input
+                    type="date"
+                    value={orderDateTo}
+                    onChange={(e) => setOrderDateTo(e.target.value)}
+                    className="px-3 py-1 rounded-xl text-sm bg-neutral-900/65 text-text-primary border border-white/[0.04] focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="To Date"
+                  />
+
+                  {/* Payment Method Filter */}
+                  <select
+                    value={orderPaymentFilter}
+                    onChange={(e) => setOrderPaymentFilter(e.target.value)}
+                    className="px-3 py-1 rounded-xl text-sm bg-neutral-900/65 text-text-primary border border-white/[0.04] focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="all">All Payment</option>
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="bacs">Bank Transfer</option>
+                  </select>
                 </div>
-              ))}
+              ) : (
+                /* Product Categories */
+                <div className="flex items-center">
+                  {mainCategories.map((category, index) => (
+                    <div key={category.slug} className="flex items-center">
+                      <button
+                        onClick={() => {
+                          console.log(`🏷️ Category clicked: ${category.name} (slug: ${category.slug}, id: ${category.id})`)
+                          setActiveCategory(category.slug)
+                        }}
+                        className={`px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 flex items-center justify-center ${
+                          activeCategory === category.slug
+                            ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
+                            : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
+                        }`}
+                      >
+                        {category.name}
+                      </button>
+                      {index < mainCategories.length - 1 && (
+                        <div className="w-px h-4 bg-vscode-border/60 mx-1"></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             
-            {/* Navigation Controls */}
-            <div className="flex items-center">
+            {/* Navigation Controls - Fixed Position */}
+            <div className="flex items-center flex-shrink-0">
               {/* Customer View Toggle */}
               <button
-                onClick={() => setIsCustomerViewOpen(!isCustomerViewOpen)}
-                className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 flex items-center gap-2 ${
+                onClick={() => {
+                  setIsCustomerViewOpen(!isCustomerViewOpen)
+                }}
+                className={`p-2 rounded-xl transition-all duration-300 ease-out active:scale-95 ${
                   isCustomerViewOpen
                     ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
                     : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
                 }`}
+                title="Customers"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                Customers
+              </button>
+
+              {/* Divider */}
+              <div className="w-px h-4 bg-vscode-border/60 mx-2"></div>
+
+              {/* Orders View Toggle */}
+              <button
+                onClick={() => {
+                  setIsOrdersViewOpen(!isOrdersViewOpen)
+                }}
+                className={`p-2 rounded-xl transition-all duration-300 ease-out active:scale-95 ${
+                  isOrdersViewOpen
+                    ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
+                    : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
+                }`}
+                title="Orders"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </button>
 
               {/* Divider */}
@@ -319,22 +375,22 @@ export default function FloraDistrosPOS() {
               {/* List View Toggle */}
               <button
                 onClick={() => setIsListView(!isListView)}
-                className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 flex items-center gap-2 ${
+                className={`p-2 rounded-xl transition-all duration-300 ease-out active:scale-95 ${
                   isListView
                     ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
                     : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
                 }`}
+                title={isListView ? 'List View' : 'Grid View'}
               >
                 {isListView ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                   </svg>
                 ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                   </svg>
                 )}
-                {isListView ? 'List' : 'Grid'}
               </button>
             </div>
 
@@ -371,7 +427,7 @@ export default function FloraDistrosPOS() {
         {/* Main Content Area */}
         <div className={`flex-1 min-h-0 ${
           isCustomerViewOpen 
-            ? 'grid grid-cols-[1fr_2fr_320px] gap-0' 
+            ? 'grid grid-cols-[1fr_2fr_320px] gap-0'
             : 'flex'
         } overflow-hidden`}>
           {/* Customer View Panel */}
@@ -479,21 +535,31 @@ export default function FloraDistrosPOS() {
             </div>
           )}
 
-          {/* Products Grid */}
+          {/* Products Grid / Orders View */}
           <div className={`px-0 pb-0 relative bg-black ${
             isCustomerViewOpen ? '' : 'flex-1'
           } ${
             isListView ? 'overflow-hidden' : 'overflow-y-auto'
           }`}>
-            <ProductGrid
-              category={activeCategory === 'all' ? null : mainCategories.find(cat => cat.slug === activeCategory)?.id || null}
-              searchQuery={searchQuery}
-              onAddToCart={handleAddToCart}
-              onProductCountChange={setProductCount}
-              onLoadingChange={setIsProductsLoading}
-              isCustomerViewOpen={isCustomerViewOpen}
-              isListView={isListView}
-            />
+            {isOrdersViewOpen ? (
+              <OrdersView 
+                statusFilter={orderStatusFilter}
+                dateFrom={orderDateFrom}
+                dateTo={orderDateTo}
+                paymentFilter={orderPaymentFilter}
+                searchQuery={searchQuery}
+              />
+            ) : (
+              <ProductGrid
+                category={activeCategory === 'all' ? null : mainCategories.find(cat => cat.slug === activeCategory)?.id || null}
+                searchQuery={searchQuery}
+                onAddToCart={handleAddToCart}
+                onProductCountChange={setProductCount}
+                onLoadingChange={setIsProductsLoading}
+                isCustomerViewOpen={isCustomerViewOpen}
+                isListView={isListView}
+              />
+            )}
           </div>
 
           {/* Cart Sidebar */}
@@ -513,22 +579,25 @@ export default function FloraDistrosPOS() {
 
 
         {/* VSCode-style Status Bar - Matches Header Nav */}
-        <div className="bg-black px-6 pt-2 pb-6 flex items-center justify-between text-xs text-text-secondary flex-shrink-0 relative">
+        <div className="bg-black px-6 pt-2 pb-6 flex items-center text-xs text-text-secondary flex-shrink-0">
           {/* Left Section */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-1">
             {store && <span>{store.name}</span>}
-            <span>{productCount} products available</span>
+            {isOrdersViewOpen ? (
+              <span>Orders management</span>
+            ) : (
+              <span>{productCount} products available</span>
+            )}
           </div>
 
-          {/* Center Section - Absolutely positioned for true centering */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
+          {/* Center Section - Perfectly Centered */}
+          <div className="flex items-center justify-center flex-1">
             {user && <span>Hello, {user.firstName}</span>}
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-1 justify-end">
             <span>POS</span>
-            <span className="font-mono">{new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
           </div>
         </div>
 

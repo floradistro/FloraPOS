@@ -176,13 +176,10 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
   if (isListView) {
     return (
       <div 
-        className={`list-item-container ${
-          isOddRow ? 'bg-black/90' : 'bg-black/95'
-        } border-b border-white/10 hover:bg-neutral-800/80 hover:border-white/20 transition-all duration-200`}
+        className="bg-neutral-900/40 border border-white/[0.04] rounded-lg p-3 hover:bg-neutral-900/60 transition-colors mb-2"
       >
-        {/* Main List Row */}
         <div 
-          className="list-row flex items-center px-4 py-3 cursor-pointer"
+          className="cursor-pointer flex items-start gap-3"
           onClick={() => {
             const newExpandedState = !isExpanded
             setIsExpanded(newExpandedState)
@@ -191,13 +188,8 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
             }
           }}
         >
-          {/* Expand Icon */}
-          <div className="w-4 h-4 mr-3 flex-shrink-0 text-white/60">
-            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          </div>
-
           {/* Product Image */}
-          <div className="w-12 h-12 mr-4 flex-shrink-0 relative">
+          <div className="w-12 h-12 flex-shrink-0 relative">
             {product.images?.[0] ? (
               <Image
                 src={product.images[0].src}
@@ -208,7 +200,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
               />
             ) : (
               <div className="w-full h-full bg-neutral-800 flex items-center justify-center rounded">
-                <span className="text-white/40 text-xs">No img</span>
+                <span className="text-text-tertiary text-xs">No img</span>
               </div>
             )}
             {isOutOfStock && (
@@ -218,107 +210,91 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
             )}
           </div>
 
-          {/* Product Name & Description */}
-          <div className="flex-1 min-w-0 mr-4">
-            <h3 className="text-white font-medium text-sm truncate">{product.name}</h3>
-            <p className="text-white/60 text-xs truncate mt-0.5">
-              {stripHtmlTags(product.short_description || product.description || 'No description')}
-            </p>
-          </div>
-
-          {/* Category */}
-          <div className="w-24 mr-4 flex-shrink-0">
-            <span className="text-white/60 text-xs">
-              {product.categories?.[0]?.name || 'Other'}
-            </span>
-          </div>
-
-          {/* Strain Type */}
-          <div className="w-20 mr-4 flex-shrink-0">
-            <span className="text-white/60 text-xs capitalize">
-              {getStrainType() || '-'}
-            </span>
-          </div>
-
-          {/* Stock */}
-          <div className="w-24 mr-4 flex-shrink-0">
-            <span className={`text-xs font-medium ${getStockColor()}`}>
-              {getStockText()}
-            </span>
-          </div>
-
-          {/* Price */}
-          <div className="w-20 mr-4 flex-shrink-0 text-right">
-            {(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') ? (
-              selectedPrice ? (
-                <span className="text-green-400 font-bold text-sm">${selectedPrice.toFixed(2)}</span>
-              ) : (
-                <span className="text-white/40 text-xs">Select</span>
-              )
-            ) : (
-              <div>
-                <span className="text-green-400 font-bold text-sm">${price.toFixed(2)}</span>
-                {hasDiscount && (
-                  <div className="text-white/40 text-xs line-through">${regularPrice.toFixed(2)}</div>
-                )}
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-text-primary">{product.name}</span>
               </div>
-            )}
-          </div>
-
-          {/* Add Button - Only for simple products */}
-          <div className="w-8 flex-shrink-0">
-            {!(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleAddToCart(e)
-                }}
-                disabled={isOutOfStock}
-                className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-                  isOutOfStock 
-                    ? 'bg-neutral-700 text-white/30 cursor-not-allowed' 
-                    : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            )}
+              <span className="text-sm font-semibold text-text-primary">
+                {(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') ? (
+                  selectedPrice ? `$${selectedPrice.toFixed(2)}` : (
+                    <svg className="w-4 h-4 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )
+                ) : (
+                  `$${price.toFixed(2)}`
+                )}
+              </span>
+            </div>
+            
+            <div className="text-xs text-text-secondary">
+              <div className="flex items-center gap-2">
+                <span>{product.categories?.[0]?.name || 'Other'}</span>
+                <span className="text-text-tertiary">•</span>
+                <span className="text-text-tertiary capitalize">{getStockText()}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Expanded Details */}
         {isExpanded && (
-          <div className="expanded-content bg-black/95 border-t border-white/10 px-4 py-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column - Product Info */}
-              <div className="product-info space-y-4">
-                <ProductLineage productId={product.id} product={product} />
+          <div className="bg-neutral-800/60 border-l-4 border-neutral-600 mx-3 mb-2 rounded p-4">
+            
+            {/* Compact Info Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs mb-3">
+              
+              {/* Product Info */}
+              <div className="space-y-1">
+                <div className="text-neutral-300 uppercase tracking-wide font-bold">Product</div>
+                <div className="text-white font-medium">{product.name}</div>
+                <div className="text-neutral-200 font-medium">{product.categories?.[0]?.name || 'Other'}</div>
+                {getStrainType() && <div className="text-white font-medium capitalize">{getStrainType()}</div>}
                 
-                {(product.description || product.short_description) && (
-                  <div>
-                    <h4 className="text-white/80 text-sm font-medium mb-2">Description</h4>
-                    <div 
-                      className="text-white/70 text-sm leading-relaxed"
-                      dangerouslySetInnerHTML={{ 
-                        __html: product.description || product.short_description || '' 
-                      }}
-                    />
-                  </div>
-                )}
-
-                <ProductCharacteristics productId={product.id} />
-                <ACFFieldsDisplay productId={product.id} productName={product.name} />
+                {/* Product Lineage */}
+                <div className="mt-2">
+                  <ProductLineage productId={product.id} product={product} />
+                </div>
+                
+                {/* ACF Fields Display */}
+                <div className="mt-2">
+                  <ACFFieldsDisplay productId={product.id} productName={product.name} />
+                </div>
               </div>
 
-              {/* Right Column - Options & Actions */}
-              <div className="product-options space-y-4">
+              {/* Stock & Pricing */}
+              <div className="space-y-1">
+                <div className="text-neutral-300 uppercase tracking-wide font-bold">Details</div>
+                <div className="text-white font-medium">{getStockText()}</div>
+                <div className="text-green-300 font-bold text-base">
+                  {(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') ? (
+                    selectedPrice ? `$${selectedPrice.toFixed(2)}` : 'Select option'
+                  ) : (
+                    `$${price.toFixed(2)}`
+                  )}
+                </div>
+                {hasDiscount && (
+                  <div className="text-neutral-200 text-sm line-through">${regularPrice.toFixed(2)}</div>
+                )}
+                
+                {/* Product Characteristics */}
+                <div className="mt-2">
+                  <ProductCharacteristics productId={product.id} />
+                </div>
+              </div>
+
+              {/* Options & Actions */}
+              <div className="space-y-2">
+                <div className="text-neutral-300 uppercase tracking-wide font-bold">Options & Actions</div>
+                
                 {/* Weight Options */}
                 {(product.mli_product_type === 'weight' && product.pricing_tiers) && (
                   <div>
-                    <h4 className="text-white/80 text-sm font-medium mb-3">
+                    <div className="text-neutral-200 text-xs mb-1">
                       {product.preroll_pricing_tiers ? 'Flower Options' : 'Weight Options'}
-                    </h4>
-                    <div className="grid grid-cols-4 gap-2">
+                    </div>
+                    <div className="flex gap-1 text-xs flex-wrap">
                       {Object.entries(product.pricing_tiers || {}).map(([grams, totalPrice]) => {
                         const variationKey = `flower-${grams}`
                         const isSelected = selectedVariation === variationKey
@@ -330,12 +306,12 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                               handleVariationSelect(variationKey)
                             }}
                             disabled={isOutOfStock}
-                            className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                               isOutOfStock 
-                                ? 'bg-neutral-800 text-white/30 cursor-not-allowed' 
+                                ? 'bg-neutral-800 text-text-tertiary cursor-not-allowed' 
                                 : isSelected
                                 ? 'bg-white text-black'
-                                : 'bg-white/10 text-white hover:bg-white/20'
+                                : 'bg-white/10 text-text-primary hover:bg-white/20'
                             }`}
                           >
                             {grams}g
@@ -346,14 +322,15 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                     
                     {/* Preroll Options */}
                     {product.preroll_pricing_tiers && (
-                      <>
-                        <h4 className="text-white/80 text-sm font-medium mb-3 mt-4">Pre-roll Options</h4>
-                        <div className="grid grid-cols-4 gap-2">
+                      <div className="mt-2">
+                        <div className="text-neutral-200 text-xs mb-1">Pre-roll Options</div>
+                        <div className="flex gap-1 text-xs flex-wrap">
                           {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice]) => {
                             const variationKey = `preroll-${count}`
                             const isSelected = selectedVariation === variationKey
                             const gramsPerPreroll = product.mli_preroll_conversion || 0.7
                             const totalGrams = parseFloat((parseInt(count) * gramsPerPreroll).toFixed(1))
+                            const availability = getPrerollAvailability(parseInt(count))
                             return (
                               <button
                                 key={count}
@@ -362,30 +339,36 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                                   handleVariationSelect(variationKey)
                                 }}
                                 disabled={isOutOfStock}
-                                className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                                   isOutOfStock 
-                                    ? 'bg-neutral-800 text-white/30 cursor-not-allowed' 
+                                    ? 'bg-neutral-800 text-text-tertiary cursor-not-allowed' 
                                     : isSelected
                                     ? 'bg-white text-black'
-                                    : 'bg-white/10 text-white hover:bg-white/20'
+                                    : 'bg-white/10 text-text-primary hover:bg-white/20'
                                 }`}
-                                title={`${count} pre-rolls (${totalGrams}g total)`}
+                                title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
                               >
-                                {count}x
+                                <div>{count}x</div>
+                                <div className="text-xs opacity-70">({totalGrams}g)</div>
                               </button>
                             )
                           })}
                         </div>
-                      </>
+                      </div>
                     )}
+                    
+                    {/* Best Rate Display */}
+                    <div className="text-xs text-neutral-300 mt-1">
+                      Best rate: ${price.toFixed(2)}/g
+                    </div>
                   </div>
                 )}
 
                 {/* Quantity Options */}
                 {(product.mli_product_type === 'quantity' && product.pricing_tiers) && (
                   <div>
-                    <h4 className="text-white/80 text-sm font-medium mb-3">Quantity Options</h4>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="text-neutral-200 text-xs mb-1">Quantity Options</div>
+                    <div className="flex gap-1 text-xs flex-wrap">
                       {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit]) => {
                         const variationKey = `qty-${qty}`
                         const isSelected = selectedVariation === variationKey
@@ -397,12 +380,12 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                               handleVariationSelect(variationKey)
                             }}
                             disabled={isOutOfStock}
-                            className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                               isOutOfStock 
-                                ? 'bg-neutral-800 text-white/30 cursor-not-allowed' 
+                                ? 'bg-neutral-800 text-text-tertiary cursor-not-allowed' 
                                 : isSelected
                                 ? 'bg-white text-black'
-                                : 'bg-white/10 text-white hover:bg-white/20'
+                                : 'bg-white/10 text-text-primary hover:bg-white/20'
                             }`}
                           >
                             {qty}
@@ -428,26 +411,39 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                 />
 
                 {/* Add to Cart Button */}
-                {(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') && selectedVariation !== 'default' && (
-                  <div className="flex justify-end">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleAddToCart(e)
-                      }}
-                      disabled={isOutOfStock}
-                      className={`px-6 py-2 rounded font-medium transition-colors ${
-                        isOutOfStock 
-                          ? 'bg-neutral-700 text-white/30 cursor-not-allowed' 
-                          : 'bg-green-600 text-white hover:bg-green-700'
-                      }`}
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                )}
+                {((product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') && selectedVariation !== 'default') || 
+                 !(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleAddToCart(e)
+                    }}
+                    disabled={isOutOfStock}
+                    className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                      isOutOfStock 
+                        ? 'bg-neutral-700 text-text-tertiary cursor-not-allowed' 
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                    }`}
+                  >
+                    Add to Cart
+                  </button>
+                ) : null}
               </div>
             </div>
+
+            {/* Description */}
+            {(product.description || product.short_description) && (
+              <div className="border-t border-[#3e3e42] pt-2">
+                <div className="text-[#858585] uppercase tracking-wide font-medium text-xs mb-2">Description</div>
+                <div 
+                  className="text-[#d4d4d4] text-xs"
+                  dangerouslySetInnerHTML={{ 
+                    __html: stripHtmlTags(product.description || product.short_description || '') 
+                  }}
+                />
+              </div>
+            )}
+
           </div>
         )}
       </div>
