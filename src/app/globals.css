@@ -111,13 +111,21 @@
   }
 }
 
-/* iPad specific fixes for PWA mode */
+/* App container safe area handling */
+.app-content-container {
+  /* Always respect safe areas */
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  padding-left: env(safe-area-inset-left, 0px) !important;
+  padding-right: env(safe-area-inset-right, 0px) !important;
+  box-sizing: border-box;
+}
+
+/* iPad specific styling */
 @media (max-width: 1024px) and (orientation: landscape) {
   .app-content-container {
     border-radius: 20px;
     overflow: hidden;
-    /* iPad Pro specific safe area fix */
-    padding-top: max(env(safe-area-inset-top, 44px), 44px) !important;
   }
 }
 
@@ -125,19 +133,6 @@
   .app-content-container {
     border-radius: 20px;
     overflow: hidden;
-    /* iPad Pro specific safe area fix */
-    padding-top: max(env(safe-area-inset-top, 44px), 44px) !important;
-  }
-}
-
-/* iPad Pro specific PWA fix */
-@media only screen 
-  and (min-device-width: 1024px) 
-  and (max-device-width: 1366px) 
-  and (-webkit-min-device-pixel-ratio: 2) {
-  .app-content-container {
-    /* Force proper spacing on iPad Pro */
-    padding-top: max(env(safe-area-inset-top, 44px), 44px) !important;
   }
 }
 
@@ -363,15 +358,18 @@ textarea:focus-visible {
   }
 }
 
-/* Clean body styles - allow app content independence */
+/* Clean body styles with proper safe area handling */
 html, body {
   position: relative;
   overflow-x: hidden; /* Prevent horizontal scroll */
   height: 100%;
   width: 100%;
-  /* Ensure body doesn't interfere with app content positioning */
   margin: 0;
   padding: 0;
+  /* Critical: Respect iOS safe areas to prevent status bar overlap */
+  padding-top: env(safe-area-inset-top);
+  box-sizing: border-box;
+  background: black;
 }
 
 /* Ensure no horizontal overflow anywhere */
