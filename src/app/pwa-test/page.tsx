@@ -78,7 +78,15 @@ export default function PWATestPage() {
         </div>
       )}
       
-      <div className="max-w-4xl mx-auto space-y-8 p-8" data-scrollable>
+      <div 
+        className="max-w-4xl mx-auto space-y-8 p-8" 
+        data-scrollable
+        style={{
+          paddingTop: pwa.isInstalled && deviceInfo.isIPad 
+            ? `calc(var(--ios-status-bar-height, 44px) + env(safe-area-inset-top, 0px) + 2rem)` 
+            : '2rem'
+        }}
+      >
         <h1 className="text-3xl font-bold mb-8">PWA Test Page</h1>
 
         {/* PWA Status */}
