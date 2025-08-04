@@ -104,7 +104,7 @@ export class ClaudeAgent {
             toolResults.push({
               type: 'tool_result',
               tool_use_id: toolCall.id,
-              content: JSON.stringify({ error: true, message: error.message })
+              content: JSON.stringify({ error: true, message: error instanceof Error ? error.message : String(error) })
             })
           }
         }
