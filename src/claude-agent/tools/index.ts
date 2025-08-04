@@ -69,7 +69,7 @@ export async function executeTool(
     console.log(`✅ Claude Agent Success: Received ${itemCount} item(s)`)
     
     // Format response with metadata for Claude agent
-    const result = {
+    const result: any = {
       success: true,
       data,
       count: itemCount
