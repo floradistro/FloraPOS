@@ -32,10 +32,15 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       
       {/* Settings Panel */}
       <div className={`
-        fixed top-0 left-0 h-full w-80 bg-background-secondary border-r border-white/[0.08] z-50
+        fixed left-0 w-80 bg-background-secondary border-r border-white/[0.08] z-50
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+      `} style={{
+        top: 'env(safe-area-inset-top, 0px)',
+        bottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+      }}>
         {/* Header */}
         <div className="px-2 py-6 flex items-center justify-end border-b border-white/[0.08]">
           <button

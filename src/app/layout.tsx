@@ -94,35 +94,6 @@ export default function RootLayout({
                 margin-top: 0 !important; 
                 background: #000000 !important;
               }
-              
-              /* Ensure safe area is properly handled */
-              .header-nav {
-                background: #000000 !important;
-              }
-            }
-            
-            /* iPad Pro specific PWA adjustments */
-            @media (display-mode: standalone) and (min-width: 768px) {
-              :root {
-                --safe-area-inset-top: env(safe-area-inset-top, 24px);
-              }
-              
-              .header-nav {
-                min-height: calc(44px + env(safe-area-inset-top, 24px));
-                background: #000000 !important;
-              }
-              
-              /* Ensure menu drawer respects safe area on iPad */
-              .menu-drawer {
-                padding-top: env(safe-area-inset-top, 24px) !important;
-              }
-            }
-            
-            /* iPad Pro 12.9" specific adjustments */
-            @media (display-mode: standalone) and (min-width: 1024px) and (min-height: 1366px) {
-              .header-nav {
-                min-height: calc(50px + env(safe-area-inset-top, 24px));
-              }
             }
             
             /* iPad specific optimizations */
