@@ -169,7 +169,7 @@ export default function FloraDistrosPOS() {
             paddingLeft: '4px',
             paddingRight: '4px'
           }} />
-        <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative" style={{ 
+        <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative min-h-screen" style={{ 
           height: '100dvh', 
           paddingTop: 'env(safe-area-inset-top, 44px)',
           paddingBottom: '0px'
@@ -361,7 +361,7 @@ export default function FloraDistrosPOS() {
         </div>
 
         {/* Main Content Area */}
-        <div className={`flex-1 min-h-0 ${
+        <div className={`flex-1 min-h-0 h-full ${
           isCustomerViewOpen 
             ? 'grid grid-cols-[1fr_2fr_320px] gap-0' 
             : 'flex'
