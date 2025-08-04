@@ -240,17 +240,17 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
         </div>
 
         {isExpanded && (
-          <div className="bg-neutral-800/60 border-l-4 border-neutral-600 mx-3 mb-2 rounded p-4">
+          <div className="border-l-4 border-black mx-3 mb-2 rounded p-4 ml-12 bg-black/20 hover:bg-black/30 transition-all duration-300">
             
             {/* Compact Info Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs mb-3">
               
               {/* Product Info */}
               <div className="space-y-1">
-                <div className="text-neutral-300 uppercase tracking-wide font-bold">Product</div>
-                <div className="text-white font-medium">{product.name}</div>
-                <div className="text-neutral-200 font-medium">{product.categories?.[0]?.name || 'Other'}</div>
-                {getStrainType() && <div className="text-white font-medium capitalize">{getStrainType()}</div>}
+                <div className="text-vscode-textMuted font-medium">Product</div>
+                <div className="text-vscode-text font-medium">{product.name}</div>
+                <div className="text-vscode-textMuted font-medium">{product.categories?.[0]?.name || 'Other'}</div>
+                {getStrainType() && <div className="text-vscode-text font-medium capitalize">{getStrainType()}</div>}
                 
                 {/* Product Lineage */}
                 <div className="mt-2">
@@ -265,9 +265,9 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
 
               {/* Stock & Pricing */}
               <div className="space-y-1">
-                <div className="text-neutral-300 uppercase tracking-wide font-bold">Details</div>
-                <div className="text-white font-medium">{getStockText()}</div>
-                <div className="text-green-300 font-bold text-base">
+                <div className="text-vscode-textMuted font-medium">Details</div>
+                <div className="text-vscode-text font-medium">{getStockText()}</div>
+                <div className="text-green-400 font-bold text-base">
                   {(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') ? (
                     selectedPrice ? `$${selectedPrice.toFixed(2)}` : 'Select option'
                   ) : (
@@ -275,7 +275,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                   )}
                 </div>
                 {hasDiscount && (
-                  <div className="text-neutral-200 text-sm line-through">${regularPrice.toFixed(2)}</div>
+                  <div className="text-vscode-textMuted text-sm line-through">${regularPrice.toFixed(2)}</div>
                 )}
                 
                 {/* Product Characteristics */}
@@ -286,36 +286,40 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
 
               {/* Options & Actions */}
               <div className="space-y-2">
-                <div className="text-neutral-300 uppercase tracking-wide font-bold">Options & Actions</div>
+                <div className="text-vscode-textMuted font-medium">Options & Actions</div>
                 
                 {/* Weight Options */}
                 {(product.mli_product_type === 'weight' && product.pricing_tiers) && (
                   <div>
-                    <div className="text-neutral-200 text-xs mb-1">
+                    <div className="text-vscode-textMuted text-xs mb-1">
                       {product.preroll_pricing_tiers ? 'Flower Options' : 'Weight Options'}
                     </div>
-                    <div className="flex gap-1 text-xs flex-wrap">
-                      {Object.entries(product.pricing_tiers || {}).map(([grams, totalPrice]) => {
+                    <div className="flex gap-1 text-xs overflow-visible">
+                      {Object.entries(product.pricing_tiers || {}).map(([grams, totalPrice], index, array) => {
                         const variationKey = `flower-${grams}`
                         const isSelected = selectedVariation === variationKey
                         return (
-                          <button
-                            key={grams}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleVariationSelect(variationKey)
-                            }}
-                            disabled={isOutOfStock}
-                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                              isOutOfStock 
-                                ? 'bg-neutral-800 text-text-tertiary cursor-not-allowed' 
-                                : isSelected
-                                ? 'bg-white text-black'
-                                : 'bg-white/10 text-text-primary hover:bg-white/20'
-                            }`}
-                          >
-                            {grams}g
-                          </button>
+                          <div key={grams} className="flex-1 relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleVariationSelect(variationKey)
+                              }}
+                              disabled={isOutOfStock}
+                              className={`w-full justify-center px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 ${
+                                isOutOfStock 
+                                  ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
+                                  : isSelected
+                                  ? 'text-white bg-white/15 shadow-lg shadow-white/10 border border-transparent'
+                                  : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
+                              }`}
+                            >
+                              {grams}g
+                            </button>
+                            {index < array.length - 1 && (
+                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
+                            )}
+                          </div>
                         )
                       })}
                     </div>
@@ -323,34 +327,38 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                     {/* Preroll Options */}
                     {product.preroll_pricing_tiers && (
                       <div className="mt-2">
-                        <div className="text-neutral-200 text-xs mb-1">Pre-roll Options</div>
-                        <div className="flex gap-1 text-xs flex-wrap">
-                          {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice]) => {
+                        <div className="text-vscode-textMuted text-xs mb-1">Pre-roll Options</div>
+                        <div className="flex gap-1 text-xs overflow-visible">
+                          {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice], index, array) => {
                             const variationKey = `preroll-${count}`
                             const isSelected = selectedVariation === variationKey
                             const gramsPerPreroll = product.mli_preroll_conversion || 0.7
                             const totalGrams = parseFloat((parseInt(count) * gramsPerPreroll).toFixed(1))
                             const availability = getPrerollAvailability(parseInt(count))
                             return (
-                              <button
-                                key={count}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleVariationSelect(variationKey)
-                                }}
-                                disabled={isOutOfStock}
-                                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                  isOutOfStock 
-                                    ? 'bg-neutral-800 text-text-tertiary cursor-not-allowed' 
-                                    : isSelected
-                                    ? 'bg-white text-black'
-                                    : 'bg-white/10 text-text-primary hover:bg-white/20'
-                                }`}
-                                title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
-                              >
-                                <div>{count}x</div>
-                                <div className="text-xs opacity-70">({totalGrams}g)</div>
-                              </button>
+                              <div key={count} className="flex-1 relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleVariationSelect(variationKey)
+                                  }}
+                                  disabled={isOutOfStock}
+                                  className={`w-full flex-col justify-center px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 ${
+                                    isOutOfStock 
+                                      ? 'cursor-not-allowed text-vscode-textMuted bg-transparent border border-transparent' 
+                                      : isSelected
+                                      ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
+                                      : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
+                                  }`}
+                                  title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
+                                >
+                                  <div>{count}x</div>
+                                  <div className="text-xs opacity-70">({totalGrams}g)</div>
+                                </button>
+                                {index < array.length - 1 && (
+                                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
+                                )}
+                              </div>
                             )
                           })}
                         </div>
@@ -358,7 +366,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                     )}
                     
                     {/* Best Rate Display */}
-                    <div className="text-xs text-neutral-300 mt-1">
+                    <div className="text-xs text-vscode-textMuted mt-1">
                       Best rate: ${price.toFixed(2)}/g
                     </div>
                   </div>
@@ -367,29 +375,33 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                 {/* Quantity Options */}
                 {(product.mli_product_type === 'quantity' && product.pricing_tiers) && (
                   <div>
-                    <div className="text-neutral-200 text-xs mb-1">Quantity Options</div>
-                    <div className="flex gap-1 text-xs flex-wrap">
-                      {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit]) => {
+                    <div className="text-vscode-textMuted text-xs mb-1">Quantity Options</div>
+                    <div className="flex gap-1 text-xs overflow-visible">
+                      {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit], index, array) => {
                         const variationKey = `qty-${qty}`
                         const isSelected = selectedVariation === variationKey
                         return (
-                          <button
-                            key={qty}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleVariationSelect(variationKey)
-                            }}
-                            disabled={isOutOfStock}
-                            className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                              isOutOfStock 
-                                ? 'bg-neutral-800 text-text-tertiary cursor-not-allowed' 
-                                : isSelected
-                                ? 'bg-white text-black'
-                                : 'bg-white/10 text-text-primary hover:bg-white/20'
-                            }`}
-                          >
-                            {qty}
-                          </button>
+                          <div key={qty} className="flex-1 relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleVariationSelect(variationKey)
+                              }}
+                              disabled={isOutOfStock}
+                              className={`w-full justify-center px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 ${
+                                isOutOfStock 
+                                  ? 'cursor-not-allowed text-vscode-textMuted bg-transparent border border-transparent' 
+                                  : isSelected
+                                  ? 'text-vscode-text bg-white/15 shadow-lg shadow-white/10 border border-white/30'
+                                  : 'text-vscode-textSecondary hover:text-vscode-text bg-transparent hover:bg-vscode-bgTertiary/50 border border-transparent hover:border-vscode-border/50 hover:shadow-sm hover:shadow-black/10'
+                              }`}
+                            >
+                              {qty}
+                            </button>
+                            {index < array.length - 1 && (
+                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
+                            )}
+                          </div>
                         )
                       })}
                     </div>
@@ -433,10 +445,10 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
 
             {/* Description */}
             {(product.description || product.short_description) && (
-              <div className="border-t border-[#3e3e42] pt-2">
-                <div className="text-[#858585] uppercase tracking-wide font-medium text-xs mb-2">Description</div>
+              <div className="border-t border-vscode-border pt-2">
+                <div className="text-vscode-textMuted font-medium text-xs mb-2">Description</div>
                 <div 
-                  className="text-[#d4d4d4] text-xs"
+                  className="text-vscode-text text-xs"
                   dangerouslySetInnerHTML={{ 
                     __html: stripHtmlTags(product.description || product.short_description || '') 
                   }}
