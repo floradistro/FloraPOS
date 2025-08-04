@@ -235,6 +235,9 @@ export default function FloraDistrosPOS() {
 
 
 
+        {/* Header Spacer */}
+        <div className="bg-black" style={{ height: '18px' }}></div>
+        
         {/* Header */}
         <div className="header-nav bg-black border-b border-white/[0.04] px-4 py-1 flex-shrink-0 relative z-30">
           <div className="flex items-center justify-between gap-2">
