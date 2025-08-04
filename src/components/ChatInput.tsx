@@ -88,7 +88,7 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
         content: msg.content
       }))
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/chat-v2', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -205,10 +205,11 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
         /* Centered Input - No messages state */
         <div className="h-full flex items-center justify-center p-6">
           <div className="w-full max-w-2xl">
-            <div className="text-center mb-8">
-              <div className="text-2xl font-light text-text-primary mb-3">Start a conversation</div>
-              <div className="text-text-secondary">Ask about inventory, orders, or sales...</div>
-            </div>
+                          <div className="text-center mb-8">
+                <div className="text-2xl font-light text-text-primary mb-3">Start a conversation</div>
+                <div className="text-text-secondary">Ask about inventory, orders, or sales...</div>
+                <div className="text-xs text-text-tertiary mt-2">✨ Enhanced with bulk API endpoints for faster responses</div>
+              </div>
             
             <form onSubmit={handleSubmit}>
               <div className="relative">
@@ -216,7 +217,7 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask about inventory, orders, or sales..."
+                  placeholder="Ask about inventory, orders, sales, or bulk operations..."
                   rows={1}
                   disabled={isLoading}
                   className="w-full px-4 py-3 pr-12 bg-neutral-900/40 border border-white/[0.04] rounded-3xl text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-blue-500/30 hover:bg-neutral-900/60 text-base resize-none shadow-lg transition-all disabled:opacity-50"
@@ -282,27 +283,32 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                     <div className="max-w-[80%]">
                       <div className="text-sm text-text-primary whitespace-pre-wrap ai-response">
                         {msg.content.split('\n').map((line, i) => {
-                          // Format different types of content
-                          if (line.startsWith('🤔 **AI Analysis**:')) {
-                            return <div key={i} className="text-blue-400 font-semibold mb-2">{line}</div>
-                          } else if (line.startsWith('📋 **Execution Plan**:')) {
-                            return <div key={i} className="text-green-400 font-semibold mb-2">{line}</div>
-                          } else if (line.startsWith('💡 **Key Findings')) {
-                            return <div key={i} className="text-yellow-400 font-semibold mb-2">{line}</div>
-                          } else if (line.startsWith('🧠 **Analyzing')) {
-                            return <div key={i} className="text-purple-400 font-semibold mb-2">{line}</div>
-                          } else if (line.startsWith('📝 **Final Analysis')) {
-                            return <div key={i} className="text-white font-semibold mb-2 mt-4">{line}</div>
-                          } else if (line.startsWith('  •')) {
-                            return <div key={i} className="text-gray-300 ml-4">{line}</div>
-                          } else if (line.includes('**') && line.includes(':')) {
-                            // Bold headers
-                            const formatted = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                            return <div key={i} className="mb-1" dangerouslySetInnerHTML={{ __html: formatted }} />
-                          } else if (line.startsWith('✅') || line.startsWith('❌') || line.startsWith('⏱️')) {
-                            return <div key={i} className="text-xs text-gray-400 font-mono">{line}</div>
+                          // Clean, minimal formatting for modern UI
+                          if (line.startsWith('Using tool:')) {
+                            return <div key={i} className="text-blue-400 text-sm mb-1 opacity-80 flex items-center gap-2">
+                              <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse"></div>
+                              {line}
+                            </div>
+                          } else if (line.startsWith('Analyzing results') || line.startsWith('Reviewing results')) {
+                            return <div key={i} className="text-gray-400 text-sm mb-1 opacity-80 flex items-center gap-2">
+                              <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse"></div>
+                              {line}
+                            </div>
+                          } else if (line.startsWith('Trying ')) {
+                            return <div key={i} className="text-blue-400 text-sm mb-1 opacity-80 flex items-center gap-2">
+                              <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse"></div>
+                              {line}
+                            </div>
+                          } else if (line.startsWith('✓')) {
+                            return <div key={i} className="text-green-400 text-sm inline mr-1 animate-fade-in">{line}</div>
+                          } else if (line.startsWith('❌')) {
+                            return <div key={i} className="text-red-400 text-sm inline mr-1 animate-fade-in">{line}</div>
+                          } else if (line.includes('bulk_get_inventory') || line.includes('bulk_update_stock')) {
+                            return <div key={i} className="text-blue-400 text-xs opacity-60 font-mono">{line}</div>
+                          } else if (line.trim() === '') {
+                            return <div key={i} className="h-2"></div>
                           } else {
-                            return <div key={i}>{line || '\u00A0'}</div>
+                            return <div key={i} className="text-text-primary">{line || '\u00A0'}</div>
                           }
                         })}
                         {msg.isStreaming && (
@@ -342,7 +348,7 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask about inventory, orders, or sales..."
+                    placeholder="Ask about inventory, orders, sales, or bulk operations..."
                     rows={1}
                     disabled={isLoading}
                     className="w-full px-4 py-3 pr-12 bg-neutral-900/40 border border-white/[0.04] rounded-3xl text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-1 focus:ring-blue-500/30 hover:bg-neutral-900/60 text-base resize-none shadow-lg transition-all disabled:opacity-50"

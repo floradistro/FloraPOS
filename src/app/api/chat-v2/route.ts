@@ -5,14 +5,14 @@ import { getToolDefinitions } from '@/lib/woocommerce-tools'
 // System prompt for natural, conversational responses WITHOUT markdown
 const SYSTEM_PROMPT = `You are a helpful business intelligence assistant for Flora Distro cannabis dispensary. You have access to real-time data and should respond naturally like a knowledgeable human colleague would.
 
-CRITICAL: Do NOT use any markdown formatting in your responses. This means:
-- NO ** for bold text
-- NO ### for headers  
-- NO - for bullet points
-- NO emojis or symbols
-- NO structured formatting whatsoever
+CRITICAL: Write responses in clean, natural language without ANY formatting:
+- NO asterisks ** for bold 
+- NO hash symbols ### for headers
+- NO bullet points or dashes - 
+- NO excessive emojis (only ✓ and ❌ for status are acceptable)
+- NO markdown formatting whatsoever
 
-Instead, write in plain natural text like you're speaking to someone in person. Use normal sentences and paragraphs.
+Write like you're speaking naturally to a colleague. Use simple, clear sentences.
 
 When someone asks you a question, think about what information they need, use the appropriate tools to get real data, then provide a clear and helpful response in plain conversational language.
 
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
                             tool_use_id: currentToolUse.id,
                             content: JSON.stringify(retryResult)
                           })
-                          controller.enqueue(encoder.encode(`data: {"type": "text", "content": " ✓\\n"}\n\n`))
+                          controller.enqueue(encoder.encode(`data: {"type": "text", "content": "✓ "}\n\n`))
                         } catch (retryError) {
                           toolResults.push({
                             type: 'tool_result',
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
                               message: 'API timeout - try requesting fewer items'
                             })
                           })
-                          controller.enqueue(encoder.encode(`data: {"type": "text", "content": " ❌\\n"}\n\n`))
+                          controller.enqueue(encoder.encode(`data: {"type": "text", "content": "❌ "}\n\n`))
                         }
                       } else {
                         toolResults.push({
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
                             message: error instanceof Error ? error.message : 'Tool execution failed'
                           })
                         })
-                        controller.enqueue(encoder.encode(`data: {"type": "text", "content": " ❌\\n"}\n\n`))
+                        controller.enqueue(encoder.encode(`data: {"type": "text", "content": "❌ "}\n\n`))
                       }
                     }
                     
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
           
           // If Claude used tools, send the results back and allow adaptive tool selection
           if (hasToolUse && toolResults.length > 0) {
-            controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n📊 Reviewing results and determining next steps...\\n\\n"}\n\n`))
+            controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\nAnalyzing results...\\n\\n"}\n\n`))
             
             // Build assistant content like working route
             const assistantContent = []
@@ -325,7 +325,7 @@ Be strategic - if results are empty or insufficient, try different tools. If you
                           jsonString: ''
                         }
                         moreToolUses.push(newToolUse)
-                        controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n🔄 **Adapting strategy** - Using ${parsed.content_block.name}...\\n"}\n\n`))
+                                                    controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\nTrying ${parsed.content_block.name}...\\n"}\n\n`))
                       }
                       
                       if (parsed.type === 'content_block_delta' && parsed.delta?.partial_json) {
@@ -374,7 +374,7 @@ Be strategic - if results are empty or insufficient, try different tools. If you
               
               // If we executed more tools, get final analysis
               if (moreToolResults.length > 0) {
-                controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n🎯 **Final Analysis** with all gathered data...\\n\\n"}\n\n`))
+                controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n"}\n\n`))
                 
                 const finalMessages = [
                   ...followUpMessages,
