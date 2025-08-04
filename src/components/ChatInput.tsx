@@ -283,32 +283,62 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                     <div className="max-w-[80%]">
                       <div className="text-sm text-text-primary whitespace-pre-wrap ai-response">
                         {msg.content.split('\n').map((line, i) => {
-                          // Clean, minimal formatting for modern UI
+                          // Modern animated tool execution UI
                           if (line.startsWith('Using tool:')) {
-                            return <div key={i} className="text-blue-400 text-sm mb-1 opacity-80 flex items-center gap-2">
-                              <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse"></div>
-                              {line}
-                            </div>
+                            const toolName = line.replace('Using tool: ', '').replace('...', '')
+                            return (
+                              <div key={i} className="flex items-center gap-3 mb-2 p-2 bg-blue-500/5 rounded-lg border border-blue-500/20">
+                                <div className="flex items-center gap-1">
+                                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
+                                  <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                                  <div className="w-0.5 h-0.5 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                                </div>
+                                <span className="text-blue-300 text-sm font-medium animate-flash">{toolName}</span>
+                              </div>
+                            )
                           } else if (line.startsWith('Analyzing results') || line.startsWith('Reviewing results')) {
-                            return <div key={i} className="text-gray-400 text-sm mb-1 opacity-80 flex items-center gap-2">
-                              <div className="w-1 h-1 bg-gray-400 rounded-full animate-pulse"></div>
-                              {line}
-                            </div>
+                            return (
+                              <div key={i} className="flex items-center gap-3 mb-2 p-2 bg-gray-500/5 rounded-lg">
+                                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                <span className="text-gray-300 text-sm animate-pulse">{line}</span>
+                              </div>
+                            )
                           } else if (line.startsWith('Trying ')) {
-                            return <div key={i} className="text-blue-400 text-sm mb-1 opacity-80 flex items-center gap-2">
-                              <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse"></div>
-                              {line}
-                            </div>
+                            const toolName = line.replace('Trying ', '').replace('...', '')
+                            return (
+                              <div key={i} className="flex items-center gap-3 mb-2 p-2 bg-blue-500/5 rounded-lg border border-blue-500/20">
+                                <div className="flex items-center gap-1">
+                                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
+                                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                  <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                </div>
+                                <span className="text-blue-300 text-sm animate-flash">Trying {toolName}</span>
+                              </div>
+                            )
+                          } else if (line.startsWith('Executing') && line.includes('adaptive')) {
+                            return (
+                              <div key={i} className="flex items-center gap-3 mb-2 p-2 bg-yellow-500/5 rounded-lg border border-yellow-500/20">
+                                <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                                <span className="text-yellow-300 text-sm animate-pulse">Adapting strategy...</span>
+                              </div>
+                            )
                           } else if (line.startsWith('✓')) {
-                            return <div key={i} className="text-green-400 text-sm inline mr-1 animate-fade-in">{line}</div>
+                            return <div key={i} className="text-green-400 text-sm inline mr-2 animate-fade-in font-medium">{line}</div>
                           } else if (line.startsWith('❌')) {
-                            return <div key={i} className="text-red-400 text-sm inline mr-1 animate-fade-in">{line}</div>
+                            return <div key={i} className="text-red-400 text-sm inline mr-2 animate-fade-in font-medium">{line}</div>
+                          } else if (line.includes('completed')) {
+                            return (
+                              <div key={i} className="flex items-center gap-2 mb-2 p-2 bg-green-500/5 rounded-lg border border-green-500/20">
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                <span className="text-green-300 text-sm">{line}</span>
+                              </div>
+                            )
                           } else if (line.includes('bulk_get_inventory') || line.includes('bulk_update_stock')) {
-                            return <div key={i} className="text-blue-400 text-xs opacity-60 font-mono">{line}</div>
+                            return <div key={i} className="text-blue-400 text-xs opacity-60 font-mono bg-blue-500/10 px-2 py-1 rounded">{line}</div>
                           } else if (line.trim() === '') {
-                            return <div key={i} className="h-2"></div>
+                            return <div key={i} className="h-1"></div>
                           } else {
-                            return <div key={i} className="text-text-primary">{line || '\u00A0'}</div>
+                            return <div key={i} className="text-text-primary leading-relaxed">{line || '\u00A0'}</div>
                           }
                         })}
                         {msg.isStreaming && (

@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
                       name: parsed.content_block.name,
                       input: {}
                     }
-                    controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n🔧 Using tool: ${currentToolUse.name}..."}\n\n`))
+                                            controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\nUsing tool: ${currentToolUse.name}..."}\n\n`))
                   }
                   
                   if (parsed.type === 'content_block_delta' && parsed.delta?.partial_json) {
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
                     
                     try {
                       // Log what Claude is requesting
-                      console.log(`🔧 Claude requesting: ${currentToolUse.name} with params:`, currentToolUse.input)
+                                              console.log(`Claude requesting: ${currentToolUse.name} with params:`, currentToolUse.input)
                       
                       // Add timeout protection
                       const timeoutPromise = new Promise((_, reject) => 
@@ -346,7 +346,7 @@ Be strategic - if results are empty or insufficient, try different tools. If you
                           
                           // Execute the adaptive tool
                           try {
-                            controller.enqueue(encoder.encode(`data: {"type": "text", "content": "⏳ Executing adaptive tool call...\\n"}\n\n`))
+                            controller.enqueue(encoder.encode(`data: {"type": "text", "content": "Executing adaptive tool call...\\n"}\n\n`))
                             const adaptiveResult = await executeTool(lastTool.name, lastTool.input, {
                               baseUrl: WOO_BASE_URL,
                               consumerKey: WOO_CONSUMER_KEY,
