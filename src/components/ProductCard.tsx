@@ -240,7 +240,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
         </div>
 
         {isExpanded && (
-          <div className="border-l-4 border-black mx-3 mb-2 rounded p-4 ml-12 bg-black/20 hover:bg-black/30 transition-all duration-300">
+          <div className="mx-3 mb-2 rounded p-4 ml-12 bg-black/20 hover:bg-black/30 transition-all duration-300">
             
             {/* Compact Info Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs mb-3">
