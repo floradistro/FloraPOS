@@ -358,7 +358,7 @@ export class ClaudeAgent {
       
       return 'Streaming response completed'
     } catch (error) {
-      controller.enqueue(encoder.encode(`data: {"type": "text", "content": "❌ Error: ${error.message}"}\n\n`))
+      controller.enqueue(encoder.encode(`data: {"type": "text", "content": "❌ Error: ${error instanceof Error ? error.message : String(error)}"}\n\n`))
       throw error
     }
   }
@@ -387,13 +387,13 @@ export class ClaudeAgent {
         })
         
       } catch (error) {
-        const errorMessage = `❌ ${toolCall.name}: ${error.message}`
+        const errorMessage = `❌ ${toolCall.name}: ${error instanceof Error ? error.message : String(error)}`
         controller.enqueue(encoder.encode(`data: {"type": "text", "content": "${errorMessage}\\n"}\n\n`))
         
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolCall.id,
-          content: JSON.stringify({ error: true, message: error.message })
+          content: JSON.stringify({ error: true, message: error instanceof Error ? error.message : String(error) })
         })
       }
     }
