@@ -104,10 +104,9 @@ export default function RootLayout({
               }
             }
             
-            /* Ensure full viewport usage */
-            .viewport-container {
-              height: 100vh !important;
-              height: 100dvh !important;
+            /* App content positioned within safe areas */
+            .app-content-container {
+              /* Positioning handled inline in component */
             }
           `
         }} />

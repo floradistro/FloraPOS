@@ -23,7 +23,7 @@ export function AppWrapper({ children }: AppWrapperProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background pwa-status-bar-padding">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
           <p className="text-text-secondary">Loading...</p>
@@ -34,7 +34,7 @@ export function AppWrapper({ children }: AppWrapperProps) {
 
   if (!isAuthenticated) {
     return (
-      <div className="pwa-status-bar-padding">
+      <div>
         <LoginForm />
         <PWAInstaller />
       </div>
@@ -42,7 +42,7 @@ export function AppWrapper({ children }: AppWrapperProps) {
   }
 
   return (
-    <div className="pwa-status-bar-padding">
+    <div>
       {children}
       <PWAInstaller />
     </div>
