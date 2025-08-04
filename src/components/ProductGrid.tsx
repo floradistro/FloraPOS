@@ -87,15 +87,8 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
 
   if (isLoading) {
     return (
-      <div className="absolute inset-x-0 top-0 -bottom-6 flex items-center justify-center bg-black">
-        <Image
-          src="/logo.png"
-          alt="Loading"
-          width={120}
-          height={120}
-          className="logo-fade-animation"
-          priority
-        />
+      <div className="flex items-center justify-center h-64 bg-black">
+        <div className="text-text-secondary">Loading products...</div>
       </div>
     )
   }

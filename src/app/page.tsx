@@ -29,7 +29,7 @@ export default function FloraDistrosPOS() {
   const [searchQuery, setSearchQuery] = useState('')
   const [assignedCustomer, setAssignedCustomer] = useState<Customer | null>(null)
   const [productCount, setProductCount] = useState<number>(0)
-  const [isProductsLoading, setIsProductsLoading] = useState<boolean>(false)
+  const [isProductsLoading, setIsProductsLoading] = useState<boolean>(true)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isCustomerViewOpen, setIsCustomerViewOpen] = useState(false)
@@ -56,6 +56,9 @@ export default function FloraDistrosPOS() {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   })
+
+  // Global loading state - wait for all critical data to load
+  const isAppLoading = isProductsLoading || customersLoading
 
   const mainCategories = [
     { name: 'All', slug: 'all', id: null },
@@ -155,6 +158,20 @@ export default function FloraDistrosPOS() {
 
       return (
       <>
+        {/* Global Loading Overlay */}
+        {isAppLoading && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black z-50">
+            <Image
+              src="/logo.png"
+              alt="Loading"
+              width={120}
+              height={120}
+              className="logo-fade-animation"
+              priority
+            />
+          </div>
+        )}
+        
         <AppWrapper>
         {/* Main App Container - Black status bar, no bottom gap */}
         <div className="app-content-container text-text-primary flex flex-col" style={{
@@ -496,15 +513,15 @@ export default function FloraDistrosPOS() {
 
 
         {/* VSCode-style Status Bar - Matches Header Nav */}
-        <div className="bg-black px-6 pt-2 pb-6 flex items-center justify-between text-xs text-text-secondary flex-shrink-0">
+        <div className="bg-black px-6 pt-2 pb-6 flex items-center justify-between text-xs text-text-secondary flex-shrink-0 relative">
           {/* Left Section */}
           <div className="flex items-center gap-4">
             {store && <span>{store.name}</span>}
             <span>{productCount} products available</span>
           </div>
 
-          {/* Center Section */}
-          <div className="flex items-center">
+          {/* Center Section - Absolutely positioned for true centering */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
             {user && <span>Hello, {user.firstName}</span>}
           </div>
 
