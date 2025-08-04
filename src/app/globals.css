@@ -72,17 +72,11 @@
     padding-bottom: 0 !important;
   }
   
-  /* Hide home indicator completely */
-  body::after {
-    content: '';
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-bottom, 34px);
-    background: #000000;
-    z-index: 9999;
-    pointer-events: none;
+  /* Extend content behind home indicator - no overlay needed */
+  body {
+    /* Remove any bottom padding that would show home indicator */
+    padding-bottom: 0 !important;
+    margin-bottom: calc(-1 * env(safe-area-inset-bottom, 34px)) !important;
   }
 }
 
@@ -110,12 +104,12 @@
     padding-left: env(safe-area-inset-left, 0px) !important;
     padding-right: env(safe-area-inset-right, 0px) !important;
     /* Ensure no bottom gap and extend to very bottom */
-    height: 100vh !important;
-    height: 100dvh !important;
+    height: calc(100vh + env(safe-area-inset-bottom, 34px)) !important;
+    height: calc(100dvh + env(safe-area-inset-bottom, 34px)) !important;
     overflow: hidden !important;
     overscroll-behavior: none !important;
-    /* Push content under home indicator */
-    margin-bottom: calc(-1 * env(safe-area-inset-bottom, 0px)) !important;
+    /* Extend content behind home indicator */
+    margin-bottom: calc(-1 * env(safe-area-inset-bottom, 34px)) !important;
   }
 }
 
@@ -163,7 +157,7 @@
   }
 }
 
-/* App container - Content stays UNDER status bar, NO bottom safe area */
+/* App container - Content stays UNDER status bar, extends behind home indicator */
 .app-content-container {
   /* Content respects safe areas and stays under status bar */
   padding-top: env(safe-area-inset-top, 44px) !important; /* iOS status bar height */
@@ -174,8 +168,10 @@
   /* Ensure content is below Siri ring */
   position: relative;
   z-index: 1;
-  /* Extend content to bottom edge */
-  margin-bottom: calc(-1 * env(safe-area-inset-bottom, 0px)) !important;
+  /* Extend content behind home indicator completely */
+  height: calc(100vh + env(safe-area-inset-bottom, 34px)) !important;
+  height: calc(100dvh + env(safe-area-inset-bottom, 34px)) !important;
+  margin-bottom: calc(-1 * env(safe-area-inset-bottom, 34px)) !important;
 }
 
 /* iPad specific styling */
