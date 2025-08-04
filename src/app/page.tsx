@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
 import { FloraProduct, floraAPI, FloraCustomer } from '../lib/woocommerce'
 import { Customer } from '../types/auth'
+import { TopStatusBar } from '@/components/TopStatusBar'
 
 interface CartItem extends FloraProduct {
   selectedVariation: string
@@ -162,9 +163,11 @@ export default function FloraDistrosPOS() {
           zIndex={100}
         />
         
-        <div className="viewport-container bg-background-primary text-text-primary flex flex-col" style={{ 
-          paddingTop: 'env(safe-area-inset-top, 44px)'
-        }}>
+        <div className="viewport-container bg-background-primary text-text-primary flex flex-col">
+        
+        {/* Top Status Bar */}
+        <TopStatusBar isLoading={isProductsLoading || isCheckingOut} />
+
         {/* Menu Drawer */}
         <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-black border-r border-white/[0.04] transform transition-transform duration-300 ease-in-out ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'
@@ -231,10 +234,8 @@ export default function FloraDistrosPOS() {
           />
         )}
 
-
-
-                                                          {/* Header */}
-                     <div className="header-nav bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30" style={{
+        {/* Header Navigation */}
+        <div className="header-nav bg-black border-b border-white/[0.04] px-2 py-1 flex-shrink-0 relative z-30" style={{
           paddingLeft: '16px',
           paddingRight: '16px'
         }}>

@@ -58,6 +58,13 @@ export function TopStatusBar({ isLoading = false }: TopStatusBarProps) {
   const status = getStatusConfig()
   
   return (
-    <div className={`w-full ${status.color} ${status.style} h-0.5`} />
+    <div 
+      className={`w-full ${status.color} ${status.style} h-0.5 flex-shrink-0`}
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50
+      }}
+    />
   )
 } 
