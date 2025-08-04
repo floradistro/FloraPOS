@@ -52,12 +52,13 @@
 
 
 
-/* iOS PWA optimizations - Handle safe areas properly, extend under home indicator */
+/* iOS PWA optimizations - Handle safe areas properly */
 @supports (-webkit-touch-callout: none) {
   /* iOS specific viewport setup */
   html {
     height: 100vh !important;
     height: 100dvh !important;
+    overflow: hidden !important;
   }
   
   /* Let app content handle safe areas with padding instead of positioning */
@@ -66,17 +67,12 @@
     height: 100dvh !important;
     padding: 0 !important;
     margin: 0 !important;
-    position: relative;
-    overflow: hidden;
-    /* Extend body under home indicator */
-    padding-bottom: 0 !important;
-  }
-  
-  /* Extend content behind home indicator - no overlay needed */
-  body {
-    /* Remove any bottom padding that would show home indicator */
-    padding-bottom: 0 !important;
-    margin-bottom: calc(-1 * env(safe-area-inset-bottom, 34px)) !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden !important;
   }
 }
 
@@ -100,16 +96,14 @@
   .app-content-container {
     /* Black status bar means content has padding for status bar */
     padding-top: env(safe-area-inset-top, 44px) !important; /* iOS status bar height */
-    padding-bottom: 0px !important; /* Remove bottom safe area completely */
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important; /* Use safe area for bottom */
     padding-left: env(safe-area-inset-left, 0px) !important;
     padding-right: env(safe-area-inset-right, 0px) !important;
-    /* Ensure no bottom gap and extend to very bottom */
-    height: calc(100vh + env(safe-area-inset-bottom, 34px)) !important;
-    height: calc(100dvh + env(safe-area-inset-bottom, 34px)) !important;
+    /* Normal viewport height */
+    height: 100vh !important;
+    height: 100dvh !important;
     overflow: hidden !important;
     overscroll-behavior: none !important;
-    /* Extend content behind home indicator */
-    margin-bottom: calc(-1 * env(safe-area-inset-bottom, 34px)) !important;
   }
 }
 
@@ -157,21 +151,21 @@
   }
 }
 
-/* App container - Content stays UNDER status bar, extends behind home indicator */
+/* App container - Content stays UNDER status bar, normal viewport */
 .app-content-container {
   /* Content respects safe areas and stays under status bar */
   padding-top: env(safe-area-inset-top, 44px) !important; /* iOS status bar height */
-  padding-bottom: 0px !important; /* Remove bottom safe area completely */
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important; /* Use safe area for bottom */
   padding-left: env(safe-area-inset-left, 0px) !important;
   padding-right: env(safe-area-inset-right, 0px) !important;
   box-sizing: border-box;
   /* Ensure content is below Siri ring */
   position: relative;
   z-index: 1;
-  /* Extend content behind home indicator completely */
-  height: calc(100vh + env(safe-area-inset-bottom, 34px)) !important;
-  height: calc(100dvh + env(safe-area-inset-bottom, 34px)) !important;
-  margin-bottom: calc(-1 * env(safe-area-inset-bottom, 34px)) !important;
+  /* Normal viewport height */
+  height: 100vh !important;
+  height: 100dvh !important;
+  overflow: hidden !important;
 }
 
 /* iPad specific styling */
@@ -516,8 +510,8 @@ body {
 /* Prevent pull-to-refresh and horizontal scroll */
 body {
   overscroll-behavior: none; /* Disable all overscroll */
-  touch-action: none; /* Disable all touch scrolling on body */
-  -webkit-overflow-scrolling: auto; /* Disable momentum scrolling */
+  touch-action: pan-y; /* Allow vertical scrolling but prevent overscroll */
+  -webkit-overflow-scrolling: touch; /* Enable smooth scrolling */
 }
 
 /* Claude-style pixelate animation */
