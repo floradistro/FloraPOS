@@ -82,14 +82,15 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
         className={`siri-border-wrapper ${isLoading ? 'siri-loading' : 'siri-idle'} ${className}`}
         style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          top: `calc(env(safe-area-inset-top, 0px) + ${thickness/2}px)`,
+          left: `calc(env(safe-area-inset-left, 0px) + ${thickness/2}px)`,
+          right: `calc(env(safe-area-inset-right, 0px) + ${thickness/2}px)`,
+          bottom: `calc(env(safe-area-inset-bottom, 0px) + ${thickness/2}px)`,
           zIndex,
           pointerEvents: 'none',
           border: `${thickness}px solid currentColor`,
-          borderRadius: `${cornerRadius}px`
+          borderRadius: `${cornerRadius}px`,
+          boxSizing: 'border-box'
         }}
       />
 
@@ -181,11 +182,27 @@ export const SiriGlowBorder: React.FC<SiriGlowBorderProps> = ({
           }
         }
 
-        /* iPad Pro specific optimizations */
+        /* iPad Pro specific optimizations - Fine-tune positioning */
         @media screen and (min-width: 1024px) and (orientation: portrait),
                screen and (min-height: 1024px) and (orientation: landscape) {
           .siri-border-wrapper {
             filter: blur(0.5px);
+            /* Adjust for iPad PWA mode */
+            top: calc(env(safe-area-inset-top, 0px) + ${thickness/2}px - 1px);
+            left: calc(env(safe-area-inset-left, 0px) + ${thickness/2}px - 1px);
+            right: calc(env(safe-area-inset-right, 0px) + ${thickness/2}px - 1px);
+            bottom: calc(env(safe-area-inset-bottom, 0px) + ${thickness/2}px - 1px);
+          }
+        }
+
+        /* Specific adjustments for iPad Pro models in PWA mode */
+        @supports (display-mode: fullscreen) or (display-mode: standalone) {
+          .siri-border-wrapper {
+            /* Fine-tune for PWA fullscreen mode */
+            top: calc(env(safe-area-inset-top, 0px) + ${thickness/2}px - 2px);
+            left: calc(env(safe-area-inset-left, 0px) + ${thickness/2}px - 2px);
+            right: calc(env(safe-area-inset-right, 0px) + ${thickness/2}px - 2px);
+            bottom: calc(env(safe-area-inset-bottom, 0px) + ${thickness/2}px - 2px);
           }
         }
       `}</style>
