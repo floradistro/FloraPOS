@@ -35,8 +35,9 @@
     overflow: hidden;
     margin: 0;
     padding: 0;
-    /* Hide iOS status bar */
+    /* Hide iOS status bar completely */
     -webkit-app-region: no-drag;
+    padding-top: 0 !important;
   }
   
   /* Main app container should handle scrolling */
@@ -46,6 +47,20 @@
     height: 100dvh; /* Dynamic viewport height for mobile */
     overflow: hidden;
     position: relative;
+  }
+}
+
+/* Additional iOS status bar hiding for PWA */
+@media (display-mode: fullscreen) or (display-mode: standalone) {
+  /* Force hide status bar area */
+  html, body {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+  
+  /* Override any safe area insets for top */
+  * {
+    --safe-area-inset-top: 0px !important;
   }
 }
 

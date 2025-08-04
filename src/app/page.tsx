@@ -162,13 +162,6 @@ export default function FloraDistrosPOS() {
           zIndex={100}
         />
         
-          {/* iOS Status Bar Cover */}
-          <div className="fixed top-0 left-0 right-0 h-[44px] bg-black z-[40]" style={{ 
-            height: 'env(safe-area-inset-top, 44px)',
-            paddingTop: '4px',
-            paddingLeft: '4px',
-            paddingRight: '4px'
-          }} />
         <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative" style={{ 
           height: '100dvh', 
           paddingBottom: 'env(safe-area-inset-bottom, 0px)'
