@@ -6,8 +6,9 @@ import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import { Disclosure } from '@headlessui/react'
 import { useReactToPrint } from 'react-to-print'
-import SimpleChartRenderer from './SimpleChartRenderer'
+import ChartWrapper from './ChartWrapper'
 import TableRenderer from './TableRenderer'
+import TableScrollWrapper from './TableScrollWrapper'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -47,29 +48,30 @@ function renderEnhancedContent(content: string, isStreaming: boolean): React.Rea
   const sections = parseContentSections(content)
   
   return (
-    <div className="space-y-4">
-      {sections.map((section, index) => {
-        if (section.type === 'collapsible') {
-          return (
-            <Disclosure key={index} defaultOpen={section.defaultOpen}>
-              {({ open }) => (
-                <div className="border border-white/10 rounded-lg overflow-hidden">
-                  <Disclosure.Button className="flex w-full justify-between items-center px-4 py-3 text-left text-sm font-medium text-text-primary bg-neutral-900/40 hover:bg-neutral-900/60 transition-colors">
-                    <span className="flex items-center gap-2">
-                      {section.icon}
-                      {section.title}
-                    </span>
-                    <svg
-                      className={`${open ? 'rotate-180' : ''} h-4 w-4 text-text-secondary transition-transform`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </Disclosure.Button>
-                  <Disclosure.Panel className="px-4 py-3 bg-neutral-900/20">
-                    <div className="prose prose-invert prose-sm max-w-none">
+    <>
+      <div className="space-y-4">
+        {sections.map((section, index) => {
+          if (section.type === 'collapsible') {
+            return (
+              <Disclosure key={index} defaultOpen={section.defaultOpen}>
+                {({ open }) => (
+                  <div className="border border-white/10 rounded-lg overflow-hidden">
+                    <Disclosure.Button className="flex w-full justify-between items-center px-4 py-3 text-left text-sm font-medium text-text-primary bg-neutral-900/40 hover:bg-neutral-900/60 transition-colors">
+                      <span className="flex items-center gap-2">
+                        {section.icon}
+                        {section.title}
+                      </span>
+                      <svg
+                        className={`${open ? 'rotate-180' : ''} h-4 w-4 text-text-secondary transition-transform`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </Disclosure.Button>
+                                      <Disclosure.Panel className="px-4 py-3 bg-neutral-900/20">
+                    <div className="prose prose-invert prose-sm max-w-none overflow-x-auto markdown-scroll-container">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         rehypePlugins={[rehypeHighlight]}
@@ -79,37 +81,37 @@ function renderEnhancedContent(content: string, isStreaming: boolean): React.Rea
                       </ReactMarkdown>
                     </div>
                   </Disclosure.Panel>
-                </div>
-              )}
-            </Disclosure>
-          )
-        } else if (section.type === 'chart') {
+                  </div>
+                )}
+              </Disclosure>
+            )
+          } else if (section.type === 'chart') {
+            return (
+              <div key={index} className="my-3 w-full">
+                <ChartWrapper json={section.content} isStreaming={isStreaming} />
+              </div>
+            )
+          } else if (section.type === 'table') {
+            return (
+              <div key={index} className="my-3 w-full">
+                <TableRenderer json={section.content} />
+              </div>
+            )
+          } else if (section.type === 'tool-status') {
+            const shouldAnimate = section.lineIndex === lastActionIndex && isStreaming
+            return (
+              <div key={index} className="text-sm mb-1 text-blue-400">
+                {shouldAnimate ? (
+                  <span className="animate-dots">🔧 {section.content}</span>
+                ) : (
+                  <span>✓ {section.content}</span>
+                )}
+              </div>
+            )
+          } else {
+                      // Regular markdown content
           return (
-            <div key={index} className="my-3 w-full">
-              <SimpleChartRenderer json={section.content} />
-            </div>
-          )
-        } else if (section.type === 'table') {
-          return (
-            <div key={index} className="my-3 w-full">
-              <TableRenderer json={section.content} />
-            </div>
-          )
-        } else if (section.type === 'tool-status') {
-          const shouldAnimate = section.lineIndex === lastActionIndex && isStreaming
-          return (
-            <div key={index} className="text-sm mb-1 text-blue-400">
-              {shouldAnimate ? (
-                <span className="animate-dots">🔧 {section.content}</span>
-              ) : (
-                <span>✓ {section.content}</span>
-              )}
-            </div>
-          )
-        } else {
-          // Regular markdown content
-          return (
-            <div key={index} className="prose prose-invert prose-sm max-w-none">
+            <div key={index} className="prose prose-invert prose-sm max-w-none overflow-x-auto markdown-scroll-container">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
@@ -119,11 +121,30 @@ function renderEnhancedContent(content: string, isStreaming: boolean): React.Rea
               </ReactMarkdown>
             </div>
           )
-        }
-      })}
-      {isStreaming && <span className="typing-cursor" />}
-    </div>
+          }
+        })}
+      </div>
+      {isStreaming && shouldShowCursor(sections) && <span className="typing-cursor" />}
+    </>
   )
+}
+
+// Determine if typing cursor should be shown based on last section type
+function shouldShowCursor(sections: ContentSection[]): boolean {
+  if (sections.length === 0) return true
+  
+  const lastSection = sections[sections.length - 1]
+  // Don't show cursor for special content types that have their own loading states
+  if (lastSection.type === 'chart' || lastSection.type === 'table') {
+    return false
+  }
+  
+  // Don't show cursor if last section is empty markdown
+  if (lastSection.type === 'markdown' && lastSection.content.trim() === '') {
+    return false
+  }
+  
+  return true
 }
 
 // Parse content into sections for better organization
@@ -238,34 +259,54 @@ const markdownComponents = {
   ),
   strong: ({ children }: any) => <strong className="font-medium text-blue-200">{children}</strong>,
   code: ({ children }: any) => (
-    <code className="px-2 py-1 bg-neutral-800/60 border border-white/10 rounded text-green-300 text-sm font-mono">
+    <code className="px-1.5 py-0.5 bg-black/30 border border-white/[0.08] rounded text-blue-300 text-[13px] font-mono">
       {children}
     </code>
   ),
-  pre: ({ children }: any) => (
-    <pre className="bg-neutral-900/60 border border-white/10 rounded-lg p-4 overflow-x-auto mb-3">
-      {children}
-    </pre>
-  ),
+  pre: ({ children }: any) => {
+    // Extract the actual code text
+    const getCodeText = () => {
+      if (typeof children === 'string') return children
+      if (children?.props?.children) return children.props.children
+      return ''
+    }
+    
+    return (
+      <div className="relative group mb-3">
+        <pre className="bg-black/40 border border-white/[0.08] rounded-lg p-4 overflow-auto max-h-[400px] code-block-scrollbar">
+          {children}
+        </pre>
+        <button 
+          className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-800/80 hover:bg-gray-700/80 text-gray-300 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={() => {
+            const codeText = getCodeText()
+            navigator.clipboard.writeText(codeText)
+          }}
+        >
+          Copy
+        </button>
+      </div>
+    )
+  },
   blockquote: ({ children }: any) => (
     <blockquote className="border-l-2 border-blue-500/50 pl-4 py-2 bg-blue-900/10 rounded-r mb-3">
       {children}
     </blockquote>
   ),
   table: ({ children }: any) => (
-    <div className="overflow-x-auto mb-3">
-      <table className="w-full border-collapse border border-white/20 rounded-lg overflow-hidden">
+    <TableScrollWrapper>
+      <table className="min-w-max border-collapse border border-white/20 rounded-lg">
         {children}
       </table>
-    </div>
+    </TableScrollWrapper>
   ),
   th: ({ children }: any) => (
-    <th className="border border-white/20 px-3 py-2 bg-neutral-800/60 text-left font-medium text-text-primary">
+    <th className="border border-white/20 px-3 py-2 bg-neutral-800/60 text-left font-medium text-text-primary whitespace-nowrap">
       {children}
     </th>
   ),
   td: ({ children }: any) => (
-    <td className="border border-white/20 px-3 py-2 text-text-primary">
+    <td className="border border-white/20 px-3 py-2 text-text-primary whitespace-nowrap">
       {children}
     </td>
   ),

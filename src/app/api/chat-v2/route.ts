@@ -84,17 +84,27 @@ Based on the order data I have, here's the 5-day sales comparison between **Char
 
 CRITICAL: Do not explain data inside code blocks. Use proper code blocks for ALL data visualization.
 
-IMPORTANT: Be strategic and efficient with tool usage. You have limited time for complex analysis:
-1. Plan your approach before starting - minimize tool calls
-2. Start with broader tools (get_locations, get_categories) to understand context
-3. Use specific tools (get_location_stock, get_products) for detailed data
-4. Avoid redundant calls - if you have recent data, analyze it rather than re-fetching
-5. For time-sensitive queries, focus on the most critical data first
+IMPORTANT: You now have extended capabilities for THOROUGH analysis - up to 15 minutes for complex operations:
 
-Time Management:
-- Complex queries have ~80 seconds total execution time
-- If you use more than 8-10 tools, provide interim analysis
-- Always prioritize getting enough data for meaningful analysis over perfect completeness
+1. Be COMPREHENSIVE - You have time to gather ALL relevant data
+2. Start with overview tools (get_locations, get_categories) to understand full context
+3. Then dive deep with specific tools (get_location_stock, get_products) for complete analysis
+4. Don't rush - take time to gather sufficient data for meaningful insights
+5. For complex requests, aim for completeness over speed
+
+Extended Capabilities:
+- Up to 15 minutes total execution time (like Cursor AI)
+- Up to 200 tool calls available
+- Individual tools can take up to 60 seconds
+- Provide periodic progress updates for long operations
+- After 5+ minutes, include elapsed time in updates
+
+Strategy for Comprehensive Analysis:
+- Gather data from ALL relevant locations, not just a sample
+- Fetch complete product catalogs when needed
+- Perform multi-dimensional analysis (by location, category, time, etc.)
+- Don't stop at surface-level insights - dig deeper
+- If user asks for "everything" or "all", take the time to be exhaustive
 
 Tool Usage Strategy:
 - For location comparisons: get_location_stock for each location needed (this is the most time-consuming)
@@ -140,12 +150,12 @@ export async function POST(request: NextRequest) {
         const encoder = new TextEncoder()
         let streamTimeout: NodeJS.Timeout | null = null
         
-        // Set overall timeout for the stream
+        // Set overall timeout for the stream (matching Cursor's capabilities)
         streamTimeout = setTimeout(() => {
-          controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n\\n⚠️ Response timeout - please try again"}\n\n`))
+          controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n\\n⚠️ Response timeout after 15 minutes - please try again"}\n\n`))
           controller.enqueue(encoder.encode('data: {"type": "done"}\n\n'))
           controller.close()
-        }, 90000) // 90 second timeout for complex queries
+        }, 900000) // 15 minute timeout for complex queries like Cursor
         
         try {
           // Build messages
@@ -198,9 +208,9 @@ async function processClaudeResponse(
 ) {
   let currentMessages = [...messages]
   let toolCallCount = 0
-  const maxToolCalls = 25
+  const maxToolCalls = 200 // Increased from 25 to handle complex multi-step operations
   const startTime = Date.now()
-  const maxExecutionTime = 80000 // 80 seconds, leaving 10s buffer
+  const maxExecutionTime = 840000 // 14 minutes, leaving 1 minute buffer from 15 min timeout
   
   // Continue tool calling loop until Claude stops using tools or we hit limit
   while (toolCallCount < maxToolCalls) {
@@ -219,7 +229,7 @@ async function processClaudeResponse(
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
+        max_tokens: 8000, // Increased for more comprehensive responses
         system: SYSTEM_PROMPT,
         messages: currentMessages,
         tools: getToolDefinitions(),
@@ -293,11 +303,20 @@ async function processClaudeResponse(
                 currentTool.input = {}
               }
               
-              // Execute tool with improved logging and dynamic timeout
+              // Execute tool with improved logging and dynamic timeout for long operations
               const toolStartTime = Date.now()
               const elapsedTotal = toolStartTime - startTime
               const remainingTime = maxExecutionTime - elapsedTotal
-              const toolTimeout = Math.max(5000, Math.min(15000, remainingTime / 2)) // Dynamic timeout
+              
+              // More generous timeouts for long-running operations
+              let toolTimeout: number
+              if (remainingTime > 300000) { // More than 5 minutes remaining
+                toolTimeout = 60000 // Allow up to 60 seconds per tool
+              } else if (remainingTime > 60000) { // More than 1 minute remaining
+                toolTimeout = 30000 // Allow up to 30 seconds per tool
+              } else {
+                toolTimeout = Math.max(5000, Math.min(15000, remainingTime / 2)) // Dynamic scaling
+              }
               
               const result = await executeToolSafely(currentTool, controller, encoder, toolTimeout)
               const duration = Date.now() - toolStartTime
@@ -362,7 +381,7 @@ async function processClaudeResponse(
       
       // Check if we've hit the tool limit
       if (toolCallCount >= maxToolCalls) {
-        controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n⚠️ Reached maximum tool calls (${maxToolCalls}). Providing analysis with current data...\\n\\n"}\n\n`))
+        controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n⚠️ Reached maximum tool calls (${maxToolCalls}). This is an extremely complex analysis - providing results with current data...\\n\\n"}\n\n`))
         break
       }
       
@@ -373,11 +392,27 @@ async function processClaudeResponse(
         break
       }
       
-      // Progress indicator for complex queries
+      // Enhanced progress indicators for long-running operations
       if (toolCallCount > 5) {
         const progress = Math.min(Math.round((toolCallCount / maxToolCalls) * 100), 95)
+        const elapsedMinutes = Math.floor(elapsedTime / 60000)
+        const elapsedSeconds = Math.floor((elapsedTime % 60000) / 1000)
         const timeRemaining = Math.max(0, (maxExecutionTime - elapsedTime) / 1000)
-        controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n📈 Deep analysis in progress (${toolCallCount}/${maxToolCalls} tools, ${progress}%, ~${Math.round(timeRemaining)}s remaining)...\\n"}\n\n`))
+        const remainingMinutes = Math.floor(timeRemaining / 60)
+        const remainingSeconds = Math.floor(timeRemaining % 60)
+        
+        // Different messages based on duration (like Cursor's detailed progress)
+        if (elapsedMinutes >= 10) {
+          controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n⚡ Extensive analysis ongoing (${elapsedMinutes}m ${elapsedSeconds}s elapsed)\\n🔄 ${toolCallCount} data operations completed\\n⏳ Estimated ${remainingMinutes}m ${remainingSeconds}s remaining\\n💡 Gathering comprehensive insights across all dimensions...\\n"}\n\n`))
+        } else if (elapsedMinutes >= 5) {
+          controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n🔬 Deep analysis in progress (${elapsedMinutes}m ${elapsedSeconds}s)\\n✅ ${toolCallCount} operations completed (${progress}%)\\n🎯 ~${remainingMinutes}m ${remainingSeconds}s to complete\\n📈 Building comprehensive dataset...\\n"}\n\n`))
+        } else if (toolCallCount > 100) {
+          controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n🚀 Large-scale analysis underway\\n📊 ${toolCallCount} data points processed\\n⚙️ ${progress}% complete (~${remainingMinutes}m ${remainingSeconds}s left)\\n🔍 Analyzing patterns across all locations...\\n"}\n\n`))
+        } else if (toolCallCount > 50) {
+          controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n💫 Comprehensive analysis (${toolCallCount} operations, ${progress}%)\\n⏱️ ~${remainingMinutes}m ${remainingSeconds}s remaining\\n"}\n\n`))
+        } else {
+          controller.enqueue(encoder.encode(`data: {"type": "text", "content": "\\n📊 Gathering data (${toolCallCount} operations, ~${Math.round(timeRemaining)}s)...\\n"}\n\n`))
+        }
       }
       
       // Continue the loop for more tool calls
@@ -395,7 +430,7 @@ async function executeToolSafely(
   tool: any, 
   controller: ReadableStreamDefaultController, 
   encoder: TextEncoder,
-  timeoutMs: number = 15000
+  timeoutMs: number = 30000 // Increased default timeout
 ): Promise<any> {
   const apiConfig = {
     baseUrl: WOO_BASE_URL,

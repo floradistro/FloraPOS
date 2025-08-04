@@ -372,9 +372,217 @@
   background: rgba(59, 130, 246, 0.8); /* Brighter blue on hover */
 }
 
-/* Completely hide horizontal scrollbars */
-::-webkit-scrollbar:horizontal {
+/* Completely hide horizontal scrollbars (except for code blocks) */
+:not(.code-block-scrollbar)::-webkit-scrollbar:horizontal {
   display: none;
+}
+
+/* Code block scrollbar */
+.code-block-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 transparent;
+}
+
+.code-block-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.code-block-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.code-block-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 4px;
+}
+
+.code-block-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: #6b7280;
+}
+
+/* Code block content styling */
+.code-block-scrollbar code {
+  display: block;
+  white-space: pre;
+  word-wrap: normal;
+  overflow-x: auto;
+}
+
+/* Markdown content scrollbar */
+.prose::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.prose::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.prose::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 4px;
+}
+
+.prose:hover::-webkit-scrollbar-thumb {
+  background-color: #6b7280;
+}
+
+/* Table scroll container */
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  display: block;
+  cursor: grab;
+}
+
+.table-scroll-container:active {
+  cursor: grabbing;
+}
+
+
+
+/* Remove margins that might break scrolling */
+.prose .table-scroll-container {
+  margin-left: -2rem;
+  margin-right: -2rem;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  max-width: calc(100vw - 4rem);
+}
+
+/* Ensure parent containers don't restrict scrolling */
+.prose {
+  overflow: visible !important;
+}
+
+.prose:has(.table-scroll-container) {
+  overflow: visible !important;
+}
+
+/* Make sure markdown container allows overflow */
+.markdown-scroll-container:has(.table-scroll-container) {
+  overflow: visible !important;
+}
+
+/* Table styling for scrolling - REMOVED - see consolidated rule below */
+
+/* Ensure table cells don't wrap */
+.table-scroll-container td,
+.table-scroll-container th {
+  white-space: nowrap;
+}
+
+/* Table scrollbar styling */
+.table-scroll-container::-webkit-scrollbar {
+  height: 12px;
+  width: 12px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+  background: rgba(75, 85, 99, 0.1);
+  border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+/* Force scrollbar visibility on desktop */
+@media (min-width: 768px) {
+  .table-scroll-container {
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 rgba(75, 85, 99, 0.1);
+  }
+  
+  /* Always show horizontal scrollbar for tables */
+  .table-scroll-container::-webkit-scrollbar {
+    height: 14px !important;
+  }
+  
+  .table-scroll-container::-webkit-scrollbar-track {
+    background: rgba(75, 85, 99, 0.2) !important;
+  }
+}
+
+/* Visual indicator for scrollable tables */
+.table-scroll-container {
+  box-shadow: 
+    inset -10px 0 10px -10px rgba(0,0,0,0.4),
+    inset 10px 0 10px -10px rgba(0,0,0,0.4);
+}
+
+/* Debug - ensure table scrolls */
+.table-scroll-container table {
+  table-layout: auto !important;
+  width: max-content !important;
+  min-width: 100%;
+}
+
+/* Hint text for mouse users */
+.table-scroll-hint {
+  position: absolute;
+  top: -20px;
+  right: 0;
+  font-size: 11px;
+  color: #6b7280;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.table-scroll-container:hover .table-scroll-hint {
+  opacity: 1;
+}
+
+
+
+/* Allow horizontal scroll for wide content */
+.prose pre {
+  white-space: pre;
+  word-wrap: normal;
+}
+
+/* Markdown container horizontal scroll */
+.markdown-scroll-container {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Force scrollbar visibility on hover for desktop */
+@media (min-width: 768px) {
+  .markdown-scroll-container:hover::-webkit-scrollbar {
+    height: 10px;
+  }
+}
+
+/* Ensure inline elements don't break layout on desktop */
+@media (min-width: 768px) {
+  .prose code {
+    white-space: nowrap;
+  }
+  
+  .prose {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 767px) {
+  .prose code {
+    white-space: normal;
+    word-break: break-word;
+  }
 }
 
 /* Focus states with subtle red accent */
