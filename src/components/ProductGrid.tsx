@@ -114,9 +114,9 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
     return (
       <div className="text-center py-12 bg-black min-h-full">
         <p className="text-text-secondary">
-          {store.name ? `No products found at ${store.name}` : 'No products found'}
+          {store?.name ? `No products found at ${store.name}` : 'No products found'}
         </p>
-        {store.name && (
+        {store?.name && (
           <p className="text-text-tertiary text-sm mt-1">
             Products shown are filtered by location inventory
           </p>
@@ -135,10 +135,10 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
   }
 
   return (
-    <div className={`h-full ${
+    <div className={`${
       isListView 
-        ? 'flex flex-col gap-0' 
-        : `grid grid-cols-1 sm:grid-cols-2 items-stretch ${
+        ? 'overflow-y-auto h-full' 
+        : `h-full grid grid-cols-1 sm:grid-cols-2 items-stretch ${
             isCustomerViewOpen 
               ? 'md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2' 
               : 'md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3'
@@ -147,18 +147,35 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
       gap: isListView ? '0px' : '2px',
       backgroundColor: isListView ? 'transparent' : 'rgb(64 64 64 / 0.2)'
     }}>
-      {filteredProducts.map((product: FloraProduct, index: number) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          onAddToCart={onAddToCart}
-          globalSelectedProduct={globalSelectedProduct}
-          setGlobalSelectedProduct={setGlobalSelectedProduct}
-          isListView={isListView}
-          index={index}
-          gridCols={getGridCols()}
-        />
-      ))}
+      {isListView ? (
+        <div className="min-h-full">
+          {filteredProducts.map((product: FloraProduct, index: number) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onAddToCart={onAddToCart}
+              globalSelectedProduct={globalSelectedProduct}
+              setGlobalSelectedProduct={setGlobalSelectedProduct}
+              isListView={isListView}
+              index={index}
+              gridCols={getGridCols()}
+            />
+          ))}
+        </div>
+      ) : (
+        filteredProducts.map((product: FloraProduct, index: number) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            onAddToCart={onAddToCart}
+            globalSelectedProduct={globalSelectedProduct}
+            setGlobalSelectedProduct={setGlobalSelectedProduct}
+            isListView={isListView}
+            index={index}
+            gridCols={getGridCols()}
+          />
+        ))
+      )}
     </div>
   )
 } 

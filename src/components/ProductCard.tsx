@@ -174,123 +174,131 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
   const selectedPrice = getSelectedPrice()
 
   if (isListView) {
-    // List View - Expandable Layout
     return (
-      <div className={`relative ${isOddRow ? 'bg-black/80' : 'bg-black/85'} border-b border-neutral-600/20 hover:border-transparent hover:bg-neutral-800 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:z-10 transition-all duration-500 ease-out group transform hover:scale-[1.002] rounded`}>
-        {/* Main Row - Always Visible */}
+      <div 
+        className={`list-item-container ${
+          isOddRow ? 'bg-black/90' : 'bg-black/95'
+        } border-b border-white/10 hover:bg-neutral-800/80 hover:border-white/20 transition-all duration-200`}
+      >
+        {/* Main List Row */}
         <div 
-          className="flex items-center w-full gap-4 px-3 py-2 min-h-[50px] cursor-pointer"
+          className="list-row flex items-center px-4 py-3 cursor-pointer"
           onClick={() => {
             const newExpandedState = !isExpanded
             setIsExpanded(newExpandedState)
-            
-            // Clear selection when collapsing
             if (!newExpandedState && globalSelectedProduct?.productId === product.id) {
               setGlobalSelectedProduct(null)
             }
           }}
         >
-          {/* Expand/Collapse Icon */}
-          <div className="w-4 h-4 flex-shrink-0 flex items-center justify-center">
-            {isExpanded ? (
-              <ChevronDown className="w-3 h-3 text-vscode-textMuted" />
-            ) : (
-              <ChevronRight className="w-3 h-3 text-vscode-textMuted" />
-            )}
+          {/* Expand Icon */}
+          <div className="w-4 h-4 mr-3 flex-shrink-0 text-white/60">
+            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </div>
 
           {/* Product Image */}
-          <div className="w-10 h-10 flex-shrink-0 relative group-hover:scale-105 transition-transform duration-300 ease-out">
+          <div className="w-12 h-12 mr-4 flex-shrink-0 relative">
             {product.images?.[0] ? (
               <Image
                 src={product.images[0].src}
                 alt={product.images[0].alt || product.name}
                 fill
-                className="object-contain rounded transition-all duration-300 group-hover:brightness-110"
-                sizes="40px"
+                className="object-contain rounded"
+                sizes="48px"
               />
             ) : (
-              <div className="w-full h-full bg-vscode-bgTertiary flex items-center justify-center border border-vscode-border/30 rounded transition-all duration-300 group-hover:border-vscode-border/50">
-                <span className="text-vscode-textMuted text-xs">No img</span>
+              <div className="w-full h-full bg-neutral-800 flex items-center justify-center rounded">
+                <span className="text-white/40 text-xs">No img</span>
               </div>
             )}
             {isOutOfStock && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded">
-                <span className="text-white text-xs font-medium">OOS</span>
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded">
+                <span className="text-white text-[10px] font-medium">OOS</span>
               </div>
             )}
           </div>
 
-          {/* Product Name - 25% */}
-          <div className="flex-1 min-w-0 max-w-[25%]">
-            <h3 className="font-medium text-vscode-text text-sm line-clamp-1">{product.name}</h3>
-            <div className="text-xs text-vscode-textMuted line-clamp-1">
-              {truncateText(stripHtmlTags(product.short_description || product.description || ''), 50)}
-            </div>
+          {/* Product Name & Description */}
+          <div className="flex-1 min-w-0 mr-4">
+            <h3 className="text-white font-medium text-sm truncate">{product.name}</h3>
+            <p className="text-white/60 text-xs truncate mt-0.5">
+              {stripHtmlTags(product.short_description || product.description || 'No description')}
+            </p>
           </div>
 
-          {/* Category - 12% */}
-          <div className="w-[12%] flex-shrink-0">
-            <span className="text-xs text-vscode-textMuted">
-              {product.categories?.[0]?.name || 'Uncategorized'}
+          {/* Category */}
+          <div className="w-24 mr-4 flex-shrink-0">
+            <span className="text-white/60 text-xs">
+              {product.categories?.[0]?.name || 'Other'}
             </span>
           </div>
 
-          {/* Strain Type - 13% */}
-          <div className="w-[13%] flex-shrink-0">
-            <span className="text-xs text-vscode-textMuted capitalize">
+          {/* Strain Type */}
+          <div className="w-20 mr-4 flex-shrink-0">
+            <span className="text-white/60 text-xs capitalize">
               {getStrainType() || '-'}
             </span>
           </div>
 
-          {/* Stock - 15% */}
-          <div className="w-[15%] flex-shrink-0">
-            <span className={`text-xs ${getStockColor()}`}>
+          {/* Stock */}
+          <div className="w-24 mr-4 flex-shrink-0">
+            <span className={`text-xs font-medium ${getStockColor()}`}>
               {getStockText()}
             </span>
           </div>
 
-          {/* Price - 15% */}
-          <div className="w-[15%] flex-shrink-0">
+          {/* Price */}
+          <div className="w-20 mr-4 flex-shrink-0 text-right">
             {(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') ? (
               selectedPrice ? (
                 <span className="text-green-400 font-bold text-sm">${selectedPrice.toFixed(2)}</span>
               ) : (
-                <span className="text-xs text-vscode-textMuted">Select option</span>
+                <span className="text-white/40 text-xs">Select</span>
               )
             ) : (
-              <div className="flex items-center gap-2">
+              <div>
                 <span className="text-green-400 font-bold text-sm">${price.toFixed(2)}</span>
                 {hasDiscount && (
-                  <span className="text-vscode-textMuted text-xs line-through">${regularPrice.toFixed(2)}</span>
+                  <div className="text-white/40 text-xs line-through">${regularPrice.toFixed(2)}</div>
                 )}
               </div>
             )}
           </div>
 
-          {/* Action - 10% */}
-          <div className="w-[10%] flex-shrink-0 flex justify-end">
-            {/* Add button now only available in expanded view */}
+          {/* Add Button - Only for simple products */}
+          <div className="w-8 flex-shrink-0">
+            {!(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleAddToCart(e)
+                }}
+                disabled={isOutOfStock}
+                className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                  isOutOfStock 
+                    ? 'bg-neutral-700 text-white/30 cursor-not-allowed' 
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Expanded Content */}
+        {/* Expanded Details */}
         {isExpanded && (
-          <div className="px-3 pb-3 bg-black/80 border-t border-vscode-border/30 animate-in slide-in-from-top-2 duration-300 ease-out">
-            <div className="flex gap-4 pt-3">
-              {/* Left Column - Product Details */}
-              <div className="flex-1">
-                {/* Product Lineage */}
-                <div className="mb-2">
-                  <ProductLineage productId={product.id} product={product} />
-                </div>
-
-                {/* Full Description */}
+          <div className="expanded-content bg-black/95 border-t border-white/10 px-4 py-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column - Product Info */}
+              <div className="product-info space-y-4">
+                <ProductLineage productId={product.id} product={product} />
+                
                 {(product.description || product.short_description) && (
-                  <div className="mb-3">
-                    <div className="text-xs text-vscode-textMuted mb-1">Description</div>
+                  <div>
+                    <h4 className="text-white/80 text-sm font-medium mb-2">Description</h4>
                     <div 
-                      className="text-sm text-vscode-text leading-relaxed"
+                      className="text-white/70 text-sm leading-relaxed"
                       dangerouslySetInnerHTML={{ 
                         __html: product.description || product.short_description || '' 
                       }}
@@ -298,153 +306,120 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                   </div>
                 )}
 
-                {/* Product Characteristics */}
-                <div className="mb-2">
-                  <ProductCharacteristics productId={product.id} />
-                </div>
-
-                {/* ACF Fields */}
-                <div className="mb-2">
-                  <ACFFieldsDisplay 
-                    productId={product.id}
-                    productName={product.name}
-                  />
-                </div>
+                <ProductCharacteristics productId={product.id} />
+                <ACFFieldsDisplay productId={product.id} productName={product.name} />
               </div>
 
-              {/* Right Column - Selectors */}
-              <div className="w-80 flex-shrink-0">
-                {/* Weight/Quantity Selectors */}
+              {/* Right Column - Options & Actions */}
+              <div className="product-options space-y-4">
+                {/* Weight Options */}
                 {(product.mli_product_type === 'weight' && product.pricing_tiers) && (
-                  <div className="space-y-2">
-                    {/* Flower Pricing */}
-                    <div className="text-xs text-vscode-textMuted">
-                      {product.preroll_pricing_tiers ? 'Flower (grams)' : 'Weight Options (grams)'}
-                    </div>
-                    <div className="flex gap-1 text-xs">
-                      {Object.entries(product.pricing_tiers || {}).map(([grams, totalPrice], index, array) => {
+                  <div>
+                    <h4 className="text-white/80 text-sm font-medium mb-3">
+                      {product.preroll_pricing_tiers ? 'Flower Options' : 'Weight Options'}
+                    </h4>
+                    <div className="grid grid-cols-4 gap-2">
+                      {Object.entries(product.pricing_tiers || {}).map(([grams, totalPrice]) => {
                         const variationKey = `flower-${grams}`
                         const isSelected = selectedVariation === variationKey
                         return (
-                          <div key={grams} className="flex-1 relative">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleVariationSelect(variationKey)
-                              }}
-                              disabled={isOutOfStock}
-                              className={`w-full justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
-                                isOutOfStock 
-                                  ? 'cursor-not-allowed text-gray-600' 
-                                  : isSelected
-                                  ? 'text-white border border-white shadow-sm shadow-white/20'
-                                  : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
-                              }`}
-                            >
-                              {grams}g
-                            </button>
-                            {index < array.length - 1 && (
-                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
-                            )}
-                          </div>
+                          <button
+                            key={grams}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleVariationSelect(variationKey)
+                            }}
+                            disabled={isOutOfStock}
+                            className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                              isOutOfStock 
+                                ? 'bg-neutral-800 text-white/30 cursor-not-allowed' 
+                                : isSelected
+                                ? 'bg-white text-black'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            {grams}g
+                          </button>
                         )
                       })}
                     </div>
                     
-                    {/* Preroll Pricing (if available) */}
+                    {/* Preroll Options */}
                     {product.preroll_pricing_tiers && (
                       <>
-                        <div className="text-xs text-vscode-textMuted">
-                          Pre-rolls (count)
-                        </div>
-                        <div className="flex gap-1 text-xs">
-                          {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice], index, array) => {
+                        <h4 className="text-white/80 text-sm font-medium mb-3 mt-4">Pre-roll Options</h4>
+                        <div className="grid grid-cols-4 gap-2">
+                          {Object.entries(product.preroll_pricing_tiers || {}).map(([count, totalPrice]) => {
                             const variationKey = `preroll-${count}`
                             const isSelected = selectedVariation === variationKey
                             const gramsPerPreroll = product.mli_preroll_conversion || 0.7
                             const totalGrams = parseFloat((parseInt(count) * gramsPerPreroll).toFixed(1))
-                            const availability = getPrerollAvailability(parseInt(count))
                             return (
-                              <div key={count} className="flex-1 relative">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleVariationSelect(variationKey)
-                                  }}
-                                  disabled={isOutOfStock}
-                                  className={`w-full flex-col justify-center px-2 py-1 rounded text-sm font-medium transition-all duration-300 ease-out bg-transparent hover:bg-white/5 active:scale-95 ${
-                                    isOutOfStock 
-                                      ? 'cursor-not-allowed text-gray-600' 
-                                      : isSelected
-                                      ? 'text-white border border-white shadow-sm shadow-white/20'
-                                      : 'text-text-secondary hover:text-white border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
-                                  }`}
-                                  title={`${count} pre-rolls (${totalGrams}g total) - ${availability}`}
-                                >
-                                  <div>{count}x</div>
-                                  <div className="text-xs opacity-70">({totalGrams}g)</div>
-                                </button>
-                                {index < array.length - 1 && (
-                                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
-                                )}
-                              </div>
+                              <button
+                                key={count}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleVariationSelect(variationKey)
+                                }}
+                                disabled={isOutOfStock}
+                                className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                                  isOutOfStock 
+                                    ? 'bg-neutral-800 text-white/30 cursor-not-allowed' 
+                                    : isSelected
+                                    ? 'bg-white text-black'
+                                    : 'bg-white/10 text-white hover:bg-white/20'
+                                }`}
+                                title={`${count} pre-rolls (${totalGrams}g total)`}
+                              >
+                                {count}x
+                              </button>
                             )
                           })}
                         </div>
-                        <div className="text-xs text-vscode-textMuted text-center">
-                          {product.mli_preroll_conversion || 0.7}g per pre-roll
-                        </div>
                       </>
                     )}
-                    
-                    <div className="text-xs text-vscode-textMuted text-center">
-                      Best rate: ${price.toFixed(2)}/g
-                    </div>
                   </div>
                 )}
-                
+
+                {/* Quantity Options */}
                 {(product.mli_product_type === 'quantity' && product.pricing_tiers) && (
-                  <div className="space-y-2">
-                    <div className="flex gap-1 text-xs">
-                      {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit], index, array) => {
+                  <div>
+                    <h4 className="text-white/80 text-sm font-medium mb-3">Quantity Options</h4>
+                    <div className="grid grid-cols-4 gap-2">
+                      {Object.entries(product.pricing_tiers || {}).slice(0, 4).map(([qty, pricePerUnit]) => {
                         const variationKey = `qty-${qty}`
                         const isSelected = selectedVariation === variationKey
                         return (
-                          <div key={qty} className="flex-1 relative">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleVariationSelect(variationKey)
-                              }}
-                              disabled={isOutOfStock}
-                              className={`w-full justify-center px-2 py-1 rounded-xl text-sm font-medium transition-all duration-300 ease-out active:scale-95 ${
-                                isOutOfStock 
-                                  ? 'cursor-not-allowed text-gray-600 bg-transparent border border-transparent' 
-                                  : isSelected
-                                  ? 'text-white bg-white/15 shadow-lg shadow-white/10 border border-transparent'
-                                  : 'text-text-secondary hover:text-white bg-transparent hover:bg-white/5 border border-transparent hover:border-white/50 hover:shadow-sm hover:shadow-white/10'
-                              }`}
-                            >
-                              {qty} units
-                            </button>
-                            {index < array.length - 1 && (
-                              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-6 bg-neutral-600/20 transition-all duration-300 group-hover:bg-neutral-600/40"></div>
-                            )}
-                          </div>
+                          <button
+                            key={qty}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleVariationSelect(variationKey)
+                            }}
+                            disabled={isOutOfStock}
+                            className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                              isOutOfStock 
+                                ? 'bg-neutral-800 text-white/30 cursor-not-allowed' 
+                                : isSelected
+                                ? 'bg-white text-black'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                          >
+                            {qty}
+                          </button>
                         )
                       })}
                     </div>
                   </div>
                 )}
 
-                {/* Virtual Pre-Roll Section for flower products */}
+                {/* Virtual Pre-roll Section */}
                 <VirtualPrerollSection 
                   product={product}
                   linkedPrerollProduct={product.linkedPrerollProduct}
                   onConvert={async (count) => {
                     try {
                       await convertToPrerolls(product.id, count, currentLocation?.id)
-                      // Invalidate products query to refresh inventory
                       await queryClient.invalidateQueries({ queryKey: ['products'] })
                     } catch (error) {
                       console.error('Conversion failed:', error)
@@ -452,22 +427,22 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                   }}
                 />
 
-                {/* Add to Cart Button for Expanded View */}
+                {/* Add to Cart Button */}
                 {(product.mli_product_type === 'weight' || product.mli_product_type === 'quantity') && selectedVariation !== 'default' && (
-                  <div className="mt-3 flex justify-end">
+                  <div className="flex justify-end">
                     <button
-                                             onClick={(e) => {
-                         e.stopPropagation()
-                         handleAddToCart(e)
-                       }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleAddToCart(e)
+                      }}
                       disabled={isOutOfStock}
-                      className={`w-8 h-8 rounded-full transition-all duration-300 ease-out flex items-center justify-center active:scale-95 ${
+                      className={`px-6 py-2 rounded font-medium transition-colors ${
                         isOutOfStock 
-                          ? 'bg-gray-400/50 cursor-not-allowed text-gray-600' 
-                          : 'bg-white/10 text-white hover:bg-white/20 hover:shadow-lg hover:shadow-white/10 transform hover:scale-110'
+                          ? 'bg-neutral-700 text-white/30 cursor-not-allowed' 
+                          : 'bg-green-600 text-white hover:bg-green-700'
                       }`}
                     >
-                      <Plus className="w-4 h-4" />
+                      Add to Cart
                     </button>
                   </div>
                 )}
