@@ -165,7 +165,7 @@ export default function FloraDistrosPOS() {
         <div className="viewport-container bg-background-primary text-text-primary flex flex-col relative" style={{ 
           height: '100vh', 
           minHeight: '100vh',
-          paddingTop: '0px',
+          paddingTop: 'env(safe-area-inset-top, 44px)',
           paddingBottom: '0px'
         }}>
         {/* Menu Drawer */}
@@ -355,11 +355,11 @@ export default function FloraDistrosPOS() {
         </div>
 
         {/* Main Content Area */}
-        <div className={`flex-1 min-h-0 h-full ${
+        <div className={`flex-1 min-h-0 ${
           isCustomerViewOpen 
             ? 'grid grid-cols-[1fr_2fr_320px] gap-0' 
             : 'flex'
-        }`}>
+        }`} style={{ height: '100%' }}>
           {/* Customer View Panel */}
           {isCustomerViewOpen && (
             <div className="bg-black border-r border-white/[0.04]">
