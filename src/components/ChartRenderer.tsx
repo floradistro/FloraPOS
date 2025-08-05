@@ -34,7 +34,7 @@ export default function ChartRenderer({ json }: ChartRendererProps) {
     setIsClient(true)
   }, [])
 
-  console.log('📊 ChartRenderer received JSON:', json)
+      console.log('ChartRenderer received JSON:', json)
   
   if (!isClient) {
     return (
@@ -46,7 +46,7 @@ export default function ChartRenderer({ json }: ChartRendererProps) {
   
   try {
     const chartData: ChartData = JSON.parse(json)
-    console.log('📊 Parsed chart data:', chartData)
+    console.log('Parsed chart data:', chartData)
     
     if (!chartData.type || !chartData.data) {
       console.error('❌ Invalid chart data - missing type or data:', chartData)

@@ -173,14 +173,14 @@ export default function TableRenderer({ json }: TableRendererProps) {
       {/* Full screen table */}
       <div className="flex-1 overflow-auto p-6">
         <TableScrollWrapper>
-          <table className="min-w-full bg-gray-900/40 rounded-lg overflow-hidden">
+          <table className="min-w-full bg-neutral-900/40 border border-white/[0.04] rounded-lg overflow-hidden">
             <thead>
               {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id} className="border-b border-gray-700">
+                <tr key={headerGroup.id} className="border-b border-white/[0.08]">
                   {headerGroup.headers.map(header => (
                     <th
                       key={header.id}
-                      className="px-6 py-4 text-left text-sm font-medium text-gray-200 cursor-pointer hover:text-blue-300 transition-colors bg-gray-800/60"
+                      className="px-4 py-3 text-left text-sm font-medium text-text-primary cursor-pointer hover:text-blue-300 transition-colors bg-neutral-800/40"
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export default function TableRenderer({ json }: TableRendererProps) {
                           asc: ' ↑',
                           desc: ' ↓',
                         }[header.column.getIsSorted() as string] ?? (
-                          <span className="text-gray-500">↕</span>
+                          <span className="text-text-tertiary">↕</span>
                         )}
                       </div>
                     </th>
@@ -204,14 +204,14 @@ export default function TableRenderer({ json }: TableRendererProps) {
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-gray-700">
+            <tbody className="divide-y divide-white/[0.04]">
               {table.getRowModel().rows.map((row, index) => (
                 <tr 
                   key={row.id} 
-                  className={`${index % 2 === 0 ? 'bg-gray-800/20' : 'bg-transparent'} hover:bg-gray-700/30 transition-colors`}
+                  className={`${index % 2 === 0 ? 'bg-neutral-800/20' : 'bg-transparent'} hover:bg-neutral-800/40 transition-colors`}
                 >
                   {row.getVisibleCells().map(cell => (
-                    <td key={cell.id} className="px-6 py-4 text-sm text-gray-200 whitespace-nowrap">
+                    <td key={cell.id} className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -229,7 +229,7 @@ export default function TableRenderer({ json }: TableRendererProps) {
   }
 
   return (
-    <div className="bg-black/20 border border-white/[0.06] rounded-lg p-4 mb-2 overflow-hidden w-full">
+    <div className="bg-neutral-900/40 border border-white/[0.04] rounded-lg p-4 mb-2 overflow-hidden w-full hover:bg-neutral-900/60 transition-colors">
       {/* Table header with controls */}
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/[0.08]">
         <div className="flex items-center gap-2">
@@ -280,14 +280,14 @@ export default function TableRenderer({ json }: TableRendererProps) {
       {/* Table container with height limit when collapsed */}
       <div className={`${isLargeTable && !isExpanded ? 'max-h-[300px] overflow-hidden' : ''} relative`}>
         <TableScrollWrapper>
-          <table className="min-w-full">
+          <table className="min-w-full bg-neutral-900/40 border border-white/[0.04] rounded-lg overflow-hidden">
             <thead>
               {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id} className="border-b border-gray-800">
+                <tr key={headerGroup.id} className="border-b border-white/[0.08]">
                   {headerGroup.headers.map(header => (
                     <th
                       key={header.id}
-                      className="px-4 py-3 text-left text-sm font-medium text-gray-300 cursor-pointer hover:text-blue-300 transition-colors"
+                      className="px-4 py-3 text-left text-sm font-medium text-text-primary cursor-pointer hover:text-blue-300 transition-colors bg-neutral-800/40"
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       <div className="flex items-center gap-2">
@@ -303,7 +303,7 @@ export default function TableRenderer({ json }: TableRendererProps) {
                           asc: ' ↑',
                           desc: ' ↓',
                         }[header.column.getIsSorted() as string] ?? (
-                          <span className="text-gray-500">↕</span>
+                          <span className="text-text-tertiary">↕</span>
                         )}
                       </div>
                     </th>
@@ -311,14 +311,14 @@ export default function TableRenderer({ json }: TableRendererProps) {
                 </tr>
               ))}
             </thead>
-            <tbody className="divide-y divide-gray-800">
+            <tbody className="divide-y divide-white/[0.04]">
               {displayedRows.map((row, index) => (
                 <tr 
                   key={row.id} 
-                  className={`${index % 2 === 0 ? 'bg-gray-900/20' : 'bg-transparent'} hover:bg-gray-800/30 transition-colors`}
+                  className={`${index % 2 === 0 ? 'bg-neutral-800/20' : 'bg-transparent'} hover:bg-neutral-800/40 transition-colors`}
                 >
                   {row.getVisibleCells().map(cell => (
-                    <td key={cell.id} className="px-4 py-3 text-sm text-gray-200 whitespace-nowrap">
+                    <td key={cell.id} className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -330,7 +330,7 @@ export default function TableRenderer({ json }: TableRendererProps) {
 
         {/* Fade overlay when collapsed */}
         {isLargeTable && !isExpanded && (
-          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-neutral-900/60 to-transparent pointer-events-none"></div>
         )}
       </div>
       

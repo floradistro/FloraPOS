@@ -38,7 +38,7 @@ function renderEnhancedContent(content: string, isStreaming: boolean): React.Rea
   const lines = content.split('\n')
   let lastActionIndex = -1
   for (let i = lines.length - 1; i >= 0; i--) {
-    if (lines[i].includes('🔧') || lines[i].startsWith('Using tool:') || lines[i].startsWith('Trying ')) {
+    if (lines[i].startsWith('Using tool:') || lines[i].startsWith('Trying ')) {
       lastActionIndex = i
       break
     }
@@ -102,9 +102,9 @@ function renderEnhancedContent(content: string, isStreaming: boolean): React.Rea
             return (
               <div key={index} className="text-sm mb-1 text-blue-400">
                 {shouldAnimate ? (
-                  <span className="animate-dots">🔧 {section.content}</span>
+                  <span className="animate-dots">{section.content}</span>
                 ) : (
-                  <span>✓ {section.content}</span>
+                  <span>{section.content}</span>
                 )}
               </div>
             )
@@ -180,11 +180,11 @@ function parseContentSections(content: string): ContentSection[] {
     }
     
     // Detect tool status
-    if (line.includes('🔧')) {
+    if (line.includes('Using tool:')) {
       if (currentSection.content.trim()) {
         sections.push({ ...currentSection })
       }
-      const toolName = line.replace('🔧', '').replace('...', '').trim()
+      const toolName = line.replace('Using tool:', '').replace('...', '').trim()
       sections.push({ type: 'tool-status', content: toolName, lineIndex: i })
       currentSection = { type: 'markdown', content: '', title: '', icon: '', defaultOpen: true, lineIndex: -1 }
       continue
@@ -235,12 +235,13 @@ function extractCodeBlock(lines: string[], startIndex: number, type: string) {
 
 // Get appropriate icon for section type
 function getIconForSection(title: string) {
-  if (title.includes('Performance')) return '📊'
-  if (title.includes('Debug')) return '🔧' 
-  if (title.includes('Technical')) return '⚙️'
-  if (title.includes('Report')) return '📋'
-  if (title.includes('Data')) return '💾'
-  return '📄'
+  // Clean text indicators instead of emojis
+  if (title.includes('Performance')) return '[PERF]'
+  if (title.includes('Debug')) return '[DEBUG]'
+  if (title.includes('Technical')) return '[TECH]'
+  if (title.includes('Report')) return '[REPORT]'
+  if (title.includes('Data')) return '[DATA]'
+  return '[INFO]'
 }
 
 // Custom markdown components for clean styling
@@ -295,18 +296,18 @@ const markdownComponents = {
   ),
   table: ({ children }: any) => (
     <TableScrollWrapper>
-      <table className="min-w-max border-collapse border border-white/20 rounded-lg">
+      <table className="min-w-max bg-neutral-900/40 border border-white/[0.04] rounded-lg overflow-hidden">
         {children}
       </table>
     </TableScrollWrapper>
   ),
   th: ({ children }: any) => (
-    <th className="border border-white/20 px-3 py-2 bg-neutral-800/60 text-left font-medium text-text-primary whitespace-nowrap">
+    <th className="border-b border-white/[0.08] px-4 py-3 bg-neutral-800/40 text-left text-sm font-medium text-text-primary whitespace-nowrap">
       {children}
     </th>
   ),
   td: ({ children }: any) => (
-    <td className="border border-white/20 px-3 py-2 text-text-primary whitespace-nowrap">
+    <td className="border-b border-white/[0.04] px-4 py-3 text-sm text-text-primary whitespace-nowrap">
       {children}
     </td>
   ),
@@ -529,7 +530,7 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                           <div className="text-center mb-8">
                 <div className="text-2xl font-light text-text-primary mb-3">Start a conversation</div>
                 <div className="text-text-secondary">Ask about inventory, orders, or sales...</div>
-                <div className="text-xs text-text-tertiary mt-2">✨ Enhanced with bulk API endpoints for faster responses</div>
+                <div className="text-xs text-text-tertiary mt-2">Enhanced with bulk API endpoints for faster responses</div>
               </div>
             
             <form onSubmit={handleSubmit}>
@@ -657,7 +658,7 @@ export default function ChatInput({ onLoadingChange }: ChatInputProps) {
                 className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors px-2 py-1 rounded hover:bg-indigo-900/20"
                 title="Export conversation as PDF"
               >
-                📄 Export PDF
+Export PDF
               </button>
               <button
                 onClick={clearConversation}

@@ -19,7 +19,7 @@ export default function SimpleChartRenderer({ json }: SimpleChartRendererProps) 
     setIsClient(true)
   }, [])
 
-  console.log('📊 SimpleChartRenderer received JSON:', json)
+  console.log('SimpleChartRenderer received JSON:', json)
   
   if (!isClient) {
     return (
@@ -31,7 +31,7 @@ export default function SimpleChartRenderer({ json }: SimpleChartRendererProps) 
   
   try {
     const chartData: ChartData = JSON.parse(json)
-    console.log('📊 Parsed chart data:', chartData)
+    console.log('Parsed chart data:', chartData)
     
     if (!chartData.type || !chartData.data) {
       console.error('❌ Invalid chart data - missing type or data:', chartData)
