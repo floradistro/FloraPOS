@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import jwt from 'jsonwebtoken'
+import { jwtVerify } from 'jose'
 
 // JWT_SECRET will be accessed within the middleware function
 // to ensure it's available at runtime, not build time
@@ -101,8 +101,10 @@ export function middleware(request: NextRequest) {
           )
         }
 
-        // Verify the JWT token
-        const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload
+        // Verify the JWT token using jose
+        const secret = new TextEncoder().encode(JWT_SECRET)
+        const { payload } = await jwtVerify(token, secret)
+        const decoded = payload as unknown as TokenPayload
         
         // Validate required fields for JWT
         if (!decoded.userId || !decoded.email || !decoded.role) {
