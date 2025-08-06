@@ -139,10 +139,8 @@ export async function middleware(request: NextRequest) {
         // This is a WordPress hash token from Addify plugin or a bypass token
         // Accept it if it's properly formatted (basic validation)
         
-        // Special bypass token for POS system
-        if (token === 'flora-pos-bypass-token') {
-          return NextResponse.next()
-        }
+        // NO BYPASS TOKENS - Require real authentication
+        // Removed bypass token logic to enforce proper authentication
         
         if (token.length < 32) {
           return NextResponse.json(

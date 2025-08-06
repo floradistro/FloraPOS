@@ -60,7 +60,7 @@ const fetchOrders = async (page: number, pageSize: number, filters: any, storeId
   
   // Get token from localStorage or cookie if not provided
   // Using bypass token temporarily for testing
-  const authToken = token || localStorage.getItem('flora_auth_token') || 'flora-pos-bypass-token'
+      const authToken = token || localStorage.getItem('flora_auth_token') // No bypass token
   
   const response = await fetch(`/api/orders?${params.toString()}`, {
     headers: {

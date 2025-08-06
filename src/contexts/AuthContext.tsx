@@ -19,8 +19,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Initialize auth state from localStorage
-    const initializeAuth = () => {
+    // Initialize auth state from localStorage and fetch real store data
+    const initializeAuth = async () => {
       try {
         // Check if we're in the browser
         if (typeof window === 'undefined') {
@@ -33,60 +33,108 @@ export function AuthProvider({ children }: AuthProviderProps) {
         let storedTerminal = authService.getStoredTerminal()
         let storedToken = authService.getToken()
 
-        // Check if stored store has "Guava" and replace it
-        if (storedStore && (storedStore.name === 'Guava' || storedStore.name === 'Store')) {
-          storedStore = null // Force using default
+        // Check if stored store has fake data and replace it
+        if (storedStore && (storedStore.name === 'Guava' || storedStore.name === 'Store' || storedStore.name === 'Charlotte Monroe' || storedStore.name === 'Charlotte Central' || storedStore.name === 'Distribution Center')) {
+          storedStore = null // Force fetching real data
+          // Also clear from localStorage
+          try {
+            localStorage.removeItem('flora_store')
+            localStorage.removeItem('flora_user_data_encrypted')
+            console.log('🗑️ Cleared fake store data from localStorage')
+          } catch (error) {
+            console.warn('Could not clear localStorage:', error)
+          }
         }
 
-        // Set default values for development/testing
-        const defaultUser = storedUser || {
-          id: "1",
-          email: "floradistrodev@gmail.com",
-          firstName: "Master",
-          lastName: "Admin",
-          role: "admin" as any,
-          storeId: "30",
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+        // Only use stored user data - no fake defaults
+        if (!storedUser) {
+          console.log('❌ No authenticated user - login required')
+          setIsLoading(false)
+          return
         }
         
-        const defaultStore = storedStore || {
-          id: "30",
-          name: "Charlotte Monroe",
-          address: "Charlotte Monroe Location",
-          phone: "(704) 555-0100",
-          isActive: true,
-          timezone: "America/New_York",
-          currency: "USD",
-          taxRate: 0.0825,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+        const defaultUser = storedUser
+        
+        // Try to fetch real store data from API
+        let realStore = storedStore
+        let realTerminal = storedTerminal
+        
+        if (!storedStore) {
+          try {
+            console.log('🏪 Fetching real store data from API...')
+            const storesResponse = await fetch('/api/stores/public')
+            if (storesResponse.ok) {
+              const stores = await storesResponse.json()
+              if (stores && stores.length > 0) {
+                // Use the first available store
+                const firstStore = stores[0]
+                realStore = {
+                  id: firstStore.id?.toString() || firstStore.location_id?.toString() || "1",
+                  name: firstStore.name || firstStore.location_name || "Main Store",
+                  address: firstStore.address || "Store Address",
+                  phone: firstStore.phone || "(555) 000-0000",
+                  isActive: true,
+                  timezone: "America/New_York",
+                  currency: "USD",
+                  taxRate: 0.0825,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                }
+                
+                realTerminal = {
+                  id: "terminal-1",
+                  name: "Terminal 1",
+                  storeId: realStore.id,
+                  isActive: true,
+                  lastActivity: new Date().toISOString(),
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                }
+                
+                // Save real store data
+                authService.setStore(realStore)
+                authService.setTerminal(realTerminal)
+                console.log('✅ Using real store:', realStore.name)
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ Could not fetch real store data:', error)
+          }
         }
         
-        const defaultTerminal = storedTerminal || {
-          id: "terminal-1",
-          name: "Terminal 1",
-          storeId: "30",
-          isActive: true,
-          lastActivity: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+        // NO FALLBACK - Require real authentication
+        if (!realStore) {
+          console.log('❌ No real store data available - user must login properly')
+          // Don't set any fake data - user must authenticate properly
+          setIsLoading(false)
+          return
         }
         
-        const defaultToken = storedToken || "flora-pos-bypass-token"
-        
-        // Save the corrected store data
-        if (!storedStore || storedStore.name === 'Guava' || storedStore.name === 'Store') {
-          authService.setStore(defaultStore)
+        if (!realTerminal) {
+          realTerminal = {
+            id: "terminal-1",
+            name: "Terminal 1",
+            storeId: realStore.id,
+            isActive: true,
+            lastActivity: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
         }
+        
+        const defaultToken = storedToken // No bypass token - require real auth
         
         setUser(defaultUser)
-        setStore(defaultStore)
-        setTerminal(defaultTerminal)
+        setStore(realStore)
+        setTerminal(realTerminal)
         setToken(defaultToken)
       } catch (error) {
-        // If there's an error accessing localStorage, just continue without auth
+        console.error('Auth initialization error:', error)
+        // No fake data - require proper authentication
+        setUser(null)
+        setStore(null)
+        setTerminal(null)
+        setToken(null)
       } finally {
         setIsLoading(false)
       }

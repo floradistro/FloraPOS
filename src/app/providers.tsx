@@ -29,23 +29,23 @@ const queryClient = new QueryClient({
   },
 })
 
-// Initialize default store if none exists
+// Initialize default store if none exists - REMOVED FAKE DATA
 function initializeDefaultStore() {
   if (typeof window !== 'undefined') {
+    // Clear any fake store data that might exist
     const storedStore = localStorage.getItem('flora_pos_store')
-    if (!storedStore) {
-      // Set Charlotte Monroe as default store
-      const defaultStore = {
-        id: '30',
-        name: 'Charlotte Monroe',
-        address: '3033 Monroe Rd, Charlotte, NC 28205',
-        location: {
-          latitude: 35.2124,
-          longitude: -80.7974
+    if (storedStore) {
+      try {
+        const store = JSON.parse(storedStore)
+        // Remove fake/test stores
+        if (store.name === 'Charlotte Monroe' || store.name === 'Guava' || store.name === 'Store') {
+          localStorage.removeItem('flora_pos_store')
+          console.log('🗑️ Removed fake store data')
         }
+      } catch (error) {
+        localStorage.removeItem('flora_pos_store')
+        console.log('🗑️ Cleared invalid store data')
       }
-      localStorage.setItem('flora_pos_store', JSON.stringify(defaultStore))
-      console.log('🏪 Set default store to Charlotte Monroe')
     }
   }
 }

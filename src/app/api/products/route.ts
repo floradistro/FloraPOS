@@ -28,14 +28,30 @@ export async function GET(request: NextRequest) {
       
       // For production, use proxy to bypass CORS
       if (process.env.NODE_ENV === 'production') {
-        const proxyUrl = new URL('/api/proxy/products', process.env.NEXT_PUBLIC_APP_URL || 'https://flora-pos-rhox.vercel.app')
+        // Get the current request URL to build the proxy URL dynamically
+        const host = request.headers.get('host')
+        const protocol = request.headers.get('x-forwarded-proto') || 'https'
+        const baseUrl = `${protocol}://${host}`
+        
+        const proxyUrl = new URL('/api/proxy/products', baseUrl)
         if (storeId) proxyUrl.searchParams.set('store_id', storeId)
         if (category) proxyUrl.searchParams.set('category', category)
         if (search) proxyUrl.searchParams.set('search', search)
         if (per_page) proxyUrl.searchParams.set('per_page', per_page)
         if (stock_status) proxyUrl.searchParams.set('stock_status', stock_status)
         
-        const response = await fetch(proxyUrl.toString())
+        console.log('🔄 Using proxy URL:', proxyUrl.toString())
+        
+        const response = await fetch(proxyUrl.toString(), {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error(`Proxy request failed with status ${response.status}`)
+        }
+        
         products = await response.json()
       } else {
         // For development, use direct API
