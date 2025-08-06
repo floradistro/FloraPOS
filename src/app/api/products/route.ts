@@ -3,6 +3,7 @@ import { floraAPI } from '../../../lib/woocommerce'
 
 export async function GET(request: NextRequest) {
   try {
+    // Force rebuild - v2
     const searchParams = request.nextUrl.searchParams
     const storeId = searchParams.get('store_id')
     const category = searchParams.get('category')
