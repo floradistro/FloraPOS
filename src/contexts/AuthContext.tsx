@@ -46,30 +46,117 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         }
 
-        // SECURITY FIX: Clear all stored auth data and require fresh login
-        console.log('🔒 Security mode: Clearing all stored authentication data')
+        // Check for valid stored authentication
+        if (!storedUser || !storedToken) {
+          console.log('❌ No valid authentication found - login required')
+          setUser(null)
+          setStore(null)
+          setTerminal(null)
+          setToken(null)
+          setIsLoading(false)
+          return
+        }
+
+        // Validate token is not a bypass token
+        if (storedToken === 'flora-pos-bypass-token') {
+          console.log('🚫 Clearing bypass token - real authentication required')
+          try {
+            localStorage.removeItem('flora_store')
+            localStorage.removeItem('flora_user') 
+            localStorage.removeItem('flora_terminal')
+            localStorage.removeItem('flora_auth_token')
+            localStorage.removeItem('flora_user_data_encrypted')
+            localStorage.removeItem('flora_auth_token_encrypted')
+          } catch (error) {
+            console.warn('Could not clear localStorage:', error)
+          }
+          setUser(null)
+          setStore(null)
+          setTerminal(null)
+          setToken(null)
+          setIsLoading(false)
+          return
+        }
+
+        console.log('✅ Valid authentication found - restoring session')
+        const defaultUser = storedUser
         
-        // Clear all stored authentication data
-        try {
-          localStorage.removeItem('flora_store')
-          localStorage.removeItem('flora_user') 
-          localStorage.removeItem('flora_terminal')
-          localStorage.removeItem('flora_auth_token')
-          localStorage.removeItem('flora_user_data_encrypted')
-          localStorage.removeItem('flora_auth_token_encrypted')
-          localStorage.removeItem('flora_pos_store')
-        } catch (error) {
-          console.warn('Could not clear localStorage:', error)
+        // Try to fetch real store data from API or use stored
+        let realStore = storedStore
+        let realTerminal = storedTerminal
+        
+        if (!storedStore) {
+          try {
+            console.log('🏪 Fetching real store data from API...')
+            const storesResponse = await fetch('/api/stores/public')
+            if (storesResponse.ok) {
+              const stores = await storesResponse.json()
+              if (stores && stores.length > 0) {
+                // Use the first available store
+                const firstStore = stores[0]
+                realStore = {
+                  id: firstStore.id?.toString() || firstStore.location_id?.toString() || "1",
+                  name: firstStore.name || firstStore.location_name || "Main Store",
+                  address: firstStore.address || "Store Address",
+                  phone: firstStore.phone || "(555) 000-0000",
+                  isActive: true,
+                  timezone: "America/New_York",
+                  currency: "USD",
+                  taxRate: 0.0825,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                }
+                
+                realTerminal = {
+                  id: "terminal-1",
+                  name: "Terminal 1",
+                  storeId: realStore.id,
+                  isActive: true,
+                  lastActivity: new Date().toISOString(),
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                }
+                
+                // Save real store data
+                authService.setStore(realStore)
+                authService.setTerminal(realTerminal)
+                console.log('✅ Using real store:', realStore.name)
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ Could not fetch real store data:', error)
+          }
         }
         
-        // No stored data allowed - require fresh login
-        console.log('❌ Authentication required - please login')
-        setUser(null)
-        setStore(null)
-        setTerminal(null)
-        setToken(null)
-        setIsLoading(false)
-        return
+        // Require both user and store data for valid session
+        if (!realStore) {
+          console.log('❌ No store data available - login required')
+          setUser(null)
+          setStore(null)
+          setTerminal(null)
+          setToken(null)
+          setIsLoading(false)
+          return
+        }
+        
+        if (!realTerminal) {
+          realTerminal = {
+            id: "terminal-1",
+            name: "Terminal 1",
+            storeId: realStore.id,
+            isActive: true,
+            lastActivity: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        }
+        
+        const defaultToken = storedToken
+        
+        setUser(defaultUser)
+        setStore(realStore)
+        setTerminal(realTerminal)
+        setToken(defaultToken)
       } catch (error) {
         console.error('Auth initialization error:', error)
         // No fake data - require proper authentication
