@@ -250,7 +250,7 @@ export function ProductCard({ product, onAddToCart, globalSelectedProduct, setGl
                 <div className="text-vscode-textMuted font-medium">Product</div>
                 <div className="text-vscode-text font-medium">{product.name}</div>
                 <div className="text-vscode-textMuted font-medium">{product.categories?.[0]?.name || 'Other'}</div>
-                {getStrainType() && <div className="text-vscode-text font-medium capitalize">{getStrainType()}</div>}
+                {getStrainType() && <div className="text-vscode-text font-medium capitalize">{String(getStrainType())}</div>}
                 
                 {/* Product Lineage */}
                 <div className="mt-2">

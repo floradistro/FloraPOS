@@ -42,7 +42,7 @@ export default function SmartSearch({
 
     if (viewMode === 'products') {
       // Product name matches
-      products.forEach(product => {
+      products.forEach((product: any) => {
         if (product.name.toLowerCase().includes(normalizedQuery)) {
           const index = product.name.toLowerCase().indexOf(normalizedQuery)
           suggestions.push({
@@ -72,7 +72,7 @@ export default function SmartSearch({
       const effects = new Set<string>()
       const strains = new Set<string>()
       
-      products.forEach(product => {
+      products.forEach((product: any) => {
               const effectsValue = product.meta_data?.find((meta: { key: string; value: unknown }) => meta.key === 'effects')?.value
       const strainValue = product.meta_data?.find((meta: { key: string; value: unknown }) => meta.key === 'strain_type')?.value
         
@@ -104,7 +104,7 @@ export default function SmartSearch({
 
     } else if (viewMode === 'customers') {
       // Customer name matches
-      customers.forEach(customer => {
+      customers.forEach((customer: any) => {
         if (customer.name.toLowerCase().includes(normalizedQuery)) {
           const index = customer.name.toLowerCase().indexOf(normalizedQuery)
           suggestions.push({
@@ -118,7 +118,7 @@ export default function SmartSearch({
       })
 
       // Email matches
-      customers.forEach(customer => {
+      customers.forEach((customer: any) => {
         if (customer.email.toLowerCase().includes(normalizedQuery)) {
           const index = customer.email.toLowerCase().indexOf(normalizedQuery)
           suggestions.push({
@@ -132,7 +132,7 @@ export default function SmartSearch({
       })
 
       // Phone matches
-      customers.forEach(customer => {
+      customers.forEach((customer: any) => {
         if (customer.phone.includes(query)) {
           const index = customer.phone.indexOf(query)
           suggestions.push({
@@ -304,8 +304,8 @@ export default function SmartSearch({
               </div>
               {suggestion.data && viewMode === 'customers' && (
                 <div className="text-right">
-                  <p className="text-green-400 text-xs">${suggestion.data.totalSpent?.toFixed(0)}</p>
-                  <p className="text-white/50 text-xs">{suggestion.data.totalOrders} orders</p>
+                  <p className="text-green-400 text-xs">${(suggestion.data as any).totalSpent?.toFixed(0)}</p>
+                  <p className="text-white/50 text-xs">{(suggestion.data as any).totalOrders} orders</p>
                 </div>
               )}
             </div>

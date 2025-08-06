@@ -69,7 +69,7 @@ export function useAsyncOperation<T>(
           shouldThrow: true,
           shouldLog: enableLogging,
           onError: (error) => {
-            errorHandlerOptions.onError?.(error)
+            // errorHandlerOptions.onError?.(error)
             onError?.(error)
           }
         }

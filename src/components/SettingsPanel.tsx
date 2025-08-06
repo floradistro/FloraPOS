@@ -74,7 +74,7 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                     <div className="text-sm font-medium text-white truncate">
                       Flora Distro - {store.name}
                     </div>
-                    <div className="text-xs text-white/60 truncate">{store.slug || store.address || `${store.city}, ${store.state}` || 'Charlotte Monroe Location'}</div>
+                    <div className="text-xs text-white/60 truncate">{store.address || 'Charlotte Monroe Location'}</div>
                     </div>
                   </div>
                 )}

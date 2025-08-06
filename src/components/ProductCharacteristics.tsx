@@ -46,7 +46,7 @@ export function ProductCharacteristics({ productId }: ProductCharacteristicsProp
         {topFields.map((field) => (
           <div key={field.key} className="bg-white/[0.02] rounded-md p-3">
             <span className="text-text-tertiary font-mono text-xs block mb-1">{field.label}:</span>
-            <span className="text-text-primary font-mono text-sm">{field.value}</span>
+            <span className="text-text-primary font-mono text-sm">{String(field.value || '')}</span>
           </div>
         ))}
       </div>

@@ -3,7 +3,7 @@
  * This file provides the tool definitions that are imported by the schema
  */
 
-import { getClaudePlug3ToolsFormat } from '@/claude-agent/tools/definitions-claudeplug3';
+// import { getClaudePlug3ToolsFormat } from '@/claude-agent/tools/definitions-claudeplug3';
 
 export interface ToolSchema {
   name: string;

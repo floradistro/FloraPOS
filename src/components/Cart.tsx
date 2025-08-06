@@ -429,7 +429,8 @@ export function Cart({
             
             // Add virtual pre-roll metadata if available
             // Get current product data to ensure we have the latest virtual pre-roll count
-            const currentProduct = currentProducts?.find(p => p.id === item.id)
+            const productsArray = (currentProducts as any)?.products || (Array.isArray(currentProducts) ? currentProducts : [])
+            const currentProduct = productsArray.find((p: any) => p.id === item.id)
             const virtualAvailable = currentProduct?.virtual_preroll_count || item.virtual_preroll_count || 0
             
             console.log(`🔍 Virtual pre-roll check for ${item.name}:`, {

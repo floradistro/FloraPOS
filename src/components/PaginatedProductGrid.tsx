@@ -81,7 +81,7 @@ export function PaginatedProductGrid({
     totalItems,
     error
   } = usePaginatedData(
-    CacheKeyManager.products(store?.id, category, { search: searchQuery }),
+    CacheKeyManager.products(store?.id, category || undefined, { search: searchQuery }),
     fetchProducts,
     {
       pageSize: PERFORMANCE_CONFIG.PAGINATION.PRODUCTS_PER_PAGE,

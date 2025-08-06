@@ -164,7 +164,7 @@ export function useFormValidation<T extends Record<string, any>>(
   }, [errors])
 
   const validateField = useCallback(<K extends keyof T>(field: K): string | null => {
-    const fieldRules = validationRules[field]
+    const fieldRules = (validationRules as any)[field]
     if (!fieldRules) return null
 
     const value = values[field]

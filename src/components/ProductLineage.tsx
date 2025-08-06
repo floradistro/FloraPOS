@@ -32,7 +32,7 @@ export function ProductLineage({ productId, product }: ProductLineageProps) {
     const additionalFields = getAdditionalFields()
     return (
       <div className="text-xs text-text-tertiary mt-0.5 line-clamp-1">
-        <span>{lineageField.value}</span>
+        <span>{String(lineageField.value || '')}</span>
         {additionalFields && (
           <span className="ml-2 opacity-75">• {additionalFields}</span>
         )}
@@ -47,7 +47,7 @@ export function ProductLineage({ productId, product }: ProductLineageProps) {
     const additionalFields = getAdditionalFields()
     return (
       <div className="text-xs text-text-tertiary mt-0.5 line-clamp-1 capitalize">
-        <span>{categoryField.value}</span>
+        <span>{String(categoryField.value || '')}</span>
         {additionalFields && (
           <span className="ml-2 opacity-75">• {additionalFields}</span>
         )}

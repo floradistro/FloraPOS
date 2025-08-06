@@ -40,13 +40,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Set default values for development/testing
         const defaultUser = storedUser || {
-          id: 1,
+          id: "1",
           email: "floradistrodev@gmail.com",
           firstName: "Master",
           lastName: "Admin",
-          role: "admin",
+          role: "admin" as any,
           storeId: "30",
-          permissions: ["all"],
+          isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         }
@@ -54,12 +54,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const defaultStore = storedStore || {
           id: "30",
           name: "Charlotte Monroe",
-          slug: "charlotte-monroe",
           address: "Charlotte Monroe Location",
-          city: "Charlotte",
-          state: "NC",
-          zip: "28202",
-          country: "US",
+          phone: "(704) 555-0100",
+          isActive: true,
+          timezone: "America/New_York",
           currency: "USD",
           taxRate: 0.0825,
           createdAt: new Date().toISOString(),

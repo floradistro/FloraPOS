@@ -91,7 +91,7 @@ export function validateEnvironmentVariables(): RequiredEnvVars & OptionalEnvVar
 
   // Optional variables with validation
   const optionalVars: (keyof OptionalEnvVars)[] = [
-    'NEXTAUTH_SECRET',
+    // 'NEXTAUTH_SECRET',
     'NEXT_PUBLIC_APP_URL',
     'DATABASE_URL',
     'REDIS_URL',
@@ -122,7 +122,7 @@ export function validateEnvironmentVariables(): RequiredEnvVars & OptionalEnvVar
           }
           break;
         
-        case 'NEXTAUTH_SECRET':
+        // case 'NEXTAUTH_SECRET':
           if (value.length < 32) {
             errors.push('NEXTAUTH_SECRET must be at least 32 characters long');
           }

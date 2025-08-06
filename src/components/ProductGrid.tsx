@@ -34,7 +34,7 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
     total: number
     hasMore: boolean
   }>({
-    queryKey: CacheKeyManager.products(store?.id, category, { status: 'in_stock', page: 1 }),
+    queryKey: CacheKeyManager.products(store?.id, category || undefined, { status: 'in_stock', page: 1 }),
     queryFn: async () => {
       if (!store?.id) return { products: [], total: 0, hasMore: false }
       
@@ -96,7 +96,7 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
   }, [filteredProducts.length, onProductCountChange])
 
   // Check if data is available (no loading since we use cached data)
-  const isDataAvailable = !!cachedProductsByCategory
+  const isDataAvailable = !!productsData
 
   // Notify parent about loading state changes
   useEffect(() => {

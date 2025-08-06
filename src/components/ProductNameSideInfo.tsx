@@ -24,10 +24,10 @@ export function ProductNameSideInfo({ productId }: ProductNameSideInfoProps) {
   return (
     <div className="flex flex-col items-end text-xs text-text-tertiary ml-2 flex-shrink-0">
       {thcaField && thcaField.value && (
-        <span className="font-medium">{thcaField.value}% THCA</span>
+        <span className="font-medium">{String(thcaField.value || '')}% THCA</span>
       )}
       {strainTypeField && strainTypeField.value && (
-        <span className="capitalize">{strainTypeField.value}</span>
+        <span className="capitalize">{String(strainTypeField.value || '')}</span>
       )}
     </div>
   )

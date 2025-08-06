@@ -279,7 +279,7 @@ export function PaginatedOrdersView({
           </div>
         ) : (
           <div className="space-y-2 p-2">
-            {filteredOrders.map((order) => (
+            {filteredOrders.map((order: any) => (
               <div
                 key={order.id}
                 className="bg-neutral-900/40 border border-white/[0.04] rounded-lg p-3 hover:bg-neutral-900/60 transition-colors"
@@ -330,7 +330,7 @@ export function PaginatedOrdersView({
                         <div className="mt-2">
                           <div className="text-xs text-text-tertiary mb-1">Items:</div>
                           <div className="space-y-1">
-                            {order.line_items.map((item) => (
+                            {order.line_items.map((item: any) => (
                               <div key={item.id} className="text-xs flex justify-between">
                                 <span className="text-text-secondary">{item.quantity}x {item.name}</span>
                                 <span className="text-text-primary">${parseFloat(item.total).toFixed(2)}</span>

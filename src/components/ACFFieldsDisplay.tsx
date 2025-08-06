@@ -63,7 +63,7 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
                 />
               </div>
               <span className="text-xs font-mono text-text-secondary">
-                {field.value.url.split('/').pop()}
+                {(field.value as any).url.split('/').pop()}
               </span>
             </div>
           )
@@ -73,19 +73,19 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
       case 'url':
         return (
           <a 
-            href={field.value} 
+            href={field.value as string} 
             target="_blank" 
             rel="noopener noreferrer"
             className="text-text-secondary hover:text-text-primary text-xs font-mono underline decoration-dotted"
           >
-            {field.value}
+            {String(field.value)}
           </a>
         )
       
       case 'array':
         return (
           <div className="flex flex-wrap gap-1">
-            {field.value.split(', ').map((item: string, index: number) => (
+            {String(field.value || '').split(', ').map((item: string, index: number) => (
               <span 
                 key={index}
                 className="px-2 py-1 bg-white/[0.05] text-text-primary rounded text-xs font-mono"
@@ -99,7 +99,7 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
       case 'number':
         return (
           <span className="font-mono text-text-primary text-sm">
-            {typeof field.value === 'number' ? field.value.toLocaleString() : field.value}
+            {typeof field.value === 'number' ? field.value.toLocaleString() : String(field.value || '')}
           </span>
         )
       
@@ -110,7 +110,7 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
               {"{ ... }"}
             </summary>
             <pre className="text-xs text-text-secondary mt-2 p-3 bg-white/[0.05] rounded overflow-auto max-h-32 font-mono">
-              {field.value}
+              {JSON.stringify(field.value, null, 2)}
             </pre>
           </details>
         )

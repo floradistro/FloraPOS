@@ -35,7 +35,7 @@ export function getSourceFlowerId(product: FloraProduct): number | null {
   const sourceFlowerMeta = metaData.find(meta => meta.key === '_source_flower_id')
   
   if (sourceFlowerMeta && sourceFlowerMeta.value) {
-    return parseInt(sourceFlowerMeta.value)
+    return parseInt(String(sourceFlowerMeta.value))
   }
   
   return null
@@ -51,7 +51,7 @@ export function getConversionRate(product: FloraProduct): number {
   const conversionMeta = metaData.find(meta => meta.key === '_conversion_rate')
   
   if (conversionMeta && conversionMeta.value) {
-    return parseFloat(conversionMeta.value)
+    return parseFloat(String(conversionMeta.value))
   }
   
   return 0.7 // default conversion rate
