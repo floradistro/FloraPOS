@@ -48,7 +48,6 @@ export async function GET(request: NextRequest) {
           'Content-Type': 'application/json',
           'User-Agent': 'Flora-POS-Debug/1.0',
         },
-        timeout: 5000,
       })
       
       apiTest = {

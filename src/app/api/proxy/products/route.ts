@@ -54,7 +54,6 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/json',
         'User-Agent': 'Flora-POS/1.0',
       },
-      timeout: 10000, // 10 second timeout
     })
     
     if (!response.ok) {
