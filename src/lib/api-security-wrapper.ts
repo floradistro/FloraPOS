@@ -197,7 +197,7 @@ export async function getSanitizedBody(request: NextRequest): Promise<any> {
   }
 }
 
-// Re-export commonly used functions from security-headers
+// Re-export commonly used functions from security-headers for API routes
 export { createSecureResponse, createSecureErrorResponse } from './security-headers'
 
 /**
