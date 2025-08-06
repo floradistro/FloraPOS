@@ -226,11 +226,11 @@ export function Cart({
         },
         {
           key: '_order_source_location',
-          value: currentLocation.name
+          value: currentLocation?.name || 'Unknown Location'
         },
         {
           key: '_order_source_details',
-          value: `POS ${currentLocation.name}`
+          value: `POS ${currentLocation?.name || 'Unknown Location'}`
         },
         {
           key: '_order_source_device',
@@ -242,15 +242,15 @@ export function Cart({
         },
         {
           key: '_pos_terminal_id',
-          value: currentLocation.terminalId
+          value: currentLocation?.terminalId || 'terminal-1'
         },
         {
           key: '_pos_location_id',
-          value: currentLocation.id
+          value: currentLocation?.id || '1'
         },
         {
           key: '_pos_location_name',
-          value: currentLocation.name
+          value: currentLocation?.name || 'Unknown Location'
         },
         {
           key: '_cashier_name',
@@ -352,21 +352,21 @@ export function Cart({
         metaData.push({
           key: 'selected_location',
           value: JSON.stringify({
-            selected_value: currentLocation.id,
-            selected_text: `${currentLocation.name} Location`
+                    selected_value: currentLocation?.id || '1',
+        selected_text: `${currentLocation?.name || 'Unknown'} Location`
           })
         })
         
         // Also add the location ID directly for backup
         metaData.push({
           key: '_location_id',
-          value: currentLocation.id
+          value: currentLocation?.id || '1'
         })
         
         // Add location name for reference
         metaData.push({
           key: '_location_name',
-          value: currentLocation.name
+          value: currentLocation?.name || 'Unknown Location'
         })
         
         if (item.selectedVariation !== 'default') {

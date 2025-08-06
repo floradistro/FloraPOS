@@ -10,92 +10,107 @@ interface LocationInfo {
 }
 
 interface LocationContextType {
-  currentLocation: LocationInfo
+  currentLocation: LocationInfo | null
   setCurrentLocation: (location: LocationInfo) => void
   availableLocations: LocationInfo[]
   syncWithStore: (storeId: string) => void
-}
-
-const defaultLocation: LocationInfo = {
-  id: '32',
-  name: 'Blowing Rock',
-  address: '123 Main St, Blowing Rock, NC',
-  terminalId: 'BR-001'
+  loadLocations: () => Promise<void>
+  isLoading: boolean
 }
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined)
 
-export const availableLocations: LocationInfo[] = [
-  {
-    id: '30',
-    name: 'Charlotte Monroe',
-    address: '456 Trade St, Charlotte, NC',
-    terminalId: 'CLT-MON-001'
-  },
-  {
-    id: '31',
-    name: 'Charlotte Nations Ford',
-    address: '789 Nations Ford Rd, Charlotte, NC',
-    terminalId: 'CLT-NF-001'
-  },
-  {
-    id: '32',
-    name: 'Blowing Rock',
-    address: '123 Main St, Blowing Rock, NC',
-    terminalId: 'BR-001'
-  },
-  {
-    id: '34',
-    name: 'Salisbury',
-    address: '456 Main St, Salisbury, NC',
-    terminalId: 'SAL-001'
-  },
-  {
-    id: '35',
-    name: 'Elizabethton',
-    address: '789 State St, Elizabethton, TN',
-    terminalId: 'ELZ-001'
-  },
-  {
-    id: '33',
-    name: 'Flora Distro',
-    address: '123 Business Blvd, Charlotte, NC',
-    terminalId: 'FD-001'
-  },
-  {
-    id: '69',
-    name: 'Warehouse',
-    address: '999 Industrial Blvd, Charlotte, NC',
-    terminalId: 'WH-001'
-  }
-]
-
 export function LocationProvider({ children }: { children: React.ReactNode }) {
-  const [currentLocation, setCurrentLocation] = useState<LocationInfo>(defaultLocation)
+  const [currentLocation, setCurrentLocation] = useState<LocationInfo | null>(null)
+  const [availableLocations, setAvailableLocations] = useState<LocationInfo[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Load location from localStorage on mount
-  useEffect(() => {
-    const savedLocation = localStorage.getItem('pos_current_location')
-    if (savedLocation) {
-      try {
-        const parsedLocation = JSON.parse(savedLocation)
-        const foundLocation = availableLocations.find(loc => loc.id === parsedLocation.id)
-        if (foundLocation) {
-          setCurrentLocation(foundLocation)
+  // Load locations from API
+  const loadLocations = async () => {
+    try {
+      setIsLoading(true)
+      console.log('🏪 Loading locations from Flora API...')
+      
+      const response = await fetch('/api/stores/public')
+      if (response.ok) {
+        const stores = await response.json()
+        console.log('✅ Raw stores data:', stores)
+        
+        if (Array.isArray(stores) && stores.length > 0) {
+          // Convert API stores to LocationInfo format
+          const locations: LocationInfo[] = stores.map((store, index) => ({
+            id: store.id?.toString() || store.location_id?.toString() || `store-${index}`,
+            name: store.name || store.location_name || `Store ${index + 1}`,
+            address: store.address || store.location_address || 'Address not available',
+            terminalId: `${(store.name || store.location_name || 'STORE').toUpperCase().replace(/\s+/g, '-')}-001`
+          }))
+          
+          console.log('✅ Converted locations:', locations)
+          setAvailableLocations(locations)
+          
+          // Set first location as default if no current location
+          if (!currentLocation && locations.length > 0) {
+            setCurrentLocation(locations[0])
+            localStorage.setItem('pos_current_location', JSON.stringify(locations[0]))
+            console.log('📍 Set default location:', locations[0].name)
+          }
+        } else {
+          console.error('❌ No stores found in API response')
+          setAvailableLocations([])
         }
-      } catch (error) {
-        console.warn('Failed to parse saved location:', error)
+      } else {
+        console.error('❌ Failed to load stores:', response.status, response.statusText)
+        setAvailableLocations([])
       }
+    } catch (error) {
+      console.error('❌ Error loading locations:', error)
+      setAvailableLocations([])
+    } finally {
+      setIsLoading(false)
     }
+  }
+
+  // Load locations on mount
+  useEffect(() => {
+    loadLocations()
   }, [])
 
-  // Function to sync location with store ID
+  // Load saved location from localStorage after locations are loaded
+  useEffect(() => {
+    if (availableLocations.length > 0) {
+      const savedLocation = localStorage.getItem('pos_current_location')
+      if (savedLocation) {
+        try {
+          const parsedLocation = JSON.parse(savedLocation)
+          const foundLocation = availableLocations.find(loc => loc.id === parsedLocation.id)
+          if (foundLocation) {
+            setCurrentLocation(foundLocation)
+            console.log('📍 Restored saved location:', foundLocation.name)
+          } else {
+            // Saved location no longer exists, use first available
+            setCurrentLocation(availableLocations[0])
+            localStorage.setItem('pos_current_location', JSON.stringify(availableLocations[0]))
+            console.log('📍 Saved location not found, using:', availableLocations[0].name)
+          }
+        } catch (error) {
+          console.warn('Failed to parse saved location:', error)
+          setCurrentLocation(availableLocations[0])
+        }
+      }
+    }
+  }, [availableLocations])
+
+  // Function to sync location with store ID - now uses dynamic data
   const syncWithStore = (storeId: string) => {
     const matchingLocation = availableLocations.find(loc => loc.id === storeId)
     if (matchingLocation) {
       console.log(`🔄 Syncing location with store: ${matchingLocation.name}`)
       setCurrentLocation(matchingLocation)
       localStorage.setItem('pos_current_location', JSON.stringify(matchingLocation))
+    } else {
+      console.warn(`⚠️ No location found for store ID: ${storeId}`)
+      // Reload locations in case they've changed
+      loadLocations()
     }
   }
 
@@ -112,7 +127,9 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         currentLocation,
         setCurrentLocation: handleSetCurrentLocation,
         availableLocations,
-        syncWithStore
+        syncWithStore,
+        loadLocations,
+        isLoading
       }}
     >
       {children}
@@ -126,4 +143,4 @@ export function useLocation() {
     throw new Error('useLocation must be used within a LocationProvider')
   }
   return context
-} 
+}
