@@ -5,7 +5,7 @@
 // Force unlock scroll on any container
 export const unlockScroll = (element: HTMLElement) => {
   element.style.overflow = 'auto'
-  element.style.webkitOverflowScrolling = 'touch'
+  ;(element.style as any).webkitOverflowScrolling = 'touch'
   element.style.touchAction = 'pan-y'
   
   // Force a reflow to ensure changes take effect

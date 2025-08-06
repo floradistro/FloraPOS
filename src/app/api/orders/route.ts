@@ -38,8 +38,12 @@ export async function GET(request: NextRequest) {
     if (after) params.append('after', `${after}T00:00:00`)
     if (before) params.append('before', `${before}T23:59:59`)
     
-    // Add status filter
-    if (status) params.append('status', status)
+    // Add status filter - WooCommerce uses 'any' for all statuses
+    if (status && status !== 'all') {
+      params.append('status', status)
+    } else if (status === 'all') {
+      params.append('status', 'any')
+    }
     
     // Add search filter
     if (search) params.append('search', search)
@@ -156,7 +160,7 @@ export async function GET(request: NextRequest) {
     let filteredOrders = transformedOrders
 
     // Filter by payment method
-    if (paymentMethod && paymentMethod !== '') {
+    if (paymentMethod && paymentMethod !== '' && paymentMethod !== 'all') {
       filteredOrders = filteredOrders.filter((order: any) => 
         order.payment_method === paymentMethod
       )
@@ -193,42 +197,66 @@ export async function GET(request: NextRequest) {
       console.log(`👤 Filtered by staff member '${staffMember}': ${filteredOrders.length} orders`)
     }
 
-    // Temporarily show all orders for testing - location filtering disabled
-    console.log(`🏪 Showing ${filteredOrders.length} orders (after filters applied)`)
-    
-    // TODO: Re-enable location filtering once we understand the user's location setup
-    /*
-    if (storeId) {
-      filteredOrders = transformedOrders.filter((order: any) => {
-        // Check meta_data for location information
+    // Apply location filtering based on store ID
+    if (storeId && storeId !== 'default' && storeId !== 'all') {
+      const beforeFilterCount = filteredOrders.length
+      
+      // Extract numeric ID from store ID (handle both "30" and "mli_30" formats)
+      const numericStoreId = storeId.replace(/^mli_/, '')
+      
+      filteredOrders = filteredOrders.filter((order: any) => {
+        // Get the original order to check meta_data
         const originalOrder = orders.find((o: any) => o.id === order.id)
-        if (originalOrder?.meta_data) {
-          // Look for location information in meta_data
-          const locationMeta = originalOrder.meta_data.find((meta: any) => 
-            meta.key === '_order_source_location' || meta.key === 'selected_location'
-          )
-          
-          if (locationMeta) {
-            // Handle different location formats
-            if (locationMeta.key === '_order_source_location') {
-              return locationMeta.value.toString().toLowerCase().includes(storeId.toLowerCase())
-            } else if (locationMeta.key === 'selected_location' && typeof locationMeta.value === 'string') {
-              try {
-                const locationData = JSON.parse(locationMeta.value)
-                return locationData.selected_value === storeId || 
-                       locationData.selected_text?.toLowerCase().includes(storeId.toLowerCase())
-              } catch (e) {
-                return false
-              }
-            }
+        if (!originalOrder?.meta_data) {
+          return false
+        }
+        
+        // Check for POS location ID (exact match with numeric ID)
+        const posLocationId = originalOrder.meta_data.find((meta: any) => 
+          meta.key === '_pos_location_id'
+        )
+        if (posLocationId && posLocationId.value === numericStoreId) {
+          return true
+        }
+        
+        // Also check exact match with original store ID format
+        if (posLocationId && posLocationId.value === storeId) {
+          return true
+        }
+        
+        // Check for order source location (partial match)
+        const orderSourceLocation = originalOrder.meta_data.find((meta: any) => 
+          meta.key === '_order_source_location'
+        )
+        if (orderSourceLocation) {
+          const locationValue = orderSourceLocation.value.toString().toLowerCase()
+          const storeIdLower = storeId.toLowerCase()
+          const numericStoreIdLower = numericStoreId.toLowerCase()
+          if (locationValue.includes(storeIdLower) || locationValue.includes(numericStoreIdLower)) {
+            return true
           }
         }
+        
+        // Check for POS location name (partial match)
+        const posLocationName = originalOrder.meta_data.find((meta: any) => 
+          meta.key === '_pos_location_name'
+        )
+        if (posLocationName) {
+          const locationName = posLocationName.value.toString().toLowerCase()
+          const storeIdLower = storeId.toLowerCase()
+          const numericStoreIdLower = numericStoreId.toLowerCase()
+          if (locationName.includes(storeIdLower) || locationName.includes(numericStoreIdLower)) {
+            return true
+          }
+        }
+        
         return false
       })
       
-      console.log(`🏪 Filtered to ${filteredOrders.length} orders for location: ${storeId}`)
+      console.log(`🏪 Filtered from ${beforeFilterCount} to ${filteredOrders.length} orders for location: ${storeId} (numeric: ${numericStoreId})`)
+    } else {
+      console.log(`🏪 Showing all ${filteredOrders.length} orders (no location filter applied)`)
     }
-    */
 
     return NextResponse.json(filteredOrders)
 

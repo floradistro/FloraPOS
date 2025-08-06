@@ -107,12 +107,6 @@ export function LoginForm() {
     }
 
     try {
-      console.log('🔐 Attempting login with Flora POS...')
-      
-      // Debug logging
-      AuthDebugger.logEnvironment()
-      await AuthDebugger.testConnection()
-      
       await login({
         email: formData.email,
         password: formData.password,
@@ -121,14 +115,7 @@ export function LoginForm() {
       })
       
       toast.success('Login successful!')
-      console.log('✅ Login completed successfully')
     } catch (error) {
-      console.error('❌ Login failed:', error)
-      
-      // Additional debug info on failure
-      console.log('🔍 Running additional auth debug...')
-      await AuthDebugger.testAuth(formData.email, formData.password, formData.storeId, formData.terminalId)
-      
       toast.error(error instanceof Error ? error.message : 'Login failed. Please try again.')
     }
   }
@@ -136,12 +123,12 @@ export function LoginForm() {
   const selectedStore = stores.find(store => store.id.toString() === formData.storeId)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black">
       <div className="flex min-h-screen items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 sm:h-16 sm:w-16 flex items-center justify-center rounded-full bg-background-secondary border border-border-default mb-4 sm:mb-6">
+          <div className="mx-auto h-12 w-12 sm:h-16 sm:w-16 flex items-center justify-center rounded-full bg-black border border-white/[0.04] mb-4 sm:mb-6">
             <img
               src="/logo.png"
               alt="Flora Distro"
@@ -162,7 +149,7 @@ export function LoginForm() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-text-tertiary" />
+                  <Mail className="h-5 w-5 text-text-secondary" />
                 </div>
                 <input
                   id="email"
@@ -172,7 +159,7 @@ export function LoginForm() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="appearance-none relative block w-full pl-10 pr-3 py-2 sm:py-3 border border-border-default placeholder-text-tertiary text-text-primary bg-background-secondary rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent text-sm transition-colors duration-200"
+                  className="w-full pl-10 pr-3 py-2 bg-neutral-900/65 rounded-lg border border-white/[0.04] focus:border-primary focus:outline-none text-text-primary placeholder-text-tertiary transition-all duration-200"
                   placeholder="Enter your email"
                 />
               </div>
@@ -185,7 +172,7 @@ export function LoginForm() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-text-tertiary" />
+                  <Lock className="h-5 w-5 text-text-secondary" />
                 </div>
                 <input
                   id="password"
@@ -195,7 +182,7 @@ export function LoginForm() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="appearance-none relative block w-full pl-10 pr-10 py-2 sm:py-3 border border-border-default placeholder-text-tertiary text-text-primary bg-background-secondary rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent text-sm transition-colors duration-200"
+                  className="w-full pl-10 pr-10 py-2 bg-neutral-900/65 rounded-lg border border-white/[0.04] focus:border-primary focus:outline-none text-text-primary placeholder-text-tertiary transition-all duration-200"
                   placeholder="Enter your password"
                 />
                 <button
@@ -204,9 +191,9 @@ export function LoginForm() {
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-text-tertiary hover:text-text-secondary transition-colors" />
+                    <EyeOff className="h-5 w-5 text-text-secondary hover:text-text-primary transition-colors" />
                   ) : (
-                    <Eye className="h-5 w-5 text-text-tertiary hover:text-text-secondary transition-colors" />
+                    <Eye className="h-5 w-5 text-text-secondary hover:text-text-primary transition-colors" />
                   )}
                 </button>
               </div>
@@ -219,7 +206,7 @@ export function LoginForm() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Building2 className="h-5 w-5 text-text-tertiary" />
+                  <Building2 className="h-5 w-5 text-text-secondary" />
                 </div>
                 <select
                   id="storeId"
@@ -228,7 +215,7 @@ export function LoginForm() {
                   value={formData.storeId}
                   onChange={handleInputChange}
                   disabled={loadingStores || stores.length === 0}
-                  className="appearance-none relative block w-full pl-10 pr-3 py-2 sm:py-3 border border-border-default text-text-primary bg-background-secondary rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent text-sm disabled:opacity-50 transition-colors duration-200"
+                  className="appearance-none w-full pl-10 pr-3 py-2 bg-neutral-900/65 rounded-lg border border-white/[0.04] focus:border-primary focus:outline-none text-text-primary disabled:opacity-50 transition-all duration-200"
                 >
                   <option value="">
                     {loadingStores 
@@ -254,7 +241,7 @@ export function LoginForm() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Monitor className="h-5 w-5 text-text-tertiary" />
+                  <Monitor className="h-5 w-5 text-text-secondary" />
                 </div>
                 <select
                   id="terminalId"
@@ -263,7 +250,7 @@ export function LoginForm() {
                   value={formData.terminalId}
                   onChange={handleInputChange}
                   disabled={!formData.storeId}
-                  className="appearance-none relative block w-full pl-10 pr-3 py-2 sm:py-3 border border-border-default text-text-primary bg-background-secondary rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent text-sm disabled:opacity-50 transition-colors duration-200"
+                  className="appearance-none w-full pl-10 pr-3 py-2 bg-neutral-900/65 rounded-lg border border-white/[0.04] focus:border-primary focus:outline-none text-text-primary disabled:opacity-50 transition-all duration-200"
                 >
                   <option value="">
                     {!formData.storeId ? 'Select a store first' : 'Select a terminal'}
@@ -283,10 +270,10 @@ export function LoginForm() {
             <button
               type="submit"
               disabled={isLoading || stores.length === 0 || !formData.email || !formData.password || !formData.storeId || !formData.terminalId}
-              className="group relative w-full flex justify-center py-2 sm:py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-secondary hover:bg-secondary-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              className="group relative w-full flex justify-center py-2 sm:py-3 px-4 bg-neutral-900/65 hover:bg-neutral-800/65 border border-white/[0.04] hover:border-primary text-sm font-medium rounded-lg text-text-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 ease-out active:scale-95"
             >
               <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                <LogIn className="h-5 w-5 text-white/80 group-hover:text-white" />
+                <LogIn className="h-5 w-5 text-text-secondary group-hover:text-text-primary transition-colors" />
               </span>
               {isLoading ? 'Signing in...' : stores.length === 0 ? 'No stores available' : 'Sign in to POS'}
             </button>
@@ -294,21 +281,21 @@ export function LoginForm() {
 
           {/* Store Info */}
           {selectedStore && (
-            <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-background-secondary rounded-lg border border-border-default">
+            <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-black rounded-lg border border-white/[0.04]">
               <div className="text-sm text-text-secondary">
                 <div className="font-medium text-text-primary mb-1">Selected Store:</div>
                 <div>{selectedStore.name}</div>
-                <div className="text-text-tertiary">{selectedStore.description}</div>
+                <div className="text-text-secondary opacity-70">{selectedStore.description}</div>
               </div>
             </div>
           )}
 
           {/* API Status */}
           {stores.length === 0 && !loadingStores && (
-            <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-error/10 rounded-lg border border-error/30">
-              <div className="text-sm text-error">
+            <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+              <div className="text-sm text-red-400">
                 <div className="font-medium">⚠️ API Connection Issue</div>
-                <div className="text-xs mt-1 text-error/80">Unable to load stores from Flora POS API. Please check your connection or contact administrator.</div>
+                <div className="text-xs mt-1 text-red-400/70">Unable to load stores from Flora POS API. Please check your connection or contact administrator.</div>
               </div>
             </div>
           )}

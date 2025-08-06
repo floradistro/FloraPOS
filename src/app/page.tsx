@@ -4,14 +4,19 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw } from 'lucide-react'
-import { ProductGrid } from '../components/ProductGrid'
 import { Cart } from '../components/Cart'
 import { AppWrapper } from '../components/AppWrapper'
-import { OrdersView } from '../components/OrdersView'
 import { StatusBar } from '../components/StatusBar'
-import SettingsPanel from '../components/SettingsPanel'
 import SiriGlowBorder from '../components/SiriGlowBorder'
-import BottomDrawer from '../components/BottomDrawer'
+import { 
+  SuspensePaginatedProductGrid, 
+  SuspensePaginatedOrdersView,
+  preloadCriticalComponents,
+  preloadSecondaryComponents 
+} from '../components/DynamicImports'
+import { SuspenseSettingsPanel } from '../components/LazyComponents'
+import { VirtualizedCustomerList } from '../components/VirtualizedCustomerList'
+
 import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
 import { FloraProduct, floraAPI, FloraCustomer } from '../lib/woocommerce'
@@ -40,7 +45,7 @@ export default function FloraDistrosPOS() {
   const [isOrdersViewOpen, setIsOrdersViewOpen] = useState(false)
   const [isListView, setIsListView] = useState(false)
   const [isCheckingOut, setIsCheckingOut] = useState(false)
-  const [isBottomDrawerOpen, setIsBottomDrawerOpen] = useState(false)
+
 
   // Orders filter states
   const [orderStatusFilter, setOrderStatusFilter] = useState('all')
@@ -54,6 +59,18 @@ export default function FloraDistrosPOS() {
       syncWithStore(store.id)
     }
   }, [store?.id, syncWithStore])
+
+  // Preload critical components on mount
+  useEffect(() => {
+    preloadCriticalComponents()
+    
+    // Preload secondary components after a short delay
+    const timer = setTimeout(() => {
+      preloadSecondaryComponents()
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [])
 
   // Setup global scroll handling for iPad
   useEffect(() => {
@@ -73,10 +90,10 @@ export default function FloraDistrosPOS() {
     }
   }, [])
 
-  // Fetch customers data
-  const { data: customers = [], isLoading: customersLoading } = useQuery({
+  // Fetch customers data with pagination
+  const { data: customersData, isLoading: customersLoading } = useQuery({
     queryKey: ['customers', customerSearchQuery],
-    queryFn: async (): Promise<FloraCustomer[]> => {
+    queryFn: async () => {
       return floraAPI.getCustomers({
         search: customerSearchQuery || undefined,
         per_page: 50
@@ -85,6 +102,8 @@ export default function FloraDistrosPOS() {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   })
+
+  const customers = customersData?.customers || []
 
   const mainCategories = [
     { name: 'All', slug: 'all', id: null },
@@ -469,90 +488,16 @@ export default function FloraDistrosPOS() {
                 </div>
               </div>
               
-              <div className="overflow-y-auto flex-1 scrollable-container">
-                {customersLoading ? (
-                  <div className="flex items-center justify-center p-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                    <span className="ml-2 text-text-secondary text-sm">Loading customers...</span>
-                  </div>
-                ) : customers.length === 0 ? (
-                  <div className="p-4 text-center text-text-secondary text-sm">
-                    {customerSearchQuery ? 'No customers found matching your search.' : 'No customers found.'}
-                  </div>
-                ) : (
-                  <div className="p-2 space-y-1">
-                    {customers.map((customer) => {
-                      const customerName = `${customer.first_name} ${customer.last_name}`.trim() || customer.username
-                      const customerPhone = customer.billing?.phone || ''
-                      const totalSpent = parseFloat(customer.total_spent || '0')
-                      const ordersCount = customer.orders_count || 0
-                      const loyaltyPoints = customer.loyalty_points || 0
-                      
-                      // Debug log for first customer
-                      if (customer === customers[0]) {
-                        console.log('🔍 Customer data debug:', {
-                          customer,
-                          ordersCount,
-                          totalSpent,
-                          loyaltyPoints,
-                          rawTotalSpent: customer.total_spent,
-                          rawOrdersCount: customer.orders_count,
-                          rawLoyaltyPoints: customer.loyalty_points
-                        })
-                      }
-                      
-                      return (
-                        <div
-                          key={customer.id}
-                          className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                            assignedCustomer?.id === customer.id.toString()
-                              ? 'bg-primary/20 border border-primary/30'
-                              : 'hover:bg-background-tertiary'
-                          }`}
-                          onClick={() => {
-                            if (assignedCustomer?.id === customer.id.toString()) {
-                              setAssignedCustomer(null)
-                            } else {
-                              setAssignedCustomer({
-                                id: customer.id.toString(),
-                                firstName: customer.first_name || customer.username,
-                                lastName: customer.last_name || '',
-                                email: customer.email,
-                                phone: customerPhone,
-                                dateOfBirth: '',
-                                totalSpent: totalSpent,
-                                orderCount: ordersCount,
-                                loyaltyPoints: loyaltyPoints,
-                                createdAt: new Date().toISOString(),
-                                updatedAt: new Date().toISOString()
-                              })
-                            }
-                          }}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="font-medium text-text-primary text-sm">{customerName}</div>
-                              <div className="text-xs text-text-secondary">{customer.email}</div>
-                              {customerPhone && (
-                                <div className="text-xs text-text-tertiary">{customerPhone}</div>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <div className="text-xs text-text-secondary">
-                                {ordersCount > 0 ? `${ordersCount} orders` : 'No orders'}
-                              </div>
-                              <div className="text-xs font-medium text-text-primary">${totalSpent.toFixed(2)}</div>
-                              <div className="text-xs font-medium text-green-400">
-                                {loyaltyPoints > 0 ? `${loyaltyPoints.toLocaleString()} chips` : '0 chips'}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
+              <VirtualizedCustomerList
+                customers={customers}
+                selectedCustomer={assignedCustomer}
+                onSelectCustomer={setAssignedCustomer}
+                loading={customersLoading}
+                searchQuery={customerSearchQuery}
+                containerHeight={400} // Adjust based on your layout needs
+                hasMore={customersData?.hasMore || false}
+                isLoadingMore={false}
+              />
             </div>
           )}
 
@@ -563,7 +508,7 @@ export default function FloraDistrosPOS() {
             isListView ? 'overflow-hidden' : 'overflow-y-auto'
           }`}>
             {isOrdersViewOpen ? (
-              <OrdersView 
+              <SuspensePaginatedOrdersView 
                 statusFilter={orderStatusFilter}
                 dateFrom={orderDateFrom}
                 dateTo={orderDateTo}
@@ -571,7 +516,7 @@ export default function FloraDistrosPOS() {
                 searchQuery={searchQuery}
               />
             ) : (
-              <ProductGrid
+              <SuspensePaginatedProductGrid
                 category={activeCategory === 'all' ? null : mainCategories.find(cat => cat.slug === activeCategory)?.id || null}
                 searchQuery={searchQuery}
                 onAddToCart={handleAddToCart}
@@ -623,7 +568,7 @@ export default function FloraDistrosPOS() {
         </div>
 
         {/* Settings Panel */}
-        <SettingsPanel 
+        <SuspenseSettingsPanel 
           isOpen={isSettingsOpen} 
           onClose={() => setIsSettingsOpen(false)} 
         />
@@ -631,11 +576,7 @@ export default function FloraDistrosPOS() {
         {/* Siri Glow Border - Locks to viewport edge OVER iOS status bar */}
         <SiriGlowBorder isLoading={isProductsLoading || isCheckingOut} />
 
-        {/* Bottom Drawer */}
-        <BottomDrawer 
-          isOpen={isBottomDrawerOpen} 
-          onToggle={() => setIsBottomDrawerOpen(!isBottomDrawerOpen)}
-        />
+
       </div>
     </AppWrapper>
     </>

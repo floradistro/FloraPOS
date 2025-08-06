@@ -48,7 +48,7 @@ export function OrdersView({
   const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set())
 
   // Get preloaded orders from cache
-  const { data: cachedOrders, isLoading } = useQuery<Order[]>({
+  const { data: cachedOrders, isLoading, error } = useQuery<Order[]>({
     queryKey: ['orders-preload'],
     enabled: false, // Don't refetch, just use cached data
     staleTime: Infinity, // Never consider stale
@@ -96,6 +96,18 @@ export function OrdersView({
   }, [cachedOrders, statusFilter, searchQuery, dateFrom, dateTo, paymentFilter])
 
   const loading = isLoading || !cachedOrders
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64 bg-black">
+        <div className="text-center">
+          <p className="text-red-400 mb-2">Failed to load orders</p>
+          <p className="text-text-secondary text-sm">{error.message}</p>
+        </div>
+      </div>
+    )
+  }
 
   const toggleOrderExpansion = (orderId: number) => {
     const newExpanded = new Set(expandedOrders)

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 interface ACFField {
   key: string
   label: string
-  value: any
+  value: string | number | boolean | object | null
   type: string
 }
 

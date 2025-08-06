@@ -374,12 +374,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.6); /* Blue scroll indicator */
+  background: rgba(255, 255, 255, 0.1); /* Subtle white scroll indicator */
   border-radius: 0px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.8); /* Brighter blue on hover */
+  background: rgba(255, 255, 255, 0.15); /* Slightly brighter white on hover */
 }
 
 /* Completely hide horizontal scrollbars (except for code blocks) */

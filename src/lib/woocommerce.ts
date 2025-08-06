@@ -1,8 +1,19 @@
 // Flora POS API - Optimized for Addify Multi-Location Inventory & POS Plugins
 // Base configuration
-const API_BASE = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://api.floradistro.com'
-const WC_CONSUMER_KEY = process.env.WC_CONSUMER_KEY || 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5'
-const WC_CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET || 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678'
+const API_BASE = process.env.NEXT_PUBLIC_WORDPRESS_URL
+const WC_CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY
+const WC_CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET
+
+// Validate required environment variables
+if (!API_BASE) {
+  throw new Error('NEXT_PUBLIC_WORDPRESS_URL environment variable is required')
+}
+if (!WC_CONSUMER_KEY) {
+  throw new Error('NEXT_PUBLIC_WC_CONSUMER_KEY environment variable is required')
+}
+if (!WC_CONSUMER_SECRET) {
+  throw new Error('NEXT_PUBLIC_WC_CONSUMER_SECRET environment variable is required')
+}
 
 // API Endpoints
 const ENDPOINTS = {
@@ -62,18 +73,28 @@ export interface FloraProduct {
   total_prerolls_converted?: number // Lifetime conversions
   total_prerolls_sold?: number // Lifetime sales
   // ACF (Advanced Custom Fields) support
-  acf?: Record<string, any> // All ACF fields
+  acf?: Record<string, string | number | boolean | object | null> // All ACF fields
   acf_fields?: Array<{
     key: string
     label: string
-    value: any
+    value: string | number | boolean | object | null
     type: string
   }> // Parsed and formatted ACF fields
   // WooCommerce metadata
   meta_data?: Array<{
     key: string
-    value: any
+    value: string | number | boolean | object | null
   }>
+  // Comprehensive endpoint fields
+  all_location_stock?: Record<string, number> // Stock levels for all locations
+  inventory?: Array<{
+    id: number | null
+    location_id: number
+    location_name: string
+    quantity: number
+    created_date: string | null
+  }>
+  multi_inventory_enabled?: boolean
 }
 
 export interface FloraStore {
@@ -133,7 +154,22 @@ export interface CreateOrderData {
     postcode: string
     country: string
   }
-  shipping_lines: Array<any>
+  shipping_lines: Array<{
+    id: number
+    method_title: string
+    method_id: string
+    total: string
+    total_tax: string
+    taxes: Array<{
+      id: number
+      total: string
+      subtotal: string
+    }>
+    meta_data: Array<{
+      key: string
+      value: string | number | boolean | object | null
+    }>
+  }>
   line_items: Array<{
     product_id: number
     quantity: number
@@ -220,7 +256,7 @@ export class FloraAPI {
   private baseUrl: string
   
   constructor() {
-    this.baseUrl = API_BASE
+    this.baseUrl = API_BASE || ''
   }
 
   // Authentication - Uses Addify MLI plugin
@@ -239,7 +275,21 @@ export class FloraAPI {
         })
       })
 
-      const data = await handleResponse<any>(response)
+      const data = await handleResponse<{
+        locations: Array<{ id: number; name: string }>
+        products: unknown[]
+        token?: string
+        user?: {
+          id: number
+          email: string
+          display_name: string
+        }
+        store?: FloraStore
+        terminal?: {
+          id: string
+          name: string
+        }
+      }>(response)
       
       return {
         success: true,
@@ -271,13 +321,98 @@ export class FloraAPI {
     }
   }
 
-  // Get products with location-specific inventory
-  async getProducts(params: {
+  // Get products using comprehensive endpoint (NEW v2.1) - Paginated
+  async getProductsComprehensive(params: {
     storeId?: string
-    category?: number
+    category?: string
     search?: string
     per_page?: number
-  } = {}): Promise<FloraProduct[]> {
+    page?: number
+    stock_status?: 'all' | 'in_stock' | 'out_of_stock' | 'low_stock'
+  } = {}): Promise<{ products: FloraProduct[]; total: number; hasMore: boolean }> {
+    try {
+      console.log('🚀 Using NEW comprehensive products endpoint...')
+      
+      // Build query parameters
+      const searchParams = new URLSearchParams()
+      if (params.per_page) searchParams.set('per_page', params.per_page.toString())
+      else searchParams.set('per_page', '20')
+      if (params.page) searchParams.set('page', params.page.toString())
+      if (params.storeId) searchParams.set('location_id', params.storeId)
+      if (params.category) searchParams.set('category', params.category)
+      if (params.search) searchParams.set('search', params.search)
+      if (params.stock_status) searchParams.set('stock_status', params.stock_status)
+      
+      const response = await fetch(`${this.baseUrl}/wp-json/wc/v3/addify_headless_inventory/products/comprehensive?${searchParams}`, {
+        headers: {
+          'Authorization': createAuthHeader(),
+          'Content-Type': 'application/json',
+        }
+      })
+      
+      if (!response.ok) {
+        console.warn('⚠️ Comprehensive endpoint not available, falling back to standard method')
+        return this.getProducts(params)
+      }
+      
+      const data = await response.json()
+      console.log(`✅ Fetched ${data.products.length} products with complete data`)
+      console.log(`📍 Total products in system: ${data.pagination.total}`)
+      console.log(`🏪 Locations: ${data.locations.map((l: any) => l.name).join(', ')}`)
+      
+      // Map comprehensive data to FloraProduct format
+      const products = data.products.map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        slug: product.slug || '',
+        sku: product.sku || '',
+        description: product.description || '',
+        short_description: product.short_description || '',
+        price: product.price || '0',
+        regular_price: product.regular_price || '0',
+        sale_price: product.sale_price || '',
+        stock_quantity: product.total_stock || 0,
+        manage_stock: product.manage_stock || false,
+        in_stock: product.stock_status === 'instock',
+        categories: product.categories || [],
+        images: product.images || [],
+        type: product.type || 'simple',
+        status: product.status || 'publish',
+        // Location-specific data
+        location_stock: params.storeId ? product.location_stock[params.storeId] || 0 : product.total_stock,
+        location_name: params.storeId ? data.locations.find((l: any) => l.id == params.storeId)?.name : 'All Locations',
+        all_location_stock: product.location_stock,
+        inventory: product.inventory,
+        // ACF fields from comprehensive data
+        acf: product.acf,
+        acf_fields: product.acf_fields || [],
+        // Preserve other fields
+        meta_data: product.meta_data || [],
+        multi_inventory_enabled: product.multi_inventory_enabled
+      }))
+
+      return {
+        products,
+        total: data.pagination.total,
+        hasMore: data.pagination.current_page < data.pagination.total_pages
+      }
+      
+    } catch (error) {
+      console.error('❌ Comprehensive endpoint failed:', error)
+      // Fall back to standard method
+      return this.getProducts(params)
+    }
+  }
+
+  // Get products with location-specific inventory (standard method) - Paginated
+  async getProducts(params: {
+    storeId?: string
+    category?: number | string
+    search?: string
+    per_page?: number
+    page?: number
+    stock_status?: string
+  } = {}): Promise<{ products: FloraProduct[]; total: number; hasMore: boolean }> {
     try {
       // Build WooCommerce query parameters
       const searchParams = new URLSearchParams()
@@ -290,17 +425,18 @@ export class FloraAPI {
         console.log(`🔍 Searching for: ${params.search}`)
       }
       if (params.per_page) searchParams.set('per_page', params.per_page.toString())
-      else searchParams.set('per_page', '50')
+      else searchParams.set('per_page', '20')
+      if (params.page) searchParams.set('page', params.page.toString())
       
       // Optimize WooCommerce query for speed
-      searchParams.set('stock_status', 'instock')
+      // Don't filter by stock_status to get all products
       searchParams.set('status', 'publish')
       searchParams.set('orderby', 'id')
       searchParams.set('order', 'asc')
       
       // Include meta fields for Addify pricing tiers and inventory type, plus ACF fields
       // Note: ACF fields might not be available on all WooCommerce installations
-      searchParams.set('_fields', 'id,name,slug,description,short_description,price,regular_price,sale_price,stock_quantity,manage_stock,in_stock,categories,images,type,status,meta_data')
+      searchParams.set('_fields', 'id,name,slug,description,short_description,price,regular_price,sale_price,stock_quantity,manage_stock,stock_status,categories,images,type,status,meta_data')
       
       // Fetch products from WooCommerce
       console.log(`⏱️ Starting WooCommerce products fetch...`)
@@ -313,18 +449,77 @@ export class FloraAPI {
         }
       })
 
-      const products = await handleResponse<any[]>(response)
+      const products = await handleResponse<unknown[]>(response)
+      const totalProducts = parseInt(response.headers.get('X-WP-Total') || '0', 10)
+      const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1', 10)
+      const currentPage = params.page || 1
       const fetchTime = Date.now() - startTime
       console.log(`📦 Fetched ${products.length} products from WooCommerce in ${fetchTime}ms`)
 
       // Map products first
       const mappedProducts = products.map(this.mapToFloraProduct)
       
-             // ACF fields disabled for now to ensure fast product loading
-       console.log(`📝 ACF fields disabled - products will load without custom fields`)
+      // Process ACF fields for each product
+      console.log(`📝 Processing ACF fields for ${mappedProducts.length} products...`)
+      const productsWithACF = await Promise.all(mappedProducts.map(async (product) => {
+        try {
+                        // Extract ACF fields from meta_data
+              const acfFromMeta: Record<string, string | number | boolean | object | null> = {}
+          if (product.meta_data) {
+            product.meta_data.forEach((meta: any) => {
+              // Only include actual product information ACF fields - exclude system/technical fields
+              if (!meta.key.startsWith('_') && 
+                  !meta.key.startsWith('mli_') && 
+                  !meta.key.startsWith('af_mli_') &&
+                  !meta.key.includes('inventory') &&
+                  !meta.key.includes('location_stock') &&
+                  !meta.key.includes('location_price') &&
+                  !meta.key.includes('multi_inventory') &&
+                  !meta.key.includes('weight_based') &&
+                  !meta.key.includes('available_weights') &&
+                  !meta.key.includes('bulk_inventory') &&
+                  !meta.key.includes('stock_log') &&
+                  !meta.key.includes('timestamp') &&
+                  !meta.key.includes('date') &&
+                  !meta.key.includes('_date') &&
+                  !meta.key.includes('update_') &&
+                  !meta.key.includes('test_') &&
+                  meta.key !== 'mli_product_type' &&
+                  meta.key !== 'use_multi_inventory' &&
+                  meta.key !== 'location_id' &&
+                  meta.key !== 'in_location' &&
+                  meta.key !== 'in_stock_quantity' &&
+                  meta.key !== 'weight_based_pricing' &&
+                  meta.key !== 'available_weights' &&
+                  meta.key !== 'prod_level_inven' &&
+                  meta.key !== 'bulk_inventory_grams' &&
+                  meta.key !== 'in_date' &&
+                  meta.key !== 'test_update_timestamp' &&
+                  meta.value !== null && 
+                  meta.value !== '') {
+                acfFromMeta[meta.key] = meta.value
+              }
+            })
+          }
+          
+          // Process ACF fields if found
+          const acfFields = this.processACFFields(acfFromMeta)
+          
+          return {
+            ...product,
+            acf: Object.keys(acfFromMeta).length > 0 ? acfFromMeta : undefined,
+            acf_fields: acfFields
+          }
+        } catch (error) {
+          console.warn(`⚠️ Failed to process ACF for product ${product.id}:`, error)
+          return product
+        }
+      }))
+      
+      console.log(`✅ ACF processing complete`)
       
       // Add default image for products without images
-      const productsWithDefaultImages = mappedProducts.map(product => {
+      const productsWithDefaultImages = productsWithACF.map(product => {
         if (!product.images || product.images.length === 0) {
           return {
             ...product,
@@ -338,19 +533,27 @@ export class FloraAPI {
         return product
       })
       
-      console.log(`🖼️ Added default images to ${mappedProducts.length - productsWithDefaultImages.filter(p => p.images[0].id !== 0).length} products`)
+      console.log(`🖼️ Added default images to ${productsWithACF.length - productsWithDefaultImages.filter(p => p.images[0].id !== 0).length} products`)
       console.log(`📸 All ${productsWithDefaultImages.length} products now have images`)
 
       // If no store specified, return all products
       if (!params.storeId) {
         console.log(`✅ Returning ${productsWithDefaultImages.length} products (no store filter)`)
-        return productsWithDefaultImages
+        return {
+          products: productsWithDefaultImages,
+          total: totalProducts,
+          hasMore: currentPage < totalPages
+        }
       }
 
       // Use bulk inventory API for location-specific filtering
       const productIds = productsWithDefaultImages.map((p: FloraProduct) => p.id)
       if (productIds.length === 0) {
-        return []
+        return {
+          products: [],
+          total: 0,
+          hasMore: false
+        }
       }
 
       console.log(`🔍 Fetching bulk inventory for ${productIds.length} products at store ${params.storeId}`)
@@ -375,7 +578,11 @@ export class FloraAPI {
         const errorText = await inventoryResponse.text()
         console.warn(`⚠️ Bulk inventory API failed: ${inventoryResponse.status} - ${errorText}`)
         console.warn(`⚠️ Falling back to returning all products`)
-        return productsWithDefaultImages
+        return {
+          products: productsWithDefaultImages,
+          total: totalProducts,
+          hasMore: currentPage < totalPages
+        }
       }
 
       const bulkInventory = await inventoryResponse.json()
@@ -411,11 +618,19 @@ export class FloraAPI {
       }
 
       console.log(`✅ Returning ${productsWithInventory.length} products with location inventory`)
-      return productsWithInventory
+      return {
+        products: productsWithInventory,
+        total: totalProducts,
+        hasMore: currentPage < totalPages
+      }
 
     } catch (error) {
       console.error('Failed to fetch products:', error)
-      return []
+      return {
+        products: [],
+        total: 0,
+        hasMore: false
+      }
     }
   }
 
@@ -436,12 +651,12 @@ export class FloraAPI {
     }
   }
 
-  // Get customers with real order data
+  // Get customers with real order data - Paginated
   async getCustomers(params: {
     search?: string
     per_page?: number
     page?: number
-  } = {}): Promise<FloraCustomer[]> {
+  } = {}): Promise<{ customers: FloraCustomer[]; total: number; hasMore: boolean }> {
     try {
       const searchParams = new URLSearchParams()
       if (params.search) searchParams.set('search', params.search)
@@ -465,6 +680,10 @@ export class FloraAPI {
         }
       })
 
+      const totalCustomers = parseInt(response.headers.get('X-WP-Total') || '0', 10)
+      const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1', 10)
+      const currentPage = params.page || 1
+
       if (!response.ok) {
         const errorText = await response.text()
         console.error(`❌ Customer API error: ${response.status} - ${errorText}`)
@@ -487,21 +706,39 @@ export class FloraAPI {
         if (!retryResponse.ok) {
           const retryErrorText = await retryResponse.text()
           console.error(`❌ Retry also failed: ${retryResponse.status} - ${retryErrorText}`)
-          return []
+          return {
+            customers: [],
+            total: 0,
+            hasMore: false
+          }
         }
         
         const customers = await retryResponse.json()
         console.log(`✅ Retry succeeded! Fetched ${customers.length} customers`)
-        return this.processCustomersWithOrderData(customers)
+        const processedCustomers = await this.processCustomersWithOrderData(customers)
+        return {
+          customers: processedCustomers,
+          total: totalCustomers,
+          hasMore: currentPage < totalPages
+        }
       }
 
       const customers = await handleResponse<FloraCustomer[]>(response)
       console.log(`👥 Fetched ${customers.length} customers, now fetching their order data...`)
       
-      return this.processCustomersWithOrderData(customers)
+      const processedCustomers = await this.processCustomersWithOrderData(customers)
+      return {
+        customers: processedCustomers,
+        total: totalCustomers,
+        hasMore: currentPage < totalPages
+      }
     } catch (error) {
       console.error('Failed to fetch customers:', error)
-      return []
+      return {
+        customers: [],
+        total: 0,
+        hasMore: false
+      }
     }
   }
 
@@ -1059,7 +1296,7 @@ export class FloraAPI {
                 enrichedCount++
               } else if (acfData.meta_data) {
                 // Extract ACF fields from meta_data if direct ACF not available
-                const acfFromMeta: Record<string, any> = {}
+                const acfFromMeta: Record<string, string | number | boolean | object | null> = {}
                 acfData.meta_data.forEach((meta: any) => {
                   // Skip internal fields and MLI fields
                   if (!meta.key.startsWith('_') && 

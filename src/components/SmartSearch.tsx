@@ -7,15 +7,15 @@ interface SearchSuggestion {
   text: string
   type: 'name' | 'category' | 'email' | 'phone' | 'effect' | 'strain'
   highlight: string
-  data?: any
+  data?: unknown
 }
 
 interface SmartSearchProps {
   viewMode: 'products' | 'customers'
   searchQuery: string
   onSearchChange: (query: string) => void
-  products?: any[]
-  customers?: any[]
+  products?: unknown[]
+  customers?: unknown[]
   productCount?: number
 }
 
@@ -73,8 +73,8 @@ export default function SmartSearch({
       const strains = new Set<string>()
       
       products.forEach(product => {
-        const effectsValue = product.meta_data?.find((meta: any) => meta.key === 'effects')?.value
-        const strainValue = product.meta_data?.find((meta: any) => meta.key === 'strain_type')?.value
+              const effectsValue = product.meta_data?.find((meta: { key: string; value: unknown }) => meta.key === 'effects')?.value
+      const strainValue = product.meta_data?.find((meta: { key: string; value: unknown }) => meta.key === 'strain_type')?.value
         
         if (effectsValue && effectsValue.toLowerCase().includes(normalizedQuery)) {
           effects.add(effectsValue)

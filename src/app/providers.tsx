@@ -7,13 +7,24 @@ import { LocationProvider } from '@/contexts/LocationContext'
 import { ReactNode, useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
 
+import { PERFORMANCE_CONFIG } from '@/config/performance'
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (garbage collection time)
+      staleTime: PERFORMANCE_CONFIG.CACHE.PRODUCTS_STALE_TIME, // 2 minutes
+      gcTime: PERFORMANCE_CONFIG.CACHE.PRODUCTS_GC_TIME, // 5 minutes
       refetchOnWindowFocus: false,
-      retry: 2,
+      retry: PERFORMANCE_CONFIG.NETWORK.RETRY_COUNT,
+      refetchOnReconnect: true,
+      // Enable background refetching for better UX
+      refetchInterval: false, // Disable automatic polling
+      // Network mode for better offline handling
+      networkMode: 'online',
+    },
+    mutations: {
+      retry: 1,
+      networkMode: 'online',
     },
   },
 })
@@ -25,7 +36,7 @@ function initializeDefaultStore() {
     if (!storedStore) {
       // Set Charlotte Monroe as default store
       const defaultStore = {
-        id: 'mli_30',
+        id: '30',
         name: 'Charlotte Monroe',
         address: '3033 Monroe Rd, Charlotte, NC 28205',
         location: {

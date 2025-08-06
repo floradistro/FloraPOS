@@ -3,10 +3,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { BrowserMultiFormatReader, NotFoundException, BarcodeFormat } from '@zxing/library'
 
+interface IDScannerData {
+  firstName?: string
+  lastName?: string
+  dateOfBirth?: string
+  address?: string
+  city?: string
+  state?: string
+  zipCode?: string
+  licenseNumber?: string
+  expirationDate?: string
+  isValid: boolean
+  errors?: string[]
+}
+
 interface IDScannerProps {
   isOpen: boolean
   onClose: () => void
-  onScanComplete: (data: any) => void
+  onScanComplete: (data: IDScannerData) => void
 }
 
 export function IDScanner({ isOpen, onClose, onScanComplete }: IDScannerProps) {
@@ -99,7 +113,7 @@ export function IDScanner({ isOpen, onClose, onScanComplete }: IDScannerProps) {
       lines = data.split(/(?=D[A-Z]{2})/g)
     }
     
-    const parsed: any = {}
+    const parsed: Partial<IDScannerData> = { isValid: true }
 
     lines.forEach(line => {
       const trimmedLine = line.trim()

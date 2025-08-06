@@ -29,7 +29,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   'custom': 'Custom'
 }
 
-const CATEGORY_ICONS: Record<string, any> = {
+const CATEGORY_ICONS: Record<string, { icon: string; color: string; bgColor: string }> = {
   'strain_preference': Leaf,
   'consumption_method': Zap,
   'potency_level': AlertCircle,

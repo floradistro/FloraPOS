@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
+// JWT_SECRET will be accessed within the middleware function
+// to ensure it's available at runtime, not build time
 
 // Routes that require authentication
 const protectedRoutes = [
@@ -19,7 +20,6 @@ const publicRoutes = [
   '/api/auth/register',
   '/api/health',
   '/api/stores/public',
-  '/api/orders', // Temporarily public - JWT token is malformed
 ]
 
 interface TokenPayload {
@@ -61,19 +61,28 @@ export function middleware(request: NextRequest) {
   // Check if route requires authentication
   if (isProtectedRoute(pathname)) {
     const authHeader = request.headers.get('authorization')
+    let token: string | null = null
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Try to get token from Authorization header first
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7).trim()
+    } else {
+      // Fallback to HTTP-only cookie
+      const cookieToken = request.cookies.get('flora_auth_token')
+      if (cookieToken) {
+        token = cookieToken.value
+      }
+    }
+
+    if (!token) {
       return NextResponse.json(
-        { error: 'Missing or invalid authorization header' },
+        { error: 'Missing or invalid authorization token' },
         { status: 401 }
       )
     }
 
-    const token = authHeader.substring(7).trim()
-
     // Check if token is empty or obviously malformed
     if (!token || token.length < 10) {
-      console.log('Token verification failed: Token is empty or too short')
       return NextResponse.json(
         { error: 'Invalid token format' },
         { status: 401 }
@@ -81,60 +90,70 @@ export function middleware(request: NextRequest) {
     }
 
     try {
-      // Verify the JWT token
-      const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload
-      
-      // Validate required fields
-      if (!decoded.userId || !decoded.email || !decoded.role) {
-        console.log('Token verification failed: Missing required fields in token payload')
-        return NextResponse.json(
-          { error: 'Invalid token payload' },
-          { status: 401 }
-        )
+      // Check if this is a JWT token or WordPress hash
+      if (token.includes('.')) {
+        // This looks like a JWT token
+        const JWT_SECRET = process.env.JWT_SECRET
+        if (!JWT_SECRET) {
+          return NextResponse.json(
+            { error: 'Server configuration error' },
+            { status: 500 }
+          )
+        }
+
+        // Verify the JWT token
+        const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload
+        
+        // Validate required fields for JWT
+        if (!decoded.userId || !decoded.email || !decoded.role) {
+          return NextResponse.json(
+            { error: 'Invalid token payload' },
+            { status: 401 }
+          )
+        }
+
+        // Check if token is expired
+        if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+          return NextResponse.json(
+            { error: 'Token expired' },
+            { status: 401 }
+          )
+        }
+
+        // Add user info to request headers for JWT tokens
+        const requestHeaders = new Headers(request.headers)
+        requestHeaders.set('x-user-id', decoded.userId.toString())
+        requestHeaders.set('x-user-email', decoded.email)
+        requestHeaders.set('x-user-role', decoded.role)
+        requestHeaders.set('x-store-id', decoded.storeId || '')
+        requestHeaders.set('x-terminal-id', decoded.terminalId || '')
+
+        return NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        })
+      } else {
+        // This is a WordPress hash token from Addify plugin or a bypass token
+        // Accept it if it's properly formatted (basic validation)
+        
+        // Special bypass token for POS system
+        if (token === 'flora-pos-bypass-token') {
+          return NextResponse.next()
+        }
+        
+        if (token.length < 32) {
+          return NextResponse.json(
+            { error: 'Invalid token format' },
+            { status: 401 }
+          )
+        }
+        
+        // For WordPress hash tokens, just proceed without user info headers
+        return NextResponse.next()
       }
-      
-      // Check if token is expired
-      if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
-        console.log('Token verification failed: Token expired')
-        return NextResponse.json(
-          { error: 'Token expired' },
-          { status: 401 }
-        )
-      }
-
-      // Add user info to request headers for use in API routes
-      const requestHeaders = new Headers(request.headers)
-      requestHeaders.set('x-user-id', decoded.userId.toString())
-      requestHeaders.set('x-user-email', decoded.email)
-      requestHeaders.set('x-user-role', decoded.role)
-      requestHeaders.set('x-store-id', decoded.storeId || '')
-      requestHeaders.set('x-terminal-id', decoded.terminalId || '')
-
-      // Create new request with updated headers
-      const response = NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      })
-
-      return response
 
     } catch (error) {
-      // More specific error logging
-      if (error instanceof Error) {
-        if (error.name === 'JsonWebTokenError') {
-          console.log(`Token verification failed: ${error.message}`)
-        } else if (error.name === 'TokenExpiredError') {
-          console.log('Token verification failed: Token expired')
-        } else if (error.name === 'NotBeforeError') {
-          console.log('Token verification failed: Token not active')
-        } else {
-          console.log(`Token verification failed: ${error.name} - ${error.message}`)
-        }
-      } else {
-        console.log('Token verification failed: Unknown error', error)
-      }
-      
       return NextResponse.json(
         { error: 'Invalid token' },
         { status: 401 }

@@ -1,5 +1,6 @@
 // Real auth service that calls the API
 import { User, Store, Terminal, LoginRequest, LoginResponse, UserRole } from '../types/auth'
+import { authStorage } from './secure-storage'
 
 class AuthService {
   private readonly TOKEN_KEY = 'flora_pos_token'
@@ -62,7 +63,7 @@ class AuthService {
       }
     }
 
-    // Store in localStorage
+    // Store in encrypted storage
     this.setToken(loginResponse.token)
     this.setUser(loginResponse.user)
     this.setStore(loginResponse.store)
@@ -79,7 +80,11 @@ class AuthService {
       console.error('Logout API error:', error)
     }
 
-    // Clear localStorage
+    // Clear encrypted storage
+    authStorage.removeToken()
+    authStorage.removeUserData()
+    
+    // Also clear legacy localStorage items for backward compatibility
     if (typeof window !== 'undefined') {
       localStorage.removeItem(this.TOKEN_KEY)
       localStorage.removeItem(this.USER_KEY)
@@ -95,50 +100,98 @@ class AuthService {
 
   // Storage helpers
   getToken(): string | null {
-    if (typeof window === 'undefined') return null
-    return localStorage.getItem(this.TOKEN_KEY)
+    // Try encrypted storage first, fallback to localStorage for migration
+    const encryptedToken = authStorage.getToken()
+    if (encryptedToken) return encryptedToken
+    
+    // Fallback for migration
+    if (typeof window !== 'undefined') {
+      const legacyToken = localStorage.getItem(this.TOKEN_KEY)
+      if (legacyToken) {
+        // Migrate to encrypted storage
+        authStorage.setToken(legacyToken)
+        localStorage.removeItem(this.TOKEN_KEY)
+        return legacyToken
+      }
+    }
+    
+    return null
   }
 
   setToken(token: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(this.TOKEN_KEY, token)
-    }
+    // Store in encrypted storage with 8 hour expiration
+    authStorage.setToken(token, 8 * 60 * 60 * 1000)
   }
 
   getStoredUser(): User | null {
-    if (typeof window === 'undefined') return null
-    const userStr = localStorage.getItem(this.USER_KEY)
-    return userStr ? JSON.parse(userStr) : null
+    // Try encrypted storage first
+    const userData = authStorage.getUserData()
+    if (userData?.user) return userData.user
+    
+    // Fallback for migration
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem(this.USER_KEY)
+      if (userStr) {
+        const user = JSON.parse(userStr)
+        // Migrate to encrypted storage
+        this.setUser(user)
+        localStorage.removeItem(this.USER_KEY)
+        return user
+      }
+    }
+    
+    return null
   }
 
   setUser(user: User): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(this.USER_KEY, JSON.stringify(user))
-    }
+    const existingData = authStorage.getUserData() || {}
+    authStorage.setUserData({ ...existingData, user }, 8 * 60 * 60 * 1000)
   }
 
   getStoredStore(): Store | null {
-    if (typeof window === 'undefined') return null
-    const storeStr = localStorage.getItem(this.STORE_KEY)
-    return storeStr ? JSON.parse(storeStr) : null
+    const userData = authStorage.getUserData()
+    if (userData?.store) return userData.store
+    
+    // Fallback for migration
+    if (typeof window !== 'undefined') {
+      const storeStr = localStorage.getItem(this.STORE_KEY)
+      if (storeStr) {
+        const store = JSON.parse(storeStr)
+        this.setStore(store)
+        localStorage.removeItem(this.STORE_KEY)
+        return store
+      }
+    }
+    
+    return null
   }
 
   setStore(store: Store): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(this.STORE_KEY, JSON.stringify(store))
-    }
+    const existingData = authStorage.getUserData() || {}
+    authStorage.setUserData({ ...existingData, store }, 8 * 60 * 60 * 1000)
   }
 
   getStoredTerminal(): Terminal | null {
-    if (typeof window === 'undefined') return null
-    const terminalStr = localStorage.getItem(this.TERMINAL_KEY)
-    return terminalStr ? JSON.parse(terminalStr) : null
+    const userData = authStorage.getUserData()
+    if (userData?.terminal) return userData.terminal
+    
+    // Fallback for migration
+    if (typeof window !== 'undefined') {
+      const terminalStr = localStorage.getItem(this.TERMINAL_KEY)
+      if (terminalStr) {
+        const terminal = JSON.parse(terminalStr)
+        this.setTerminal(terminal)
+        localStorage.removeItem(this.TERMINAL_KEY)
+        return terminal
+      }
+    }
+    
+    return null
   }
 
   setTerminal(terminal: Terminal): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(this.TERMINAL_KEY, JSON.stringify(terminal))
-    }
+    const existingData = authStorage.getUserData() || {}
+    authStorage.setUserData({ ...existingData, terminal }, 8 * 60 * 60 * 1000)
   }
 
   isAuthenticated(): boolean {

@@ -2,77 +2,72 @@
 
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
+import { getSmartCacheManager } from '@/lib/cache-manager'
+import { useAuth } from '@/contexts/AuthContext'
 
 /**
  * Hook for refreshing cached data after inventory-changing operations
+ * Now uses intelligent cache invalidation
  */
 export function useDataRefresh() {
   const queryClient = useQueryClient()
+  const smartCache = getSmartCacheManager(queryClient)
+  const { store } = useAuth()
 
   const refreshAllData = useCallback(async () => {
     console.log('🔄 Refreshing all cached data...')
     
-    // Invalidate all product and inventory data
+    // Use smart cache invalidation for all data types
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['all-products-preload'] }),
-      queryClient.invalidateQueries({ queryKey: ['products'] }),
-      queryClient.invalidateQueries({ queryKey: ['customers-preload'] }),
-      queryClient.invalidateQueries({ queryKey: ['customers'] }),
-      queryClient.invalidateQueries({ queryKey: ['orders-preload'] }),
-      queryClient.invalidateQueries({ queryKey: ['orders'] }),
-      queryClient.invalidateQueries({ queryKey: ['virtual-inventory'] }),
-      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      smartCache.invalidateByDependency('product', { storeId: store?.id }),
+      smartCache.invalidateByDependency('order', { storeId: store?.id }),
+      smartCache.invalidateByDependency('customer', { storeId: store?.id }),
+      smartCache.invalidateByDependency('inventory', { storeId: store?.id })
     ])
     
     console.log('✅ All cached data refreshed')
-  }, [queryClient])
+  }, [queryClient, smartCache, store?.id])
 
-  const refreshProducts = useCallback(async () => {
+  const refreshProducts = useCallback(async (productId?: number) => {
     console.log('🔄 Refreshing product data...')
     
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['all-products-preload'] }),
-      queryClient.invalidateQueries({ queryKey: ['products'] }),
-      queryClient.invalidateQueries({ queryKey: ['virtual-inventory'] })
-    ])
+    await smartCache.invalidateByDependency('product', { 
+      storeId: store?.id,
+      productId 
+    })
     
     console.log('✅ Product data refreshed')
-  }, [queryClient])
+  }, [smartCache, store?.id])
 
-  const refreshCustomers = useCallback(async () => {
+  const refreshCustomers = useCallback(async (customerId?: number) => {
     console.log('🔄 Refreshing customer data...')
     
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['customers-preload'] }),
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
-    ])
+    await smartCache.invalidateByDependency('customer', { 
+      storeId: store?.id,
+      customerId 
+    })
     
     console.log('✅ Customer data refreshed')
-  }, [queryClient])
+  }, [smartCache, store?.id])
 
   const refreshOrders = useCallback(async () => {
     console.log('🔄 Refreshing orders data...')
     
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['orders-preload'] }),
-      queryClient.invalidateQueries({ queryKey: ['orders'] })
-    ])
+    await smartCache.invalidateByDependency('order', { storeId: store?.id })
     
     console.log('✅ Orders data refreshed')
-  }, [queryClient])
+  }, [smartCache, store?.id])
 
-  const refreshInventory = useCallback(async () => {
+  const refreshInventory = useCallback(async (productId?: number) => {
     console.log('🔄 Refreshing inventory data...')
     
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['all-products-preload'] }),
-      queryClient.invalidateQueries({ queryKey: ['products'] }),
-      queryClient.invalidateQueries({ queryKey: ['virtual-inventory'] }),
-      queryClient.invalidateQueries({ queryKey: ['inventory'] })
-    ])
+    await smartCache.invalidateByDependency('inventory', { 
+      storeId: store?.id,
+      productId 
+    })
     
     console.log('✅ Inventory data refreshed')
-  }, [queryClient])
+  }, [smartCache, store?.id])
 
   return {
     refreshAllData,

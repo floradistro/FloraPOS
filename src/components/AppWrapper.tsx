@@ -7,6 +7,7 @@ import { LoginForm } from '../components/LoginForm'
 import SiriGlowBorder from '../components/SiriGlowBorder'
 import { useQuery } from '@tanstack/react-query'
 import { floraAPI } from '../lib/woocommerce'
+import { useOptimizedPreloading } from '../hooks/useOptimizedPreloading'
 
 interface AppWrapperProps {
   children: React.ReactNode
@@ -16,99 +17,33 @@ export function AppWrapper({ children }: AppWrapperProps) {
   const { isAuthenticated, isLoading: authLoading, store } = useAuth()
   const [isAppReady, setIsAppReady] = useState(false)
 
-  // Preload ALL products for ALL categories
-  const { isLoading: productsLoading } = useQuery({
-    queryKey: ['all-products-preload', store?.id],
-    queryFn: async () => {
-      if (!store?.id) return []
-      
-      // Fetch products for all categories in parallel
-      const categoryIds = [25, 19, 21, 22, 16] // Flower, Vapes, Edibles, Concentrates, Moonwater
-      
-      const allProductPromises = [
-        // Get all products without category filter
-        floraAPI.getProducts({
-          storeId: store.id,
-          per_page: 100
-        }),
-        // Get products for each specific category to ensure we have everything
-        ...categoryIds.map(categoryId => 
-          floraAPI.getProducts({
-            storeId: store.id,
-            category: categoryId,
-            per_page: 100
-          })
-        )
-      ]
-      
-      const results = await Promise.all(allProductPromises)
-      
-      // Combine and deduplicate all products
-      const allProducts = results.flat()
-      const uniqueProducts = allProducts.filter((product, index, self) => 
-        index === self.findIndex(p => p.id === product.id)
-      )
-      
-      // Cache products by category for instant filtering
-      const productsByCategory = {
-        all: uniqueProducts,
-        25: uniqueProducts.filter(p => p.categories?.some(cat => cat.id === 25)),
-        19: uniqueProducts.filter(p => p.categories?.some(cat => cat.id === 19)),
-        21: uniqueProducts.filter(p => p.categories?.some(cat => cat.id === 21)),
-        22: uniqueProducts.filter(p => p.categories?.some(cat => cat.id === 22)),
-        16: uniqueProducts.filter(p => p.categories?.some(cat => cat.id === 16))
-      }
-      
-      return productsByCategory
-    },
-    enabled: !!store?.id && isAuthenticated,
-    staleTime: 5 * 60 * 1000,
-  })
 
-  const { isLoading: customersLoading } = useQuery({
-    queryKey: ['customers-preload'],
-    queryFn: async () => {
-      return floraAPI.getCustomers({
-        per_page: 50
-      })
-    },
-    enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000,
-  })
 
-  const { isLoading: ordersLoading } = useQuery({
-    queryKey: ['orders-preload'],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        store_id: 'Charlotte Monroe',
-        per_page: '50',
-        orderby: 'date',
-        order: 'desc'
-      })
-      const response = await fetch(`/api/orders?${params.toString()}`)
-      if (response.ok) {
-        return response.json()
-      }
-      throw new Error('Failed to fetch orders')
-    },
-    enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000,
+  // Use optimized preloading instead of bulk loading
+  const { isLoading: optimizedLoading, isPreloadingComplete } = useOptimizedPreloading('all', {
+    enableBackgroundPrefetch: true,
+    preloadAdjacentCategories: true,
+    maxPreloadItems: 20 // Only preload first page
   })
 
   // Determine if app is fully loaded
-  const isGlobalLoading = authLoading || (isAuthenticated && (productsLoading || customersLoading || ordersLoading))
+  // Only show loading for critical data when user is authenticated
+  const isGlobalLoading = authLoading || (isAuthenticated && optimizedLoading)
 
-  // Add a minimum loading time to prevent flash
+  // Add a minimum loading time to prevent flash, but only when authenticated
   useEffect(() => {
     if (!isGlobalLoading && !isAppReady) {
+      // If not authenticated, show login immediately
+      // If authenticated, add minimum loading time for UX
+      const delay = isAuthenticated ? 1500 : 0
       const timer = setTimeout(() => {
         setIsAppReady(true)
-      }, 1500) // Minimum 1.5s loading time
+      }, delay)
       return () => clearTimeout(timer)
     }
-  }, [isGlobalLoading, isAppReady])
+  }, [isGlobalLoading, isAppReady, isAuthenticated])
 
-  if (isGlobalLoading || !isAppReady) {
+  if ((isGlobalLoading || !isAppReady) && (authLoading || isAuthenticated)) {
     return (
       <>
         <SiriGlowBorder isLoading={true} />
@@ -132,7 +67,7 @@ export function AppWrapper({ children }: AppWrapperProps) {
 
   if (!isAuthenticated) {
     return (
-      <div>
+      <div className="min-h-screen bg-black">
         <LoginForm />
       </div>
     )  

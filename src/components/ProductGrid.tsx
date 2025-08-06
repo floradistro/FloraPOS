@@ -10,6 +10,8 @@ import { findLinkedPrerollProducts, isVirtualPrerollProduct } from '../lib/virtu
 import { setupTouchScrolling, unlockScroll } from '../utils/scrollUtils'
 import Image from 'next/image'
 import SiriGlowBorder from './SiriGlowBorder'
+import { CacheKeyManager } from '@/lib/cache-manager'
+import { PERFORMANCE_CONFIG } from '@/config/performance'
 
 interface ProductGridProps {
   category: number | null
@@ -26,31 +28,47 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
   const [globalSelectedProduct, setGlobalSelectedProduct] = useState<{ productId: number; variation: string } | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
-  // Get preloaded products from cache
-  const { data: cachedProductsByCategory, isLoading, error } = useQuery<{
-    all: FloraProduct[]
-    [key: number]: FloraProduct[]
+  // Get products using optimized cache keys
+  const { data: productsData, isLoading, error } = useQuery<{
+    products: FloraProduct[]
+    total: number
+    hasMore: boolean
   }>({
-    queryKey: ['all-products-preload', store?.id],
-    enabled: false, // Don't refetch, just use cached data
-    staleTime: Infinity, // Never consider stale
+    queryKey: CacheKeyManager.products(store?.id, category, { status: 'in_stock', page: 1 }),
+    queryFn: async () => {
+      if (!store?.id) return { products: [], total: 0, hasMore: false }
+      
+      const result = await floraAPI.getProductsComprehensive({
+        storeId: store.id,
+        category: category?.toString(),
+        per_page: 100,
+        page: 1,
+        stock_status: 'in_stock'
+      })
+
+      return {
+        products: result.products,
+        total: result.total,
+        hasMore: result.hasMore
+      }
+    },
+    enabled: !!store?.id,
+    staleTime: PERFORMANCE_CONFIG.CACHE.PRODUCTS_STALE_TIME,
+    gcTime: PERFORMANCE_CONFIG.CACHE.PRODUCTS_GC_TIME,
   })
 
-  // Process products from cache
+  // Process products from API response
   const products = useMemo(() => {
-    if (!cachedProductsByCategory) return []
+    if (!productsData?.products) return []
     
-    // Get products for the selected category or all products
-    const categoryProducts = category 
-      ? cachedProductsByCategory[category] || []
-      : cachedProductsByCategory.all || []
+    const allProducts = productsData.products
     
     // Separate flower products and virtual products
-    const flowerProducts = categoryProducts.filter((p: FloraProduct) => !isVirtualPrerollProduct(p))
+    const flowerProducts = allProducts.filter((p: FloraProduct) => !isVirtualPrerollProduct(p))
     
     // Enhance flower products with linked virtual products
     const enhancedProducts = flowerProducts.map((flower: FloraProduct) => {
-      const linkedVirtual = findLinkedPrerollProducts(flower, categoryProducts)[0]
+      const linkedVirtual = findLinkedPrerollProducts(flower, allProducts)[0]
       return {
         ...flower,
         linkedPrerollProduct: linkedVirtual
@@ -59,7 +77,7 @@ export function ProductGrid({ category, searchQuery, onAddToCart, onProductCount
     
     // Only return non-virtual products (flowers) for display
     return enhancedProducts
-  }, [cachedProductsByCategory, category])
+  }, [productsData])
 
   // Calculate filtered products for consistent hook usage
   const filteredProducts = products.filter((product: FloraProduct) => {

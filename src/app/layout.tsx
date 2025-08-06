@@ -1,5 +1,16 @@
 import './globals.css'
 import { Providers } from './providers'
+import { initializeEnvironment } from '@/lib/env-validation'
+
+// Initialize and validate environment variables at startup
+if (typeof window === 'undefined') {
+  try {
+    initializeEnvironment()
+  } catch (error) {
+    console.error('Failed to initialize environment:', error)
+    // In production, this will exit the process
+  }
+}
 
 export const metadata = {
   title: 'Flora POS',

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Storage - Flora POS</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: -apple-system, system-ui, sans-serif;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #059669;
+        }
+        .danger {
+            background: #ef4444;
+        }
+        .danger:hover {
+            background: #dc2626;
+        }
+        pre {
+            background: #111;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #10b981;
+            margin-top: 20px;
+        }
+        .error {
+            color: #ef4444;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flora POS - Storage Manager</h1>
+    
+    <h2>Actions:</h2>
+    <button onclick="showCurrent()">Show Current Data</button>
+    <button onclick="clearAll()" class="danger">Clear All Storage</button>
+    <button onclick="setCharlotteMonroe()">Set Charlotte Monroe Store</button>
+    
+    <div id="result"></div>
+    
+    <h2>Current Storage Data:</h2>
+    <pre id="current"></pre>
+    
+    <script>
+        function clearAll() {
+            // Clear all Flora POS related data
+            const keysToRemove = [
+                'flora_store',
+                'flora_user', 
+                'flora_terminal',
+                'flora_auth_token',
+                'flora_user_data_encrypted',
+                'flora_auth_token_encrypted'
+            ];
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+            });
+            
+            // Also clear any session storage
+            keysToRemove.forEach(key => {
+                sessionStorage.removeItem(key);
+            });
+            
+            document.getElementById('result').innerHTML = '<div class="success">✓ All storage cleared! Refresh the POS page to use defaults.</div>';
+            showCurrent();
+        }
+        
+        function setCharlotteMonroe() {
+            const storeData = {
+                id: "30",
+                name: "Charlotte Monroe",
+                slug: "charlotte-monroe",
+                address: "Charlotte Monroe Location",
+                city: "Charlotte",
+                state: "NC",
+                zip: "28202",
+                country: "US",
+                currency: "USD",
+                taxRate: 0.0825,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            const userData = {
+                id: 1,
+                email: "floradistrodev@gmail.com",
+                firstName: "Master",
+                lastName: "Admin",
+                role: "admin",
+                storeId: "30",
+                permissions: ["all"],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            const terminalData = {
+                id: "terminal-1",
+                name: "Terminal 1",
+                storeId: "30",
+                isActive: true,
+                lastActivity: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            // Set in localStorage
+            localStorage.setItem('flora_store', JSON.stringify(storeData));
+            localStorage.setItem('flora_user', JSON.stringify(userData));
+            localStorage.setItem('flora_terminal', JSON.stringify(terminalData));
+            localStorage.setItem('flora_auth_token', 'flora-pos-bypass-token');
+            
+            // Also set in encrypted storage format
+            const encryptedData = {
+                user: userData,
+                store: storeData,
+                terminal: terminalData
+            };
+            localStorage.setItem('flora_user_data_encrypted', btoa(JSON.stringify(encryptedData)));
+            localStorage.setItem('flora_auth_token_encrypted', btoa('flora-pos-bypass-token'));
+            
+            document.getElementById('result').innerHTML = '<div class="success">✓ Charlotte Monroe store set! Refresh the POS page.</div>';
+            showCurrent();
+        }
+        
+        function showCurrent() {
+            const data = {};
+            
+            // Check all relevant keys
+            const keys = [
+                'flora_store',
+                'flora_user',
+                'flora_terminal',
+                'flora_auth_token',
+                'flora_user_data_encrypted',
+                'flora_auth_token_encrypted'
+            ];
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    try {
+                        // Try to parse as JSON
+                        if (key.includes('encrypted')) {
+                            // Try to decode base64
+                            try {
+                                const decoded = atob(value);
+                                data[key] = JSON.parse(decoded);
+                            } catch {
+                                data[key] = value;
+                            }
+                        } else if (value.startsWith('{') || value.startsWith('[')) {
+                            data[key] = JSON.parse(value);
+                        } else {
+                            data[key] = value;
+                        }
+                    } catch {
+                        data[key] = value;
+                    }
+                }
+            });
+            
+            if (Object.keys(data).length === 0) {
+                document.getElementById('current').textContent = 'No Flora POS data found in storage.';
+            } else {
+                document.getElementById('current').textContent = JSON.stringify(data, null, 2);
+            }
+        }
+        
+        // Show current data on load
+        showCurrent();
+    </script>
+</body>
+</html>

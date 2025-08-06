@@ -36,7 +36,7 @@ export default function TableRenderer({ json }: TableRendererProps) {
   const columns = useMemo(() => {
     if (data.length === 0) return []
     
-    const columnHelper = createColumnHelper<any>()
+    const columnHelper = createColumnHelper<Record<string, unknown>>()
     const firstRow = data[0]
     
     return Object.keys(firstRow).map((key) => 
@@ -79,7 +79,24 @@ export default function TableRenderer({ json }: TableRendererProps) {
   })
 
   if (data.length === 0) {
-    return <div className="text-yellow-400 text-sm">No table data available</div>
+    return (
+      <div className="group mt-6 mb-4">
+        <div className="flex items-center gap-3 p-4 bg-neutral-900/40 border border-white/[0.04] rounded-lg hover:bg-neutral-900/60 transition-colors">
+          <div className="flex items-center justify-center w-8 h-8">
+            <div className="w-3 h-3 border border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <div className="flex-1">
+            <div className="text-sm font-normal text-gray-400">
+              <span className="animate-pulse">Generating table</span>
+            </div>
+            <div className="text-xs text-gray-500 mt-0.5">
+              Processing data...
+            </div>
+          </div>
+          <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+        </div>
+      </div>
+    )
   }
 
   // Determine if table is large (more than 10 rows or 8 columns)

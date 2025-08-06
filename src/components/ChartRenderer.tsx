@@ -4,9 +4,16 @@ import dynamic from 'next/dynamic'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { useEffect, useState } from 'react'
 
+interface ChartDataPoint {
+  name: string
+  value: number
+  label?: string
+  [key: string]: string | number | undefined
+}
+
 interface ChartData {
   type: 'line' | 'bar' | 'pie'
-  data: any[]
+  data: ChartDataPoint[]
   xAxis?: string[]
   title?: string
   colors?: string[]

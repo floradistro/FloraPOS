@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { FloraProduct } from '@/lib/woocommerce'
+import { cartStorage } from '@/lib/secure-storage'
 
 export interface CartItem {
   product: FloraProduct
@@ -82,6 +83,23 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: 'pos-cart',
+      storage: {
+        getItem: (name: string) => {
+          const data = cartStorage.getCart()
+          return data ? JSON.stringify({ state: data }) : null
+        },
+        setItem: (name: string, value: string) => {
+          try {
+            const parsed = JSON.parse(value)
+            cartStorage.setCart(parsed.state, 24 * 60 * 60 * 1000) // 24 hours
+          } catch (error) {
+            console.error('Failed to save cart to encrypted storage:', error)
+          }
+        },
+        removeItem: (name: string) => {
+          cartStorage.removeCart()
+        }
+      }
     }
   )
 ) 

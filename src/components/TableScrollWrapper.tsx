@@ -41,7 +41,7 @@ export default function TableScrollWrapper({ children }: TableScrollWrapperProps
       
       // Force enable scrolling
       element.style.overflowX = 'auto'
-      element.style.webkitOverflowScrolling = 'touch'
+      ;(element.style as any).webkitOverflowScrolling = 'touch'
     }
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -71,7 +71,7 @@ export default function TableScrollWrapper({ children }: TableScrollWrapperProps
       
       // Ensure scroll momentum continues
       setTimeout(() => {
-        element.style.webkitOverflowScrolling = 'touch'
+        ;(element.style as any).webkitOverflowScrolling = 'touch'
       }, 0)
     }
 

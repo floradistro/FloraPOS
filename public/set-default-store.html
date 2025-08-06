@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Set Default Store</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: -apple-system, system-ui, sans-serif;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #059669;
+        }
+        pre {
+            background: #111;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .success {
+            color: #10b981;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flora POS - Set Default Store</h1>
+    <p>Click the button below to set Charlotte Monroe as the default store:</p>
+    
+    <button onclick="setStore()">Set Charlotte Monroe Store</button>
+    
+    <div id="result"></div>
+    
+    <h2>Current Store Data:</h2>
+    <pre id="current"></pre>
+    
+    <script>
+        function setStore() {
+            const storeData = {
+                id: "30",
+                name: "Charlotte Monroe",
+                slug: "charlotte-monroe",
+                address: "Charlotte Monroe Location",
+                city: "Charlotte",
+                state: "NC",
+                zip: "28202",
+                country: "US",
+                currency: "USD",
+                taxRate: 0.0825,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            const userData = {
+                id: 1,
+                email: "floradistrodev@gmail.com",
+                firstName: "Master",
+                lastName: "Admin",
+                role: "admin",
+                storeId: "30",
+                permissions: ["all"],
+                token: "flora-pos-bypass-token",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            const terminalData = {
+                id: "terminal-1",
+                name: "Terminal 1",
+                storeId: "30",
+                isActive: true,
+                lastActivity: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            // Set in localStorage
+            localStorage.setItem('flora_store', JSON.stringify(storeData));
+            localStorage.setItem('flora_user', JSON.stringify(userData));
+            localStorage.setItem('flora_terminal', JSON.stringify(terminalData));
+            localStorage.setItem('flora_auth_token', 'flora-pos-bypass-token');
+            
+            // Also set in encrypted storage format
+            const encryptedData = {
+                user: userData,
+                store: storeData,
+                terminal: terminalData
+            };
+            localStorage.setItem('flora_user_data_encrypted', btoa(JSON.stringify(encryptedData)));
+            localStorage.setItem('flora_auth_token_encrypted', btoa('flora-pos-bypass-token'));
+            
+            document.getElementById('result').innerHTML = '<div class="success">✓ Store data set successfully! Refresh the POS page to see the changes.</div>';
+            showCurrent();
+        }
+        
+        function showCurrent() {
+            const store = localStorage.getItem('flora_store');
+            const user = localStorage.getItem('flora_user');
+            const current = {
+                store: store ? JSON.parse(store) : null,
+                user: user ? JSON.parse(user) : null
+            };
+            document.getElementById('current').textContent = JSON.stringify(current, null, 2);
+        }
+        
+        // Show current data on load
+        showCurrent();
+    </script>
+</body>
+</html>
