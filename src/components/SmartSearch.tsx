@@ -302,12 +302,12 @@ export default function SmartSearch({
                    suggestion.type}
                 </p>
               </div>
-              {suggestion.data && viewMode === 'customers' && (
+              {suggestion.data && viewMode === 'customers' ? (
                 <div className="text-right">
                   <p className="text-green-400 text-xs">${(suggestion.data as any).totalSpent?.toFixed(0)}</p>
                   <p className="text-white/50 text-xs">{(suggestion.data as any).totalOrders} orders</p>
                 </div>
-              )}
+              ) : null}
             </div>
           ))}
         </div>

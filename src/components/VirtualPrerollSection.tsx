@@ -213,4 +213,6 @@ export function VirtualPrerollSection({
       )}
     </div>
   )
-} 
+}
+
+export default VirtualPrerollSection 

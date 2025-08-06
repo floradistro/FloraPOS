@@ -250,4 +250,6 @@ export function EnhancedVirtualPrerollSection({
       )}
     </div>
   )
-} 
+}
+
+export default EnhancedVirtualPrerollSection 

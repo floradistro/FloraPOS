@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { FloraProduct } from '@/lib/woocommerce'
 import { cartStorage } from '@/lib/secure-storage'
 
@@ -83,15 +83,15 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: 'pos-cart',
-      storage: {
+      storage: createJSONStorage(() => ({
         getItem: (name: string) => {
           const data = cartStorage.getCart()
-          return data ? JSON.stringify({ state: data }) : null
+          return data ? JSON.stringify(data) : null
         },
         setItem: (name: string, value: string) => {
           try {
             const parsed = JSON.parse(value)
-            cartStorage.setCart(parsed.state, 24 * 60 * 60 * 1000) // 24 hours
+            cartStorage.setCart(parsed, 24 * 60 * 60 * 1000) // 24 hours
           } catch (error) {
             console.error('Failed to save cart to encrypted storage:', error)
           }
@@ -99,7 +99,7 @@ export const useCartStore = create<CartStore>()(
         removeItem: (name: string) => {
           cartStorage.removeCart()
         }
-      }
+      }))
     }
   )
 ) 

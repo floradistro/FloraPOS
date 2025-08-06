@@ -6,13 +6,21 @@ import { BrowserMultiFormatReader, NotFoundException, BarcodeFormat } from '@zxi
 interface IDScannerData {
   firstName?: string
   lastName?: string
+  middleName?: string
+  fullName?: string
   dateOfBirth?: string
   address?: string
+  streetAddress?: string
+  streetAddress2?: string
   city?: string
   state?: string
   zipCode?: string
   licenseNumber?: string
   expirationDate?: string
+  issueDate?: string
+  gender?: string
+  customerIdNumber?: string
+  ncSpecificField?: string
   isValid: boolean
   errors?: string[]
 }
@@ -72,7 +80,7 @@ export function IDScanner({ isOpen, onClose, onScanComplete }: IDScannerProps) {
           console.log('Parsed data:', parsedData)
           
           if (parsedData && Object.keys(parsedData).length > 0) {
-            onScanComplete(parsedData)
+            onScanComplete({ ...parsedData, isValid: parsedData.isValid ?? true } as IDScannerData)
             stopScanning()
           } else {
             console.log('No valid license data found, continuing scan...')
@@ -155,7 +163,7 @@ export function IDScanner({ isOpen, onClose, onScanComplete }: IDScannerProps) {
     if (manualData.trim()) {
       const parsedData = parseDriverLicenseData(manualData.trim())
       if (parsedData && Object.keys(parsedData).length > 0) {
-        onScanComplete(parsedData)
+        onScanComplete({ ...parsedData, isValid: parsedData.isValid ?? true } as IDScannerData)
       } else {
         setError('Could not parse the manual data. Please check the format.')
       }
@@ -262,4 +270,6 @@ export function IDScanner({ isOpen, onClose, onScanComplete }: IDScannerProps) {
       </div>
     </div>
   )
-} 
+}
+
+export default IDScanner 

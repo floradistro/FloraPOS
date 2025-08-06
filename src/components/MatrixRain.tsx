@@ -128,4 +128,6 @@ export function MatrixRain({ width = 320, height = 400, className = '' }: Matrix
       }}
     />
   )
-} 
+}
+
+export default MatrixRain 

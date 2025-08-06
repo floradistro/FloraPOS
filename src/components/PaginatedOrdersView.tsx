@@ -104,7 +104,7 @@ export function PaginatedOrdersView({
   paymentFilter = '',
   searchQuery = ''
 }: PaginatedOrdersViewProps) {
-  const { user, store } = useAuth()
+  const { user, store, token } = useAuth()
   const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set())
   const loadMoreRef = useRef<HTMLDivElement>(null)
 
@@ -124,8 +124,8 @@ export function PaginatedOrdersView({
       dateTo,
       paymentFilter,
       searchQuery
-    }, effectiveStoreId, user?.token)
-  }, [statusFilter, dateFrom, dateTo, paymentFilter, searchQuery, effectiveStoreId, user?.token])
+    }, effectiveStoreId, token || undefined)
+  }, [statusFilter, dateFrom, dateTo, paymentFilter, searchQuery, effectiveStoreId, token])
 
   // Use paginated data hook
   const {

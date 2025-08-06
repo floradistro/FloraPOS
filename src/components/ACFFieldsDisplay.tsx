@@ -156,4 +156,6 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
       </div>
     </div>
   )
-} 
+}
+
+export default ACFFieldsDisplay 

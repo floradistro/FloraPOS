@@ -40,7 +40,7 @@ function isPublicRoute(pathname: string): boolean {
   return publicRoutes.some(route => pathname.startsWith(route))
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Skip middleware for static files and Next.js internals

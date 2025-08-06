@@ -93,7 +93,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     // Call the error handler
     const errorHandler = createErrorBoundaryHandler(name)
-    errorHandler(error, errorInfo)
+    errorHandler(error, { componentStack: errorInfo.componentStack || '' })
 
     // Call custom error handler if provided
     if (onError) {

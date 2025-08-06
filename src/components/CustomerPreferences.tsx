@@ -29,22 +29,22 @@ const CATEGORY_LABELS: Record<string, string> = {
   'custom': 'Custom'
 }
 
-const CATEGORY_ICONS: Record<string, { icon: string; color: string; bgColor: string }> = {
-  'strain_preference': Leaf,
-  'consumption_method': Zap,
-  'potency_level': AlertCircle,
-  'flavor_profile': Heart,
-  'effect_preference': Star,
-  'price_range': Tag,
-  'brand_preference': Tag,
-  'product_type': Tag,
-  'thca_%': AlertCircle,
-  'nose': Heart,
-  'effects': Star,
-  'terpene': Leaf,
-  'strain_type': Leaf,
-  'lineage': Tag,
-  'custom': Tag
+const CATEGORY_ICONS: Record<string, { icon: any; color: string; bgColor: string }> = {
+  'strain_preference': { icon: Leaf, color: 'text-green-400', bgColor: 'bg-green-500/10' },
+  'consumption_method': { icon: Zap, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
+  'potency_level': { icon: AlertCircle, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
+  'flavor_profile': { icon: Heart, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
+  'effect_preference': { icon: Star, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
+  'price_range': { icon: Tag, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
+  'brand_preference': { icon: Tag, color: 'text-indigo-400', bgColor: 'bg-indigo-500/10' },
+  'product_type': { icon: Tag, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10' },
+  'thca_%': { icon: AlertCircle, color: 'text-red-400', bgColor: 'bg-red-500/10' },
+  'nose': { icon: Heart, color: 'text-rose-400', bgColor: 'bg-rose-500/10' },
+  'effects': { icon: Star, color: 'text-amber-400', bgColor: 'bg-amber-500/10' },
+  'terpene': { icon: Leaf, color: 'text-teal-400', bgColor: 'bg-teal-500/10' },
+  'strain_type': { icon: Leaf, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
+  'lineage': { icon: Tag, color: 'text-slate-400', bgColor: 'bg-slate-500/10' },
+  'custom': { icon: Tag, color: 'text-gray-400', bgColor: 'bg-gray-500/10' }
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -194,7 +194,8 @@ export default function CustomerPreferences({ customer, onUpdatePreferences, can
           <p className="text-gray-500 text-sm">No preferences set</p>
         ) : (
           preferences.map((pref) => {
-            const Icon = CATEGORY_ICONS[pref.category] || Tag
+            const iconConfig = CATEGORY_ICONS[pref.category] || { icon: Tag, color: 'text-gray-400', bgColor: 'bg-gray-500/10' }
+            const Icon = iconConfig.icon
             const colorClass = CATEGORY_COLORS[pref.category] || 'bg-gray-100 text-gray-800 border-gray-200'
             
             return (

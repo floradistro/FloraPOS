@@ -123,10 +123,10 @@ export function validateEnvironmentVariables(): RequiredEnvVars & OptionalEnvVar
           break;
         
         // case 'NEXTAUTH_SECRET':
-          if (value.length < 32) {
-            errors.push('NEXTAUTH_SECRET must be at least 32 characters long');
-          }
-          break;
+        //   if (value && value.length < 32) {
+        //     errors.push('NEXTAUTH_SECRET must be at least 32 characters long');
+        //   }
+        //   break;
       }
       
       env[varName] = value;
