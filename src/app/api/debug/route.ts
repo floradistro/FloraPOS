@@ -50,18 +50,24 @@ export async function GET(request: NextRequest) {
         },
       })
       
-      apiTest = {
-        status: testResponse.status,
-        ok: testResponse.ok,
-        url: testUrl,
-        headers: Object.fromEntries(testResponse.headers.entries()),
-      }
-      
       if (testResponse.ok) {
         const testData = await testResponse.json()
-        apiTest.dataReceived = Array.isArray(testData) ? testData.length : 'Not an array'
+        apiTest = {
+          status: testResponse.status,
+          ok: testResponse.ok,
+          url: testUrl,
+          headers: Object.fromEntries(testResponse.headers.entries()),
+          dataReceived: Array.isArray(testData) ? testData.length : 'Not an array'
+        }
       } else {
-        apiTest.error = await testResponse.text()
+        const errorText = await testResponse.text()
+        apiTest = {
+          status: testResponse.status,
+          ok: testResponse.ok,
+          url: testUrl,
+          headers: Object.fromEntries(testResponse.headers.entries()),
+          error: errorText
+        }
       }
     } catch (error) {
       apiTest = {
