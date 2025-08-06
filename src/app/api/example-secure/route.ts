@@ -4,7 +4,8 @@
  */
 
 import { NextRequest } from 'next/server'
-import { withApiSecurity, createSecureResponse, getSanitizedBody } from '@/lib/api-security-wrapper'
+import { withApiSecurity, getSanitizedBody } from '@/lib/api-security-wrapper'
+import { createSecureResponse } from '@/lib/security-headers'
 
 // Example of a protected API route with auth rate limiting
 export const POST = withApiSecurity(
