@@ -181,8 +181,8 @@ export function initializeEnvironment(): RequiredEnvVars & OptionalEnvVars {
     console.error('❌ Environment validation failed:');
     console.error(error instanceof Error ? error.message : String(error));
     
-    // In production, exit the process if validation fails
-    if (process.env.NODE_ENV === 'production') {
+    // In production, exit the process if validation fails (but not during build)
+    if (process.env.NODE_ENV === 'production' && process.env.VALIDATE_ENV === 'true') {
       process.exit(1);
     }
     
@@ -190,7 +190,7 @@ export function initializeEnvironment(): RequiredEnvVars & OptionalEnvVars {
   }
 }
 
-// Auto-initialize in production or when explicitly requested
-if (process.env.NODE_ENV === 'production' || process.env.VALIDATE_ENV === 'true') {
+// Auto-initialize only when explicitly requested (not during build)
+if (process.env.VALIDATE_ENV === 'true') {
   initializeEnvironment();
 }
