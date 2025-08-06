@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       success: true,
       method: isComprehensive ? 'comprehensive' : 'standard',
       count: productsArray.length,
-      products: productsArray.map(product => ({
+      products: productsArray.map((product: any) => ({
         id: product.id,
         name: product.name,
         slug: product.slug,
