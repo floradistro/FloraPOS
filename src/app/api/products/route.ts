@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         stock_status: stock_status as any || undefined
       })
       isComprehensive = true
-      console.log(`✅ Comprehensive endpoint returned ${products.length} products`)
+      console.log(`✅ Comprehensive endpoint returned ${products.products?.length || 0} products`)
     } catch (error) {
       console.log('⚠️ Comprehensive endpoint failed, using standard method:', error)
       products = await floraAPI.getProducts({
@@ -42,15 +42,18 @@ export async function GET(request: NextRequest) {
         per_page: per_page ? parseInt(per_page) : 50,
         stock_status: stock_status || undefined
       })
-      console.log(`✅ Standard endpoint returned ${products.length} products`)
+      console.log(`✅ Standard endpoint returned ${products.products?.length || 0} products`)
     }
+    
+    // Extract products array from response
+    const productsArray = products.products || products
     
     // Return products with metadata
     return NextResponse.json({
       success: true,
       method: isComprehensive ? 'comprehensive' : 'standard',
-      count: products.length,
-      products: products.map(product => ({
+      count: productsArray.length,
+      products: productsArray.map(product => ({
         id: product.id,
         name: product.name,
         slug: product.slug,

@@ -51,13 +51,13 @@ export function ACFFieldsDisplay({ productId, productName }: ACFFieldsDisplayPro
         )
       
       case 'image':
-        if (field.value?.url) {
+        if (field.value && typeof field.value === 'object' && 'url' in field.value) {
           return (
             <div className="flex items-center gap-2">
               <div className="relative w-12 h-12 rounded overflow-hidden bg-white/[0.05]">
                 <Image
-                  src={field.value.url}
-                  alt={field.value.alt || field.label}
+                  src={(field.value as any).url}
+                  alt={(field.value as any).alt || field.label}
                   fill
                   className="object-cover"
                 />
