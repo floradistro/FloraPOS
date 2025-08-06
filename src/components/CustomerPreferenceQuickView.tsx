@@ -29,11 +29,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   'custom': 'Custom'
 }
 
-const CATEGORY_ICONS: Record<string, { icon: string; color: string; bgColor: string }> = {
-  'strain_preference': Leaf,
-  'consumption_method': Zap,
-  'potency_level': AlertCircle,
-  'flavor_profile': Heart,
+const CATEGORY_ICONS: Record<string, { icon: any; color: string; bgColor: string }> = {
+  'strain_preference': { icon: Leaf, color: 'text-green-400', bgColor: 'bg-green-500/10' },
+  'consumption_method': { icon: Zap, color: 'text-yellow-400', bgColor: 'bg-yellow-500/10' },
+  'potency_level': { icon: AlertCircle, color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
+  'flavor_profile': { icon: Heart, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
   'effect_preference': Star,
   'price_range': Tag,
   'brand_preference': Tag,

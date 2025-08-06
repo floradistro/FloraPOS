@@ -517,8 +517,10 @@ export function Cart({
         per_page: 50
       })
       
-      console.log('📋 Found existing customers:', existingCustomers.length)
-      existingCustomers.forEach((customer, index) => {
+      console.log('📋 Found existing customers:', existingCustomers.customers?.length || 0)
+      
+      const customersArray = existingCustomers.customers || []
+      customersArray.forEach((customer: any, index: number) => {
         console.log(`Customer ${index + 1}:`, {
           id: customer.id,
           name: `${customer.first_name} ${customer.last_name}`,
@@ -528,8 +530,8 @@ export function Cart({
       
       // Try to find exact match by name (more flexible matching)
       let matchedCustomer = null
-      if (existingCustomers.length > 0) {
-        matchedCustomer = existingCustomers.find(customer => {
+      if (customersArray.length > 0) {
+        matchedCustomer = customersArray.find((customer: any) => {
           const customerName = `${customer.first_name} ${customer.last_name}`.trim().toLowerCase()
           const scannedName = searchQuery.toLowerCase()
           console.log('🔍 Comparing:', { customerName, scannedName })
@@ -538,7 +540,7 @@ export function Cart({
         
         // If no exact match, try partial matching
         if (!matchedCustomer) {
-          matchedCustomer = existingCustomers.find(customer => {
+          matchedCustomer = customersArray.find((customer: any) => {
             const customerFirstName = customer.first_name?.toLowerCase() || ''
             const customerLastName = customer.last_name?.toLowerCase() || ''
             const scannedFirstName = firstName.toLowerCase()
