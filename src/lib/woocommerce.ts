@@ -1,18 +1,20 @@
 // Flora POS API - Optimized for Addify Multi-Location Inventory & POS Plugins
-// Base configuration
-const API_BASE = process.env.NEXT_PUBLIC_WORDPRESS_URL
-const WC_CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY
-const WC_CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET
+// Base configuration with fallback values for build time
+const API_BASE = process.env.NEXT_PUBLIC_WORDPRESS_URL || 'https://api.floradistro.com'
+const WC_CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY || ''
+const WC_CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET || ''
 
-// Validate required environment variables
-if (!API_BASE) {
-  throw new Error('NEXT_PUBLIC_WORDPRESS_URL environment variable is required')
-}
-if (!WC_CONSUMER_KEY) {
-  throw new Error('NEXT_PUBLIC_WC_CONSUMER_KEY environment variable is required')
-}
-if (!WC_CONSUMER_SECRET) {
-  throw new Error('NEXT_PUBLIC_WC_CONSUMER_SECRET environment variable is required')
+// Runtime validation function - only validate when actually making API calls
+function validateApiConfig() {
+  if (!process.env.NEXT_PUBLIC_WORDPRESS_URL) {
+    console.warn('⚠️ NEXT_PUBLIC_WORDPRESS_URL not set, using default: https://api.floradistro.com')
+  }
+  if (!process.env.NEXT_PUBLIC_WC_CONSUMER_KEY) {
+    throw new Error('NEXT_PUBLIC_WC_CONSUMER_KEY environment variable is required for API calls')
+  }
+  if (!process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET) {
+    throw new Error('NEXT_PUBLIC_WC_CONSUMER_SECRET environment variable is required for API calls')
+  }
 }
 
 // API Endpoints
@@ -254,13 +256,23 @@ async function handleResponse<T>(response: Response): Promise<T> {
 // Main API class
 export class FloraAPI {
   private baseUrl: string
+  private isValidated: boolean = false
   
   constructor() {
     this.baseUrl = API_BASE || ''
   }
 
+  private ensureValidConfig() {
+    if (!this.isValidated && typeof window !== 'undefined') {
+      // Only validate in browser/runtime, not during build
+      validateApiConfig()
+      this.isValidated = true
+    }
+  }
+
   // Authentication - Uses Addify MLI plugin
   async login(email: string, password: string, storeId: string, terminalId: string): Promise<AuthResponse> {
+    this.ensureValidConfig()
     try {
       const response = await fetch(`${this.baseUrl}${ENDPOINTS.ADDIFY_AUTH}`, {
         method: 'POST',
@@ -306,6 +318,7 @@ export class FloraAPI {
 
   // Get all available stores - Uses Addify MLI plugin
   async getStores(): Promise<FloraStore[]> {
+    this.ensureValidConfig()
     try {
       const response = await fetch(`${this.baseUrl}${ENDPOINTS.ADDIFY_STORES}`, {
         method: 'GET',
@@ -330,6 +343,7 @@ export class FloraAPI {
     page?: number
     stock_status?: 'all' | 'in_stock' | 'out_of_stock' | 'low_stock'
   } = {}): Promise<{ products: FloraProduct[]; total: number; hasMore: boolean }> {
+    this.ensureValidConfig()
     try {
       console.log('🚀 Using NEW comprehensive products endpoint...')
       
@@ -413,6 +427,7 @@ export class FloraAPI {
     page?: number
     stock_status?: string
   } = {}): Promise<{ products: FloraProduct[]; total: number; hasMore: boolean }> {
+    this.ensureValidConfig()
     try {
       // Build WooCommerce query parameters
       const searchParams = new URLSearchParams()
@@ -636,6 +651,7 @@ export class FloraAPI {
 
   // Get product categories
   async getCategories(): Promise<Array<{ id: number; name: string; slug: string }>> {
+    this.ensureValidConfig()
     try {
       const response = await fetch(`${this.baseUrl}/wp-json/wc/v3/products/categories`, {
         headers: {
@@ -657,6 +673,7 @@ export class FloraAPI {
     per_page?: number
     page?: number
   } = {}): Promise<{ customers: FloraCustomer[]; total: number; hasMore: boolean }> {
+    this.ensureValidConfig()
     try {
       const searchParams = new URLSearchParams()
       if (params.search) searchParams.set('search', params.search)
