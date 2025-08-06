@@ -25,13 +25,28 @@ export async function GET(request: NextRequest) {
     
     try {
       console.log('🚀 Attempting comprehensive endpoint...')
-      products = await floraAPI.getProductsComprehensive({
+      
+      // For production, use proxy to bypass CORS
+      if (process.env.NODE_ENV === 'production') {
+        const proxyUrl = new URL('/api/proxy/products', process.env.NEXT_PUBLIC_APP_URL || 'https://flora-pos-rhox.vercel.app')
+        if (storeId) proxyUrl.searchParams.set('store_id', storeId)
+        if (category) proxyUrl.searchParams.set('category', category)
+        if (search) proxyUrl.searchParams.set('search', search)
+        if (per_page) proxyUrl.searchParams.set('per_page', per_page)
+        if (stock_status) proxyUrl.searchParams.set('stock_status', stock_status)
+        
+        const response = await fetch(proxyUrl.toString())
+        products = await response.json()
+      } else {
+        // For development, use direct API
+        products = await floraAPI.getProductsComprehensive({
         storeId: storeId || undefined,
         category: category || undefined,
         search: search || undefined,
         per_page: per_page ? parseInt(per_page) : 50,
         stock_status: stock_status as any || undefined
-      })
+        })
+      }
       isComprehensive = true
       // Fixed: products is an object with { products: [], total: number, hasMore: boolean }
       const productCount = products?.products?.length || 0
