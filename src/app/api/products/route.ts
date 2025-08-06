@@ -3,7 +3,7 @@ import { floraAPI } from '../../../lib/woocommerce'
 
 export async function GET(request: NextRequest) {
   try {
-    // Force rebuild - v2
+    // Force rebuild - v3 - Fix TypeScript error
     const searchParams = request.nextUrl.searchParams
     const storeId = searchParams.get('store_id')
     const category = searchParams.get('category')
@@ -33,7 +33,9 @@ export async function GET(request: NextRequest) {
         stock_status: stock_status as any || undefined
       })
       isComprehensive = true
-      console.log(`✅ Comprehensive endpoint returned ${products.products?.length || 0} products`)
+      // Fixed: products is an object with { products: [], total: number, hasMore: boolean }
+      const productCount = products?.products?.length || 0
+      console.log(`✅ Comprehensive endpoint returned ${productCount} products`)
     } catch (error) {
       console.log('⚠️ Comprehensive endpoint failed, using standard method:', error)
       products = await floraAPI.getProducts({
@@ -43,7 +45,8 @@ export async function GET(request: NextRequest) {
         per_page: per_page ? parseInt(per_page) : 50,
         stock_status: stock_status || undefined
       })
-      console.log(`✅ Standard endpoint returned ${products.products?.length || 0} products`)
+      const standardProductCount = products?.products?.length || 0
+      console.log(`✅ Standard endpoint returned ${standardProductCount} products`)
     }
     
     // Extract products array from response
