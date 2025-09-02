@@ -145,7 +145,11 @@ export default function HomePage() {
     if (result.success && result.cartItem) {
       setCartItems(items => CartService.mergeCartItem(items, result.cartItem!));
     } else {
-      showToast(result.error || 'Failed to add item to cart', 'error');
+      setAlertModal({
+        isOpen: true,
+        title: 'Add to Cart Error',
+        message: result.error || 'Failed to add item to cart'
+      });
       if (process.env.NODE_ENV === 'development') {
         console.error('Error adding item to cart:', result.error);
       }
@@ -292,7 +296,11 @@ export default function HomePage() {
         }
       }
     } catch (error) {
-      showToast('Failed to refresh. Please try again.', 'error');
+      setAlertModal({
+        isOpen: true,
+        title: 'Refresh Error',
+        message: 'Failed to refresh. Please try again.'
+      });
     } finally {
       setIsRefreshing(false);
     }
@@ -436,8 +444,12 @@ export default function HomePage() {
     // Clear selected customer for next order
     setSelectedCustomer(null);
     
-    // Show success toast immediately
-    showToast('Order completed successfully!', 'success');
+    // Show success alert immediately
+    setAlertModal({
+      isOpen: true,
+      title: 'Order Complete',
+      message: 'Order completed successfully!'
+    });
   };
 
   const handleCloseCheckout = () => {
