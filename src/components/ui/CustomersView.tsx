@@ -713,7 +713,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
         <div className="w-full">
           {/* Table Header */}
           <div className="sticky top-0 bg-neutral-900 backdrop-blur border-b border-white/[0.08] px-6 py-3 z-10">
-            <div className="flex items-center gap-3 text-xs font-medium text-neutral-400 relative">
+                         <div className="flex items-center gap-3 text-xs md:text-sm font-medium text-neutral-400 relative">
               <div className="w-6"></div> {/* Space for expand icon */}
               {columns.find(c => c.id === 'customer')?.visible && (
                 <div className="flex-1">Customer</div>
@@ -802,15 +802,20 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
           {users.map((user) => (
             <div
               key={user.id}
-              className={`group transition-all mb-2 rounded-lg border-b border-white/[0.02] ${
+              className={`group mb-2 rounded-lg border-b border-white/[0.02] relative overflow-hidden ${
                 selectedUsers.has(user.id)
                   ? 'bg-neutral-800/50 hover:bg-neutral-800/70 border-l-4 border-l-neutral-400'
                   : 'bg-neutral-900/40 hover:bg-neutral-800/60'
-              }`}
+              } ${expandedCards.has(user.id) ? 'h-[calc(100vh-200px)] min-h-[600px]' : 'h-auto'}`}
+              style={{
+                transition: 'height 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease',
+                willChange: expandedCards.has(user.id) ? 'height' : 'auto'
+              }}
             >
               {/* Customer Row - Single Line */}
               <div 
-                className="flex items-center gap-3 px-6 py-3 cursor-pointer select-none"
+                className="flex items-center gap-3 px-6 py-3 cursor-pointer select-none relative bg-inherit"
+                style={{ zIndex: 2 }}
                 onClick={(e) => {
                   const target = e.target as HTMLElement;
                   const isButton = target.closest('button');
@@ -848,46 +853,46 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                 {/* Customer Name */}
                 {columns.find(c => c.id === 'customer')?.visible && (
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-neutral-300 text-sm">
-                      {user.display_name || user.name || user.username}
-                    </div>
-                    <div className="text-xs text-neutral-500">
-                      ID: {user.id}
-                    </div>
+                                         <div className="font-medium text-neutral-300 text-sm md:text-base">
+                        {user.display_name || user.name || user.username}
+                      </div>
+                     <div className="text-xs md:text-sm text-neutral-500">
+                        ID: {user.id}
+                      </div>
                   </div>
                 )}
 
                 {/* Email */}
                 {columns.find(c => c.id === 'email')?.visible && (
-                  <div className="w-64 text-neutral-400 text-sm truncate">
+                  <div className="w-64 text-neutral-400 text-sm md:text-base truncate">
                     {user.email}
                   </div>
                 )}
 
                 {/* Joined Date */}
                 {columns.find(c => c.id === 'joined')?.visible && (
-                  <div className="w-40 text-neutral-500 text-xs">
+                  <div className="w-40 text-neutral-500 text-xs md:text-sm">
                     {new Date().toLocaleDateString()}
                   </div>
                 )}
 
                 {/* Total Orders */}
                 {columns.find(c => c.id === 'orders')?.visible && (
-                  <div className="w-32 text-neutral-500 text-xs">
+                  <div className="w-32 text-neutral-500 text-xs md:text-sm">
                     0 orders
                   </div>
                 )}
 
                 {/* Total Spent */}
                 {columns.find(c => c.id === 'spent')?.visible && (
-                  <div className="w-32 text-neutral-500 text-xs">
+                  <div className="w-32 text-neutral-500 text-xs md:text-sm">
                     $0.00
                   </div>
                 )}
 
                 {/* Last Order */}
                 {columns.find(c => c.id === 'lastOrder')?.visible && (
-                  <div className="w-40 text-neutral-500 text-xs">
+                  <div className="w-40 text-neutral-500 text-xs md:text-sm">
                     Never
                   </div>
                 )}
@@ -895,7 +900,16 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
               {/* Expanded View */}
               {expandedCards.has(user.id) && (
-                <div className="mx-6 mb-2 rounded p-4 bg-neutral-800/30 hover:bg-neutral-800/50 row-hover border-t border-white/[0.02]">
+                <div 
+                  className="absolute inset-x-0 top-[60px] bottom-0 bg-neutral-800/30 hover:bg-neutral-800/50 border-t border-white/[0.02] overflow-y-auto p-4"
+                  style={{
+                    animation: 'expandTopDown 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards',
+                    transformOrigin: 'top',
+                    transform: 'scaleY(0)',
+                    willChange: 'transform',
+                    zIndex: 1
+                  }}
+                >
                   {/* Tab Controls */}
                   <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/[0.08]">
                     <div className="flex items-center gap-2">
@@ -903,7 +917,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         onClick={() => setCustomerTab(user.id, 'contact')}
                         size="sm"
                         variant={activeCustomerTab[user.id] === 'contact' ? 'primary' : 'ghost'}
-                        className="text-xs"
+                        className="text-xs md:text-sm"
                       >
                         Details
                       </Button>
@@ -911,7 +925,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         onClick={() => setCustomerTab(user.id, 'rewards')}
                         size="sm"
                         variant={activeCustomerTab[user.id] === 'rewards' ? 'primary' : 'ghost'}
-                        className="text-xs"
+                        className="text-xs md:text-sm"
                       >
                         Rewards
                       </Button>
@@ -919,7 +933,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         onClick={() => setCustomerTab(user.id, 'orders')}
                         size="sm"
                         variant={activeCustomerTab[user.id] === 'orders' ? 'primary' : 'ghost'}
-                        className="text-xs"
+                        className="text-xs md:text-sm"
                       >
                         Order History
                       </Button>
@@ -927,7 +941,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         onClick={() => setCustomerTab(user.id, 'preferences')}
                         size="sm"
                         variant={activeCustomerTab[user.id] === 'preferences' ? 'primary' : 'ghost'}
-                        className="text-xs"
+                        className="text-xs md:text-sm"
                       >
                         Preferences
                       </Button>
@@ -941,7 +955,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                             onClick={saveUser}
                             disabled={saving}
                             size="sm"
-                            className="text-xs"
+                            className="text-xs md:text-sm"
                           >
                             {saving ? 'Saving...' : 'Save'}
                           </Button>
@@ -950,7 +964,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                             variant="ghost"
                             disabled={saving}
                             size="sm"
-                            className="text-xs"
+                            className="text-xs md:text-sm"
                           >
                             Cancel
                           </Button>
@@ -960,7 +974,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                           <Button
                             onClick={() => startEditing(user)}
                             size="sm"
-                            className="text-xs"
+                            className="text-xs md:text-sm"
                           >
                             Edit
                           </Button>
@@ -968,7 +982,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                             onClick={() => deleteCustomer(user.id)}
                             variant="danger"
                             size="sm"
-                            className="text-xs"
+                            className="text-xs md:text-sm"
                           >
                             Delete
                           </Button>
@@ -984,7 +998,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                       <>
                         {/* Contact Information */}
                         <div className="space-y-2">
-                          <div className="text-neutral-500 font-medium text-xs mb-2">
+                          <div className="text-neutral-500 font-medium text-xs md:text-sm mb-2">
                             Contact Information
                           </div>
                           {editingUser === user.id ? (

@@ -18,7 +18,7 @@ export const SimpleRewardsView: React.FC<SimpleRewardsViewProps> = ({
   const { data: balance } = useUserPointsBalance(userId);
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full h-full flex flex-col space-y-4">
       {/* Points Balance & Adjustment */}
       <div className={`grid gap-4 ${isAdmin ? 'grid-cols-2' : 'grid-cols-1'}`}>
         <div>
@@ -39,10 +39,10 @@ export const SimpleRewardsView: React.FC<SimpleRewardsViewProps> = ({
       </div>
 
       {/* Points History */}
-      <div>
+      <div className="flex-1 flex flex-col min-h-0">
         <h3 className="text-neutral-400 font-medium text-xs mb-2">Points History</h3>
-        <div className="bg-neutral-900/40 rounded overflow-hidden">
-          <div className="h-96">
+        <div className="bg-neutral-900/40 rounded overflow-hidden flex-1 flex flex-col">
+          <div className="flex-1 min-h-0">
             <PointsHistory userId={userId} initialPerPage={20} />
           </div>
         </div>

@@ -191,7 +191,7 @@ export const EnhancedCustomerOrderHistory: React.FC<EnhancedCustomerOrderHistory
   }
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full h-full flex flex-col space-y-4">
       {/* Customer Order Stats */}
       <div>
         <h3 className="text-neutral-400 font-medium text-xs mb-2">Order & Transaction Stats</h3>
@@ -199,7 +199,7 @@ export const EnhancedCustomerOrderHistory: React.FC<EnhancedCustomerOrderHistory
       </div>
 
       {/* Order History */}
-      <div>
+      <div className="flex-1 flex flex-col min-h-0">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-neutral-400 font-medium text-xs">Order History</h3>
           <div className="text-xs text-neutral-500">
@@ -207,8 +207,8 @@ export const EnhancedCustomerOrderHistory: React.FC<EnhancedCustomerOrderHistory
           </div>
         </div>
         
-        <div className="bg-neutral-900/40 rounded overflow-hidden">
-          <div className="h-96 overflow-y-auto scrollable-container" ref={scrollRef} onScroll={handleScroll}>
+        <div className="bg-neutral-900/40 rounded overflow-hidden flex-1 flex flex-col">
+          <div className="flex-1 min-h-0 overflow-y-auto scrollable-container" ref={scrollRef} onScroll={handleScroll}>
             {!isLoading && allOrders.length === 0 ? (
               <div className="text-center py-8">
                 <svg className="w-8 h-8 mx-auto mb-2 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

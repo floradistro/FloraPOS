@@ -51,7 +51,7 @@ export function SearchInput({
         placeholder={placeholder}
         value={internalValue}
         onChange={handleChange}
-        className={`w-full pl-10 pr-3 py-1 bg-neutral-800/80 hover:bg-neutral-700/80 rounded text-neutral-200 placeholder-neutral-400 focus:bg-neutral-700/80 focus:outline-none text-sm text-center placeholder:text-center ${className}`}
+        className={`w-full pl-10 pr-3 py-1 bg-neutral-800/80 hover:bg-neutral-700/80 rounded text-neutral-200 placeholder-neutral-400 focus:bg-neutral-700/80 focus:outline-none text-sm md:text-base text-center placeholder:text-center ${className}`}
       />
     </div>
   );

@@ -199,20 +199,59 @@ html, body {
   height: 100%;
 }
 
+/* Customer card expansion animations */
+@keyframes expandTopDown {
+  0% {
+    transform: scaleY(0);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+/* Enhanced row hover effects for customer cards */
+.row-hover {
+  transition: background-color 0.15s ease;
+}
+
+.row-hover:hover {
+  /* No transform or box-shadow to reduce lag */
+}
+
+/* Tab content fade-in animation */
+.tab-content-enter {
+  animation: tabFadeIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes tabFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Disable animations for users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .smooth-hover,
   .card-hover,
   .button-hover,
-  .vscode-button-hover {
+  .vscode-button-hover,
+  .row-hover,
+  .tab-content-enter {
     transition: none !important;
     transform: none !important;
     will-change: auto !important;
+    animation: none !important;
   }
   
   .card-hover:hover,
   .button-hover:hover,
-  .vscode-button-hover:hover {
+  .vscode-button-hover:hover,
+  .row-hover:hover {
     transform: none !important;
   }
 
@@ -222,5 +261,13 @@ html, body {
     animation: none !important;
     transform: none !important;
     opacity: 0.3 !important;
+  }
+
+  /* Disable customer card animations */
+  [style*="expandIn"],
+  [style*="expandOut"] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
