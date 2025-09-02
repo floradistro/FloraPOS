@@ -8,7 +8,7 @@ import { WordPressUser } from '../../services/users-service';
 import { CartItem, PaymentMethod, TaxRate } from '../../types';
 import { LOCATION_MAPPINGS } from '../../constants';
 import { PaymentMethodSelector, OrderSummary } from './checkout';
-import { AlertModal, useToast } from './';
+import { AlertModal } from './';
 import { ReloadDebugger } from '../../lib/debug-reload';
 import { InventoryDeductionService } from '../../services/inventory-deduction-service';
 import { ProductMappingService } from '../../services/product-mapping-service';
@@ -65,7 +65,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
     title: string;
     message: string;
   }>({ isOpen: false, title: '', message: '' });
-  const { showToast, ToastContainer } = useToast();
+
 
   // Calculate totals
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -147,7 +147,6 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         
         if (!wooCommerceProductId) {
           console.error(`❌ Failed to map product "${item.name}" to WooCommerce - points may not be awarded!`);
-          alert(`⚠️ Product mapping failed for "${item.name}" - points may not be awarded!`);
         } else {
           console.log(`✅ Successfully mapped "${item.name}" to WooCommerce product ID ${wooCommerceProductId}`);
         }
@@ -350,7 +349,6 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       ReloadDebugger.logApiCall('/api/orders', 'POST');
       
       console.log('🔍 [DEBUG v2.3] Order data being sent:', JSON.stringify(orderData, null, 2));
-      alert('🔍 [v2.3] QUANTITY FIX: About to send order data!');
       
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -639,8 +637,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         message={alertModal.message}
       />
       
-      {/* Toast Container */}
-      <ToastContainer />
+
     </div>
   );
 });

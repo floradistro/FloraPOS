@@ -14,5 +14,5 @@ export { QuantitySelector } from './QuantitySelector';
 export { LoadingSpinner } from './LoadingSpinner';
 export { AnimatedLogo } from './AnimatedLogo';
 export { Modal, ConfirmModal, AlertModal } from './Modal';
-export { Toast, useToast } from './Toast';
+
 export { WarningMessages } from './WarningMessages';

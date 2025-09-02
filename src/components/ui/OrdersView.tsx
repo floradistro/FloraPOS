@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { IconButton } from './IconButton';
 import { Button } from './Button';
 import { OrdersGridHeader } from './OrdersGridHeader';
-import { ConfirmModal, useToast, LoadingSpinner } from './';
+import { ConfirmModal, LoadingSpinner } from './';
 import { useAuth } from '../../contexts/AuthContext';
 
 export interface WooCommerceOrder {
@@ -131,7 +131,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
     onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   
-  const { showToast, ToastContainer } = useToast();
+
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   
   const { user } = useAuth();
@@ -1191,8 +1191,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
         confirmText="Delete"
       />
       
-      {/* Toast Container */}
-      <ToastContainer />
+
     </div>
   );
 });

@@ -41,69 +41,10 @@ export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration
   }
 };
 
-// Notify user about service worker update
+// Service worker update notification disabled
 const notifyUserAboutUpdate = (registration: ServiceWorkerRegistration) => {
-  // Create a more professional update notification instead of browser confirm
-  const notification = document.createElement('div');
-  notification.innerHTML = `
-    <div style="
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #1f2937;
-      border: 1px solid #374151;
-      border-radius: 8px;
-      padding: 16px;
-      color: white;
-      z-index: 10000;
-      max-width: 300px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-    ">
-      <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: 500;">New Version Available</p>
-      <p style="margin: 0 0 16px 0; font-size: 12px; color: #9ca3af;">A new version of the app is ready. Reload to get the latest features and improvements.</p>
-      <div style="display: flex; gap: 8px; justify-content: flex-end;">
-        <button id="dismiss-update" style="
-          background: transparent;
-          border: 1px solid #374151;
-          color: #9ca3af;
-          padding: 6px 12px;
-          border-radius: 4px;
-          font-size: 12px;
-          cursor: pointer;
-        ">Later</button>
-        <button id="reload-update" style="
-          background: #3b82f6;
-          border: 1px solid #3b82f6;
-          color: white;
-          padding: 6px 12px;
-          border-radius: 4px;
-          font-size: 12px;
-          cursor: pointer;
-        ">Reload Now</button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(notification);
-  
-  const dismissBtn = notification.querySelector('#dismiss-update');
-  const reloadBtn = notification.querySelector('#reload-update');
-  
-  dismissBtn?.addEventListener('click', () => {
-    document.body.removeChild(notification);
-  });
-  
-  reloadBtn?.addEventListener('click', () => {
-    registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-    window.location.reload();
-  });
-  
-  // Auto-dismiss after 10 seconds
-  setTimeout(() => {
-    if (document.body.contains(notification)) {
-      document.body.removeChild(notification);
-    }
-  }, 10000);
+  // Browser messages disabled - no notification shown
+  console.log('Service worker update available but notification disabled');
 };
 
 // Unregister service worker (for development)

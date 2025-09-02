@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { WordPressUser, usersService } from '../../services/users-service';
-import { Button, IconButton, AlertModal, ConfirmModal, useToast, LoadingSpinner } from '../ui';
+import { Button, IconButton, AlertModal, ConfirmModal, LoadingSpinner } from '../ui';
 import { SimpleRewardsView, EnhancedCustomerOrderHistory } from './rewards';
 
 interface CustomersViewProps {
@@ -154,7 +154,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
     onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   
-  const { showToast, ToastContainer } = useToast();
+
 
   // Column configuration
   const [columns, setColumns] = useState<ColumnConfig[]>([
@@ -498,7 +498,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
         throw new Error(errorData.error || 'Failed to send password reset');
       }
 
-      showToast('Password reset link sent successfully!', 'success');
+      // Password reset sent successfully
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send password reset');
     }
@@ -1473,8 +1473,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
         confirmText="Delete"
       />
       
-      {/* Toast Container */}
-      <ToastContainer />
+
     </div>
   );
 });

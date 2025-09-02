@@ -41,7 +41,7 @@ import { Category } from '../components/ui/CategoryFilter';
 import { CategoriesService } from '../services/categories-service';
 import { CartService } from '../services/cart-service';
 import { ReloadDebugger } from '../lib/debug-reload';
-import { AlertModal, useToast } from '../components/ui';
+import { AlertModal } from '../components/ui';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function HomePage() {
@@ -81,7 +81,7 @@ export default function HomePage() {
     title: string;
     message: string;
   }>({ isOpen: false, title: '', message: '' });
-  const { showToast, ToastContainer } = useToast();
+
   const productGridRef = useRef<{ refreshInventory: () => Promise<void> }>(null);
   const customersViewRef = useRef<any>(null);
   const ordersViewRef = useRef<any>(null);
@@ -675,8 +675,7 @@ export default function HomePage() {
         message={alertModal.message}
       />
       
-      {/* Toast Container */}
-      <ToastContainer />
+
     </div>
   );
 }
