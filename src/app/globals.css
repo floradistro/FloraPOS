@@ -2,933 +2,225 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import highlight.js theme for code syntax highlighting */
-@import 'highlight.js/styles/github-dark.css';
-
-/* Typing cursor animation */
-@keyframes blink {
-  0% { opacity: 1; }
-  50% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-.typing-cursor {
-  display: inline-block;
-  width: 2px;
-  height: 1em;
-  background-color: #60a5fa;
-  animation: blink 1s infinite;
-  vertical-align: text-bottom;
-  margin-left: 2px;
-}
-
-/* Clean fade-in animation for tool status */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(2px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* VSCode-style animated dots for loading states only */
-@keyframes dots {
-  0% { content: ''; }
-  25% { content: '.'; }
-  50% { content: '..'; } 
-  75% { content: '...'; }
-  100% { content: ''; }
-}
-
-/* Animate loading states */
-.animate-dots::after {
-  content: '';
-  animation: dots 1.5s ease-in-out infinite;
-}
-
-/* Siri Glow Border Animations - Locks to viewport edge OVER status bar */
-@keyframes siriGlow {
-  0%, 100% {
-    opacity: 0.9;
-    filter: hue-rotate(0deg) brightness(1.3) saturate(1.5);
-    transform: translateZ(0) scale(1);
-  }
-  25% {
-    opacity: 1;
-    filter: hue-rotate(90deg) brightness(1.6) saturate(1.8);
-    transform: translateZ(0) scale(1.002);
-  }
-  50% {
-    opacity: 0.95;
-    filter: hue-rotate(180deg) brightness(1.4) saturate(1.6);
-    transform: translateZ(0) scale(1.001);
-  }
-  75% {
-    opacity: 1;
-    filter: hue-rotate(270deg) brightness(1.5) saturate(1.7);
-    transform: translateZ(0) scale(1.002);
-  }
-}
-
-@keyframes idleGlow {
-  0%, 100% {
-    opacity: 0.15;
-    transform: translateZ(0) scale(1);
-  }
-  50% {
-    opacity: 0.25;
-    transform: translateZ(0) scale(1.001);
-  }
-}
-
-/* DonGraffiti Font */
-@font-face {
-  font-family: 'DonGraffiti';
-  src: url('/DonGraffiti.otf') format('opentype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-
-
-
-
-
-
-/* iOS PWA optimizations - Handle safe areas properly */
-@supports (-webkit-touch-callout: none) {
-  /* iOS specific viewport setup */
-  html {
-    height: 100vh !important;
-    height: 100dvh !important;
-    overflow: hidden !important;
-  }
-  
-  /* Let app content handle safe areas with padding instead of positioning */
-  body {
-    height: 100vh !important;
-    height: 100dvh !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow: hidden !important;
-  }
-}
-
-/* Full screen PWA mode - Black status bar, no bottom gap */
-@media (display-mode: standalone) {
-  html, body {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    height: 100vh !important;
-    height: 100dvh !important;
-    width: 100vw !important;
-    overflow: hidden !important;
-    background: #000000 !important; /* Pure black for iOS status bar */
-    overscroll-behavior: none !important;
-  }
-  
-  /* App content in PWA mode with black status bar */
-  .app-content-container {
-    /* Black status bar means content has padding for status bar */
-    padding-top: env(safe-area-inset-top, 44px) !important; /* iOS status bar height */
-    padding-bottom: 0px !important; /* Zero bottom padding - no gap */
-    padding-left: env(safe-area-inset-left, 0px) !important;
-    padding-right: env(safe-area-inset-right, 0px) !important;
-    /* Normal viewport height */
-    height: 100vh !important;
-    height: 100dvh !important;
-    overflow: hidden !important;
-    overscroll-behavior: none !important;
-  }
-}
-
-/* Webkit specific optimizations */
-@media screen and (-webkit-min-device-pixel-ratio: 2) {
-  html {
-    -webkit-text-size-adjust: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-  
-  /* Allow safe area positioning - DO NOT force to top */
-  body {
-    /* Remove forced positioning that breaks iOS PWA */
-    /* Let the app handle safe areas properly */
-  }
-}
-
-
-
-/* Safe area insets for devices with notches/rounded corners */
-@supports (padding: max(0px)) {
-  .safe-area-inset-top {
-    padding-top: max(env(safe-area-inset-top), 0px);
-  }
-  
-  .safe-area-inset-bottom {
-    padding-bottom: max(env(safe-area-inset-bottom), 0px);
-  }
-  
-  .safe-area-inset-left {
-    padding-left: max(env(safe-area-inset-left), 0px);
-  }
-  
-  .safe-area-inset-right {
-    padding-right: max(env(safe-area-inset-right), 0px);
-  }
-  
-  .safe-area-insets {
-    padding-top: max(env(safe-area-inset-top), 0px);
-    padding-bottom: max(env(safe-area-inset-bottom), 0px);
-    padding-left: max(env(safe-area-inset-left), 0px);
-    padding-right: max(env(safe-area-inset-right), 0px);
-  }
-}
-
-/* App container - Content stays UNDER status bar, zero bottom padding */
-.app-content-container {
-  /* Content respects safe areas and stays under status bar */
-  padding-top: env(safe-area-inset-top, 44px) !important; /* iOS status bar height */
-  padding-bottom: 0px !important; /* Zero bottom padding - no gap */
-  padding-left: env(safe-area-inset-left, 0px) !important;
-  padding-right: env(safe-area-inset-right, 0px) !important;
-  box-sizing: border-box;
-  /* Ensure content is below Siri ring */
-  position: relative;
-  z-index: 1;
-  /* Normal viewport height */
-  height: 100vh !important;
-  height: 100dvh !important;
-  overflow: hidden !important;
-}
-
-/* iPad specific styling */
-@media (max-width: 1024px) and (orientation: landscape) {
-  .app-content-container {
-    border-radius: 20px;
-    overflow: hidden;
-  }
-}
-
-@media (max-width: 834px) and (orientation: portrait) {
-  .app-content-container {
-    border-radius: 20px;
-    overflow: hidden;
-  }
-}
-
-
-
-/* VSCode Dark Theme CSS Custom Properties */
 :root {
-  --color-primary-bg: #1E1E1E;
-  --color-secondary-bg: #252526;
-  --color-tertiary-bg: #2D2D30;
-  --color-sidebar-bg: #333333;
-  --color-panel-bg: #3C3C3C;
-  --color-dark-bg: #181818;
-  --color-overlay-bg: #2D2D30;
-  --color-text-primary: #CCCCCC;
-  --color-text-secondary: #969696;
-  --color-text-muted: #6A6A6A;
-  --color-border-light: #3E3E3E;
-  --color-border-default: #454545;
-  --color-border-hover: #5A5A5A;
-  --color-accent: #F14C4C;
-  --color-accent-hover: #FF6B6B;
-  --color-accent-dark: #D32F2F;
-  --cannabis-sage: #87A96B;
+  --background: #0f0f0f;
+  --foreground: #ededed;
 }
 
-@layer base {
-  /* Mobile-First Performance Optimizations */
-  * {
-    -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  html {
-    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-  
-  body {
-    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    background-color: var(--color-primary-bg);
-    color: var(--color-text-primary);
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
-    /* Hide browser UI on mobile */
-    -webkit-user-select: none;
-    user-select: none;
-  }
-
-  /* Mobile touch targets - iPad optimized */
-  button,
-  a,
-  input,
-  select,
-  textarea {
-    touch-action: manipulation !important;
-    -webkit-touch-action: manipulation !important;
-    /* Prevent iOS zoom on input focus */
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  
-  /* Allow text selection only in inputs */
-  input,
-  textarea {
-    -webkit-user-select: text !important;
-    user-select: text !important;
-  }
-
-  /* Optimize images for mobile */
-  img {
-    content-visibility: auto;
-    contain-intrinsic-size: 400px;
-    max-width: 100%;
-    height: auto;
-  }
-}
-
-/* VSCode Dark Theme Typography Scales */
-.text-luxury-xs { 
-  font-size: 0.75rem; 
-  letter-spacing: 0.05em; 
-  font-weight: 300; 
-}
-
-.text-luxury-sm { 
-  font-size: 0.875rem; 
-  letter-spacing: 0.025em; 
-  font-weight: 300; 
-}
-
-.text-luxury-base { 
-  font-size: 1rem; 
-  letter-spacing: 0.015em; 
-  font-weight: 300; 
-}
-
-.text-luxury-lg { 
-  font-size: 1.125rem; 
-  letter-spacing: 0.01em; 
-  font-weight: 300; 
-}
-
-.text-luxury-xl { 
-  font-size: 1.25rem; 
-  letter-spacing: 0.005em; 
-  font-weight: 300; 
-}
-
-.text-luxury-2xl { 
-  font-size: 1.5rem; 
-  letter-spacing: 0em; 
-  font-weight: 200; 
-}
-
-.text-luxury-3xl { 
-  font-size: 1.875rem; 
-  letter-spacing: -0.005em; 
-  font-weight: 200; 
-}
-
-.text-luxury-4xl { 
-  font-size: 2.25rem; 
-  letter-spacing: -0.01em; 
-  font-weight: 200; 
-}
-
-/* Luxury Brand Spacing */
-.tracking-luxury-tight { letter-spacing: -0.025em; }
-.tracking-luxury-normal { letter-spacing: 0.015em; }
-.tracking-luxury-wide { letter-spacing: 0.05em; }
-.tracking-luxury-wider { letter-spacing: 0.1em; }
-
-/* Custom scrollbar to match product grid gaps and theme */
-::-webkit-scrollbar {
-  width: 2px; /* Match product grid gap width */
-  height: 0px; /* Disable horizontal scrollbar */
-}
-
-::-webkit-scrollbar-track {
-  background: transparent; /* Invisible track like dividers */
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1); /* Subtle white scroll indicator */
-  border-radius: 0px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15); /* Slightly brighter white on hover */
-}
-
-/* Completely hide horizontal scrollbars (except for code blocks) */
-:not(.code-block-scrollbar)::-webkit-scrollbar:horizontal {
-  display: none;
-}
-
-/* Code block scrollbar */
-.code-block-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #4b5563 transparent;
-}
-
-.code-block-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.code-block-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.code-block-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #4b5563;
-  border-radius: 4px;
-}
-
-.code-block-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: #6b7280;
-}
-
-/* Code block content styling */
-.code-block-scrollbar code {
-  display: block;
-  white-space: pre;
-  word-wrap: normal;
-  overflow-x: auto;
-}
-
-/* Markdown content scrollbar */
-.prose::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
-}
-
-.prose::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.prose::-webkit-scrollbar-thumb {
-  background-color: #4b5563;
-  border-radius: 4px;
-}
-
-.prose:hover::-webkit-scrollbar-thumb {
-  background-color: #6b7280;
-}
-
-/* Table scroll container */
-.table-scroll-container {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-  -webkit-overflow-scrolling: touch;
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
   position: relative;
-  display: block;
-  cursor: grab;
 }
 
-.table-scroll-container:active {
-  cursor: grabbing;
-}
-
-
-
-/* Remove margins that might break scrolling */
-.prose .table-scroll-container {
-  margin-left: -2rem;
-  margin-right: -2rem;
-  padding-left: 2rem;
-  padding-right: 2rem;
-  max-width: calc(100vw - 4rem);
-}
-
-/* Ensure parent containers don't restrict scrolling */
-.prose {
-  overflow: visible !important;
-}
-
-.prose:has(.table-scroll-container) {
-  overflow: visible !important;
-}
-
-/* Make sure markdown container allows overflow */
-.markdown-scroll-container:has(.table-scroll-container) {
-  overflow: visible !important;
-}
-
-/* Table styling for scrolling - REMOVED - see consolidated rule below */
-
-/* Ensure table cells don't wrap */
-.table-scroll-container td,
-.table-scroll-container th {
-  white-space: nowrap;
-}
-
-/* Table scrollbar styling */
-.table-scroll-container::-webkit-scrollbar {
-  height: 12px;
-  width: 12px;
-}
-
-.table-scroll-container::-webkit-scrollbar-track {
-  background: rgba(75, 85, 99, 0.1);
-  border-radius: 4px;
-}
-
-.table-scroll-container::-webkit-scrollbar-thumb {
-  background-color: #4b5563;
-  border-radius: 4px;
-}
-
-.table-scroll-container::-webkit-scrollbar-thumb:hover {
-  background-color: #6b7280;
-}
-
-/* Force scrollbar visibility on desktop */
-@media (min-width: 768px) {
-  .table-scroll-container {
-    scrollbar-width: thin;
-    scrollbar-color: #4b5563 rgba(75, 85, 99, 0.1);
-  }
-  
-  /* Always show horizontal scrollbar for tables */
-  .table-scroll-container::-webkit-scrollbar {
-    height: 14px !important;
-  }
-  
-  .table-scroll-container::-webkit-scrollbar-track {
-    background: rgba(75, 85, 99, 0.2) !important;
-  }
-}
-
-/* Visual indicator for scrollable tables */
-.table-scroll-container {
-  box-shadow: 
-    inset -10px 0 10px -10px rgba(0,0,0,0.4),
-    inset 10px 0 10px -10px rgba(0,0,0,0.4);
-}
-
-/* Debug - ensure table scrolls */
-.table-scroll-container table {
-  table-layout: auto !important;
-  width: max-content !important;
-  min-width: 100%;
-}
-
-/* Hint text for mouse users */
-.table-scroll-hint {
-  position: absolute;
-  top: -20px;
-  right: 0;
-  font-size: 11px;
-  color: #6b7280;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.table-scroll-container:hover .table-scroll-hint {
-  opacity: 1;
-}
-
-
-
-/* Allow horizontal scroll for wide content */
-.prose pre {
-  white-space: pre;
-  word-wrap: normal;
-}
-
-/* Markdown container horizontal scroll */
-.markdown-scroll-container {
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-}
-
-/* Force scrollbar visibility on hover for desktop */
-@media (min-width: 768px) {
-  .markdown-scroll-container:hover::-webkit-scrollbar {
-    height: 10px;
-  }
-}
-
-/* Ensure inline elements don't break layout on desktop */
-@media (min-width: 768px) {
-  .prose code {
-    white-space: nowrap;
-  }
-  
-  .prose {
-    overflow-wrap: normal;
-    word-break: normal;
-  }
-}
-
-/* Mobile-specific adjustments */
-@media (max-width: 767px) {
-  .prose code {
-    white-space: normal;
-    word-break: break-word;
-  }
-}
-
-/* Focus states with subtle red accent */
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-}
-
-/* Utility classes */
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-  
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  .gpu-accelerated {
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-
-  .smooth-transition {
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform, opacity;
-  }
-
-  .will-change-transform {
-    will-change: transform;
-  }
-
-  .will-change-opacity {
-    will-change: opacity;
-  }
-
-  .will-change-auto {
-    will-change: auto;
-  }
-}
-
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  /* Touch targets */
-  button, a, .clickable {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  
-  /* Disable hover effects on touch devices */
-  @media (hover: none) {
-    .hover\:scale-105:hover,
-    .hover\:scale-110:hover,
-    .hover\:scale-\[1\.02\]:hover {
-      transform: none !important;
-    }
-  }
-  
-  /* Better tap feedback */
-  button:active, a:active, .clickable:active {
-    transform: scale(0.98);
-    transition: transform 0.1s ease;
-  }
-}
-
-/* Clean body styles for full screen PWA mode - no bottom gap */
-html, body {
+/* Animated 3D Wave Background */
+body::before {
+  content: '';
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden; /* Prevent all scrolling */
-  height: 100vh !important;
-  height: 100dvh !important; /* Dynamic viewport height */
-  width: 100vw;
-  margin: 0;
-  padding: 0;
-  /* Full screen PWA - no padding, Siri ring handles the border */
-  box-sizing: border-box;
-  background: #000000 !important; /* Pure black for iOS status bar */
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(135deg, 
+    #0f0f0f 0%, 
+    #1a1a1a 25%, 
+    #141414 50%, 
+    #181818 75%, 
+    #0f0f0f 100%);
+  opacity: 0.95;
 }
 
-/* Ensure no horizontal overflow anywhere */
-*, *::before, *::after {
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-/* Strict horizontal scroll prevention */
-html {
-  overflow-x: hidden !important;
-}
-
-body {
-  overflow-x: hidden !important;
-  width: 100vw;
-  max-width: 100vw;
-}
-
-/* Prevent any container from causing horizontal scroll */
-.container, main, div, section {
-  overflow-x: hidden;
-}
-
-/* VSCode glass card effect */
-.flora-glass {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--color-border-default);
-}
-
-.flora-glass:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
-  border-color: var(--color-border-hover);
-}
-
-/* VSCode button styles */
-.flora-btn-primary {
-  background: linear-gradient(135deg, var(--color-secondary-bg) 0%, var(--color-tertiary-bg) 100%);
-  border: 1px solid var(--color-border-default);
-  color: var(--color-text-primary);
-  font-weight: 500;
-  letter-spacing: 0.015em;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.flora-btn-primary:hover {
-  background: linear-gradient(135deg, var(--color-tertiary-bg) 0%, var(--color-panel-bg) 100%);
-  border-color: var(--color-border-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
-.flora-btn-secondary {
-  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-dark) 100%);
-  border: 1px solid var(--color-accent);
-  color: white;
-  font-weight: 600;
-  letter-spacing: 0.015em;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.flora-btn-secondary:hover {
-  background: linear-gradient(135deg, var(--color-accent-hover) 0%, var(--color-accent) 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 32px rgba(241, 76, 76, 0.3);
-}
-
-
-
-/* Mobile viewport adjustments */
-@media screen and (max-width: 768px) {
-  html {
-    /* Prevent zoom on input focus */
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
-  }
-  
-  /* Hide address bar on mobile browsers */
-  body {
-    height: 100dvh; /* Dynamic viewport height */
-    min-height: 100dvh;
-  }
-}
-
-/* iPad-specific scroll fixes and viewport locking */
-body {
-  overscroll-behavior: none !important; /* Disable all overscroll */
-  touch-action: manipulation !important; /* Prevent zoom and enable better touch handling */
-  -webkit-overflow-scrolling: touch; /* Enable smooth scrolling */
-  -webkit-user-select: none;
-  user-select: none;
-  /* Prevent iOS bounce/rubber band effect */
+body::after {
+  content: '';
   position: fixed;
-  overflow: hidden;
-}
-
-/* Lock viewport completely on iPad */
-@supports (-webkit-touch-callout: none) {
-  html {
-    touch-action: manipulation !important;
-    -webkit-touch-callout: none !important;
-    -webkit-user-select: none !important;
-    -webkit-tap-highlight-color: transparent !important;
-    /* Prevent any accidental zoom */
-    -webkit-text-size-adjust: 100% !important;
-    text-size-adjust: 100% !important;
-  }
-  
-  body {
-    touch-action: manipulation !important;
-    -webkit-touch-callout: none !important;
-    -webkit-user-select: none !important;
-    /* Lock body completely */
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    overflow: hidden !important;
-    /* Prevent any scroll on body */
-    overscroll-behavior: none !important;
-  }
-}
-
-/* Scrollable containers get specific touch handling */
-.scrollable-container {
-  touch-action: pan-y !important;
-  -webkit-overflow-scrolling: touch;
-  overflow-y: auto;
-  overflow-x: hidden;
-  /* Smooth momentum scrolling */
-  scroll-behavior: smooth;
-  /* Prevent scroll hangups */
-  will-change: scroll-position;
-  /* Better touch response */
-  -webkit-transform: translateZ(0);
+  top: 0;
+  left: 0;
+  width: 120%;
+  height: 120%;
+  z-index: -1;
+  background: 
+    radial-gradient(ellipse 600px 400px at 50% 120%, rgba(40, 40, 40, 0.7) 0%, rgba(30, 30, 30, 0.4) 30%, transparent 65%),
+    radial-gradient(ellipse 500px 350px at 80% 10%, rgba(35, 35, 35, 0.55) 0%, rgba(25, 25, 25, 0.25) 35%, transparent 70%),
+    radial-gradient(ellipse 400px 250px at 20% 50%, rgba(32, 32, 32, 0.6) 0%, rgba(22, 22, 22, 0.3) 40%, transparent 75%),
+    radial-gradient(ellipse 350px 200px at 70% 80%, rgba(28, 28, 28, 0.5) 0%, transparent 60%);
+  animation: waveFloat 20s ease-in-out infinite;
   transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
-/* Horizontal scrollable containers */
-.scrollable-container-x {
-  touch-action: pan-x !important;
-  -webkit-overflow-scrolling: touch;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-behavior: smooth;
-  will-change: scroll-position;
-  -webkit-transform: translateZ(0);
+/* Additional wave layer for more depth */
+.wave-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 110%;
+  height: 110%;
+  z-index: -2;
+  background: 
+    radial-gradient(ellipse 800px 600px at 30% 80%, rgba(45, 45, 45, 0.4) 0%, rgba(35, 35, 35, 0.18) 40%, transparent 75%),
+    radial-gradient(ellipse 450px 300px at 70% 30%, rgba(38, 38, 38, 0.35) 0%, rgba(28, 28, 28, 0.15) 45%, transparent 80%),
+    radial-gradient(ellipse 300px 200px at 10% 60%, rgba(32, 32, 32, 0.3) 0%, transparent 65%);
+  animation: waveFloat2 25s ease-in-out infinite reverse;
   transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
-/* Both directions scrollable */
-.scrollable-container-xy {
-  touch-action: pan-x pan-y !important;
-  -webkit-overflow-scrolling: touch;
-  overflow: auto;
-  scroll-behavior: smooth;
-  will-change: scroll-position;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-}
-
-/* Claude-style pixelate animation */
-@keyframes pixelate {
+@keyframes waveFloat {
   0%, 100% {
-    filter: blur(0px) opacity(1) brightness(1);
-    transform: scale(1);
+    transform: translate(-10%, -10%) rotate(0deg) scale(1);
+    opacity: 0.8;
   }
   25% {
-    filter: blur(1px) opacity(0.7) brightness(0.9);
-    transform: scale(0.98);
+    transform: translate(-5%, -15%) rotate(1deg) scale(1.02);
+    opacity: 0.6;
   }
   50% {
-    filter: blur(2px) opacity(0.5) brightness(0.8);
-    transform: scale(0.95);
+    transform: translate(-15%, -5%) rotate(-0.5deg) scale(0.98);
+    opacity: 0.9;
   }
   75% {
-    filter: blur(1px) opacity(0.7) brightness(0.9);
-    transform: scale(0.98);
+    transform: translate(-8%, -12%) rotate(0.5deg) scale(1.01);
+    opacity: 0.7;
   }
 }
 
-/* Smooth fade in/out animation for logo */
-@keyframes smoothFade {
+@keyframes waveFloat2 {
   0%, 100% {
-    opacity: 0.3;
-    transform: scale(0.95);
+    transform: translate(-5%, -8%) rotate(0deg) scale(1.05);
+    opacity: 0.5;
   }
-  50% {
-    opacity: 1;
-    transform: scale(1);
+  33% {
+    transform: translate(-12%, -3%) rotate(-0.8deg) scale(0.95);
+    opacity: 0.7;
   }
-}
-
-.logo-fade-animation {
-  animation: smoothFade 2s ease-in-out infinite;
-  will-change: opacity, transform;
-}
-
-.pixelate-animation {
-  animation: pixelate 2.5s ease-in-out infinite;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  border: none;
-  background: transparent;
-  box-shadow: none;
-}
-
-/* Text flash thinking animation for Flora Distro */
-@keyframes textFlash {
-  0%, 85%, 100% {
-    opacity: 1;
-    filter: brightness(1);
-    text-shadow: none;
-  }
-  90% {
-    opacity: 1;
-    filter: brightness(1.5);
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-  }
-  95% {
-    opacity: 1;
-    filter: brightness(2);
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  66% {
+    transform: translate(-2%, -14%) rotate(1.2deg) scale(1.08);
+    opacity: 0.4;
   }
 }
 
-.flora-distro-text {
-  font-family: 'DonGraffiti', serif;
-  font-size: 2.5rem;
-  color: #CCCCCC;
-  font-weight: normal;
-  text-align: center;
-  margin: 0;
+/* Hide all scrollbars */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
-.text-animated {
-  animation: textFlash 2.5s ease-in-out infinite;
-  animation-delay: 0.3s;
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
+/* Ensure scrolling still works but scrollbars are hidden */
+.scrollable-container {
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
 
+.scrollable-container::-webkit-scrollbar {
+  display: none;
+}
 
+/* Hardware acceleration for smoother animations */
+.smooth-hover {
+  contain: layout style paint;
+  will-change: background-color, color, border-color, transform, box-shadow;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  transition: background-color 0.08s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.08s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
+/* Button hover effects */
+.button-hover {
+  contain: layout style paint;
+  will-change: background-color, color, transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  transition: background-color 0.05s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.05s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.05s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
- 
+.button-hover:hover {
+  transform: translateY(-0.5px) translateZ(0);
+}
+
+/* VS Code style button hover effects */
+.vscode-button-hover {
+  contain: layout style paint;
+  will-change: background-color, color;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  transition: background-color 0.1s ease-out,
+              color 0.1s ease-out;
+}
+
+.vscode-button-hover:hover {
+  /* No transform - VS Code buttons don't move on hover */
+}
+
+/* Card hover effects */
+.card-hover {
+  contain: layout style paint;
+  will-change: background-color, transform, box-shadow;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  transition: background-color 0.06s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.06s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.06s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-1px) translateZ(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Hide native scrollbar but keep functionality */
+.scrollable-container {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.scrollable-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Fix any overflow issues */
+html, body {
+  height: 100%;
+}
+
+#__next {
+  height: 100%;
+}
+
+/* Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .smooth-hover,
+  .card-hover,
+  .button-hover,
+  .vscode-button-hover {
+    transition: none !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+  
+  .card-hover:hover,
+  .button-hover:hover,
+  .vscode-button-hover:hover {
+    transform: none !important;
+  }
+
+  /* Disable wave animations for reduced motion */
+  body::after,
+  .wave-layer {
+    animation: none !important;
+    transform: none !important;
+    opacity: 0.3 !important;
+  }
+}
