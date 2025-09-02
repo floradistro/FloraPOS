@@ -3,10 +3,9 @@
 import React, { useMemo, forwardRef, useImperativeHandle } from 'react';
 import { VariableSizeGrid as Grid } from 'react-window';
 import { useAuth } from '../../contexts/AuthContext';
-import { Product } from '../../types';
 
-// Import the existing ProductGrid to reuse its logic
-import ProductGrid from './ProductGrid';
+// Import the existing ProductGrid to reuse its logic and types
+import { ProductGrid, Product } from './ProductGrid';
 
 interface VirtualizedProductGridProps {
   onAddToCart?: (product: Product) => void;

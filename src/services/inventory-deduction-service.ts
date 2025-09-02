@@ -228,7 +228,7 @@ export class InventoryDeductionService {
   private static requiresConversionRatio(item: CartItem): boolean {
     return item.pricing_tier?.tier_rule_name === 'Pre-Roll' || 
            item.category === 'preroll' ||
-           (item.pricing_tier?.tier_rule_name && 
+           (!!item.pricing_tier?.tier_rule_name && 
             item.pricing_tier.tier_rule_name.toLowerCase().includes('roll'));
   }
 

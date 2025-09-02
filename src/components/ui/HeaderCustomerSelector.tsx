@@ -6,7 +6,7 @@ import { useUserPointsBalance } from '../../hooks/useRewards';
 
 interface HeaderCustomerSelectorProps {
   selectedCustomer?: WordPressUser | null;
-  onCustomerSelect: (customer: WordPressUser | null) => void;
+  onCustomerSelect?: (customer: WordPressUser | null) => void;
 }
 
 // Component to display customer points in dropdown
@@ -73,7 +73,7 @@ export function HeaderCustomerSelector({
   };
 
   const handleCustomerSelect = (customer: WordPressUser | null) => {
-    onCustomerSelect(customer);
+    onCustomerSelect?.(customer);
     setIsOpen(false);
   };
 

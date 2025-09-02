@@ -16,7 +16,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Build the adjustment request for Flora IM API
-    const adjustmentData = {
+    const adjustmentData: {
+      product_id: number;
+      adjustment: number;
+      reason: string;
+      location_id: number | null;
+      variation_id?: number;
+    } = {
       product_id: parseInt(product_id),
       adjustment: adjustment,
       reason: reason || 'Manual adjustment',
@@ -60,7 +66,13 @@ export async function POST(request: NextRequest) {
     console.log(`📤 Updating inventory via Flora IM: Current: ${currentQuantity}, Adjustment: ${adjustmentData.adjustment}, New: ${newQuantity}`);
 
     // Call Flora IM API to update inventory
-    const updateData = {
+    const updateData: {
+      product_id: number;
+      location_id: number | null;
+      quantity: number;
+      reason: string;
+      variation_id?: number;
+    } = {
       product_id: adjustmentData.product_id,
       location_id: adjustmentData.location_id,
       quantity: newQuantity,

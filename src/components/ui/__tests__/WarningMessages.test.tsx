@@ -19,8 +19,8 @@ describe('WarningMessages', () => {
     const warnings = ['Warning 1', 'Warning 2']
     render(<WarningMessages warnings={warnings} onDismiss={mockOnDismiss} />)
     
-    expect(screen.getByText('Warning 1')).toBeInTheDocument()
-    expect(screen.getByText('Warning 2')).toBeInTheDocument()
+    expect(screen.getByText('Warning 1')).toBeTruthy()
+    expect(screen.getByText('Warning 2')).toBeTruthy()
   })
 
   it('calls onDismiss when dismiss button is clicked', () => {
