@@ -15,9 +15,9 @@ const buttonVariants = {
 };
 
 const buttonSizes = {
-  sm: 'px-2 py-1 text-xs md:text-sm',
-  md: 'px-3 py-2 text-sm md:text-base',
-  lg: 'px-4 py-3 text-base md:text-lg'
+  sm: 'px-2 py-1 text-xs md:text-base',
+  md: 'px-3 py-2 text-sm md:text-lg',
+  lg: 'px-4 py-3 text-base md:text-xl'
 };
 
 export function Button({ 

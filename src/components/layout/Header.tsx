@@ -104,7 +104,7 @@ export function Header({
           {isAuditMode && currentView === 'products' && (
             <button
               onClick={onSelectAll}
-              className="flex items-center gap-2 px-3 py-2 text-sm md:text-base text-neutral-400 hover:text-white transition-colors rounded-lg border border-white/[0.06] hover:border-white/[0.12] hover:bg-neutral-800/20"
+              className="flex items-center gap-2 px-3 py-2 text-sm md:text-lg text-neutral-400 hover:text-white transition-colors rounded-lg border border-white/[0.06] hover:border-white/[0.12] hover:bg-neutral-800/20"
               title={`Select all ${filteredCount} filtered products`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

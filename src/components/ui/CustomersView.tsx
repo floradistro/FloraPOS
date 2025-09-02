@@ -713,7 +713,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
         <div className="w-full">
           {/* Table Header */}
           <div className="sticky top-0 bg-neutral-900 backdrop-blur border-b border-white/[0.08] px-6 py-3 z-10">
-                         <div className="flex items-center gap-3 text-xs md:text-sm font-medium text-neutral-400 relative">
+                         <div className="flex items-center gap-3 text-xs md:text-base font-medium text-neutral-400 relative">
               <div className="w-6"></div> {/* Space for expand icon */}
               {columns.find(c => c.id === 'customer')?.visible && (
                 <div className="flex-1">Customer</div>
@@ -853,10 +853,10 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                 {/* Customer Name */}
                 {columns.find(c => c.id === 'customer')?.visible && (
                   <div className="flex-1 min-w-0">
-                                         <div className="font-medium text-neutral-300 text-sm md:text-base">
+                                         <div className="font-medium text-neutral-300 text-sm md:text-lg">
                         {user.display_name || user.name || user.username}
                       </div>
-                     <div className="text-xs md:text-sm text-neutral-500">
+                     <div className="text-xs md:text-base text-neutral-500">
                         ID: {user.id}
                       </div>
                   </div>
@@ -864,35 +864,35 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
                 {/* Email */}
                 {columns.find(c => c.id === 'email')?.visible && (
-                  <div className="w-64 text-neutral-400 text-sm md:text-base truncate">
+                  <div className="w-64 text-neutral-400 text-sm md:text-lg truncate">
                     {user.email}
                   </div>
                 )}
 
                 {/* Joined Date */}
                 {columns.find(c => c.id === 'joined')?.visible && (
-                  <div className="w-40 text-neutral-500 text-xs md:text-sm">
+                  <div className="w-40 text-neutral-500 text-xs md:text-base">
                     {new Date().toLocaleDateString()}
                   </div>
                 )}
 
                 {/* Total Orders */}
                 {columns.find(c => c.id === 'orders')?.visible && (
-                  <div className="w-32 text-neutral-500 text-xs md:text-sm">
+                  <div className="w-32 text-neutral-500 text-xs md:text-base">
                     0 orders
                   </div>
                 )}
 
                 {/* Total Spent */}
                 {columns.find(c => c.id === 'spent')?.visible && (
-                  <div className="w-32 text-neutral-500 text-xs md:text-sm">
+                  <div className="w-32 text-neutral-500 text-xs md:text-base">
                     $0.00
                   </div>
                 )}
 
                 {/* Last Order */}
                 {columns.find(c => c.id === 'lastOrder')?.visible && (
-                  <div className="w-40 text-neutral-500 text-xs md:text-sm">
+                  <div className="w-40 text-neutral-500 text-xs md:text-base">
                     Never
                   </div>
                 )}
@@ -917,7 +917,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         onClick={() => setCustomerTab(user.id, 'contact')}
                         size="sm"
                         variant={activeCustomerTab[user.id] === 'contact' ? 'primary' : 'ghost'}
-                        className="text-xs md:text-sm"
+                        className="text-xs md:text-base"
                       >
                         Details
                       </Button>
@@ -925,7 +925,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         onClick={() => setCustomerTab(user.id, 'rewards')}
                         size="sm"
                         variant={activeCustomerTab[user.id] === 'rewards' ? 'primary' : 'ghost'}
-                        className="text-xs md:text-sm"
+                        className="text-xs md:text-base"
                       >
                         Rewards
                       </Button>
@@ -933,7 +933,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         onClick={() => setCustomerTab(user.id, 'orders')}
                         size="sm"
                         variant={activeCustomerTab[user.id] === 'orders' ? 'primary' : 'ghost'}
-                        className="text-xs md:text-sm"
+                        className="text-xs md:text-base"
                       >
                         Order History
                       </Button>
@@ -941,7 +941,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         onClick={() => setCustomerTab(user.id, 'preferences')}
                         size="sm"
                         variant={activeCustomerTab[user.id] === 'preferences' ? 'primary' : 'ghost'}
-                        className="text-xs md:text-sm"
+                        className="text-xs md:text-base"
                       >
                         Preferences
                       </Button>
@@ -955,7 +955,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                             onClick={saveUser}
                             disabled={saving}
                             size="sm"
-                            className="text-xs md:text-sm"
+                            className="text-xs md:text-base"
                           >
                             {saving ? 'Saving...' : 'Save'}
                           </Button>
@@ -964,7 +964,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                             variant="ghost"
                             disabled={saving}
                             size="sm"
-                            className="text-xs md:text-sm"
+                            className="text-xs md:text-base"
                           >
                             Cancel
                           </Button>
@@ -974,7 +974,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                           <Button
                             onClick={() => startEditing(user)}
                             size="sm"
-                            className="text-xs md:text-sm"
+                            className="text-xs md:text-base"
                           >
                             Edit
                           </Button>
@@ -982,7 +982,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                             onClick={() => deleteCustomer(user.id)}
                             variant="danger"
                             size="sm"
-                            className="text-xs md:text-sm"
+                            className="text-xs md:text-base"
                           >
                             Delete
                           </Button>
@@ -998,7 +998,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                       <>
                         {/* Contact Information */}
                         <div className="space-y-2">
-                          <div className="text-neutral-500 font-medium text-xs md:text-sm mb-2">
+                          <div className="text-neutral-500 font-medium text-xs md:text-base mb-2">
                             Contact Information
                           </div>
                           {editingUser === user.id ? (

@@ -551,7 +551,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
         <div className="w-full">
           {/* Table Header */}
           <div className="sticky top-0 bg-neutral-900 backdrop-blur border-b border-white/[0.08] px-6 py-3 z-10">
-            <div className="flex items-center gap-3 text-xs md:text-sm font-medium text-neutral-400 relative">
+            <div className="flex items-center gap-3 text-xs md:text-base font-medium text-neutral-400 relative">
               <div className="w-6"></div> {/* Space for expand icon */}
               {columns.find(c => c.id === 'order')?.visible && (
                 <div className="w-32">Order</div>
