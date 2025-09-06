@@ -1,0 +1,282 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Fonts */
+@font-face {
+  font-family: 'DonGraffiti';
+  src: url('/DonGraffiti.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --background: #0f0f0f;
+  --foreground: #ededed;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  position: relative;
+}
+
+/* Animated 3D Wave Background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(135deg, 
+    #0f0f0f 0%, 
+    #1a1a1a 25%, 
+    #141414 50%, 
+    #181818 75%, 
+    #0f0f0f 100%);
+  opacity: 0.95;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 120%;
+  height: 120%;
+  z-index: -1;
+  background: 
+    radial-gradient(ellipse 600px 400px at 50% 120%, rgba(40, 40, 40, 0.7) 0%, rgba(30, 30, 30, 0.4) 30%, transparent 65%),
+    radial-gradient(ellipse 500px 350px at 80% 10%, rgba(35, 35, 35, 0.55) 0%, rgba(25, 25, 25, 0.25) 35%, transparent 70%),
+    radial-gradient(ellipse 400px 250px at 20% 50%, rgba(32, 32, 32, 0.6) 0%, rgba(22, 22, 22, 0.3) 40%, transparent 75%),
+    radial-gradient(ellipse 350px 200px at 70% 80%, rgba(28, 28, 28, 0.5) 0%, transparent 60%);
+  animation: waveFloat 20s ease-in-out infinite;
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* Additional wave layer for more depth */
+.wave-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 110%;
+  height: 110%;
+  z-index: -2;
+  background: 
+    radial-gradient(ellipse 800px 600px at 30% 80%, rgba(45, 45, 45, 0.4) 0%, rgba(35, 35, 35, 0.18) 40%, transparent 75%),
+    radial-gradient(ellipse 450px 300px at 70% 30%, rgba(38, 38, 38, 0.35) 0%, rgba(28, 28, 28, 0.15) 45%, transparent 80%),
+    radial-gradient(ellipse 300px 200px at 10% 60%, rgba(32, 32, 32, 0.3) 0%, transparent 65%);
+  animation: waveFloat2 25s ease-in-out infinite reverse;
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+@keyframes waveFloat {
+  0%, 100% {
+    transform: translate(-10%, -10%) rotate(0deg) scale(1);
+    opacity: 0.8;
+  }
+  25% {
+    transform: translate(-5%, -15%) rotate(1deg) scale(1.02);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-15%, -5%) rotate(-0.5deg) scale(0.98);
+    opacity: 0.9;
+  }
+  75% {
+    transform: translate(-8%, -12%) rotate(0.5deg) scale(1.01);
+    opacity: 0.7;
+  }
+}
+
+@keyframes waveFloat2 {
+  0%, 100% {
+    transform: translate(-5%, -8%) rotate(0deg) scale(1.05);
+    opacity: 0.5;
+  }
+  33% {
+    transform: translate(-12%, -3%) rotate(-0.8deg) scale(0.95);
+    opacity: 0.7;
+  }
+  66% {
+    transform: translate(-2%, -14%) rotate(1.2deg) scale(1.08);
+    opacity: 0.4;
+  }
+}
+
+/* Hide all scrollbars */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Ensure scrolling still works but scrollbars are hidden */
+.scrollable-container {
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollable-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hardware acceleration for smoother animations */
+.smooth-hover {
+  contain: layout style paint;
+  will-change: background-color, color, border-color, transform, box-shadow;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  transition: background-color 0.08s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.08s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Button hover effects */
+.button-hover {
+  contain: layout style paint;
+  will-change: background-color, color, transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  transition: background-color 0.05s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.05s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.05s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button-hover:hover {
+  transform: translateY(-0.5px) translateZ(0);
+}
+
+/* VS Code style button hover effects */
+.vscode-button-hover {
+  contain: layout style paint;
+  will-change: background-color, color;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  transition: background-color 0.1s ease-out,
+              color 0.1s ease-out;
+}
+
+.vscode-button-hover:hover {
+  /* No transform - VS Code buttons don't move on hover */
+}
+
+/* Card hover effects */
+.card-hover {
+  contain: layout style paint;
+  will-change: background-color, transform, box-shadow;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  transition: background-color 0.06s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.06s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.06s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-1px) translateZ(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Hide native scrollbar but keep functionality */
+.scrollable-container {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.scrollable-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Fix any overflow issues */
+html, body {
+  height: 100%;
+}
+
+#__next {
+  height: 100%;
+}
+
+/* Customer card expansion animations */
+@keyframes expandTopDown {
+  0% {
+    transform: scaleY(0);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+/* Enhanced row hover effects for customer cards */
+.row-hover {
+  transition: background-color 0.15s ease;
+}
+
+.row-hover:hover {
+  /* No transform or box-shadow to reduce lag */
+}
+
+/* Tab content fade-in animation */
+.tab-content-enter {
+  animation: tabFadeIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes tabFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .smooth-hover,
+  .card-hover,
+  .button-hover,
+  .vscode-button-hover,
+  .row-hover,
+  .tab-content-enter {
+    transition: none !important;
+    transform: none !important;
+    will-change: auto !important;
+    animation: none !important;
+  }
+  
+  .card-hover:hover,
+  .button-hover:hover,
+  .vscode-button-hover:hover,
+  .row-hover:hover {
+    transform: none !important;
+  }
+
+  /* Disable wave animations for reduced motion */
+  body::after,
+  .wave-layer {
+    animation: none !important;
+    transform: none !important;
+    opacity: 0.3 !important;
+  }
+
+  /* Disable customer card animations */
+  [style*="expandIn"],
+  [style*="expandOut"] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

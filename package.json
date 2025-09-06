@@ -1,0 +1,48 @@
+{
+  "name": "posv1",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:fresh": "rm -rf .next && npm run dev",
+    "dev:clear": "node scripts/clear-dev-cache.js",
+    "build": "NODE_ENV=production next build",
+    "start": "NODE_ENV=production next start",
+    "build:analyze": "ANALYZE=true npm run build",
+    "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.85.5",
+    "@tanstack/react-query-devtools": "^5.85.5",
+    "@types/react-window": "^1.8.8",
+    "autoprefixer": "^10.4.21",
+    "next": "14.2.5",
+    "qrcode.js": "^0.0.1",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-qr-code": "^2.0.18",
+    "react-window": "^1.8.11",
+    "react-window-infinite-loader": "^1.0.10",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "critters": "^0.0.23",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.5",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

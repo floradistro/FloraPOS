@@ -1,0 +1,436 @@
+'use client';
+
+import React, { memo, useCallback } from 'react';
+import { Product } from './ProductGrid';
+import { QuantitySelector } from './QuantitySelector';
+
+interface ProductCardProps {
+  product: Product;
+  userLocationId?: number;
+  selectedVariants: Record<number, number>;
+  editedStockValues: Record<string, number | string>;
+  focusedStockFields: Set<string>;
+  selectedProducts: Set<number>;
+  isAuditMode: boolean;
+  onVariantSelect: (productId: number, variantId: number) => void;
+  onQuantityChange: (productId: number, quantity: number, price: number, category?: string) => void;
+  onStockFieldFocus: (fieldKey: string) => void;
+  onStockFieldBlur: (fieldKey: string) => void;
+  onStockValueChange: (productId: number, variantId: number | null, newStock: number | string) => void;
+  onStockValueApply: (productId: number, variantId: number | null, newStock: number, currentStock: number) => void;
+  onInventoryAdjustment: (productId: number, variantId: number | null, adjustment: number, reason?: string) => void;
+  onProductSelection: (product: Product, event?: React.MouseEvent) => void;
+  onAddToCartWithVariant: (product: Product) => void;
+}
+
+const ProductCard = memo<ProductCardProps>(({
+  product,
+  userLocationId,
+  selectedVariants,
+  editedStockValues,
+  focusedStockFields,
+  selectedProducts,
+  isAuditMode,
+  onVariantSelect,
+  onQuantityChange,
+  onStockFieldFocus,
+  onStockFieldBlur,
+  onStockValueChange,
+  onStockValueApply,
+  onInventoryAdjustment,
+  onProductSelection,
+  onAddToCartWithVariant,
+}) => {
+  // Stock display logic that accounts for selected variants
+  let stockDisplay = 0;
+  let totalStock = product.total_stock || 0;
+  let displayPrice = product.regular_price;
+  let isInStock = false;
+
+  if (product.has_variants && product.variants) {
+    const selectedVariantId = selectedVariants[product.id];
+    const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
+    
+    if (selectedVariant) {
+      // Show selected variant stock and price
+      if (userLocationId) {
+        const locationInventory = selectedVariant.inventory.find(inv => 
+          inv.location_id === userLocationId
+        );
+        stockDisplay = locationInventory?.quantity || 0;
+      } else {
+        stockDisplay = selectedVariant.total_stock;
+      }
+      displayPrice = selectedVariant.sale_price || selectedVariant.regular_price;
+      isInStock = stockDisplay > 0;
+    } else {
+      // No variant selected, show aggregate info
+      stockDisplay = product.variants.reduce((sum, variant) => {
+        if (userLocationId) {
+          const locationInventory = variant.inventory.find(inv => inv.location_id === userLocationId);
+          return sum + (locationInventory?.quantity || 0);
+        } else {
+          return sum + variant.total_stock;
+        }
+      }, 0);
+      isInStock = stockDisplay > 0;
+    }
+  } else {
+    // Simple product logic
+    if (userLocationId) {
+      const locationInventory = product.inventory.find(inv => 
+        parseInt(inv.location_id) === userLocationId
+      );
+      stockDisplay = locationInventory?.stock || 0;
+    } else {
+      stockDisplay = totalStock;
+    }
+    isInStock = stockDisplay > 0;
+  }
+
+  const isSelected = isAuditMode && selectedProducts.has(product.id);
+
+  const formatPrice = useCallback((price: number | string): string => {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    return isNaN(numPrice) ? '$0.00' : `$${numPrice.toFixed(2)}`;
+  }, []);
+
+  return (
+    <div 
+      key={product.id} 
+      onClick={(e) => onProductSelection(product, e)}
+      className={`bg-transparent rounded-lg overflow-hidden p-2 relative transition-all duration-300 ease-out cursor-pointer shadow-sm ${
+        isAuditMode 
+          ? isSelected
+            ? 'border border-white/[0.15] bg-neutral-800/30 hover:bg-neutral-800/40'
+            : 'border border-white/[0.06] hover:border-white/[0.12] hover:bg-neutral-800/20'
+          : 'border border-white/[0.06] hover:border-white/[0.12] hover:bg-neutral-800/20 hover:-translate-y-1 hover:shadow-lg'
+      }`}
+    >
+      {/* Product Image and Name Row */}
+      <div className="flex gap-3 items-start mb-3">
+        {/* Product Image */}
+        <div className="w-16 h-16 relative overflow-hidden flex-shrink-0">
+          {product.image ? (
+            <img 
+              src={product.image} 
+              alt={product.name}
+              className="w-full h-full object-contain"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+          )}
+        </div>
+
+        {/* Product Name and Category */}
+        <div className="flex-1 min-w-0">
+          <h3 className="text-neutral-400 font-medium text-sm mb-1 line-clamp-2">
+            {product.name}
+          </h3>
+          {product.categories.length > 0 && (
+            <p className="text-neutral-500 text-xs mb-1">
+              {product.categories[0].name}
+            </p>
+          )}
+        </div>
+
+        {/* Quantity Selector for Non-Variant Products in Adjustment Mode */}
+        {isAuditMode && !product.has_variants && (
+          <div className="flex items-center">
+            <div className="relative flex items-center">
+              {/* Decrease Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onInventoryAdjustment(product.id, null, product.blueprintPricing ? -0.1 : -1, 'Manual decrease');
+                }}
+                className="absolute left-1 z-10 w-6 h-6 text-neutral-500 hover:text-red-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
+                title={product.blueprintPricing ? "Decrease by 0.1" : "Decrease by 1"}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                </svg>
+              </button>
+              
+              <input
+                type="number"
+                min="0"
+                step={product.blueprintPricing ? "0.1" : "1"}
+                value={(() => {
+                  const key = `${product.id}`;
+                  const value = editedStockValues[key] !== undefined ? editedStockValues[key] : stockDisplay;
+                  return typeof value === 'string' ? value : (typeof value === 'number' ? (product.blueprintPricing ? value.toFixed(2) : Math.floor(value).toString()) : value);
+                })()}
+                onChange={(e) => {
+                  onStockValueChange(product.id, null, e.target.value);
+                }}
+                onFocus={() => onStockFieldFocus(`${product.id}`)}
+                onBlur={() => {
+                  const key = `${product.id}`;
+                  const newStock = editedStockValues[key];
+                  
+                  onStockFieldBlur(`${product.id}`);
+                  if (newStock !== undefined && newStock !== stockDisplay) {
+                    const numericValue = typeof newStock === 'string' ? parseFloat(newStock) || 0 : newStock;
+                    onStockValueApply(product.id, null, numericValue, stockDisplay);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur();
+                  }
+                }}
+                className="w-32 h-8 text-sm text-center bg-neutral-700/50 border border-neutral-600 rounded text-neutral-300 focus:border-neutral-500 focus:outline-none font-medium pl-6 pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              
+              {/* Increase Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onInventoryAdjustment(product.id, null, product.blueprintPricing ? 0.1 : 1, 'Manual increase');
+                }}
+                className="absolute right-1 z-10 w-6 h-6 text-neutral-500 hover:text-green-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
+                title={product.blueprintPricing ? "Increase by 0.1" : "Increase by 1"}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Variant Selector and Quantity Selector / Audit Controls */}
+      <div className="mb-4">
+        {isAuditMode ? (
+          /* Audit Mode - Stacked Quantity Editors for Variants */
+          <div className="space-y-2">
+            {product.has_variants && product.variants ? (
+              /* Variant Products - Stacked Quantity Editors */
+              <div className="space-y-1">
+                {product.variants.slice(0, 4).map((variant) => {
+                  const variantStock = userLocationId 
+                    ? variant.inventory.find(inv => inv.location_id === userLocationId)?.quantity || 0
+                    : variant.total_stock;
+                  
+                  const editKey = `${product.id}-${variant.id}`;
+                  const editedValue = editedStockValues[editKey];
+                  const displayStock = editedValue !== undefined ? editedValue : variantStock;
+
+                  return (
+                    <div key={variant.id} className="flex items-center justify-between py-2 px-3 bg-transparent border-b border-neutral-800/30 last:border-b-0">
+                      {/* Variant Name */}
+                      <div className="flex-1 min-w-0 mr-2">
+                        <div className="text-xs font-medium text-neutral-300 truncate">
+                          {variant.name}
+                        </div>
+                      </div>
+                      
+                      {/* Integrated Quantity Editor */}
+                      <div className="relative flex items-center">
+                        {/* Decrease Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onInventoryAdjustment(product.id, variant.id, product.blueprintPricing ? -0.1 : -1, 'Manual decrease');
+                          }}
+                          className="absolute left-0.5 z-10 w-5 h-5 text-neutral-500 hover:text-red-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
+                          title={product.blueprintPricing ? "Decrease by 0.1" : "Decrease by 1"}
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                          </svg>
+                        </button>
+                        
+                        {/* Stock Display/Input */}
+                        <input
+                          type="number"
+                          min="0"
+                          step={product.blueprintPricing ? "0.1" : "1"}
+                          value={typeof displayStock === 'string' ? displayStock : (typeof displayStock === 'number' ? (product.blueprintPricing ? displayStock.toFixed(2) : Math.floor(displayStock).toString()) : displayStock)}
+                          onChange={(e) => {
+                            onStockValueChange(product.id, variant.id, e.target.value);
+                          }}
+                          onFocus={() => onStockFieldFocus(`${product.id}-${variant.id}`)}
+                          onBlur={() => {
+                            onStockFieldBlur(`${product.id}-${variant.id}`);
+                            if (editedValue !== undefined && editedValue !== variantStock) {
+                              const numericValue = typeof editedValue === 'string' ? parseFloat(editedValue) || 0 : editedValue;
+                              onStockValueApply(product.id, variant.id, numericValue, variantStock);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          className="w-40 h-6 text-sm text-center bg-neutral-700/50 border border-neutral-600 rounded text-neutral-300 focus:border-neutral-500 focus:outline-none pl-6 pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        
+                        {/* Increase Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onInventoryAdjustment(product.id, variant.id, product.blueprintPricing ? 0.1 : 1, 'Manual increase');
+                          }}
+                          className="absolute right-0.5 z-10 w-5 h-5 text-neutral-500 hover:text-green-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
+                          title={product.blueprintPricing ? "Increase by 0.1" : "Increase by 1"}
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {product.variants.length > 4 && (
+                  <div className="text-xs text-neutral-600 text-center py-1 border-t border-dashed border-neutral-800/20">
+                    +{product.variants.length - 4} more variants
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          /* Normal Mode - Full Quantity Selector */
+          product.has_variants && product.variants ? (
+            <div className="space-y-2">
+              {/* Variant options - Clean theme-consistent design */}
+              <div className="grid grid-cols-2 gap-1">
+                {product.variants.slice(0, 6).map((variant) => {
+                  const selectedVariantId = selectedVariants[product.id];
+                  const isVariantSelected = selectedVariantId === variant.id;
+                  const variantStock = userLocationId 
+                    ? variant.inventory.find(inv => inv.location_id === userLocationId)?.quantity || 0
+                    : variant.total_stock;
+                  const variantInStock = variantStock > 0;
+
+                  return (
+                    <button
+                      key={variant.id}
+                      onClick={() => onVariantSelect(product.id, variant.id)}
+                      disabled={!variantInStock}
+                      className={`w-full px-2 py-2 text-xs rounded transition-colors text-left ${
+                        isVariantSelected
+                          ? 'bg-transparent border border-neutral-600 text-neutral-200'
+                          : variantInStock
+                          ? 'bg-transparent border border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-300 hover:bg-neutral-800/10'
+                          : 'bg-transparent border border-neutral-800/40 text-neutral-600 cursor-not-allowed opacity-50'
+                      }`}
+                    >
+                      <div className="truncate font-medium">{variant.name}</div>
+                      <div className="mt-1">
+                        <span className={`text-xs ${variantInStock ? 'text-neutral-500' : 'text-red-400'}`}>
+                          {variantInStock ? `${variantStock} in stock` : 'Out of stock'}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+                {product.variants.length > 6 && (
+                  <div className="text-xs text-neutral-500 text-center py-2 col-span-2 border border-dashed border-neutral-800 rounded">
+                    +{product.variants.length - 6} more variants
+                  </div>
+                )}
+              </div>
+
+              {/* Show quantity selector ONLY after variant is selected and NOT in audit mode */}
+              {!isAuditMode && selectedVariants[product.id] && (
+                <div className="mt-3 pt-3 border-t border-neutral-800">
+                  <QuantitySelector
+                    productId={selectedVariants[product.id]} // Use variant ID
+                    basePrice={parseFloat(
+                      product.variants.find(v => v.id === selectedVariants[product.id])?.sale_price ||
+                      product.variants.find(v => v.id === selectedVariants[product.id])?.regular_price ||
+                      '0'
+                    )}
+                    blueprintPricing={product.blueprintPricing}
+                    onQuantityChange={(quantity, price, category) => 
+                      onQuantityChange(product.id, quantity, price, category)
+                    }
+                    disabled={false}
+                  />
+                </div>
+              )}
+            </div>
+          ) : !isAuditMode ? (
+            <QuantitySelector
+              productId={product.id}
+              basePrice={parseFloat(product.regular_price) || 0}
+              blueprintPricing={product.blueprintPricing}
+              onQuantityChange={(quantity, price, category) => onQuantityChange(product.id, quantity, price, category)}
+              disabled={false}
+            />
+          ) : null
+        )}
+      </div>
+
+      {/* Stock Info */}
+      <div className="text-center mb-2 h-4 flex items-center justify-center">
+        {isAuditMode ? (
+          /* Audit Mode - Show current stock only when field is focused */
+          <span className={`text-xs text-neutral-500 transition-opacity duration-200 ${
+            focusedStockFields.has(`${product.id}`) || (product.has_variants && selectedVariants[product.id] && focusedStockFields.has(`${product.id}-${selectedVariants[product.id]}`))
+              ? 'opacity-100' 
+              : 'opacity-0'
+          }`}>
+            {product.has_variants && product.variants
+              ? `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`
+              : `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`}
+          </span>
+        ) : (
+          /* Normal Mode - Display Only */
+          <span className="text-xs text-neutral-500">
+            {product.has_variants && !selectedVariants[product.id] 
+              ? `${stockDisplay} total stock` 
+              : `${stockDisplay} in stock`}
+          </span>
+        )}
+      </div>
+
+      {/* Selected Price - Bottom Left - Only show in normal mode */}
+      {!isAuditMode && (
+        <div className="absolute bottom-2 left-2 text-xs text-neutral-500">
+          {product.has_variants && selectedVariants[product.id] ? (
+            product.selected_price ? formatPrice(product.selected_price) : (
+              <span className="text-neutral-600">Select quantity</span>
+            )
+          ) : product.selected_price ? (
+            formatPrice(product.selected_price)
+          ) : (
+            formatPrice(displayPrice)
+          )}
+        </div>
+      )}
+
+      {/* Action Buttons - Add to Cart */}
+      {!isAuditMode && (
+        /* Normal Mode - Add to Cart Button */
+        ((product.has_variants && selectedVariants[product.id] && product.selected_quantity && product.selected_price) || 
+          (!product.has_variants && ((product.selected_quantity && product.selected_price) || !product.blueprintPricing))) ? (
+          <button
+            onClick={() => onAddToCartWithVariant(product)}
+            disabled={!isInStock}
+            className="absolute bottom-2 right-2 text-neutral-400 hover:text-white transition-colors disabled:opacity-50"
+            title={isInStock ? 'Add to Cart' : 'Out of Stock'}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        ) : null
+      )}
+    </div>
+  );
+});
+
+ProductCard.displayName = 'ProductCard';
+
+export default ProductCard;
