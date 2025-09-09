@@ -540,7 +540,8 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
           <LoadingSpinner 
             overlay 
             size="lg" 
-            text="Loading orders..."
+            text="Loading Orders"
+            subText="Fetching order history..."
           />
         )}
         

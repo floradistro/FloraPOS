@@ -8,38 +8,40 @@ interface ProductCardProps {
   product: Product;
   userLocationId?: number;
   selectedVariants: Record<number, number>;
-  editedStockValues: Record<string, number | string>;
-  focusedStockFields: Set<string>;
-  selectedProducts: Set<number>;
   isAuditMode: boolean;
   onVariantSelect: (productId: number, variantId: number) => void;
   onQuantityChange: (productId: number, quantity: number, price: number, category?: string) => void;
-  onStockFieldFocus: (fieldKey: string) => void;
-  onStockFieldBlur: (fieldKey: string) => void;
-  onStockValueChange: (productId: number, variantId: number | null, newStock: number | string) => void;
-  onStockValueApply: (productId: number, variantId: number | null, newStock: number, currentStock: number) => void;
-  onInventoryAdjustment: (productId: number, variantId: number | null, adjustment: number, reason?: string) => void;
-  onProductSelection: (product: Product, event?: React.MouseEvent) => void;
   onAddToCartWithVariant: (product: Product) => void;
+  // Optional audit mode props
+  editedStockValues?: Record<string, number | string>;
+  focusedStockFields?: Set<string>;
+  selectedProducts?: Set<number>;
+  onStockFieldFocus?: (fieldKey: string) => void;
+  onStockFieldBlur?: (fieldKey: string) => void;
+  onStockValueChange?: (productId: number, variantId: number | null, newStock: number | string) => void;
+  onStockValueApply?: (productId: number, variantId: number | null, newStock: number, currentStock: number) => void;
+  onInventoryAdjustment?: (productId: number, variantId: number | null, adjustment: number, reason?: string) => void;
+  onProductSelection?: (product: Product, event?: React.MouseEvent) => void;
 }
 
 const ProductCard = memo<ProductCardProps>(({
   product,
   userLocationId,
   selectedVariants,
-  editedStockValues,
-  focusedStockFields,
-  selectedProducts,
   isAuditMode,
   onVariantSelect,
   onQuantityChange,
+  onAddToCartWithVariant,
+  // Optional audit mode props with defaults
+  editedStockValues = {},
+  focusedStockFields = new Set(),
+  selectedProducts = new Set(),
   onStockFieldFocus,
   onStockFieldBlur,
   onStockValueChange,
   onStockValueApply,
   onInventoryAdjustment,
   onProductSelection,
-  onAddToCartWithVariant,
 }) => {
   // Stock display logic that accounts for selected variants
   let stockDisplay = 0;
@@ -98,7 +100,7 @@ const ProductCard = memo<ProductCardProps>(({
   return (
     <div 
       key={product.id} 
-      onClick={(e) => onProductSelection(product, e)}
+      onClick={(e) => onProductSelection?.(product, e)}
       className={`bg-transparent rounded-lg overflow-hidden p-2 relative transition-all duration-300 ease-out cursor-pointer shadow-sm ${
         isAuditMode 
           ? isSelected
@@ -147,7 +149,7 @@ const ProductCard = memo<ProductCardProps>(({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onInventoryAdjustment(product.id, null, product.blueprintPricing ? -0.1 : -1, 'Manual decrease');
+                  onInventoryAdjustment?.(product.id, null, product.blueprintPricing ? -0.1 : -1, 'Manual decrease');
                 }}
                 className="absolute left-1 z-10 w-6 h-6 text-neutral-500 hover:text-red-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
                 title={product.blueprintPricing ? "Decrease by 0.1" : "Decrease by 1"}
@@ -167,17 +169,17 @@ const ProductCard = memo<ProductCardProps>(({
                   return typeof value === 'string' ? value : (typeof value === 'number' ? (product.blueprintPricing ? value.toFixed(2) : Math.floor(value).toString()) : value);
                 })()}
                 onChange={(e) => {
-                  onStockValueChange(product.id, null, e.target.value);
+                  onStockValueChange?.(product.id, null, e.target.value);
                 }}
-                onFocus={() => onStockFieldFocus(`${product.id}`)}
+                onFocus={() => onStockFieldFocus?.(`${product.id}`)}
                 onBlur={() => {
                   const key = `${product.id}`;
                   const newStock = editedStockValues[key];
                   
-                  onStockFieldBlur(`${product.id}`);
+                  onStockFieldBlur?.(`${product.id}`);
                   if (newStock !== undefined && newStock !== stockDisplay) {
                     const numericValue = typeof newStock === 'string' ? parseFloat(newStock) || 0 : newStock;
-                    onStockValueApply(product.id, null, numericValue, stockDisplay);
+                    onStockValueApply?.(product.id, null, numericValue, stockDisplay);
                   }
                 }}
                 onKeyDown={(e) => {
@@ -192,7 +194,7 @@ const ProductCard = memo<ProductCardProps>(({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onInventoryAdjustment(product.id, null, product.blueprintPricing ? 0.1 : 1, 'Manual increase');
+                  onInventoryAdjustment?.(product.id, null, product.blueprintPricing ? 0.1 : 1, 'Manual increase');
                 }}
                 className="absolute right-1 z-10 w-6 h-6 text-neutral-500 hover:text-green-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
                 title={product.blueprintPricing ? "Increase by 0.1" : "Increase by 1"}
@@ -238,7 +240,7 @@ const ProductCard = memo<ProductCardProps>(({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onInventoryAdjustment(product.id, variant.id, product.blueprintPricing ? -0.1 : -1, 'Manual decrease');
+                            onInventoryAdjustment?.(product.id, variant.id, product.blueprintPricing ? -0.1 : -1, 'Manual decrease');
                           }}
                           className="absolute left-0.5 z-10 w-5 h-5 text-neutral-500 hover:text-red-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
                           title={product.blueprintPricing ? "Decrease by 0.1" : "Decrease by 1"}
@@ -255,14 +257,14 @@ const ProductCard = memo<ProductCardProps>(({
                           step={product.blueprintPricing ? "0.1" : "1"}
                           value={typeof displayStock === 'string' ? displayStock : (typeof displayStock === 'number' ? (product.blueprintPricing ? displayStock.toFixed(2) : Math.floor(displayStock).toString()) : displayStock)}
                           onChange={(e) => {
-                            onStockValueChange(product.id, variant.id, e.target.value);
+                            onStockValueChange?.(product.id, variant.id, e.target.value);
                           }}
-                          onFocus={() => onStockFieldFocus(`${product.id}-${variant.id}`)}
+                          onFocus={() => onStockFieldFocus?.(`${product.id}-${variant.id}`)}
                           onBlur={() => {
-                            onStockFieldBlur(`${product.id}-${variant.id}`);
+                            onStockFieldBlur?.(`${product.id}-${variant.id}`);
                             if (editedValue !== undefined && editedValue !== variantStock) {
                               const numericValue = typeof editedValue === 'string' ? parseFloat(editedValue) || 0 : editedValue;
-                              onStockValueApply(product.id, variant.id, numericValue, variantStock);
+                              onStockValueApply?.(product.id, variant.id, numericValue, variantStock);
                             }
                           }}
                           onKeyDown={(e) => {
@@ -277,7 +279,7 @@ const ProductCard = memo<ProductCardProps>(({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onInventoryAdjustment(product.id, variant.id, product.blueprintPricing ? 0.1 : 1, 'Manual increase');
+                            onInventoryAdjustment?.(product.id, variant.id, product.blueprintPricing ? 0.1 : 1, 'Manual increase');
                           }}
                           className="absolute right-0.5 z-10 w-5 h-5 text-neutral-500 hover:text-green-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
                           title={product.blueprintPricing ? "Increase by 0.1" : "Increase by 1"}

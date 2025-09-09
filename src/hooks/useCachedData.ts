@@ -6,16 +6,17 @@ import { Category } from '../components/ui/CategoryFilter';
  * Hook for caching categories data with long stale time
  * Categories rarely change so we can cache them longer
  */
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
     queryFn: () => CategoriesService.getCategories(),
-    staleTime: 1000 * 60 * 120, // 2 hours - categories rarely change
-    gcTime: 1000 * 60 * 30, // 30 minutes cache retention
-    refetchOnWindowFocus: false, // Don't refetch categories on focus
-    retry: 1,
-    // Enable background refetch but with longer intervals
-    refetchInterval: 1000 * 60 * 10, // Background refetch every 10 minutes
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 120, // No cache in dev
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
+    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
+    retry: isDevelopment ? 0 : 1,
+    refetchInterval: isDevelopment ? false : 1000 * 60 * 10, // No background refetch in dev
   });
 }
 
@@ -32,7 +33,7 @@ export function useUserLocations() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': 'public, max-age=600', // 10 minutes cache
+            'Cache-Control': isDevelopment ? 'no-cache, no-store, must-revalidate' : 'public, max-age=600',
           },
         });
 
@@ -46,10 +47,10 @@ export function useUserLocations() {
         return [];
       }
     },
-    staleTime: 1000 * 60 * 240, // 4 hours - locations very rarely change
-    gcTime: 1000 * 60 * 60, // 1 hour cache retention
-    refetchOnWindowFocus: false,
-    retry: 1,
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 240, // No cache in dev
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 60, // No cache in dev
+    refetchOnWindowFocus: isDevelopment ? true : false,
+    retry: isDevelopment ? 0 : 1,
   });
 }
 
@@ -73,9 +74,9 @@ export function useTaxRates(locationName?: string) {
 
       return locationMapping[locationName || 'Default'] || locationMapping['Default'];
     },
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours - tax rates rarely change
-    gcTime: 1000 * 60 * 60 * 2, // 2 hours cache retention
-    refetchOnWindowFocus: false,
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 60 * 24, // No cache in dev
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 60 * 2, // No cache in dev
+    refetchOnWindowFocus: isDevelopment ? true : false,
     retry: 0, // No retries needed for static data
     enabled: !!locationName, // Only run if locationName is provided
   });
@@ -94,7 +95,7 @@ export function useBlueprintAssignments() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': 'public, max-age=300', // 5 minutes cache
+            'Cache-Control': isDevelopment ? 'no-cache, no-store, must-revalidate' : 'public, max-age=300',
           },
         });
 
@@ -108,9 +109,9 @@ export function useBlueprintAssignments() {
         return [];
       }
     },
-    staleTime: 1000 * 60 * 30, // 30 minutes - assignments change occasionally
-    gcTime: 1000 * 60 * 15, // 15 minutes cache retention
-    refetchOnWindowFocus: false,
-    retry: 1,
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
+    refetchOnWindowFocus: isDevelopment ? true : false,
+    retry: isDevelopment ? 0 : 1,
   });
 }

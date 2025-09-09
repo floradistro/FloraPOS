@@ -5,34 +5,35 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { errorReporting, reportApiError } from '../lib/errorReporting';
 
-// Enhanced QueryClient with OPTIMIZED CACHING for PERFORMANCE
+// DEVELOPMENT MODE - NO CACHING AT ALL
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // PERFORMANCE MODE - ENABLE SMART CACHING
-      staleTime: 1000 * 60 * 5, // 5 minutes - balance performance and freshness
-      gcTime: 1000 * 60 * 30, // 30 minutes cache retention
-      refetchOnWindowFocus: false, // Only manual refresh for better UX
+      // DISABLE ALL CACHING IN DEVELOPMENT
+      staleTime: isDevelopment ? 0 : 1000 * 60 * 5, // 0 in dev, 5 minutes in prod
+      gcTime: isDevelopment ? 0 : 1000 * 60 * 30, // 0 in dev, 30 minutes in prod
+      refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
       refetchOnReconnect: true, // Refetch when reconnecting
-      retry: (failureCount, error: any) => {
-        // Don't retry on 4xx errors (client errors)
+      refetchOnMount: isDevelopment ? 'always' : true, // Always refetch in dev
+      retry: isDevelopment ? false : (failureCount, error: any) => {
+        // No retries in development
         if (error?.response?.status >= 400 && error?.response?.status < 500) {
           return false;
         }
-        // Retry up to 2 times for other errors
         return failureCount < 2;
       },
-      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000), // Max 5 second retry delay
-      // Network mode settings
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000),
       networkMode: 'online',
     },
     mutations: {
-      retry: (failureCount, error: any) => {
-        // Don't retry mutations on client errors
+      retry: isDevelopment ? false : (failureCount, error: any) => {
+        // No retries in development
         if (error?.response?.status >= 400 && error?.response?.status < 500) {
           return false;
         }
-        return failureCount < 1; // Only 1 retry for mutations
+        return failureCount < 1;
       },
       networkMode: 'online',
     },

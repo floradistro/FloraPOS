@@ -201,7 +201,7 @@ export interface OrderData {
 // VIEW TYPES
 // ====================
 
-export type ViewType = 'products' | 'customers' | 'orders' | 'blueprint-fields';
+export type ViewType = 'products' | 'adjustments' | 'customers' | 'orders' | 'blueprint-fields' | 'history' | 'magic2';
 
 // ====================
 // API TYPES

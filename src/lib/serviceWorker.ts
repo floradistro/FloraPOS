@@ -135,13 +135,20 @@ export const isOnline = (): boolean => {
 export const initializePWA = (): void => {
   if (typeof window === 'undefined') return;
 
-  // DEVELOPMENT MODE - DISABLE SERVICE WORKER REGISTRATION
-  console.log('🚫 Service Worker DISABLED for development');
-  unregisterServiceWorker(); // Remove any existing service worker
+  // ALWAYS DISABLE SERVICE WORKER - NO CACHING
+  console.log('🚫 Service Worker COMPLETELY DISABLED - NO CACHING');
+  unregisterServiceWorker().then(() => {
+    // Also clear all caches after unregistering
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        Promise.all(names.map(name => caches.delete(name)));
+      });
+    }
+  });
   
-  // Setup PWA install prompt (keep for future)
-  setupPWAInstall();
+  // Do NOT setup PWA features
+  // setupPWAInstall();
   
-  // Setup network monitoring (keep for debugging)
-  setupNetworkMonitoring();
+  // Do NOT setup network monitoring 
+  // setupNetworkMonitoring();
 };

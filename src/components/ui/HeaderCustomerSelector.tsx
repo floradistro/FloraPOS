@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { useUserPointsBalance } from '../../hooks/useRewards';
 
@@ -26,7 +27,7 @@ const CustomerPoints = ({ customerId }: { customerId: number }) => {
   const pointsUnit = pointsBalance.balance === 1 ? singular : plural;
   
   return (
-    <span className="text-xs text-white font-medium">
+    <span className="text-xs text-neutral-500 bg-neutral-700/50 px-2 py-1 rounded">
       {pointsBalance.balance.toLocaleString()} {pointsUnit}
     </span>
   );
@@ -40,23 +41,32 @@ export function HeaderCustomerSelector({
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Load customers on mount
   useEffect(() => {
     loadCustomers();
   }, []);
 
+  // Update dropdown position when opening
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        left: rect.left - 60, // Offset to make dropdown wider than button
+        width: 280 // Fixed width like settings dropdown
+      });
+    }
+  }, [isOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (isOpen && dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        // Check if click is on the dropdown itself (fixed positioned)
-        const target = event.target as Element;
-        if (!target.closest('[data-dropdown-content]')) {
-          setIsOpen(false);
-        }
+      if (buttonRef.current && !buttonRef.current.contains(event.target as Node) &&
+          dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
       }
     }
 
@@ -85,18 +95,6 @@ export function HeaderCustomerSelector({
     setIsOpen(false);
   };
 
-  const handleToggleDropdown = () => {
-    if (!isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 8,
-        left: rect.left,
-        width: rect.width
-      });
-    }
-    setIsOpen(!isOpen);
-  };
-
   const selectedCustomerName = selectedCustomer 
     ? (selectedCustomer.display_name || selectedCustomer.name || selectedCustomer.username)
     : 'Select Customer';
@@ -118,10 +116,10 @@ export function HeaderCustomerSelector({
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <>
       <button
         ref={buttonRef}
-        onClick={handleToggleDropdown}
+        onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-1 bg-neutral-800/80 hover:bg-neutral-700/80 rounded text-neutral-400 transition-colors min-w-[160px] justify-between text-sm"
       >
         <div className="flex items-center gap-2">
@@ -140,71 +138,134 @@ export function HeaderCustomerSelector({
         </svg>
       </button>
 
-      {isOpen && dropdownPosition && (
+      {isOpen && dropdownPosition && typeof document !== 'undefined' && ReactDOM.createPortal(
         <div 
-          data-dropdown-content
-          className="fixed py-2 bg-neutral-800 border border-white/[0.08] rounded shadow-2xl z-[99999] max-h-80 overflow-y-auto backdrop-blur-sm"
-          style={{
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`
+          ref={dropdownRef}
+          className="fixed bg-neutral-900/95 backdrop-blur-sm border border-white/[0.08] rounded-lg shadow-2xl overflow-hidden"
+          style={{ 
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            width: dropdownPosition.width,
+            zIndex: 99999
           }}
         >
-          {/* Clear Selection Option */}
-          <button
-            onClick={() => handleCustomerSelect(null)}
-            className={`w-full px-4 py-2 text-left text-sm transition-colors flex items-center justify-between ${
-              !selectedCustomer
-                ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                : 'text-neutral-300 hover:bg-neutral-700/50 hover:text-white'
-            }`}
-          >
-            <span>No Customer</span>
-          </button>
-
-          {/* Guest Customer Option */}
-          <button
-            onClick={() => handleCustomerSelect({ id: 0, name: 'Guest Customer', email: 'guest@pos.local', username: 'guest', display_name: 'Guest Customer', roles: ['customer'] } as WordPressUser)}
-            className={`w-full px-4 py-2 text-left text-sm transition-colors ${
-              selectedCustomer?.id === 0
-                ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                : 'text-neutral-300 hover:bg-neutral-700/50 hover:text-white'
-            }`}
-          >
-            <div className="font-medium">Guest Customer</div>
-            <div className="text-xs text-neutral-500">Walk-in customer</div>
-          </button>
+          {/* Header */}
+          <div className="px-4 py-2.5 border-b border-white/[0.08] bg-neutral-800/50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-medium text-neutral-300 uppercase tracking-wider">Select Customer</h3>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-neutral-500 hover:text-neutral-300 transition-colors p-1 hover:bg-white/[0.05] rounded"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
 
           {/* Customer Options */}
-          {customers.map((customer) => (
+          <div className="py-1 max-h-96 overflow-y-auto">
+            {/* Clear Selection Option */}
             <button
-              key={customer.id}
-              onClick={() => handleCustomerSelect(customer)}
-              className={`w-full px-4 py-2 text-left text-sm transition-colors ${
-                selectedCustomer?.id === customer.id
-                  ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                  : 'text-neutral-300 hover:bg-neutral-700/50 hover:text-white'
+              onClick={() => handleCustomerSelect(null)}
+              className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between group ${
+                !selectedCustomer
+                  ? 'bg-blue-600/20 text-blue-300'
+                  : 'text-neutral-300 hover:bg-white/[0.05] hover:text-white'
               }`}
             >
-              <div className="flex justify-between items-start mb-1">
-                <div className="font-medium">
-                  {customer.display_name || customer.name || customer.username}
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-neutral-700/50 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9l-6 6-6-6" />
+                  </svg>
                 </div>
-                <CustomerPoints customerId={customer.id} />
+                <span>No Customer</span>
               </div>
-              <div className="text-xs text-neutral-500">
-                {customer.email}
-              </div>
+              {!selectedCustomer && (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
             </button>
-          ))}
 
-          {customers.length === 0 && (
-            <div className="px-4 py-2 text-center text-neutral-500 text-sm">
-              No customers available
-            </div>
-          )}
-        </div>
+            {/* Guest Customer Option */}
+            <button
+              onClick={() => handleCustomerSelect({ id: 0, name: 'Guest Customer', email: 'guest@pos.local', username: 'guest', display_name: 'Guest Customer', roles: ['customer'] } as WordPressUser)}
+              className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between group ${
+                selectedCustomer?.id === 0
+                  ? 'bg-blue-600/20 text-blue-300'
+                  : 'text-neutral-300 hover:bg-white/[0.05] hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-neutral-700/50 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-medium">Guest Customer</div>
+                  <div className="text-xs text-neutral-500">Walk-in customer</div>
+                </div>
+              </div>
+              {selectedCustomer?.id === 0 && (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </button>
+
+            {/* Customer Options */}
+            {customers.length > 0 ? (
+              customers.map((customer) => (
+                <button
+                  key={customer.id}
+                  onClick={() => handleCustomerSelect(customer)}
+                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between group ${
+                    selectedCustomer?.id === customer.id
+                      ? 'bg-blue-600/20 text-blue-300'
+                      : 'text-neutral-300 hover:bg-white/[0.05] hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-600/20 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium">
+                          {customer.display_name || customer.name || customer.username}
+                        </div>
+                        <CustomerPoints customerId={customer.id} />
+                      </div>
+                      <div className="text-xs text-neutral-500">
+                        {customer.email}
+                      </div>
+                    </div>
+                  </div>
+                  {selectedCustomer?.id === customer.id && (
+                    <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-6 text-sm text-neutral-500 text-center">
+                <svg className="w-12 h-12 mx-auto mb-3 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                No customers available
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }

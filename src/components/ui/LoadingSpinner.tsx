@@ -5,32 +5,37 @@ interface LoadingSpinnerProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   text?: string;
+  subText?: string;
   centered?: boolean;
   overlay?: boolean;
+  fullHeight?: boolean;
 }
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
-  size = 'md', 
+  size = 'lg', 
   className = '',
   text,
-  centered = false,
-  overlay = false
+  subText,
+  centered = true,
+  overlay = false,
+  fullHeight = true
 }) => {
 
-  const spinner = (
-    <AnimatedLogo size={size} className={className} />
-  );
-
-  const content = text ? (
-    <div className="text-center">
-      <AnimatedLogo size={size} className="mx-auto mb-3" />
-      <p className="text-neutral-400 text-sm">{text}</p>
+  const content = (
+    <div className="text-center space-y-4">
+      <AnimatedLogo size={size} className="mx-auto" />
+      {text && (
+        <div className="space-y-2">
+          <p className="text-neutral-300 text-xl font-light">{text}</p>
+          {subText && <p className="text-neutral-500 text-base">{subText}</p>}
+        </div>
+      )}
     </div>
-  ) : spinner;
+  );
 
   if (overlay) {
     return (
-      <div className="absolute inset-0 bg-neutral-900/80 flex items-center justify-center z-50">
+      <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-sm flex items-center justify-center z-50">
         {content}
       </div>
     );
@@ -38,7 +43,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   if (centered) {
     return (
-      <div className="flex items-center justify-center h-full w-full">
+      <div className={`flex items-center justify-center ${fullHeight ? 'h-full' : ''} w-full`}>
         {content}
       </div>
     );
@@ -46,5 +51,3 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   return content;
 };
-
-

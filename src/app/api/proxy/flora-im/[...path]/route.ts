@@ -12,10 +12,12 @@ export async function GET(
     const path = params.path.join('/');
     const searchParams = request.nextUrl.searchParams;
     
-    // DEVELOPMENT MODE - Add cache busting
-    if (process.env.NODE_ENV === 'development') {
-      searchParams.set('_t', Date.now().toString());
-    }
+    // Check if this is an inventory-related request that needs fresh data
+    const isInventoryRequest = path.includes('inventory') || path.includes('products');
+    
+    // ALWAYS ADD CACHE BUSTING - NO CACHING AT ALL
+    searchParams.set('_t', Date.now().toString());
+    searchParams.set('_nocache', 'true');
     
     // Build the API URL
     const apiUrl = new URL(`${FLORA_API_BASE}/flora-im/v1/${path}`);
@@ -39,8 +41,8 @@ export async function GET(
       headers: {
         'Content-Type': 'application/json',
       },
-      // DEVELOPMENT MODE - Disable caching
-      ...(process.env.NODE_ENV === 'development' && { cache: 'no-store' })
+      // NO CACHING AT ALL
+      cache: 'no-store'
     });
     
     if (!response.ok) {
@@ -59,12 +61,10 @@ export async function GET(
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        // DEVELOPMENT MODE - NO CACHING
-        ...(process.env.NODE_ENV === 'development' && {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-        }),
+        // NO CACHING AT ALL
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (error) {
@@ -104,6 +104,7 @@ export async function POST(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      cache: 'no-store' // NO CACHING
     });
     
     if (!response.ok) {
@@ -122,12 +123,71 @@ export async function POST(
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        // DEVELOPMENT MODE - NO CACHING
-        ...(process.env.NODE_ENV === 'development' && {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-        }),
+        // NO CACHING AT ALL
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
+  } catch (error) {
+    console.error('Proxy error:', error);
+    return NextResponse.json(
+      { error: 'Failed to proxy request', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { path: string[] } }
+) {
+  const path = params.path.join('/');
+  
+  console.log(`📦 Processing Flora-IM PUT request: ${path}`);
+
+  try {
+    const body = await request.json();
+    
+    // Build the API URL
+    const apiUrl = new URL(`${FLORA_API_BASE}/flora-im/v1/${path}`);
+    
+    // Add authentication
+    apiUrl.searchParams.append('consumer_key', CONSUMER_KEY);
+    apiUrl.searchParams.append('consumer_secret', CONSUMER_SECRET);
+    
+    console.log('Proxying Flora-IM PUT request to:', apiUrl.toString());
+    
+    // Make the request to the Flora API
+    const response = await fetch(apiUrl.toString(), {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      cache: 'no-store' // NO CACHING
+    });
+    
+    if (!response.ok) {
+      console.error('Flora-IM API error:', response.status, response.statusText);
+      return NextResponse.json(
+        { error: `Flora-IM API error: ${response.status}` },
+        { status: response.status }
+      );
+    }
+    
+    const data = await response.json();
+    
+    // Return the data with proper CORS headers and no caching
+    return NextResponse.json(data, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        // NO CACHING AT ALL
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
   } catch (error) {

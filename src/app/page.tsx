@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, Suspense, lazy, useRef, useCallback, useMemo } from 'react';
 import { Header } from '../components/layout/Header';
+import { Sidebar } from '../components/layout/Sidebar';
 import { Cart } from '../components/ui/Cart';
 import { ProductGrid } from '../components/ui/ProductGrid';
+import { AdjustmentsGrid } from '../components/ui/AdjustmentsGrid';
 import BlueprintFieldsGrid from '../components/ui/BlueprintFieldsGrid';
-import { CustomerSelectorPanel } from '../components/ui/CustomerSelectorPanel';
+import { PrintSettingsPanel, PrintSettings } from '../components/ui/PrintSettingsPanel';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 
@@ -44,7 +46,7 @@ import { Category } from '../components/ui/CategoryFilter';
 import { CategoriesService } from '../services/categories-service';
 import { CartService } from '../services/cart-service';
 import { ReloadDebugger } from '../lib/debug-reload';
-import { AlertModal, SettingsDropdown } from '../components/ui';
+import { AlertModal, SettingsDropdown, InventoryHistoryView, Magic2TableCreator } from '../components/ui';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function HomePage() {
@@ -57,13 +59,22 @@ export default function HomePage() {
   const [currentView, setCurrentView] = useState<ViewType>('products');
   const [showCheckout, setShowCheckout] = useState(false);
   const [isAuditMode, setIsAuditMode] = useState(false);
+  const [isRestockMode, setIsRestockMode] = useState(false);
   
   const [currentTime, setCurrentTime] = useState<string>('');
   const [mounted, setMounted] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<WordPressUser | null>(null);
+  const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [blueprintProducts, setBlueprintProducts] = useState<Product[]>([]);
+  const [blueprintProductsLoading, setBlueprintProductsLoading] = useState(false);
   
   const handleCustomerSelect = useCallback((customer: WordPressUser | null) => {
     setSelectedCustomer(customer);
+  }, []);
+  
+  const handleProductSelect = useCallback((product: Product | null) => {
+    setSelectedProduct(product);
   }, []);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
@@ -72,7 +83,7 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  // Track filtered products for select all functionality
+  // Track filtered products
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedProductsCount, setSelectedProductsCount] = useState(0);
 
@@ -85,6 +96,10 @@ export default function HomePage() {
   const [orderShowSelectedOnly, setOrderShowSelectedOnly] = useState(false);
   const [totalOrders, setTotalOrders] = useState(0);
   const [selectedOrdersCount, setSelectedOrdersCount] = useState(0);
+
+  // History filter states
+  const [historyDateFilter, setHistoryDateFilter] = useState('7');
+  const [historyActionFilter, setHistoryActionFilter] = useState('all');
   
   // Alert state
   const [alertModal, setAlertModal] = useState<{
@@ -97,6 +112,7 @@ export default function HomePage() {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
 
   const productGridRef = useRef<{ refreshInventory: () => Promise<void> }>(null);
+  const adjustmentsGridRef = useRef<{ refreshInventory: () => Promise<void> }>(null);
   const blueprintFieldsGridRef = useRef<{ refresh: () => Promise<void> }>(null);
   const customersViewRef = useRef<any>(null);
   const ordersViewRef = useRef<any>(null);
@@ -184,6 +200,8 @@ export default function HomePage() {
     }
   };
 
+  // Removed handleAddAdjustment - adjustments now handled directly in AdjustmentsGrid
+  /*
   const handleAddAdjustment = (product: Product, adjustment: number) => {
     console.log('🔧 [DEBUG] handleAddAdjustment called:', { productName: product.name, adjustment });
     
@@ -216,7 +234,7 @@ export default function HomePage() {
           quantity: 1, // Always quantity 1 for adjustment items
           image: product.image,
           sku: product.sku,
-          category: product.categories[0]?.name,
+          category: product.categories && product.categories.length > 0 ? product.categories[0].name : undefined,
           product_id: productId,
           variation_id: variationId,
           is_variant: !!product.parent_id,
@@ -231,7 +249,10 @@ export default function HomePage() {
       }
     });
   };
+  */
 
+  // Removed handleApplyAdjustments - adjustments now handled directly in AdjustmentsGrid
+  /*
   const handleApplyAdjustments = async (reason = 'Manual adjustment') => {
     const adjustmentItems = cartItems.filter(item => item.is_adjustment);
     
@@ -284,6 +305,7 @@ export default function HomePage() {
       console.error('❌ Failed to apply adjustments:', error);
     }
   };
+  */
 
   // Removed refreshKey and shouldRefreshInventory states - ProductGrid handles inventory refresh via event bus
 
@@ -307,6 +329,10 @@ export default function HomePage() {
       if (currentView === 'products') {
         if (productGridRef.current?.refreshInventory) {
           await productGridRef.current.refreshInventory();
+        }
+      } else if (currentView === 'adjustments') {
+        if (adjustmentsGridRef.current?.refreshInventory) {
+          await adjustmentsGridRef.current.refreshInventory();
         }
       } else if (currentView === 'blueprint-fields') {
         if (blueprintFieldsGridRef.current?.refresh) {
@@ -363,24 +389,52 @@ export default function HomePage() {
   };
 
   const handleAuditModeToggle = () => {
-    setIsAuditMode(prev => !prev);
-    // Clear cart when entering audit mode since we're not selling
-    if (!isAuditMode) {
-      setCartItems([]);
+    // Toggle audit mode when in adjustments view
+    if (currentView === 'adjustments') {
+      setIsAuditMode(!isAuditMode);
+      setIsRestockMode(false); // Disable restock mode when audit is active
+      if (!isAuditMode) {
+        setCartItems([]); // Clear cart when entering audit mode
+      }
     }
   };
 
-  const handleSelectAll = () => {
-    if (!isAuditMode) return;
-    
-    // Add all filtered products to cart as adjustment items
-    filteredProducts.forEach(product => {
-      handleAddAdjustment(product, 0);
-    });
+  const handleRestock = () => {
+    setIsRestockMode(!isRestockMode);
+    setIsAuditMode(false); // Disable audit mode when restock is active
+    console.log('Restock mode toggled:', !isRestockMode);
   };
+
+  const handleAudit = () => {
+    setIsAuditMode(!isAuditMode);
+    setIsRestockMode(false); // Disable restock mode when audit is active
+    if (!isAuditMode) {
+      setCartItems([]); // Clear cart when entering audit mode
+    }
+    console.log('Audit mode toggled:', !isAuditMode);
+  };
+
 
   const handleViewChange = (view: ViewType) => {
     setCurrentView(view);
+    // Clear selected product when leaving blueprint view
+    if (view !== 'blueprint-fields') {
+      setSelectedProduct(null);
+    }
+    // Set audit mode when entering adjustments view
+    if (view === 'adjustments') {
+      setIsAuditMode(true);
+      setIsRestockMode(false);
+      setCartItems([]); // Clear cart when entering adjustments mode
+    } else if (view !== 'history') {
+      setIsAuditMode(false);
+      setIsRestockMode(false);
+    }
+    // Keep modes when switching between adjustments and history
+  };
+
+  const handleHistoryBack = () => {
+    setCurrentView('adjustments');
   };
 
   const handleUpdateQuantity = (id: string, quantity: number) => {
@@ -395,6 +449,8 @@ export default function HomePage() {
     setCartItems([]);
   };
 
+  // Removed handleUpdateAdjustment - adjustments now handled directly in AdjustmentsGrid
+  /*
   const handleUpdateAdjustment = (id: string, adjustmentAmount: number) => {
     setCartItems(items => 
       items.map(item => 
@@ -404,6 +460,7 @@ export default function HomePage() {
       )
     );
   };
+  */
 
   const handleCheckout = (customer?: WordPressUser | null) => {
     try {
@@ -563,83 +620,121 @@ export default function HomePage() {
           />
         </svg>
       </div>
-      {/* Header Navigation */}
-      <div className="relative z-10">
-        <Header 
-        onSearch={handleSearch}
-        onRefresh={handleRefresh}
-        onSettings={handleSettings}
-        onViewChange={handleViewChange}
-        currentView={currentView}
-        categories={categories}
-        selectedCategory={selectedCategory || undefined}
-        onCategoryChange={handleCategoryChange}
-        categoriesLoading={categoriesLoading}
-        selectedCustomer={selectedCustomer}
-        onCustomerSelect={handleCustomerSelect}
-        isAuditMode={isAuditMode}
-        onAuditModeToggle={handleAuditModeToggle}
-        onSelectAll={handleSelectAll}
-        selectedCount={selectedProductsCount}
-        filteredCount={filteredProducts.length}
-        // Orders filter props
-        statusFilter={orderStatusFilter}
-        onStatusFilterChange={setOrderStatusFilter}
-        dateFrom={orderDateFrom}
-        dateTo={orderDateTo}
-        onDateFromChange={setOrderDateFrom}
-        onDateToChange={setOrderDateTo}
-        showSelectedOnly={orderShowSelectedOnly}
-        onShowSelectedOnlyChange={setOrderShowSelectedOnly}
-        totalOrders={totalOrders}
-        selectedOrdersCount={selectedOrdersCount}
-        onClearOrderSelection={() => setSelectedOrdersCount(0)}
-      />
+      {/* Main Layout with Sidebar */}
+      <div className="flex flex-1 relative z-10 overflow-hidden">
+        {/* Sidebar Navigation */}
+        <Sidebar
+          onRefresh={handleRefresh}
+          onSettings={handleSettings}
+          onViewChange={handleViewChange}
+          currentView={currentView}
+          onAuditModeToggle={handleAuditModeToggle}
+        />
         
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex min-h-0 relative z-10 overflow-hidden">
-        {/* Full Page Loading Overlay - Show when initially loading products */}
+        {/* Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header Navigation */}
+          <Header 
+            onSearch={handleSearch}
+            onRefresh={handleRefresh}
+            onSettings={handleSettings}
+            onViewChange={handleViewChange}
+            currentView={currentView}
+            categories={categories}
+            selectedCategory={selectedCategory || undefined}
+            onCategoryChange={handleCategoryChange}
+            categoriesLoading={categoriesLoading}
+            selectedCustomer={selectedCustomer}
+            onCustomerSelect={handleCustomerSelect}
+            selectedProduct={selectedProduct}
+            onProductSelect={handleProductSelect}
+            products={blueprintProducts}
+            productsLoading={blueprintProductsLoading}
+            isAuditMode={isAuditMode}
+            isRestockMode={isRestockMode}
+            selectedCount={selectedProductsCount}
+            filteredCount={filteredProducts.length}
+            onRestock={handleRestock}
+            onAudit={handleAudit}
+            // Orders filter props
+            statusFilter={orderStatusFilter}
+            onStatusFilterChange={setOrderStatusFilter}
+            dateFrom={orderDateFrom}
+            dateTo={orderDateTo}
+            onDateFromChange={setOrderDateFrom}
+            onDateToChange={setOrderDateTo}
+            showSelectedOnly={orderShowSelectedOnly}
+            onShowSelectedOnlyChange={setOrderShowSelectedOnly}
+            totalOrders={totalOrders}
+            selectedOrdersCount={selectedOrdersCount}
+            onClearOrderSelection={() => setSelectedOrdersCount(0)}
+            historyDateFilter={historyDateFilter}
+            onHistoryDateFilterChange={setHistoryDateFilter}
+            historyActionFilter={historyActionFilter}
+            onHistoryActionFilterChange={setHistoryActionFilter}
+          />
+          
+          {/* Main Content Area */}
+          <div className="flex-1 flex min-h-0 relative overflow-hidden">
+        {/* Full Page Loading Overlay - Show when initially loading products only */}
         {(currentView === 'products' && isProductsLoading && !isRefreshing) && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-            <LoadingSpinner 
-              size="lg" 
-              text="Loading products..."
-            />
-          </div>
+          <LoadingSpinner 
+            overlay
+            size="lg" 
+            text="Loading Products"
+            subText="Fetching inventory data..."
+          />
         )}
         
-        {/* Main Content */}
-        <main className={`flex-1 relative transition-all duration-500 ease-in-out pl-2 ${
-          currentView !== 'products' && currentView !== 'blueprint-fields' ? 'mr-[-320px]' : 'mr-0'
-        }`}>
-          {/* Loading Overlays - Only show refresh overlays here */}
-          {isRefreshing && (
+            {/* Main Content */}
+            <main className={`flex-1 relative transition-all duration-500 ease-in-out pl-2 ${
+              currentView !== 'products' && currentView !== 'blueprint-fields' ? 'mr-[-320px]' : 'mr-0'
+            }`}>
+          {/* Loading Overlays - Only show refresh overlays for views without their own loading */}
+          {isRefreshing && currentView !== 'blueprint-fields' && (
             <LoadingSpinner 
               overlay 
               size="lg" 
               text={
-                isRefreshing && currentView === 'products' ? 'Refreshing products...' :
-                isRefreshing && currentView === 'blueprint-fields' ? 'Refreshing blueprint fields...' :
-                isRefreshing && currentView === 'customers' ? 'Refreshing customers...' :
-                isRefreshing && currentView === 'orders' ? 'Refreshing orders...' :
-                'Loading...'
+                isRefreshing && currentView === 'products' ? 'Refreshing Products' :
+                isRefreshing && currentView === 'customers' ? 'Refreshing Customers' :
+                isRefreshing && currentView === 'orders' ? 'Refreshing Orders' :
+                'Loading'
               }
+              subText="Updating data..."
             />
           )}
           {currentView === 'products' && (
             <div className="h-full overflow-y-auto relative">
-                            <ProductGrid
+              <ProductGrid
                 ref={productGridRef}
                 onAddToCart={handleAddToCart}
                 searchQuery={searchQuery}
                 categoryFilter={selectedCategory || undefined}
                 onLoadingChange={handleProductsLoadingChange}
+              />
+            </div>
+          )}
+          
+          {currentView === 'adjustments' && (
+            <div className="h-full overflow-y-auto relative">
+              <AdjustmentsGrid
+                ref={adjustmentsGridRef}
+                searchQuery={searchQuery}
+                categoryFilter={selectedCategory || undefined}
+                onLoadingChange={handleProductsLoadingChange}
                 isAuditMode={isAuditMode}
-                onAddAdjustment={handleAddAdjustment}
-                onFilteredProductsChange={setFilteredProducts}
-                onSelectionCountChange={setSelectedProductsCount}
+                isRestockMode={isRestockMode}
+              />
+            </div>
+          )}
+
+          {currentView === 'history' && (
+            <div className="h-full overflow-hidden">
+              <InventoryHistoryView
+                onBack={handleHistoryBack}
+                dateFilter={historyDateFilter}
+                actionFilter={historyActionFilter}
               />
             </div>
           )}
@@ -650,8 +745,15 @@ export default function HomePage() {
                 ref={blueprintFieldsGridRef}
                 searchQuery={searchQuery}
                 categoryFilter={selectedCategory || undefined}
-                onLoadingChange={handleProductsLoadingChange}
+                onLoadingChange={(loading) => setBlueprintProductsLoading(loading)} 
                 selectedCustomer={selectedCustomer}
+                printSettings={printSettings}
+                selectedProduct={selectedProduct}
+                onProductSelect={handleProductSelect}
+                onProductsLoad={(products) => {
+                  console.log('Page: Received products from BlueprintFieldsGrid:', products?.length);
+                  setBlueprintProducts(products);
+                }}
               />
             </div>
           )}
@@ -659,7 +761,7 @@ export default function HomePage() {
           {currentView === 'customers' && (
             <div className="h-full">
               <StandardErrorBoundary componentName="CustomersView">
-                <Suspense fallback={<LoadingSpinner />}>
+                <Suspense fallback={<LoadingSpinner size="lg" text="Loading Customers" subText="Preparing view..." />}>
                   <CustomersViewLazy 
                     ref={customersViewRef} 
                     hideLoadingOverlay={isRefreshing}
@@ -672,7 +774,7 @@ export default function HomePage() {
           {currentView === 'orders' && (
             <div className="h-full overflow-y-auto">
               <StandardErrorBoundary componentName="OrdersView">
-                <Suspense fallback={<LoadingSpinner />}>
+                <Suspense fallback={<LoadingSpinner size="lg" text="Loading Orders" subText="Preparing view..." />}>
                   <OrdersViewLazy 
                     ref={ordersViewRef} 
                     hideLoadingOverlay={isRefreshing}
@@ -692,13 +794,21 @@ export default function HomePage() {
               </StandardErrorBoundary>
             </div>
           )}
-        </main>
 
-        {/* Cart Panel - Slides out when other views are active */}
+          {currentView === 'magic2' && (
+            <div className="h-full overflow-y-auto p-6">
+              <StandardErrorBoundary componentName="Magic2TableCreator">
+                <Magic2TableCreator />
+              </StandardErrorBoundary>
+            </div>
+          )}
+            </main>
+
+        {/* Cart Panel - Only show for products and blueprint-fields views */}
         <div className={`w-80 flex-shrink-0 transition-transform duration-500 ease-in-out pr-2 ${
           currentView !== 'products' && currentView !== 'blueprint-fields' ? 'transform translate-x-full' : 'transform translate-x-0'
         }`}>
-          {!showCheckout && currentView !== 'blueprint-fields' ? (
+          {!showCheckout && currentView !== 'blueprint-fields' && currentView === 'products' ? (
             <StandardErrorBoundary componentName="Cart">
               <Cart
                 items={cartItems}
@@ -710,18 +820,19 @@ export default function HomePage() {
                 onCustomerSelect={handleCustomerSelect}
                 isProductsLoading={isProductsLoading}
                 isAuditMode={isAuditMode}
-                onApplyAdjustments={handleApplyAdjustments}
-                onUpdateAdjustment={handleUpdateAdjustment}
+                // onApplyAdjustments={handleApplyAdjustments} - removed
+                // onUpdateAdjustment={handleUpdateAdjustment} - removed
               />
             </StandardErrorBoundary>
           ) : currentView === 'blueprint-fields' ? (
-            <CustomerSelectorPanel
+            <PrintSettingsPanel
               selectedCustomer={selectedCustomer}
               onCustomerSelect={handleCustomerSelect}
+              onSettingsChange={setPrintSettings}
             />
           ) : (
             <CriticalErrorBoundary componentName="Checkout">
-              <Suspense fallback={<LoadingSpinner />}>
+              <Suspense fallback={<LoadingSpinner size="lg" text="Loading Checkout" subText="Preparing checkout..." />}>
                 <CheckoutScreenLazy
                   items={cartItems}
                   selectedCustomer={selectedCustomer}
@@ -732,10 +843,12 @@ export default function HomePage() {
             </CriticalErrorBoundary>
           )}
         </div>
+          </div>
+        </div>
       </div>
 
       {/* Status Bar */}
-      <div className="flex-shrink-0 bg-transparent px-4 py-1">
+      <div className="flex-shrink-0 bg-neutral-900/50 border-t border-white/[0.08] px-4 py-2 relative z-10">
         <div className="flex items-center justify-between relative">
           <div className="flex items-center gap-3 text-xs text-neutral-500">
             <span>Online</span>

@@ -58,15 +58,10 @@ interface ProductGridProps {
   searchQuery?: string;
   categoryFilter?: string;
   onLoadingChange?: (loading: boolean, hasProducts: boolean) => void;
-  isAuditMode?: boolean;
-  onAddAdjustment?: (product: Product, adjustment: number) => void;
-  // Callbacks for select all functionality
-  onFilteredProductsChange?: (products: Product[]) => void;
-  onSelectionCountChange?: (count: number) => void;
 }
 
 export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> }, ProductGridProps>(
-  ({ onAddToCart, searchQuery, categoryFilter, onLoadingChange, isAuditMode = false, onAddAdjustment, onFilteredProductsChange, onSelectionCountChange }, ref) => {
+  ({ onAddToCart, searchQuery, categoryFilter, onLoadingChange }, ref) => {
     const { user } = useAuth();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -81,17 +76,8 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
       onLoadingChange?.(loading, products.length > 0);
     }, [loading, products.length, onLoadingChange]);
     
-      // Selected variants state - tracks which variant is selected for each product
+  // Selected variants state - tracks which variant is selected for each product
   const [selectedVariants, setSelectedVariants] = useState<Record<number, number>>({});
-  
-  // Stock editing state - tracks edited stock values in audit mode
-  const [editedStockValues, setEditedStockValues] = useState<Record<string, number | string>>({});
-  
-  // Focus state tracking for stock input fields
-  const [focusedStockFields, setFocusedStockFields] = useState<Set<string>>(new Set());
-  
-  // Selection state for adjust mode - tracks which products are selected for adjustment
-  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
 
   // Memoized filtered products for performance
   const filteredProducts = useMemo(() => {
@@ -118,53 +104,6 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
   });
   }, [products, searchQuery, categoryFilter]);
 
-  // Notify parent of filtered products and selection count
-  React.useEffect(() => {
-    if (onFilteredProductsChange) {
-      onFilteredProductsChange(filteredProducts);
-    }
-  }, [filteredProducts, onFilteredProductsChange]);
-
-  React.useEffect(() => {
-    if (onSelectionCountChange) {
-      const selectedCount = Array.from(selectedProducts).filter(productId => 
-        filteredProducts.some(p => p.id === productId)
-      ).length;
-      onSelectionCountChange(selectedCount);
-    }
-  }, [selectedProducts, filteredProducts, onSelectionCountChange]);
-
-  // Remove duplicate handlers - already memoized above
-
-  // Handle product card selection for adjust mode
-  const handleProductSelection = (product: Product, event?: React.MouseEvent) => {
-    // Prevent selection if clicking on input fields or buttons
-    if (event?.target && (event.target as HTMLElement).closest('input, button')) {
-      return;
-    }
-    
-    if (!isAuditMode) return;
-    
-    setSelectedProducts(prev => {
-      const newSelected = new Set(prev);
-      const productKey = product.id;
-      
-      if (newSelected.has(productKey)) {
-        // Deselect - remove from selection only
-        newSelected.delete(productKey);
-      } else {
-        // Select - add to selection and create adjustment item in cart (only if not already in cart)
-        newSelected.add(productKey);
-        
-        // Add to cart as adjustment item with 0 adjustment initially (prevent duplicates)
-        if (onAddAdjustment) {
-          onAddAdjustment(product, 0);
-        }
-      }
-      
-      return newSelected;
-    });
-  };
 
   // Simple refresh method - just reload the products
   const refreshInventory = async () => {
@@ -201,11 +140,11 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
 
       console.log(`🔄 Fetching all products using Flora IM API...`);
       
-      // Use the POSV1 proxy endpoint for Flora IM API with optimized caching
+      // NO CACHING IN DEVELOPMENT
       const params = new URLSearchParams({
         per_page: '100',
         page: '1',
-        _t: Math.floor(Date.now() / 60000).toString() // Cache for 1 minute
+        _t: Math.floor(Date.now() / 300000).toString() // Cache for 5 minutes
       });
 
       if (searchQuery) {
@@ -222,8 +161,10 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=300', // 5 minute cache
-        },
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
 
       if (!response.ok) {
@@ -314,11 +255,10 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
               // Continue without pricing
             }
 
-      // Process products with variants
+      // Process products with variants - Load variants normally
       const normalizedProducts: Product[] = await Promise.all(
         baseProducts.map(async (baseProduct: Product) => {
           try {
-
             // Check if this is a variable product and load variants
             if (baseProduct.type === 'variable') {
               try {
@@ -387,10 +327,13 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
     }
   }, [searchQuery, categoryFilter, user?.location_id]);
 
+  // Stabilize the fetchProducts dependency to prevent infinite loops
+  const stableFetchProducts = useMemo(() => fetchProducts, [fetchProducts]);
+
   // Load products on mount and when filters change
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    stableFetchProducts();
+  }, [stableFetchProducts]);
 
   // Listen for inventory change events - DISABLED to prevent automatic refresh
   // useEffect(() => {
@@ -415,6 +358,7 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
     }
   };
 
+
   // Memoized handlers for performance
   const handleVariantSelect = useCallback((productId: number, variantId: number) => {
     setSelectedVariants(prev => ({
@@ -434,17 +378,6 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
     );
   }, []);
 
-  const handleStockFieldFocus = useCallback((fieldKey: string) => {
-    setFocusedStockFields(prev => new Set(prev).add(fieldKey));
-  }, []);
-
-  const handleStockFieldBlur = useCallback((fieldKey: string) => {
-    setFocusedStockFields(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(fieldKey);
-      return newSet;
-    });
-  }, []);
 
   // Enhanced add to cart that handles variants
   const handleAddToCartWithVariant = (product: Product) => {
@@ -503,7 +436,9 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       });
 
@@ -537,7 +472,11 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
 
             const inventoryResponse = await fetch(`/api/proxy/flora-im/inventory?${inventoryParams}`, {
               method: 'GET',
-              headers: { 'Cache-Control': 'no-cache' }
+              headers: { 
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+              }
             });
 
             if (inventoryResponse.ok) {
@@ -575,121 +514,6 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
     }
   };
 
-  // Remove duplicate handleQuantityChange - already defined above
-
-  // Audit mode inventory adjustment handler
-  const handleInventoryAdjustment = async (productId: number, variantId: number | null, adjustment: number, reason: string = 'Manual adjustment') => {
-    console.log('🔧 [DEBUG] handleInventoryAdjustment called:', { productId, variantId, adjustment, reason });
-    try {
-      // Find the product being adjusted
-      const product = products.find(p => p.id === productId);
-      if (!product) {
-        console.error('❌ [DEBUG] Product not found for adjustment:', productId);
-        return;
-      }
-      console.log('✅ [DEBUG] Product found:', product.name);
-
-      // Create adjustment product for cart
-      let adjustmentProduct = { ...product };
-      
-      // If it's a variant, update the product details
-      if (variantId && product.has_variants && product.variants) {
-        const variant = product.variants.find(v => v.id === variantId);
-        if (variant) {
-          adjustmentProduct = {
-            ...product,
-            id: variantId,
-            name: `${product.name} - ${variant.name}`,
-            sku: variant.sku,
-            regular_price: variant.regular_price,
-            sale_price: variant.sale_price,
-            inventory: variant.inventory.map(inv => ({
-              location_id: inv.location_id.toString(),
-              location_name: `Location ${inv.location_id}`,
-              stock: inv.quantity,
-              manage_stock: true
-            })),
-            total_stock: variant.total_stock,
-            parent_id: product.id
-          };
-        }
-      }
-
-      // Add to cart as adjustment item - no immediate API call
-      console.log('🔧 [DEBUG] About to call onAddAdjustment:', { adjustmentProduct: adjustmentProduct.name, adjustment });
-      if (onAddAdjustment) {
-        onAddAdjustment(adjustmentProduct, adjustment);
-        console.log('✅ [DEBUG] onAddAdjustment called successfully');
-      } else {
-        console.error('❌ [DEBUG] onAddAdjustment is not defined');
-      }
-      
-    } catch (error) {
-      console.error('❌ Failed to adjust inventory:', error);
-      // You might want to show a toast notification here
-    }
-  };
-
-  // Handle direct stock value changes in audit mode
-  const handleStockValueChange = (productId: number, variantId: number | null, newStock: number | string) => {
-    const key = variantId ? `${productId}-${variantId}` : `${productId}`;
-    setEditedStockValues(prev => ({
-      ...prev,
-      [key]: newStock
-    }));
-  };
-
-  // Apply stock value change (set stock to specific amount)
-  const handleStockValueApply = async (productId: number, variantId: number | null, newStock: number, currentStock: number) => {
-    try {
-      const adjustment = newStock - currentStock;
-      
-      if (adjustment === 0) {
-        return; // No change needed
-      }
-
-      // Find the product being adjusted
-      const product = products.find(p => p.id === productId);
-      if (!product) {
-        console.error('Product not found for stock adjustment');
-        return;
-      }
-
-      // Create adjustment product for cart
-      let adjustmentProduct = { ...product };
-      
-      // If it's a variant, update the product details
-      if (variantId && product.has_variants && product.variants) {
-        const variant = product.variants.find(v => v.id === variantId);
-        if (variant) {
-          adjustmentProduct = {
-            ...product,
-            id: variantId,
-            name: `${product.name} - ${variant.name}`,
-            sku: variant.sku,
-            regular_price: variant.regular_price,
-            sale_price: variant.sale_price,
-            inventory: variant.inventory.map(inv => ({
-              location_id: inv.location_id.toString(),
-              location_name: `Location ${inv.location_id}`,
-              stock: inv.quantity,
-              manage_stock: true
-            })),
-            total_stock: variant.total_stock,
-            parent_id: product.id
-          };
-        }
-      }
-
-      // Add to cart as adjustment item
-      if (onAddAdjustment) {
-        onAddAdjustment(adjustmentProduct, adjustment);
-      }
-      
-    } catch (error) {
-      console.error('❌ Failed to apply stock adjustment:', error);
-    }
-  };
 
   // formatPrice moved to ProductCard component
 
@@ -742,7 +566,7 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
 
   return (
     <div>
-      {/* Product Grid */}
+      {/* Regular Grid View */}
       <div className="grid grid-cols-3 gap-2 p-2">
         {filteredProducts.map((product) => {
           const userLocationId = user?.location_id ? parseInt(user.location_id) : undefined;
@@ -753,23 +577,14 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
               product={product}
               userLocationId={userLocationId}
               selectedVariants={selectedVariants}
-              editedStockValues={editedStockValues}
-              focusedStockFields={focusedStockFields}
-              selectedProducts={selectedProducts}
-              isAuditMode={isAuditMode}
+              isAuditMode={false}
               onVariantSelect={handleVariantSelect}
               onQuantityChange={handleQuantityChange}
-              onStockFieldFocus={handleStockFieldFocus}
-              onStockFieldBlur={handleStockFieldBlur}
-              onStockValueChange={handleStockValueChange}
-              onStockValueApply={handleStockValueApply}
-              onInventoryAdjustment={handleInventoryAdjustment}
-              onProductSelection={handleProductSelection}
               onAddToCartWithVariant={handleAddToCartWithVariant}
             />
-                          );
-                        })}
-                          </div>
+          );
+        })}
+      </div>
     </div>
   );
 });

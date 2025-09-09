@@ -8,6 +8,7 @@
 export class CacheManager {
   private static readonly CACHE_VERSION = Date.now().toString();
   private static readonly DEV_CACHE_PREFIX = 'flora-pos-dev-';
+  private static clearingInterval: NodeJS.Timer | null = null;
   
   /**
    * Clear all application caches
@@ -71,7 +72,22 @@ export class CacheManager {
    * Setup development cache management
    */
   static setupDevCacheManagement(): void {
-    if (process.env.NODE_ENV !== 'development' || typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
+    
+    // ALWAYS clear caches on load in development
+    console.log('🧹 Clearing ALL caches on load...');
+    this.clearAllCaches();
+    
+    // Clear caches periodically in development (every 30 seconds)
+    if (process.env.NODE_ENV === 'development') {
+      if (this.clearingInterval) {
+        clearInterval(this.clearingInterval);
+      }
+      this.clearingInterval = setInterval(() => {
+        console.log('🧹 Auto-clearing caches...');
+        this.clearAllCaches();
+      }, 30000); // Every 30 seconds
+    }
     
     // Add keyboard shortcut for cache clearing (Ctrl+Shift+R or Cmd+Shift+R)
     window.addEventListener('keydown', (event) => {
@@ -87,18 +103,29 @@ export class CacheManager {
       clearAll: () => this.clearAllCaches(),
       forceReload: () => this.forceReload(),
       version: this.CACHE_VERSION,
+      stopAutoClear: () => {
+        if (this.clearingInterval) {
+          clearInterval(this.clearingInterval);
+          this.clearingInterval = null;
+          console.log('⏹️ Stopped auto-clearing caches');
+        }
+      }
     };
     
     console.log('🛠️ Development cache management enabled');
+    console.log('   - Caches are cleared on every load');
+    console.log('   - Caches are auto-cleared every 30 seconds');
     console.log('   - Use Ctrl+Shift+R (Cmd+Shift+R) to force reload');
     console.log('   - Use __floraCacheManager.clearAll() in console');
+    console.log('   - Use __floraCacheManager.stopAutoClear() to stop auto-clearing');
   }
   
   /**
    * Check if we need to bust cache based on version
    */
   static shouldBustCache(): boolean {
-    if (process.env.NODE_ENV !== 'development') return false;
+    // ALWAYS bust cache in development
+    if (process.env.NODE_ENV === 'development') return true;
     
     const storedVersion = localStorage.getItem('flora-cache-version');
     return storedVersion !== this.CACHE_VERSION;

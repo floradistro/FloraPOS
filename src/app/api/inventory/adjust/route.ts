@@ -1,119 +1,154 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const FLORA_API_BASE = 'https://api.floradistro.com/wp-json';
+const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
+const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { product_id, variation_id, adjustment, reason, location_id } = body;
+    const { adjustments } = body;
 
-    console.log(`🔄 Processing inventory adjustment for product ${product_id}${variation_id ? ` variant ${variation_id}` : ''}: ${adjustment > 0 ? '+' : ''}${adjustment}`);
-
-    // Validate required fields
-    if (!product_id || typeof adjustment !== 'number' || adjustment === 0) {
+    if (!adjustments || !Array.isArray(adjustments)) {
       return NextResponse.json(
-        { error: 'Invalid request: product_id and non-zero adjustment are required' },
+        { error: 'Invalid adjustments data' },
         { status: 400 }
       );
     }
 
-    // Build the adjustment request for Flora IM API
-    const adjustmentData: {
-      product_id: number;
-      adjustment: number;
-      reason: string;
-      location_id: number | null;
-      variation_id?: number;
-    } = {
-      product_id: parseInt(product_id),
-      adjustment: adjustment,
-      reason: reason || 'Manual adjustment',
-      location_id: location_id ? parseInt(location_id) : null
-    };
+    console.log(`📦 Processing ${adjustments.length} inventory adjustments`);
 
-    // Add variation_id if provided
-    if (variation_id) {
-      adjustmentData.variation_id = parseInt(variation_id);
-    }
+    // Process each adjustment directly through the Flora API
+    const results = await Promise.all(
+      adjustments.map(async (adjustment) => {
+        const { product_id, variation_id, adjustment_quantity, reason, location_id } = adjustment;
+        
+        try {
+          // Step 1: Get current inventory from Flora IM
+          const locationIdToUse = location_id || 20; // Default to location 20 if not specified
+          
+          console.log(`Getting current inventory for product ${product_id}${variation_id ? ` variant ${variation_id}` : ''} at location ${locationIdToUse}`);
+          
+          const inventoryUrl = `${FLORA_API_BASE}/flora-im/v1/inventory?product_id=${product_id}${variation_id ? `&variation_id=${variation_id}` : ''}&location_id=${locationIdToUse}&consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
+          
+          const currentInventoryResponse = await fetch(inventoryUrl);
+          
+          let currentStock = 0;
+          
+          if (currentInventoryResponse.ok) {
+            const inventoryData = await currentInventoryResponse.json();
+            console.log(`Current inventory data:`, inventoryData);
+            
+            // Flora IM returns an array
+            if (Array.isArray(inventoryData) && inventoryData.length > 0) {
+              currentStock = parseFloat(inventoryData[0].quantity) || 0;
+            }
+          } else {
+            console.log(`No existing inventory record found, starting from 0`);
+          }
 
-    console.log('📤 Sending adjustment request to Flora IM:', adjustmentData);
+          const newStock = currentStock + adjustment_quantity;
+          
+          console.log(`Product ${product_id}: Current stock: ${currentStock}, Adjustment: ${adjustment_quantity}, New stock: ${newStock}`);
 
-    // Get current inventory to calculate new quantity
-    const currentInventoryUrl = `/wp-json/flora-im/v1/inventory?product_id=${adjustmentData.product_id}&location_id=${adjustmentData.location_id || ''}${adjustmentData.variation_id ? `&variation_id=${adjustmentData.variation_id}` : ''}&consumer_key=${process.env.FLORA_CONSUMER_KEY}&consumer_secret=${process.env.FLORA_CONSUMER_SECRET}`;
+          // Step 2: Update inventory through Flora IM POST endpoint
+          const updateUrl = `${FLORA_API_BASE}/flora-im/v1/inventory?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
+          
+          const updateData = {
+            product_id: product_id,
+            variation_id: variation_id || null,
+            location_id: locationIdToUse,
+            quantity: newStock // Send the absolute new quantity, not the adjustment
+          };
+
+          console.log(`Sending inventory update to Flora IM:`, updateData);
+
+          const updateResponse = await fetch(updateUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updateData)
+          });
+
+          if (!updateResponse.ok) {
+            const errorText = await updateResponse.text();
+            console.error(`Failed to update inventory for product ${product_id}:`, errorText);
+            throw new Error(`Failed to update inventory: ${updateResponse.status}`);
+          }
+
+          const updateResult = await updateResponse.json();
+          console.log(`✅ Inventory updated for product ${product_id}:`, updateResult);
+          console.log(`📝 Audit log entry should be automatically created by Flora IM`);
+          
+          // Also update WooCommerce if it's a variation (for consistency)
+          if (variation_id) {
+            try {
+              const wooUrl = `${FLORA_API_BASE}/wc/v3/products/${product_id}/variations/${variation_id}?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
+              
+              await fetch(wooUrl, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  stock_quantity: newStock,
+                  manage_stock: true
+                })
+              });
+              
+              console.log(`✅ Also updated WooCommerce stock for consistency`);
+            } catch (wooError) {
+              // Non-critical, just log it
+              console.log(`Note: Could not update WooCommerce stock (non-critical):`, wooError);
+            }
+          }
+          
+          return {
+            success: true,
+            product_id,
+            variation_id,
+            adjustment: adjustment_quantity,
+            old_stock: currentStock,
+            new_stock: newStock,
+            message: `Stock adjusted from ${currentStock} to ${newStock}`
+          };
+        } catch (error) {
+          console.error(`Error adjusting product ${product_id}:`, error);
+          
+          return {
+            success: false,
+            product_id,
+            variation_id,
+            adjustment: adjustment_quantity,
+            message: `Failed to adjust stock`,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          };
+        }
+      })
+    );
+
+    // Check results
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
     
-    console.log('📤 Getting current inventory from Flora IM:', currentInventoryUrl);
-    
-    const currentResponse = await fetch(`${process.env.WORDPRESS_URL}${currentInventoryUrl}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!currentResponse.ok) {
-      console.error('❌ Failed to get current inventory:', currentResponse.status);
-      return NextResponse.json(
-        { error: `Failed to get current inventory: ${currentResponse.statusText}` },
-        { status: currentResponse.status }
-      );
+    console.log(`✅ Successfully adjusted ${successful.length}/${adjustments.length} products`);
+    if (failed.length > 0) {
+      console.log(`❌ Failed to adjust ${failed.length} products:`, failed);
     }
-
-    const currentInventory = await currentResponse.json();
-    const currentQuantity = Array.isArray(currentInventory) && currentInventory.length > 0 
-      ? parseFloat(currentInventory[0].quantity || 0) 
-      : 0;
-    
-    const newQuantity = Math.max(0, currentQuantity + adjustmentData.adjustment);
-    
-    console.log(`📤 Updating inventory via Flora IM: Current: ${currentQuantity}, Adjustment: ${adjustmentData.adjustment}, New: ${newQuantity}`);
-
-    // Call Flora IM API to update inventory
-    const updateData: {
-      product_id: number;
-      location_id: number | null;
-      quantity: number;
-      reason: string;
-      variation_id?: number;
-    } = {
-      product_id: adjustmentData.product_id,
-      location_id: adjustmentData.location_id,
-      quantity: newQuantity,
-      reason: adjustmentData.reason || 'Manual adjustment via audit mode'
-    };
-
-    if (adjustmentData.variation_id) {
-      updateData.variation_id = adjustmentData.variation_id;
-    }
-
-    const floraResponse = await fetch(`${process.env.WORDPRESS_URL}/wp-json/flora-im/v1/inventory?consumer_key=${process.env.FLORA_CONSUMER_KEY}&consumer_secret=${process.env.FLORA_CONSUMER_SECRET}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updateData),
-    });
-
-    if (!floraResponse.ok) {
-      const errorText = await floraResponse.text();
-      console.error('❌ Flora IM API error:', floraResponse.status, errorText);
-      return NextResponse.json(
-        { error: `Flora IM API error: ${floraResponse.status} ${floraResponse.statusText}` },
-        { status: floraResponse.status }
-      );
-    }
-
-    const result = await floraResponse.json();
-
-    console.log('✅ Inventory adjustment successful:', result);
 
     return NextResponse.json({
       success: true,
-      data: result,
-      message: `Inventory adjusted by ${adjustment > 0 ? '+' : ''}${adjustment}`
+      message: `Processed ${adjustments.length} adjustments`,
+      results,
+      successful: successful.length,
+      failures: failed.length
     });
 
   } catch (error) {
-    console.error('❌ Inventory adjustment error:', error);
+    console.error('Error processing inventory adjustments:', error);
     return NextResponse.json(
-      { error: 'Internal server error during inventory adjustment' },
+      { error: 'Failed to process adjustments' },
       { status: 500 }
     );
   }

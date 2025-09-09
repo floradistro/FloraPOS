@@ -8,6 +8,8 @@ import { usersService, WordPressUser } from '../services/users-service';
  * These replace manual fetch calls with proper caching and error handling
  */
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 // Products with inventory (main product grid data)
 export function useProducts(searchQuery?: string, categoryFilter?: string) {
   return useQuery({
@@ -40,10 +42,10 @@ export function useProducts(searchQuery?: string, categoryFilter?: string) {
         meta: result.meta || { total: 0, pages: 1, page: 1, per_page: 100 }
       };
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes - balance between freshness and performance
-    gcTime: 1000 * 60 * 10, // 10 minutes cache retention
-    refetchOnWindowFocus: false, // We handle this manually with our throttled focus handler
-    retry: 2,
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 5, // No cache in dev
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 10, // No cache in dev
+    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
+    retry: isDevelopment ? 0 : 2,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 }
@@ -53,10 +55,10 @@ export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
     queryFn: () => CategoriesService.getCategories(),
-    staleTime: 1000 * 60 * 120, // 2 hours - categories rarely change
-    gcTime: 1000 * 60 * 30, // 30 minutes cache retention
-    refetchOnWindowFocus: false,
-    retry: 1,
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 120, // No cache in dev
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
+    refetchOnWindowFocus: isDevelopment ? true : false,
+    retry: isDevelopment ? 0 : 1,
   });
 }
 
@@ -75,8 +77,8 @@ export function useCustomers(searchQuery?: string) {
       }
       return users;
     },
-    staleTime: 1000 * 60 * 15, // 15 minutes - customer data changes infrequently
-    gcTime: 1000 * 60 * 15, // 15 minutes cache retention
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
     enabled: !!searchQuery, // Only run if we have a search query
   });
 }
@@ -86,8 +88,8 @@ export function useCustomer(customerId: number) {
   return useQuery({
     queryKey: ['customer', customerId],
     queryFn: () => usersService.getUserById(customerId),
-    staleTime: 1000 * 60 * 10, // 10 minutes
-    gcTime: 1000 * 60 * 20, // 20 minutes cache retention
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 10, // No cache in dev
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 20, // No cache in dev
     enabled: !!customerId,
   });
 }
@@ -162,7 +164,7 @@ export function useOptimizedCache() {
       queryClient.prefetchQuery({
         queryKey: ['customer', customerId],
         queryFn: () => usersService.getUserById(customerId),
-        staleTime: 1000 * 60 * 10,
+        staleTime: isDevelopment ? 0 : 1000 * 60 * 10,
       });
     },
     

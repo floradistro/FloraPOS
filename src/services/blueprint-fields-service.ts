@@ -62,27 +62,104 @@ export class BlueprintFieldsService {
   }
 
   /**
-   * Get product meta data with blueprint fields
+   * Get product meta data with blueprint fields from WooCommerce API
    */
   static async getProductBlueprintFields(productId: number): Promise<ProductBlueprintFields | null> {
     try {
       const response = await fetch(
-        `${this.BASE_URL}/meta/product/${productId}?consumer_key=${this.CONSUMER_KEY}&consumer_secret=${this.CONSUMER_SECRET}`
+        `https://api.floradistro.com/wp-json/wc/v3/products/${productId}?consumer_key=${this.CONSUMER_KEY}&consumer_secret=${this.CONSUMER_SECRET}`
       );
 
       if (!response.ok) {
         if (response.status === 404) {
-          return null; // No blueprint fields for this product
+          return null; // No product found
         }
-        throw new Error(`Failed to fetch product blueprint fields: ${response.statusText}`);
+        throw new Error(`Failed to fetch product: ${response.statusText}`);
       }
 
-      const metaData = await response.json();
-      return metaData || null;
+      const product = await response.json();
+      
+      if (!product.meta_data || !Array.isArray(product.meta_data)) {
+        return null; // No meta data
+      }
+
+      // Extract magic2 fields from meta_data
+      const magic2MetaKeys = ['_supplier', '_cost_price'];
+      const magic2MetaData = product.meta_data.filter((meta: any) => 
+        magic2MetaKeys.includes(meta.key)
+      );
+
+      if (magic2MetaData.length === 0) {
+        return null; // No magic2 fields found
+      }
+
+      // Convert meta_data back to fields format
+      const fields = magic2MetaData.map((meta: any) => {
+        let fieldName;
+        switch (meta.key) {
+          case '_supplier':
+            fieldName = 'supplier';
+            break;
+          case '_cost_price':
+            fieldName = 'cost';
+            break;
+          default:
+            fieldName = meta.key.replace('_', ''); // Remove underscore prefix
+        }
+        
+        return {
+          field_name: fieldName,
+          field_label: this.getFieldLabel(fieldName),
+          field_type: this.getFieldType(fieldName),
+          field_value: meta.value,
+        };
+      });
+
+      return {
+        product_id: productId,
+        product_name: product.name,
+        blueprint_id: 39, // Default blueprint ID
+        blueprint_name: 'magic2_fields',
+        fields
+      };
     } catch (error) {
       console.error('Error fetching product blueprint fields:', error);
       return null;
     }
+  }
+
+  /**
+   * Get field label based on field name
+   */
+  private static getFieldLabel(fieldName: string): string {
+    const labelMap: Record<string, string> = {
+      'supplier': 'Supplier',
+      'cost': 'Cost',
+      'strain_type': 'Type',
+      'thca_percentage': 'THCA %',
+      'effect': 'Effect',
+      'lineage': 'Lineage',
+      'nose': 'Nose',
+      'terpene': 'Terpene'
+    };
+    return labelMap[fieldName] || fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+  }
+
+  /**
+   * Get field type based on field name
+   */
+  private static getFieldType(fieldName: string): string {
+    const typeMap: Record<string, string> = {
+      'cost': 'number',
+      'thca_percentage': 'number',
+      'supplier': 'text',
+      'strain_type': 'text',
+      'effect': 'text',
+      'lineage': 'text',
+      'nose': 'text',
+      'terpene': 'text'
+    };
+    return typeMap[fieldName] || 'text';
   }
 
   /**
@@ -133,7 +210,7 @@ export class BlueprintFieldsService {
   }
 
   /**
-   * Create mock blueprint fields data for products without real data
+   * Create mock fields data for products without real data
    */
   static createMockBlueprintFields(productId: number, productName: string): ProductBlueprintFields {
     const mockFields = [
@@ -172,6 +249,18 @@ export class BlueprintFieldsService {
         field_label: 'Terpene',
         field_type: 'text',
         field_value: ['Myrcene', 'Limonene', 'Caryophyllene', 'Pinene', 'Linalool'][Math.floor(Math.random() * 5)]
+      },
+      {
+        field_name: 'supplier',
+        field_label: 'Supplier',
+        field_type: 'text',
+        field_value: ''
+      },
+      {
+        field_name: 'cost',
+        field_label: 'Cost',
+        field_type: 'number',
+        field_value: ''
       }
     ];
 
@@ -179,7 +268,7 @@ export class BlueprintFieldsService {
       product_id: productId,
       product_name: productName,
       blueprint_id: 39,
-      blueprint_name: 'flower_blueprint',
+      blueprint_name: 'magic2_fields',
       fields: mockFields
     };
   }
@@ -199,5 +288,74 @@ export class BlueprintFieldsService {
 
     // Return mock data as fallback
     return this.createMockBlueprintFields(productId, productName);
+  }
+
+  /**
+   * Update product blueprint field values using WooCommerce API
+   */
+  static async updateProductBlueprintFields(
+    productId: number, 
+    fields: Array<{ field_name: string; field_value: any }>
+  ): Promise<boolean> {
+    try {
+      console.log(`🔄 Updating blueprint fields for product ${productId}:`, fields);
+
+      // Convert fields to magic2 plugin meta_data format
+      const metaData = fields.map(field => {
+        let metaKey;
+        switch (field.field_name) {
+          case 'supplier':
+            metaKey = '_supplier'; // magic2 supplier meta key
+            break;
+          case 'cost':
+            metaKey = '_cost_price'; // magic2 cost meta key
+            break;
+          default:
+            metaKey = `_${field.field_name}`; // Standard underscore prefix
+        }
+        
+        return {
+          key: metaKey,
+          value: field.field_value
+        };
+      });
+
+      const response = await fetch(
+        `https://api.floradistro.com/wp-json/wc/v3/products/${productId}?consumer_key=${this.CONSUMER_KEY}&consumer_secret=${this.CONSUMER_SECRET}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            meta_data: metaData
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to update product blueprint fields: ${response.status}`, errorText);
+        throw new Error(`Failed to update product blueprint fields: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ Successfully updated blueprint fields for product ${productId}:`, result);
+      return true;
+    } catch (error) {
+      console.error('Error updating product blueprint fields:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a single blueprint field for a product
+   */
+  static async updateProductBlueprintField(
+    productId: number, 
+    fieldName: string, 
+    fieldValue: any
+  ): Promise<boolean> {
+    return this.updateProductBlueprintFields(productId, [{ field_name: fieldName, field_value: fieldValue }]);
   }
 }

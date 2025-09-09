@@ -614,7 +614,8 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
           <LoadingSpinner 
             overlay 
             size="lg" 
-            text="Loading customers..." 
+            text="Loading Customers"
+            subText="Fetching customer data..."
           />
         )}
         

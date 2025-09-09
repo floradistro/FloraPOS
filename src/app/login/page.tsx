@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -38,7 +39,16 @@ export default function LoginPage() {
     <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
       <div className="bg-neutral-800 p-8 rounded-lg shadow-xl w-full max-w-md border border-white/[0.04]">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">POS System</h1>
+          <div className="mb-6 flex justify-center">
+            <Image 
+              src="/logo123.png" 
+              alt="Flora Distro Logo" 
+              width={180} 
+              height={180}
+              className="object-contain"
+            />
+          </div>
+          <h1 className="text-4xl font-dongraffiti text-white mb-2">Flora Distro</h1>
           <p className="text-neutral-400">Sign in to continue</p>
         </div>
 
@@ -84,20 +94,11 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-neutral-800"
+            className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-neutral-800"
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-neutral-400">
-          <div className="mb-2 text-red-400 font-medium">WordPress Application Password Required</div>
-          <div className="text-xs text-neutral-500 space-y-1">
-            <div>1. Go to WordPress Admin → Users → Your Profile</div>
-            <div>2. Create new Application Password</div>
-            <div>3. Use your username + generated password</div>
-          </div>
-        </div>
       </div>
     </div>
   );
