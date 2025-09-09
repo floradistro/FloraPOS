@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface AuditLogEntry {
+  location_id?: string | number;
+  action?: string;
+  created_at?: string;
+  user_id?: string | number;
+  user_name?: string;
+  details?: string;
+  metadata?: any;
+}
+
 const FLORA_API_BASE = 'https://api.floradistro.com/wp-json';
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
@@ -69,22 +79,22 @@ export async function GET(request: NextRequest) {
       throw new Error(`Flora IM API error: ${response.status}`);
     }
 
-    const auditData = await response.json();
+    const auditData: AuditLogEntry[] = await response.json();
     console.log(`✅ Retrieved ${auditData?.length || 0} audit log entries from Flora IM`);
 
     // Flora IM returns an array directly, not wrapped in a data object
-    let filteredData = auditData || [];
+    let filteredData: AuditLogEntry[] = auditData || [];
 
     // Apply client-side filtering since Flora IM doesn't support it
     if (locationId && locationId !== 'all') {
-      filteredData = filteredData.filter(entry => 
+      filteredData = filteredData.filter((entry: AuditLogEntry) => 
         entry.location_id && entry.location_id.toString() === locationId.toString()
       );
       console.log(`📍 After location filter: ${filteredData.length} entries`);
     }
 
     if (action && action !== 'all' && action !== '') {
-      filteredData = filteredData.filter(entry => 
+      filteredData = filteredData.filter((entry: AuditLogEntry) => 
         entry.action && entry.action === action
       );
       console.log(`🎯 After action filter: ${filteredData.length} entries`);
@@ -94,7 +104,7 @@ export async function GET(request: NextRequest) {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(days));
       
-      filteredData = filteredData.filter(entry => {
+      filteredData = filteredData.filter((entry: AuditLogEntry) => {
         if (!entry.created_at) return false;
         const entryDate = new Date(entry.created_at);
         return entryDate >= daysAgo;
