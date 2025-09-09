@@ -6,8 +6,8 @@ import { useAuth } from '../../contexts/AuthContext';
 interface SidebarProps {
   onRefresh?: () => void;
   onSettings?: () => void;
-  onViewChange?: (view: 'products' | 'customers' | 'orders' | 'blueprint-fields' | 'adjustments' | 'magic2') => void;
-  currentView?: 'products' | 'customers' | 'orders' | 'blueprint-fields' | 'adjustments' | 'magic2';
+  onViewChange?: (view: 'products' | 'customers' | 'orders' | 'blueprint-fields' | 'adjustments' | 'history' | 'magic2') => void;
+  currentView?: 'products' | 'customers' | 'orders' | 'blueprint-fields' | 'adjustments' | 'history' | 'magic2';
   onAuditModeToggle?: () => void;
 }
 

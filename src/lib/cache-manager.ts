@@ -8,7 +8,7 @@
 export class CacheManager {
   private static readonly CACHE_VERSION = Date.now().toString();
   private static readonly DEV_CACHE_PREFIX = 'flora-pos-dev-';
-  private static clearingInterval: NodeJS.Timer | null = null;
+  private static clearingInterval: ReturnType<typeof setInterval> | null = null;
   
   /**
    * Clear all application caches

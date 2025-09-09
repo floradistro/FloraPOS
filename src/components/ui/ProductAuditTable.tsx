@@ -8,7 +8,7 @@ interface ProductAuditTableProps {
   selectedProducts: Set<number>;
   editedStockValues: Record<string, string | number>;
   userLocationId?: number;
-  onProductSelection: (productId: number) => void;
+  onProductSelection: (product: Product, event?: React.MouseEvent) => void;
   onInventoryAdjustment: (productId: number, variantId: number | null, adjustment: number, reason: string) => void;
   onStockValueChange: (productId: number, variantId: number | null, value: string) => void;
   onStockFieldFocus: (key: string) => void;
@@ -66,7 +66,7 @@ export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
                       : 'hover:bg-white/[0.02]'
                     }
                   `}
-                  onClick={() => onProductSelection(product.id)}
+                  onClick={(e) => onProductSelection(product, e)}
                 >
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
@@ -145,7 +145,7 @@ export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
                     </div>
                   </td>
                   <td className="py-3 px-4 text-right text-sm font-medium text-neutral-300">
-                    ${product.price?.toFixed(2) || '0.00'}
+                    ${parseFloat(product.regular_price || '0').toFixed(2)}
                   </td>
                 </tr>
                 {/* Variant Rows */}
@@ -223,7 +223,7 @@ export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
                         </div>
                       </td>
                       <td className="py-2 px-4 text-right text-sm text-neutral-400">
-                        ${variant.price?.toFixed(2) || '0.00'}
+                        ${parseFloat(variant.regular_price || '0').toFixed(2)}
                       </td>
                     </tr>
                   );

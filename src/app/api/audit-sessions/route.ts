@@ -181,7 +181,11 @@ export async function POST(request: NextRequest) {
             return { success: true, product_id: adj.product_id };
           } catch (error) {
             console.error(`Failed to update product ${adj.product_id}:`, error);
-            return { success: false, product_id: adj.product_id, error: error.message };
+            return { 
+              success: false, 
+              product_id: adj.product_id, 
+              error: error instanceof Error ? error.message : 'Unknown error' 
+            };
           }
         })
       );

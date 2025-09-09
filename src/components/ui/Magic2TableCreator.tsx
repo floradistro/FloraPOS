@@ -125,7 +125,7 @@ export function Magic2TableCreator() {
               <Button
                 onClick={() => copyToClipboard(response.sql || response.fallback_sql || '')}
                 size="sm"
-                variant="outline"
+                variant="secondary"
                 className="mt-2"
               >
                 Copy SQL

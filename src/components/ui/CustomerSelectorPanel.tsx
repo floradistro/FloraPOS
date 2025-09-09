@@ -167,9 +167,6 @@ export function CustomerSelectorPanel({ selectedCustomer, onCustomerSelect }: Cu
                     {customer.display_name || customer.username}
                   </div>
                   <div className="text-xs text-neutral-400 truncate">{customer.email}</div>
-                  {customer.phone && (
-                    <div className="text-xs text-neutral-500 truncate">{customer.phone}</div>
-                  )}
                 </div>
                 {selectedCustomer?.id === customer.id && (
                   <svg className="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

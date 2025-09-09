@@ -425,7 +425,8 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
           console.warn('⚠️ Could not update customer data for new user:', err);
         }
 
-        setUsers(prev => [...prev, newUser]);
+        // Refetch users to get the updated list
+        refetchUsers();
         setShowAddForm(false);
         
       } else if (typeof editingUser === 'number') {
@@ -467,9 +468,8 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
           console.warn('⚠️ Customer data update failed, but user data was saved:', err);
         }
 
-        setUsers(prev => prev.map(user => 
-          user.id === editingUser ? updatedUser : user
-        ));
+        // Refetch users to get the updated list
+        refetchUsers();
         setLastUpdated(editingUser);
         setTimeout(() => setLastUpdated(null), 3000);
       }
@@ -572,7 +572,8 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
         throw new Error(errorData.error || 'Failed to delete customer');
       }
 
-      setUsers(prev => prev.filter(user => user.id !== userId));
+      // Refetch users to get the updated list
+      refetchUsers();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete customer');
     }

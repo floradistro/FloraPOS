@@ -7,12 +7,23 @@ export interface Product {
   id: number;
   name: string;
   sku: string;
+  type: string;
+  status: string;
+  regular_price: string;
+  sale_price?: string;
   image?: string;
   categories: Array<{
     id: number;
     name: string;
     slug: string;
   }>;
+  inventory: Array<{
+    location_id: string;
+    location_name: string;
+    stock: number;
+    manage_stock: boolean;
+  }>;
+  total_stock: number;
 }
 
 interface HeaderProductSelectorProps {
