@@ -9,6 +9,7 @@ interface ProductCardProps {
   userLocationId?: number;
   selectedVariants: Record<number, number>;
   isAuditMode: boolean;
+  isSalesView?: boolean; // New prop to identify sales view
   onVariantSelect: (productId: number, variantId: number) => void;
   onQuantityChange: (productId: number, quantity: number, price: number, category?: string) => void;
   onAddToCartWithVariant: (product: Product) => void;
@@ -29,6 +30,7 @@ const ProductCard = memo<ProductCardProps>(({
   userLocationId,
   selectedVariants,
   isAuditMode,
+  isSalesView = false,
   onVariantSelect,
   onQuantityChange,
   onAddToCartWithVariant,
@@ -319,7 +321,7 @@ const ProductCard = memo<ProductCardProps>(({
                       key={variant.id}
                       onClick={() => onVariantSelect(product.id, variant.id)}
                       disabled={!variantInStock}
-                      className={`w-full px-2 py-2 text-xs rounded transition-colors text-left ${
+                      className={`w-full px-2 py-2 ${isSalesView ? 'text-sm' : 'text-xs'} rounded transition-colors text-left ${
                         isVariantSelected
                           ? 'bg-transparent border border-neutral-600 text-neutral-200'
                           : variantInStock
@@ -327,9 +329,9 @@ const ProductCard = memo<ProductCardProps>(({
                           : 'bg-transparent border border-neutral-800/40 text-neutral-600 cursor-not-allowed opacity-50'
                       }`}
                     >
-                      <div className="truncate font-medium">{variant.name}</div>
+                      <div className={`truncate font-medium ${isSalesView ? 'text-sm' : ''}`}>{variant.name}</div>
                       <div className="mt-1">
-                        <span className={`text-xs ${variantInStock ? 'text-neutral-500' : 'text-red-400'}`}>
+                        <span className={`${isSalesView ? 'text-sm' : 'text-xs'} ${variantInStock ? 'text-neutral-500' : 'text-red-400'}`}>
                           {variantInStock ? `${variantStock} in stock` : 'Out of stock'}
                         </span>
                       </div>
@@ -358,6 +360,7 @@ const ProductCard = memo<ProductCardProps>(({
                       onQuantityChange(product.id, quantity, price, category)
                     }
                     disabled={false}
+                    hidePrices={isSalesView}
                   />
                 </div>
               )}
@@ -369,6 +372,7 @@ const ProductCard = memo<ProductCardProps>(({
               blueprintPricing={product.blueprintPricing}
               onQuantityChange={(quantity, price, category) => onQuantityChange(product.id, quantity, price, category)}
               disabled={false}
+              hidePrices={isSalesView}
             />
           ) : null
         )}

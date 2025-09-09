@@ -578,6 +578,7 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
               userLocationId={userLocationId}
               selectedVariants={selectedVariants}
               isAuditMode={false}
+              isSalesView={true}
               onVariantSelect={handleVariantSelect}
               onQuantityChange={handleQuantityChange}
               onAddToCartWithVariant={handleAddToCartWithVariant}

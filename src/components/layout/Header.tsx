@@ -142,12 +142,9 @@ export function Header({
 
   return (
     <div className="header-nav bg-transparent flex-shrink-0 relative z-40">
-      <div className="flex items-center h-full py-4 px-4 relative">
-        {/* Search Bar - Consistently positioned across all views */}
-        <div className="absolute flex items-center justify-center gap-2" style={{
-          left: 'calc(60px + (100vw - 60px - 320px) / 2)',  // Always center over main content area
-          transform: 'translateX(-50%)'
-        }}>
+      <div className="flex items-center h-full py-4 px-2 sm:px-4 relative gap-2">
+        {/* Search Bar - Responsive positioning that never overlaps */}
+        <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0">
           {/* Orders View - No search bar, just filters centered */}
           {currentView === 'orders' ? (
             <>
@@ -178,24 +175,24 @@ export function Header({
                 </select>
               </div>
 
-              {/* Date Range Filters with Icon - Compact */}
-              <div className="flex items-center gap-1">
-                <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Date Range Filters with Icon - Responsive */}
+              <div className="flex items-center gap-1 flex-wrap">
+                <svg className="w-4 h-4 text-neutral-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => onDateFromChange?.(e.target.value)}
-                  className="px-2 h-[30px] bg-neutral-800/80 border border-white/[0.12] rounded text-neutral-300 text-sm focus:border-white/[0.3] focus:outline-none hover:bg-neutral-700/80 transition-colors w-36"
+                  className="px-2 h-[30px] bg-neutral-800/80 border border-white/[0.12] rounded text-neutral-300 text-sm focus:border-white/[0.3] focus:outline-none hover:bg-neutral-700/80 transition-colors w-28 sm:w-36"
                   title="From Date"
                 />
-                <span className="text-neutral-500 text-sm">to</span>
+                <span className="text-neutral-500 text-xs sm:text-sm">to</span>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => onDateToChange?.(e.target.value)}
-                  className="px-2 h-[30px] bg-neutral-800/80 border border-white/[0.12] rounded text-neutral-300 text-sm focus:border-white/[0.3] focus:outline-none hover:bg-neutral-700/80 transition-colors w-36"
+                  className="px-2 h-[30px] bg-neutral-800/80 border border-white/[0.12] rounded text-neutral-300 text-sm focus:border-white/[0.3] focus:outline-none hover:bg-neutral-700/80 transition-colors w-28 sm:w-36"
                   title="To Date"
                 />
               </div>
@@ -231,18 +228,18 @@ export function Header({
               )}
             </>
           ) : (
-            /* Other Views - Search Bar centered */
+            /* Other Views - Responsive Search Bar */
             <SearchInput
               value={searchQuery}
               onChange={handleSearch}
-              className="w-[768px]"
+              className="w-full max-w-[768px] min-w-[180px] sm:min-w-[200px] md:min-w-[300px]"
               placeholder={currentView.charAt(0).toUpperCase() + currentView.slice(1)}
             />
           )}
         </div>
         
         {/* Right group - All Navigation Buttons */}
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
           {/* View-specific filters and selectors */}
           {currentView !== 'orders' && !isAuditMode && (
             <HeaderCustomerSelector

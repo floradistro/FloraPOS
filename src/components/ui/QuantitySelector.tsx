@@ -9,6 +9,7 @@ interface QuantitySelectorProps {
   blueprintPricing?: BlueprintPricingData | null | undefined;
   onQuantityChange: (quantity: number, price: number, category?: string) => void;
   disabled?: boolean;
+  hidePrices?: boolean; // New prop to hide prices in sales view
 }
 
 export function QuantitySelector({
@@ -16,7 +17,8 @@ export function QuantitySelector({
   basePrice,
   blueprintPricing,
   onQuantityChange,
-  disabled = false
+  disabled = false,
+  hidePrices = false
 }: QuantitySelectorProps) {
   const [selectedQuantity, setSelectedQuantity] = useState<number | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
@@ -46,9 +48,11 @@ export function QuantitySelector({
   if (!blueprintPricing || !blueprintPricing.ruleGroups || blueprintPricing.ruleGroups.length === 0) {
     return (
       <div className="text-center">
-        <div className="text-xs font-medium text-neutral-400">
-          {formatPrice(basePrice)}
-        </div>
+        {!hidePrices && (
+          <div className="text-xs font-medium text-neutral-400">
+            {formatPrice(basePrice)}
+          </div>
+        )}
         <div className="text-[9px] text-neutral-500 mt-1">
           No pricing tiers
         </div>
@@ -91,7 +95,7 @@ export function QuantitySelector({
                 key={`${ruleGroup.ruleId}-${tier.min}`}
                 onClick={() => handleQuantitySelect(tier.min, tier.price, ruleGroup.productType)}
                 disabled={disabled}
-                className={`flex-1 min-w-0 px-1.5 py-1 text-xs transition-all ${
+                className={`flex-1 min-w-0 px-2 py-1.5 text-xs transition-all ${
                   selectedQuantity === tier.min && selectedCategory === ruleGroup.productType
                     ? 'bg-white/10 text-neutral-400 font-medium'
                     : 'bg-transparent text-neutral-500 hover:bg-white/5 hover:text-neutral-400'
@@ -99,8 +103,10 @@ export function QuantitySelector({
                   index < ruleGroup.tiers.length - 1 ? 'border-r border-white/10' : ''
                 }`}
               >
-                <div className="font-medium text-[10px] leading-tight">{tier.label}</div>
-                <div className="text-[8px] text-neutral-600">${tier.price.toFixed(2)}</div>
+                <div className="font-medium text-sm leading-tight">{tier.label}</div>
+                {!hidePrices && (
+                  <div className="text-[8px] text-neutral-600">${tier.price.toFixed(2)}</div>
+                )}
               </button>
             ))}
           </div>
