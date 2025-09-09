@@ -6,8 +6,8 @@ import { useAuth } from '../../contexts/AuthContext';
 interface SidebarProps {
   onRefresh?: () => void;
   onSettings?: () => void;
-  onViewChange?: (view: 'products' | 'customers' | 'orders' | 'blueprint-fields' | 'adjustments' | 'history' | 'magic2') => void;
-  currentView?: 'products' | 'customers' | 'orders' | 'blueprint-fields' | 'adjustments' | 'history' | 'magic2';
+  onViewChange?: (view: 'products' | 'customers' | 'orders' | 'blueprint-fields' | 'adjustments' | 'history') => void;
+  currentView?: 'products' | 'customers' | 'orders' | 'blueprint-fields' | 'adjustments' | 'history';
   onAuditModeToggle?: () => void;
 }
 
@@ -123,16 +123,6 @@ export function Sidebar({
             </svg>
           </SidebarButton>
 
-          {/* Magic2 Database */}
-          <SidebarButton
-            onClick={() => onViewChange?.('magic2')}
-            isActive={currentView === 'magic2'}
-            title="Magic2 Database"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-            </svg>
-          </SidebarButton>
 
           <div className="w-8 h-px bg-white/[0.08] my-1" />
 

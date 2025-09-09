@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     
     console.log(`🔗 Calling Flora IM audit endpoint: ${auditUrl}`);
 
-    const response = await fetch(auditUrl, {
+    const response = await fetch(auditUrl + `&_t=${Date.now()}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

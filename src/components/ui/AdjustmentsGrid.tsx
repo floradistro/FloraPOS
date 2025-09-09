@@ -53,7 +53,14 @@ interface AdjustmentsGridProps {
   isRestockMode?: boolean;
 }
 
-export const AdjustmentsGrid = forwardRef<{ refreshInventory: () => Promise<void> }, AdjustmentsGridProps>(
+export interface AdjustmentsGridRef {
+  refreshInventory: () => Promise<void>;
+  createAudit: () => void;
+  getPendingAdjustments: () => Map<string, number>;
+  getIsApplying: () => boolean;
+}
+
+export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridProps>(
   ({ searchQuery, categoryFilter, onLoadingChange, isAuditMode = false, isRestockMode = false }, ref) => {
     const { user } = useAuth();
     
@@ -71,6 +78,11 @@ export const AdjustmentsGrid = forwardRef<{ refreshInventory: () => Promise<void
     const [pendingAdjustments, setPendingAdjustments] = useState<Map<string, number>>(new Map());
     const [isApplying, setIsApplying] = useState(false);
     const [adjustmentStatus, setAdjustmentStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
+    
+    // Audit batch states (only shown in audit mode)
+    const [showAuditDialog, setShowAuditDialog] = useState(false);
+    const [auditName, setAuditName] = useState('');
+    const [auditDescription, setAuditDescription] = useState('');
 
     // Notify parent of loading state changes
     useEffect(() => {
@@ -152,9 +164,12 @@ export const AdjustmentsGrid = forwardRef<{ refreshInventory: () => Promise<void
       }
     };
 
-    // Expose refresh method to parent
+    // Expose methods to parent
     useImperativeHandle(ref, () => ({
-      refreshInventory
+      refreshInventory,
+      createAudit: () => setShowAuditDialog(true),
+      getPendingAdjustments: () => pendingAdjustments,
+      getIsApplying: () => isApplying
     }));
 
     const fetchProducts = useCallback(async () => {
@@ -461,7 +476,158 @@ export const AdjustmentsGrid = forwardRef<{ refreshInventory: () => Promise<void
       }
     };
 
-    // Apply all pending adjustments
+    // Apply audit adjustments with batch audit trail
+    const applyAuditAdjustments = async () => {
+      if (pendingAdjustments.size === 0) {
+        console.log('No adjustments to apply');
+        return;
+      }
+
+      if (!auditName.trim()) {
+        setAdjustmentStatus({ 
+          type: 'error', 
+          message: 'Please provide an audit name for the audit trail' 
+        });
+        return;
+      }
+
+      setIsApplying(true);
+      setAdjustmentStatus({ type: null, message: '' });
+      setShowAuditDialog(false);
+
+      try {
+        console.log(`Applying audit "${auditName}" with ${pendingAdjustments.size} adjustments...`);
+        
+        // Convert pending adjustments to API format
+        const adjustments = Array.from(pendingAdjustments.entries()).map(([key, adjustment]) => {
+          const [productId, variantId] = key.split('-').map(Number);
+          return {
+            product_id: productId,
+            variation_id: variantId || null,
+            adjustment_quantity: adjustment,
+            reason: `Audit: ${auditName}`,
+            location_id: user?.location_id ? parseInt(user.location_id) : 20
+          };
+        });
+
+        const response = await fetch('/api/inventory/batch-adjust', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            batch_name: auditName,
+            batch_description: auditDescription || `Audit created on ${new Date().toLocaleDateString()}`,
+            location_id: user?.location_id ? parseInt(user.location_id) : 20,
+            user_id: user?.id ? parseInt(user.id) : 1,
+            user_name: user?.username || 'System',
+            adjustments
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          console.log('✅ Batch adjustment completed:', result);
+          
+          // Update UI optimistically
+          setProducts(prevProducts => {
+            return prevProducts.map(product => {
+              const productKey = `${product.id}`;
+              const adjustment = pendingAdjustments.get(productKey);
+              
+              if (adjustment !== undefined) {
+                const newInventory = product.inventory.map(inv => {
+                  if (parseInt(inv.location_id) === (user?.location_id ? parseInt(user.location_id) : 20)) {
+                    return {
+                      ...inv,
+                      stock: Math.max(0, inv.stock + adjustment)
+                    };
+                  }
+                  return inv;
+                });
+
+                const newTotalStock = newInventory.reduce((sum, inv) => sum + inv.stock, 0);
+
+                return {
+                  ...product,
+                  inventory: newInventory,
+                  total_stock: newTotalStock
+                };
+              }
+
+              // Check variants
+              if (product.variants) {
+                const updatedVariants = product.variants.map(variant => {
+                  const variantKey = `${product.id}-${variant.id}`;
+                  const variantAdjustment = pendingAdjustments.get(variantKey);
+                  
+                  if (variantAdjustment !== undefined) {
+                    const newInventory = variant.inventory.map(inv => {
+                      if (inv.location_id === (user?.location_id ? parseInt(user.location_id) : 20)) {
+                        return {
+                          ...inv,
+                          quantity: Math.max(0, inv.quantity + variantAdjustment)
+                        };
+                      }
+                      return inv;
+                    });
+
+                    const newTotalStock = newInventory.reduce((sum, inv) => sum + inv.quantity, 0);
+
+                    return {
+                      ...variant,
+                      inventory: newInventory,
+                      total_stock: newTotalStock
+                    };
+                  }
+                  return variant;
+                });
+
+                return {
+                  ...product,
+                  variants: updatedVariants
+                };
+              }
+
+              return product;
+            });
+          });
+
+          setAdjustmentStatus({
+            type: 'success',
+            message: `✅ Audit "${auditName}" completed successfully! Audit #${result.audit_number} - ${result.summary.successful} items processed`
+          });
+        } else {
+          console.error('❌ Audit adjustment failed:', result);
+          setAdjustmentStatus({
+            type: 'error',
+            message: `Failed to apply audit adjustments: ${result.error}`
+          });
+        }
+        
+        // Clear pending adjustments and audit info
+        setPendingAdjustments(new Map());
+        setEditedStockValues({});
+        setAuditName('');
+        setAuditDescription('');
+        
+        // Force refresh inventory data
+        console.log('🔄 Force refreshing inventory data after audit...');
+        await refreshInventory();
+        
+      } catch (error) {
+        console.error('❌ Error applying audit adjustments:', error);
+        setAdjustmentStatus({
+          type: 'error',
+          message: `Error applying audit adjustments: ${error instanceof Error ? error.message : 'Unknown error'}`
+        });
+      } finally {
+        setIsApplying(false);
+      }
+    };
+
+    // Apply all pending adjustments (legacy method)
     const applyAllAdjustments = async () => {
       
       if (pendingAdjustments.size === 0) {
@@ -674,50 +840,87 @@ export const AdjustmentsGrid = forwardRef<{ refreshInventory: () => Promise<void
           />
         </div>
         
-        {/* Apply Adjustments Bar */}
-        {(pendingAdjustments.size > 0 || adjustmentStatus.type) && (
+        {/* Status Messages Only */}
+        {adjustmentStatus.type && (
           <div className="border-t border-white/[0.08] bg-neutral-900/95 backdrop-blur-sm p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="text-sm text-neutral-400">
-                  {pendingAdjustments.size > 0 && `${pendingAdjustments.size} pending adjustment${pendingAdjustments.size !== 1 ? 's' : ''}`}
+            <div className={`text-sm font-medium flex items-center gap-2 ${
+              adjustmentStatus.type === 'success' ? 'text-green-400' : 'text-red-400'
+            }`}>
+              {adjustmentStatus.type === 'success' ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              {adjustmentStatus.message}
+            </div>
+          </div>
+        )}
+        
+        {/* Audit Dialog */}
+        {showAuditDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-neutral-800 rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-white mb-4">Create Audit</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                    Audit Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={auditName}
+                    onChange={(e) => setAuditName(e.target.value)}
+                    placeholder="e.g., Monthly Inventory Count"
+                    className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-                {adjustmentStatus.type && (
-                  <div className={`text-sm font-medium flex items-center gap-2 ${
-                    adjustmentStatus.type === 'success' ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    {adjustmentStatus.type === 'success' ? (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                    {adjustmentStatus.message}
-                  </div>
-                )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">
+                    Description (Optional)
+                  </label>
+                  <textarea
+                    value={auditDescription}
+                    onChange={(e) => setAuditDescription(e.target.value)}
+                    placeholder="Additional notes about this audit..."
+                    rows={3}
+                    className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                </div>
+                
+                <div className="text-sm text-neutral-400">
+                  This will create an audit with {pendingAdjustments.size} adjustment{pendingAdjustments.size !== 1 ? 's' : ''} and generate a unique audit number for tracking.
+                </div>
               </div>
-              {pendingAdjustments.size > 0 && (
+              
+              <div className="flex gap-3 mt-6">
                 <button
-                  onClick={applyAllAdjustments}
-                  disabled={isApplying}
-                  className={`px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2 ${
-                    isApplying 
-                      ? 'bg-neutral-600 cursor-not-allowed' 
+                  onClick={() => {
+                    setShowAuditDialog(false);
+                    setAuditName('');
+                    setAuditDescription('');
+                  }}
+                  className="flex-1 px-4 py-2 bg-neutral-600 hover:bg-neutral-700 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={applyAuditAdjustments}
+                  disabled={!auditName.trim() || isApplying}
+                  className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors ${
+                    !auditName.trim() || isApplying
+                      ? 'bg-neutral-600 cursor-not-allowed'
                       : 'bg-green-600 hover:bg-green-700'
                   }`}
                 >
-                  {isApplying && (
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  )}
-                  {isApplying ? 'Applying...' : 'Apply Adjustments'}
+                  {isApplying ? 'Creating...' : 'Create Audit'}
                 </button>
-              )}
+              </div>
             </div>
           </div>
         )}

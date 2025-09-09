@@ -5,7 +5,7 @@ import { Header } from '../components/layout/Header';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Cart } from '../components/ui/Cart';
 import { ProductGrid } from '../components/ui/ProductGrid';
-import { AdjustmentsGrid } from '../components/ui/AdjustmentsGrid';
+import { AdjustmentsGrid, AdjustmentsGridRef } from '../components/ui/AdjustmentsGrid';
 import BlueprintFieldsGrid from '../components/ui/BlueprintFieldsGrid';
 import { PrintSettingsPanel, PrintSettings } from '../components/ui/PrintSettingsPanel';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -46,7 +46,7 @@ import { Category } from '../components/ui/CategoryFilter';
 import { CategoriesService } from '../services/categories-service';
 import { CartService } from '../services/cart-service';
 import { ReloadDebugger } from '../lib/debug-reload';
-import { AlertModal, SettingsDropdown, InventoryHistoryView, Magic2TableCreator } from '../components/ui';
+import { AlertModal, SettingsDropdown, InventoryHistoryView } from '../components/ui';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function HomePage() {
@@ -101,6 +101,29 @@ export default function HomePage() {
   const [historyDateFilter, setHistoryDateFilter] = useState('7');
   const [historyActionFilter, setHistoryActionFilter] = useState('all');
   
+  // Audit state for header
+  const [pendingAdjustments, setPendingAdjustments] = useState(new Map<string, number>());
+  const [isApplying, setIsApplying] = useState(false);
+  
+  // Function to handle audit creation from header
+  const handleCreateAudit = useCallback(() => {
+    if (adjustmentsGridRef.current) {
+      adjustmentsGridRef.current.createAudit();
+    }
+  }, []);
+  
+  // Update pending adjustments and applying state periodically
+  useEffect(() => {
+    if (currentView === 'adjustments' && adjustmentsGridRef.current) {
+      const interval = setInterval(() => {
+        setPendingAdjustments(adjustmentsGridRef.current?.getPendingAdjustments() || new Map());
+        setIsApplying(adjustmentsGridRef.current?.getIsApplying() || false);
+      }, 500);
+      
+      return () => clearInterval(interval);
+    }
+  }, [currentView]);
+  
   // Alert state
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
@@ -112,7 +135,7 @@ export default function HomePage() {
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
 
   const productGridRef = useRef<{ refreshInventory: () => Promise<void> }>(null);
-  const adjustmentsGridRef = useRef<{ refreshInventory: () => Promise<void> }>(null);
+  const adjustmentsGridRef = useRef<AdjustmentsGridRef>(null);
   const blueprintFieldsGridRef = useRef<{ refresh: () => Promise<void> }>(null);
   const customersViewRef = useRef<any>(null);
   const ordersViewRef = useRef<any>(null);
@@ -672,6 +695,10 @@ export default function HomePage() {
             onHistoryDateFilterChange={setHistoryDateFilter}
             historyActionFilter={historyActionFilter}
             onHistoryActionFilterChange={setHistoryActionFilter}
+            // Audit button props
+            pendingAdjustments={pendingAdjustments}
+            onCreateAudit={handleCreateAudit}
+            isApplying={isApplying}
           />
           
           {/* Main Content Area */}
@@ -795,13 +822,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {currentView === 'magic2' && (
-            <div className="h-full overflow-y-auto p-6">
-              <StandardErrorBoundary componentName="Magic2TableCreator">
-                <Magic2TableCreator />
-              </StandardErrorBoundary>
-            </div>
-          )}
             </main>
 
         {/* Cart Panel - Only show for products and blueprint-fields views */}

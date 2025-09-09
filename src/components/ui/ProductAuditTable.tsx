@@ -44,7 +44,6 @@ export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
             <th className="text-left py-3 px-4 text-xs font-medium text-neutral-400 uppercase tracking-wider">Category</th>
             <th className="text-center py-3 px-4 text-xs font-medium text-neutral-400 uppercase tracking-wider">Current Stock</th>
             <th className="text-center py-3 px-4 text-xs font-medium text-neutral-400 uppercase tracking-wider w-48">Adjustment</th>
-            <th className="text-right py-3 px-4 text-xs font-medium text-neutral-400 uppercase tracking-wider">Price</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/[0.06]">
@@ -144,9 +143,6 @@ export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
                       </button>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-right text-sm font-medium text-neutral-300">
-                    ${parseFloat(product.regular_price || '0').toFixed(2)}
-                  </td>
                 </tr>
                 {/* Variant Rows */}
                 {product.has_variants && product.variants && product.variants.map((variant) => {
@@ -221,9 +217,6 @@ export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
                             </svg>
                           </button>
                         </div>
-                      </td>
-                      <td className="py-2 px-4 text-right text-sm text-neutral-400">
-                        ${parseFloat(variant.regular_price || '0').toFixed(2)}
                       </td>
                     </tr>
                   );

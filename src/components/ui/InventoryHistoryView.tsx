@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface AuditLogEntry {
@@ -18,6 +18,28 @@ interface AuditLogEntry {
   quantity_change: number | string | null;
   details: string;
   created_at: string;
+  batch_id?: number | null;
+}
+
+interface AuditBatch {
+  id: number;
+  audit_number: string;
+  batch_name: string;
+  batch_description: string;
+  location_id: number;
+  user_id: number;
+  user_name: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  total_products: number;
+  total_adjustments: number;
+  total_increased: number;
+  total_decreased: number;
+  net_change: number;
+  started_at: string;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  entries?: AuditLogEntry[];
 }
 
 interface InventoryHistoryViewProps {
@@ -29,16 +51,85 @@ interface InventoryHistoryViewProps {
 export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBack, dateFilter, actionFilter }) => {
   const { user } = useAuth();
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+  const [auditBatches, setAuditBatches] = useState<AuditBatch[]>([]);
+  const [expandedBatches, setExpandedBatches] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [productNames, setProductNames] = useState<Map<number, string>>(new Map());
 
   const itemsPerPage = 50;
 
   useEffect(() => {
     fetchAuditLog();
   }, [currentPage, actionFilter, dateFilter, user?.location_id]);
+
+  // Debug: Log when productNames changes
+  useEffect(() => {
+    console.log('🔄 ProductNames state updated, size:', productNames.size, 'entries:', Array.from(productNames.entries()));
+  }, [productNames]);
+
+  const fetchProductNames = async (productIds: number[]) => {
+    if (productIds.length === 0) return;
+
+    try {
+      // Get unique product IDs
+      const uniqueIds = Array.from(new Set(productIds));
+      console.log(`🔍 Fetching names for products:`, uniqueIds);
+
+      // Fetch each product individually to ensure we get the data
+      const productPromises = uniqueIds.map(async (productId) => {
+        try {
+          const response = await fetch(`/api/proxy/woocommerce/products/${productId}`, {
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+            }
+          });
+
+          if (response.ok) {
+            const product = await response.json();
+            
+            // Check if the response contains an error (some APIs return 200 with error object)
+            if (product.error) {
+              console.warn(`❌ Product ${productId} not found: ${product.error}`);
+              return { id: productId, name: `[Deleted] Product #${productId}` };
+            }
+            
+            if (product.name) {
+              console.log(`📦 Fetched product ${productId}: "${product.name}"`);
+              return { id: productId, name: product.name };
+            } else {
+              console.warn(`❌ Product ${productId} has no name`);
+              return { id: productId, name: `[No Name] Product #${productId}` };
+            }
+          } else {
+            console.warn(`❌ Product ${productId} failed: HTTP ${response.status}`);
+            return { id: productId, name: `[Missing] Product #${productId}` };
+          }
+        } catch (error) {
+          console.error(`❌ Error fetching product ${productId}:`, error);
+          return { id: productId, name: `[Error] Product #${productId}` };
+        }
+      });
+
+      const productResults = await Promise.all(productPromises);
+      
+      // Update state with new product names
+      setProductNames(prev => {
+        const newMap = new Map(prev);
+        productResults.forEach(product => {
+          newMap.set(product.id, product.name);
+          console.log(`✅ Added to cache: ${product.id} -> "${product.name}"`);
+        });
+        console.log(`🎯 Final cache state:`, Array.from(newMap.entries()));
+        return newMap;
+      });
+
+    } catch (error) {
+      console.error('Error in fetchProductNames:', error);
+    }
+  };
 
   const fetchAuditLog = async () => {
     if (!user?.location_id) return;
@@ -55,7 +146,8 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
         days: dateFilter
       });
 
-      const response = await fetch(`/api/audit-log?${params}`, {
+      // Fetch audit log entries
+      const auditResponse = await fetch(`/api/audit-log?${params}`, {
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
@@ -63,18 +155,66 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
         }
       });
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch audit log: ${response.statusText}`);
+      if (!auditResponse.ok) {
+        throw new Error(`Failed to fetch audit log: ${auditResponse.statusText}`);
       }
 
-      const data = await response.json();
+      const auditData = await auditResponse.json();
       
-      if (data.success) {
-        setAuditLog(data.data || []);
-        setTotalPages(Math.ceil((data.total || 0) / itemsPerPage));
-      } else {
-        throw new Error(data.error || 'Failed to fetch audit log');
+      if (!auditData.success) {
+        throw new Error(auditData.error || 'Failed to fetch audit log');
       }
+
+      const entries = auditData.data || [];
+      setAuditLog(entries);
+      setTotalPages(Math.ceil((auditData.total || 0) / itemsPerPage));
+
+      // Extract product IDs from entries and fetch their names
+      const productIds = entries
+        .map((entry: AuditLogEntry) => entry.product_id)
+        .filter((id: number) => id && id > 0);
+      
+      await fetchProductNames(productIds);
+
+      // Fetch audit batches for entries that have batch_id
+      const batchIds = Array.from(new Set(entries.filter((entry: AuditLogEntry) => entry.batch_id).map((entry: AuditLogEntry) => entry.batch_id)));
+      
+      if (batchIds.length > 0) {
+        try {
+          const batchPromises = batchIds.map(async (batchId) => {
+            const batchResponse = await fetch(`/api/proxy/flora-im/audit-batches/${batchId}`);
+            if (batchResponse.ok) {
+              const batchData = await batchResponse.json();
+              return batchData;
+            }
+            return null;
+          });
+
+          const batches = await Promise.all(batchPromises);
+          const validBatches = batches.filter(batch => batch !== null);
+          
+          // Group entries by batch
+          const batchesWithEntries = validBatches.map(batch => {
+            const batchIdNum = parseInt(batch.id);
+            const batchEntries = entries.filter((entry: AuditLogEntry) => {
+              const entryBatchId = typeof entry.batch_id === 'string' ? parseInt(entry.batch_id) : entry.batch_id;
+              return entryBatchId === batchIdNum;
+            });
+            return {
+              ...batch,
+              entries: batchEntries
+            };
+          });
+
+          setAuditBatches(batchesWithEntries);
+        } catch (batchError) {
+          console.warn('Failed to fetch batch details:', batchError);
+          setAuditBatches([]);
+        }
+      } else {
+        setAuditBatches([]);
+      }
+
     } catch (err) {
       console.error('Error fetching audit log:', err);
       setError(err instanceof Error ? err.message : 'Failed to load audit log');
@@ -93,32 +233,44 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
     });
   };
 
-  const getActionBadge = (action: string) => {
-    return (
-      <span className="px-2 py-1 rounded text-xs font-medium bg-neutral-800/50 text-neutral-300 border border-neutral-700/50">
-        {action.replace(/_/g, ' ').toUpperCase()}
-      </span>
-    );
+  const getProductName = useMemo(() => {
+    return (productId: number, variationId?: number) => {
+      const productName = productNames.get(productId);
+      const displayName = productName || `Product #${productId}`;
+      
+      if (variationId && variationId > 0) {
+        return `${displayName} (Variant #${variationId})`;
+      }
+      
+      return displayName;
+    };
+  }, [productNames]);
+
+  const toggleBatchExpansion = (batchId: number) => {
+    setExpandedBatches(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(batchId)) {
+        newSet.delete(batchId);
+      } else {
+        newSet.add(batchId);
+      }
+      return newSet;
+    });
   };
 
-  const getQuantityChangeDisplay = (entry: AuditLogEntry) => {
-    if (entry.quantity_change === null || entry.quantity_change === undefined) {
-      return <span className="text-neutral-400">—</span>;
-    }
+  // Group entries: batched entries and standalone entries
+  const groupedEntries = () => {
+    const batchedEntryIds = new Set();
+    auditBatches.forEach(batch => {
+      batch.entries?.forEach(entry => batchedEntryIds.add(entry.id));
+    });
 
-    const change = parseFloat(entry.quantity_change.toString());
-    if (isNaN(change)) {
-      return <span className="text-neutral-400">—</span>;
-    }
-
-    const isPositive = change > 0;
-    const sign = isPositive ? '+' : '';
-
-    return (
-      <span className="font-medium text-neutral-300">
-        {sign}{change.toFixed(4)}
-      </span>
-    );
+    const standaloneEntries = auditLog.filter(entry => !batchedEntryIds.has(entry.id));
+    
+    return {
+      batches: auditBatches,
+      standalone: standaloneEntries
+    };
   };
 
   if (loading && auditLog.length === 0) {
@@ -168,67 +320,192 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
           </div>
         ) : (
           <div className="h-full overflow-auto">
-            <table className="w-full">
-              <thead className="sticky top-0 bg-neutral-900/95 backdrop-blur-sm z-10">
-                <tr className="border-b border-white/[0.08]">
-                  <th className="text-left py-4 px-6 text-xs font-medium text-neutral-400 uppercase tracking-wider">Date & Time</th>
-                  <th className="text-left py-4 px-6 text-xs font-medium text-neutral-400 uppercase tracking-wider">Action</th>
-                  <th className="text-left py-4 px-6 text-xs font-medium text-neutral-400 uppercase tracking-wider">Product</th>
-                  <th className="text-center py-4 px-6 text-xs font-medium text-neutral-400 uppercase tracking-wider">Old Qty</th>
-                  <th className="text-center py-4 px-6 text-xs font-medium text-neutral-400 uppercase tracking-wider">New Qty</th>
-                  <th className="text-center py-4 px-6 text-xs font-medium text-neutral-400 uppercase tracking-wider">Change</th>
-                  <th className="text-left py-4 px-6 text-xs font-medium text-neutral-400 uppercase tracking-wider">User</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.06]">
-                {auditLog.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-4 px-6">
-                      <div className="text-sm text-neutral-300">
-                        {formatDateTime(entry.created_at)}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      {getActionBadge(entry.action)}
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="text-sm text-white">
-                        Product #{entry.product_id}
-                        {entry.variation_id > 0 && (
-                          <span className="text-neutral-400 ml-1">
-                            (Variant #{entry.variation_id})
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-center">
-                      <span className="text-sm text-neutral-300">
-                        {entry.old_quantity !== null && entry.old_quantity !== undefined 
-                          ? parseFloat(entry.old_quantity.toString()).toFixed(4) 
-                          : '—'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-center">
-                      <span className="text-sm text-neutral-300">
-                        {entry.new_quantity !== null && entry.new_quantity !== undefined 
-                          ? parseFloat(entry.new_quantity.toString()).toFixed(4) 
-                          : '—'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-center">
-                      {getQuantityChangeDisplay(entry)}
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="text-sm text-neutral-300">
-                        {entry.user_name && entry.user_name !== 'System' && entry.user_name.trim() !== '' 
-                          ? entry.user_name 
-                          : user?.username || `User #${entry.user_id}`}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {/* Table Header */}
+            <div className="sticky top-0 bg-neutral-900 backdrop-blur border-b border-white/[0.08] px-6 py-3 z-10">
+              <div className="flex items-center gap-3 text-xs font-medium text-neutral-400">
+                <div className="w-6"></div> {/* Space for expand icon */}
+                <div className="flex-1">Product</div>
+                <div className="w-24">Change</div>
+                <div className="w-32">User</div>
+                <div className="w-32">Date & Time</div>
+              </div>
+            </div>
+
+            {/* Entries */}
+            <div>
+                {(() => {
+                  const { batches, standalone } = groupedEntries();
+                  const allItems = [
+                    ...batches.map(batch => ({ type: 'batch' as const, data: batch })),
+                    ...standalone.map(entry => ({ type: 'entry' as const, data: entry }))
+                  ].sort((a, b) => {
+                    const aDate = a.type === 'batch' ? a.data.created_at : a.data.created_at;
+                    const bDate = b.type === 'batch' ? b.data.created_at : b.data.created_at;
+                    return new Date(bDate).getTime() - new Date(aDate).getTime();
+                  });
+
+                  return allItems.map((item) => {
+                    if (item.type === 'batch') {
+                      const batch = item.data;
+                      const batchId = typeof batch.id === 'string' ? parseInt(batch.id) : batch.id;
+                      const isExpanded = expandedBatches.has(batchId);
+                      
+                      return (
+                        <div 
+                          key={`batch-${batch.id}`}
+                          className={`group mb-2 rounded-lg border-b border-white/[0.02] relative overflow-hidden bg-neutral-900/40 hover:bg-neutral-800/60 ${
+                            isExpanded ? 'h-[calc(100vh-200px)] min-h-[600px]' : 'h-auto'
+                          }`}
+                          style={{
+                            transition: 'height 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease',
+                            willChange: isExpanded ? 'height' : 'auto'
+                          }}
+                        >
+                          {/* Batch Summary Row */}
+                          <div 
+                            className="flex items-center gap-3 px-6 py-3 cursor-pointer select-none relative bg-inherit"
+                            style={{ zIndex: 2 }}
+                            onClick={() => toggleBatchExpansion(batchId)}
+                          >
+                            {/* Expand/Collapse Icon */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleBatchExpansion(batchId);
+                              }}
+                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-neutral-600 hover:text-neutral-400 smooth-hover"
+                            >
+                              <svg
+                                className={`w-3 h-3 transition-transform duration-300 ease-out ${isExpanded ? 'rotate-90' : ''}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                            
+                            {/* Product */}
+                            <div className="flex-1 text-neutral-500 text-sm truncate">
+                              <div className="text-neutral-500 text-sm">
+                                {batch.batch_name} • {batch.total_products} {batch.total_products === 1 ? 'product' : 'products'}
+                              </div>
+                              <div className="text-xs text-neutral-600 truncate">
+                                {batch.audit_number}
+                              </div>
+                            </div>
+
+                            {/* Change */}
+                            <div className="w-24 text-neutral-500 text-xs">
+                              {batch.net_change > 0 ? '+' : ''}{parseFloat(batch.net_change.toString()).toFixed(4)}
+                            </div>
+
+                            {/* User */}
+                            <div className="w-32 text-neutral-500 text-xs">
+                              {batch.user_name}
+                            </div>
+
+                            {/* Date & Time */}
+                            <div className="w-32 text-neutral-500 text-xs">
+                              {formatDateTime(batch.created_at)}
+                            </div>
+                          </div>
+
+                          {/* Expanded View */}
+                          {isExpanded && (
+                            <div 
+                              className="absolute inset-x-0 top-[60px] bottom-0 bg-neutral-800/30 hover:bg-neutral-800/50 border-t border-white/[0.02] overflow-y-auto p-4"
+                              style={{
+                                animation: 'expandTopDown 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards',
+                                transformOrigin: 'top',
+                              }}
+                            >
+                              <div className="space-y-2">
+                                <div className="text-xs text-neutral-400 mb-4">
+                                  Audit Entries for {batch.audit_number}
+                                </div>
+                                
+                                {batch.entries && batch.entries.map((entry) => (
+                                  <div 
+                                    key={`entry-${entry.id}`}
+                                    className="bg-neutral-900/40 rounded p-3 border border-white/[0.05]"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex-1 text-neutral-500 text-sm truncate">
+                                        <div className="text-neutral-500 text-sm">
+                                          {getProductName(entry.product_id, entry.variation_id)}
+                                        </div>
+                                        <div className="text-xs text-neutral-600 truncate">
+                                          {formatDateTime(entry.created_at)}
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="w-24 text-neutral-500 text-xs">
+                                        {entry.quantity_change !== null && entry.quantity_change !== undefined && !isNaN(parseFloat(entry.quantity_change.toString())) 
+                                          ? (parseFloat(entry.quantity_change.toString()) > 0 ? '+' : '') + parseFloat(entry.quantity_change.toString()).toFixed(4)
+                                          : '—'}
+                                      </div>
+                                      
+                                      <div className="w-32 text-neutral-500 text-xs">
+                                        {entry.user_name && entry.user_name !== 'System' && entry.user_name.trim() !== '' 
+                                          ? entry.user_name 
+                                          : user?.username || `User #${entry.user_id}`}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    } else {
+                      // Standalone entry
+                      const entry = item.data;
+                      return (
+                        <div 
+                          key={`standalone-${entry.id}`}
+                          className="group mb-2 rounded-lg border-b border-white/[0.02] relative overflow-hidden bg-neutral-900/40 hover:bg-neutral-800/60"
+                        >
+                          <div className="flex items-center gap-3 px-6 py-3">
+                            {/* No expand icon for standalone */}
+                            <div className="w-6"></div>
+                            
+                            {/* Product */}
+                            <div className="flex-1 text-neutral-500 text-sm truncate">
+                              <div className="text-neutral-500 text-sm">
+                                {getProductName(entry.product_id, entry.variation_id)}
+                              </div>
+                              <div className="text-xs text-neutral-600 truncate">
+                                Entry #{entry.id}
+                              </div>
+                            </div>
+
+                            {/* Change */}
+                            <div className="w-24 text-neutral-500 text-xs">
+                              {entry.quantity_change !== null && entry.quantity_change !== undefined && !isNaN(parseFloat(entry.quantity_change.toString())) 
+                                ? (parseFloat(entry.quantity_change.toString()) > 0 ? '+' : '') + parseFloat(entry.quantity_change.toString()).toFixed(4)
+                                : '—'}
+                            </div>
+
+                            {/* User */}
+                            <div className="w-32 text-neutral-500 text-xs">
+                              {entry.user_name && entry.user_name !== 'System' && entry.user_name.trim() !== '' 
+                                ? entry.user_name 
+                                : user?.username || `User #${entry.user_id}`}
+                            </div>
+
+                            {/* Date & Time */}
+                            <div className="w-32 text-neutral-500 text-xs">
+                              {formatDateTime(entry.created_at)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                  });
+                })()}
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
