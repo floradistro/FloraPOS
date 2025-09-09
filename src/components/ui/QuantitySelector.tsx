@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import { BlueprintPricingData } from '../../services/blueprint-pricing-service';
 
 interface QuantitySelectorProps {
@@ -60,19 +60,6 @@ export function QuantitySelector({
     );
   }
 
-  // Helper function to get category display name
-  const getCategoryLabel = (category: string) => {
-    switch (category.toLowerCase()) {
-      case 'flower': return 'Flower (g)';
-      case 'preroll': return 'Pre-Roll (units)';
-      case 'vape': return 'Vape (units)';
-      case 'edible': return 'Edible (units)';
-      case 'concentrate': return 'Concentrate (g)';
-      case 'gram': return 'Grams';
-      case 'eighth': return 'Eighth';
-      default: return category.charAt(0).toUpperCase() + category.slice(1);
-    }
-  };
 
   // Portal2 style pricing display - show rule groups
   return (
@@ -80,34 +67,32 @@ export function QuantitySelector({
       {blueprintPricing.ruleGroups.map((ruleGroup) => (
         <div key={ruleGroup.ruleId} className="space-y-1">
           {/* Rule Name Label */}
-          <div className="text-[9px] text-neutral-500 font-medium uppercase tracking-wide">
+          <div className="text-[9px] text-neutral-500 font-medium uppercase tracking-wide text-center">
             {ruleGroup.ruleName}
-            {ruleGroup.productType && (
-              <span className="text-neutral-600 ml-1">
-                ({getCategoryLabel(ruleGroup.productType)})
-              </span>
-            )}
           </div>
           {/* Pricing Tiers for this rule */}
           <div className="flex">
             {ruleGroup.tiers.map((tier, index) => (
-              <button
-                key={`${ruleGroup.ruleId}-${tier.min}`}
-                onClick={() => handleQuantitySelect(tier.min, tier.price, ruleGroup.productType)}
-                disabled={disabled}
-                className={`flex-1 min-w-0 px-2 py-1.5 text-xs transition-all ${
-                  selectedQuantity === tier.min && selectedCategory === ruleGroup.productType
-                    ? 'bg-white/10 text-neutral-400 font-medium'
-                    : 'bg-transparent text-neutral-500 hover:bg-white/5 hover:text-neutral-400'
-                } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${
-                  index < ruleGroup.tiers.length - 1 ? 'border-r border-white/10' : ''
-                }`}
-              >
-                <div className="font-medium text-sm leading-tight">{tier.label}</div>
-                {!hidePrices && (
-                  <div className="text-[8px] text-neutral-600">${tier.price.toFixed(2)}</div>
-                )}
-              </button>
+              <Fragment key={`${ruleGroup.ruleId}-${tier.min}`}>
+                <button
+                  onClick={() => handleQuantitySelect(tier.min, tier.price, ruleGroup.productType)}
+                  disabled={disabled}
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-xs transition-all relative ${
+                    selectedQuantity === tier.min && selectedCategory === ruleGroup.productType
+                      ? 'bg-white/10 text-neutral-400 font-medium'
+                      : 'bg-transparent text-neutral-500 hover:bg-white/5 hover:text-neutral-400'
+                  } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <div className="font-medium text-sm leading-tight">{tier.label}</div>
+                  {!hidePrices && (
+                    <div className="text-[8px] text-neutral-600">${tier.price.toFixed(2)}</div>
+                  )}
+                  {/* Faded vertical divider on the right */}
+                  {index < ruleGroup.tiers.length - 1 && (
+                    <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+                  )}
+                </button>
+              </Fragment>
             ))}
           </div>
         </div>
