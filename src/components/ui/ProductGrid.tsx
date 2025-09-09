@@ -567,7 +567,7 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
   return (
     <div>
       {/* Regular Grid View */}
-      <div className="grid grid-cols-3 gap-2 p-2">
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-2 p-2">
         {filteredProducts.map((product) => {
           const userLocationId = user?.location_id ? parseInt(user.location_id) : undefined;
           
