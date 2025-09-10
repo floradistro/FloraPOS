@@ -75,47 +75,6 @@ export default function HomePage() {
     setSelectedCustomer(customer);
   }, []);
 
-  // Function to update quantities for sold products
-  const updateSoldProductQuantities = useCallback(async (soldProducts: Array<{ productId: number; variantId?: number }>) => {
-    try {
-      // Fetch fresh inventory data for only the sold products
-      const updates = await Promise.all(
-        soldProducts.map(async ({ productId, variantId }) => {
-          try {
-            const response = await fetch(`/api/proxy/flora-im/products/${productId}/inventory`);
-            if (response.ok) {
-              const inventoryData = await response.json();
-              
-              // Extract stock for user's location
-              const locationStock = inventoryData.find((inv: any) => 
-                parseInt(inv.location_id) === parseInt(user?.location_id?.toString() || '0')
-              );
-              
-              return {
-                productId,
-                variantId,
-                newQuantity: locationStock?.quantity || 0
-              };
-            }
-            return null;
-          } catch (error) {
-            console.error(`Failed to fetch inventory for product ${productId}:`, error);
-            return null;
-          }
-        })
-      );
-      
-      // Filter out failed requests and update ProductGrid
-      const validUpdates = updates.filter(update => update !== null);
-      if (validUpdates.length > 0 && productGridRef.current?.updateProductQuantities) {
-        productGridRef.current.updateProductQuantities(validUpdates);
-      }
-      
-    } catch (error) {
-      console.error('Error updating sold product quantities:', error);
-      throw error;
-    }
-  }, [user?.location_id]);
 
   const handleOpenCustomerSelector = useCallback(() => {
     unifiedSearchRef.current?.openCustomerMode();
@@ -226,7 +185,6 @@ export default function HomePage() {
 
   const productGridRef = useRef<{ 
     refreshInventory: () => Promise<void>;
-    updateProductQuantities: (updates: Array<{ productId: number; variantId?: number; newQuantity: number }>) => void;
   }>(null);
   const adjustmentsGridRef = useRef<AdjustmentsGridRef>(null);
   const unifiedSearchRef = useRef<UnifiedSearchInputRef>(null);
@@ -622,30 +580,24 @@ export default function HomePage() {
   };
 
   const handleOrderComplete = async () => {
-    // Get the products that were sold for live updates
-    const soldProductIds = cartItems
-      .filter(item => !item.is_adjustment && item.quantity > 0)
-      .map(item => ({ 
-        productId: parseInt(item.id.toString()), 
-        variantId: item.variation_id 
-      }));
-
     // Clear cart and close checkout immediately
     setCartItems([]);
     setShowCheckout(false);
     setIsCheckoutLoading(false);
     
-    // Update product quantities live by fetching fresh data for sold items only
-    if (productGridRef.current?.updateProductQuantities && soldProductIds.length > 0) {
-      try {
-        // Fetch updated stock levels for sold products
-        await updateSoldProductQuantities(soldProductIds);
-        console.log('✅ Updated quantities for sold products:', soldProductIds);
-      } catch (error) {
-        console.error('❌ Failed to update product quantities:', error);
-        // Fallback: Don't break the checkout flow
+    // Trigger a silent refresh of the product grid after a short delay
+    // This allows the backend inventory deduction to complete
+    setTimeout(async () => {
+      if (productGridRef.current?.refreshInventory) {
+        try {
+          console.log('🔄 Refreshing inventory after order completion...');
+          await productGridRef.current.refreshInventory();
+          console.log('✅ Inventory refreshed successfully');
+        } catch (error) {
+          console.error('❌ Failed to refresh inventory:', error);
+        }
       }
-    }
+    }, 1000); // 1 second delay to allow backend processing
     
     // Invalidate customer-related queries to refresh order history and points
     console.log('🔄 Invalidating customer queries after order completion');
