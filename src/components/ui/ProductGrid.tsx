@@ -60,7 +60,10 @@ interface ProductGridProps {
   onLoadingChange?: (loading: boolean, hasProducts: boolean) => void;
 }
 
-export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> }, ProductGridProps>(
+export const ProductGrid = forwardRef<{ 
+  refreshInventory: () => Promise<void>;
+  updateProductQuantities: (updates: Array<{ productId: number; variantId?: number; newQuantity: number }>) => void;
+}, ProductGridProps>(
   ({ onAddToCart, searchQuery, categoryFilter, onLoadingChange }, ref) => {
     const { user } = useAuth();
     const [products, setProducts] = useState<Product[]>([]);
@@ -126,9 +129,56 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
     }
   };
 
-  // Expose refresh method to parent component
+  // Update specific product quantities without full refresh
+  const updateProductQuantities = useCallback((updates: Array<{ productId: number; variantId?: number; newQuantity: number }>) => {
+    console.log('🔄 [POSV1] Updating product quantities:', updates);
+    
+    setProducts(prevProducts => 
+      prevProducts.map(product => {
+        const productUpdate = updates.find(u => u.productId === product.id);
+        if (!productUpdate) return product;
+
+        // Update main product or variant
+        if (productUpdate.variantId && product.variants) {
+          // Update variant quantity
+          const updatedVariants = product.variants.map(variant => {
+            if (variant.id === productUpdate.variantId) {
+              return {
+                ...variant,
+                inventory: variant.inventory?.map(inv => ({
+                  ...inv,
+                  stock: productUpdate.newQuantity
+                })) || []
+              };
+            }
+            return variant;
+          });
+          
+          return {
+            ...product,
+            variants: updatedVariants
+          };
+        } else {
+          // Update main product quantity
+          const updatedInventory = product.inventory.map(inv => ({
+            ...inv,
+            stock: productUpdate.newQuantity
+          }));
+          
+          return {
+            ...product,
+            inventory: updatedInventory,
+            total_stock: productUpdate.newQuantity
+          };
+        }
+      })
+    );
+  }, []);
+
+  // Expose methods to parent component
   useImperativeHandle(ref, () => ({
-    refreshInventory
+    refreshInventory,
+    updateProductQuantities
   }));
 
   // Removed individual blueprint pricing function - using batch only
