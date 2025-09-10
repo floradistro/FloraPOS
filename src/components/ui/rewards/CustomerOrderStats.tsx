@@ -89,8 +89,8 @@ export const CustomerOrderStats: React.FC<CustomerOrderStatsProps> = ({ userId }
   if (loading) {
     return (
       <div className="space-y-2">
-        <div className="text-neutral-500 font-medium text-xs mb-2">Customer Statistics</div>
-        <div className="text-neutral-400 text-xs">Loading...</div>
+        <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>Customer Statistics</div>
+        <div className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Loading...</div>
       </div>
     );
   }
@@ -98,8 +98,8 @@ export const CustomerOrderStats: React.FC<CustomerOrderStatsProps> = ({ userId }
   if (error) {
     return (
       <div className="space-y-2">
-        <div className="text-neutral-500 font-medium text-xs mb-2">Customer Statistics</div>
-        <div className="text-red-400 text-xs">Error loading stats</div>
+        <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>Customer Statistics</div>
+        <div className="text-red-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Error loading stats</div>
       </div>
     );
   }
@@ -107,8 +107,8 @@ export const CustomerOrderStats: React.FC<CustomerOrderStatsProps> = ({ userId }
   if (!stats) {
     return (
       <div className="space-y-2">
-        <div className="text-neutral-500 font-medium text-xs mb-2">Customer Statistics</div>
-        <div className="text-neutral-400 text-xs">No data available</div>
+        <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>Customer Statistics</div>
+        <div className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>No data available</div>
       </div>
     );
   }
@@ -127,45 +127,45 @@ export const CustomerOrderStats: React.FC<CustomerOrderStatsProps> = ({ userId }
 
   return (
     <div className="space-y-3">
-      <div className="text-neutral-500 font-medium text-xs mb-2">
+      <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
         CUSTOMER STATISTICS
       </div>
       
       {/* Key Stats Grid */}
       <div className="grid grid-cols-4 gap-3">
         {/* Lifetime Value */}
-        <div className="bg-neutral-900/40 rounded p-2">
-          <div className="text-neutral-600 text-xs mb-1">Lifetime Value</div>
-          <div className="text-white text-sm font-semibold">
+        <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+          <div className="text-neutral-400 text-xs mb-1" style={{ fontFamily: 'Tiempo, serif' }}>Lifetime Value</div>
+          <div className="text-white text-sm font-semibold" style={{ fontFamily: 'Tiempo, serif' }}>
             {formatCurrency(stats.lifetimeValue)}
           </div>
         </div>
 
         {/* Average Order Value */}
-        <div className="bg-neutral-900/40 rounded p-2">
-          <div className="text-neutral-600 text-xs mb-1">Avg Order Value</div>
-          <div className="text-white text-sm font-semibold">
+        <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+          <div className="text-neutral-400 text-xs mb-1" style={{ fontFamily: 'Tiempo, serif' }}>Avg Order Value</div>
+          <div className="text-white text-sm font-semibold" style={{ fontFamily: 'Tiempo, serif' }}>
             {formatCurrency(stats.averageOrderValue)}
           </div>
         </div>
 
         {/* Total Orders */}
-        <div className="bg-neutral-900/40 rounded p-2">
-          <div className="text-neutral-600 text-xs mb-1">Total Orders</div>
-          <div className="text-white text-sm font-semibold">
+        <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+          <div className="text-neutral-400 text-xs mb-1" style={{ fontFamily: 'Tiempo, serif' }}>Total Orders</div>
+          <div className="text-white text-sm font-semibold" style={{ fontFamily: 'Tiempo, serif' }}>
             {stats.totalOrders}
           </div>
           {stats.completedOrders !== stats.totalOrders && (
-            <div className="text-neutral-500 text-xs">
+            <div className="text-neutral-500 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>
               ({stats.completedOrders} completed)
             </div>
           )}
         </div>
 
         {/* Last Order */}
-        <div className="bg-neutral-900/40 rounded p-2">
-          <div className="text-neutral-600 text-xs mb-1">Last Order</div>
-          <div className="text-white text-sm font-semibold">
+        <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+          <div className="text-neutral-400 text-xs mb-1" style={{ fontFamily: 'Tiempo, serif' }}>Last Order</div>
+          <div className="text-white text-sm font-semibold" style={{ fontFamily: 'Tiempo, serif' }}>
             {formatDate(stats.lastOrderDate)}
           </div>
         </div>

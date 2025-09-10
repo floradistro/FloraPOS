@@ -23,13 +23,12 @@ export const SimpleRewardsView: React.FC<SimpleRewardsViewProps> = ({
       {/* Points Balance & Adjustment */}
       <div className={`grid gap-4 ${isAdmin ? 'grid-cols-2' : 'grid-cols-1'}`}>
         <div>
-          <h3 className="text-neutral-400 font-medium text-xs mb-2">Current Balance</h3>
           <PointsBalanceSimple userId={userId} />
         </div>
         
         {isAdmin && (
           <div>
-            <h3 className="text-neutral-400 font-medium text-xs mb-2">Quick Actions</h3>
+            <h3 className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>Quick Actions</h3>
             <InlinePointsAdjustment
               userId={userId}
               userName={userName}
@@ -42,12 +41,12 @@ export const SimpleRewardsView: React.FC<SimpleRewardsViewProps> = ({
       {/* Points History */}
       <div className="flex-1 flex flex-col min-h-0">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-neutral-400 font-medium text-xs">Points History</h3>
-          <div className="text-xs text-neutral-500">
+          <h3 className="text-neutral-300 font-medium text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Points History</h3>
+          <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
             {history?.pagination.total || 0} total events
           </div>
         </div>
-        <div className="bg-neutral-900/40 rounded overflow-hidden flex-1 flex flex-col">
+        <div className="bg-transparent rounded overflow-hidden flex-1 flex flex-col border border-neutral-600/30">
           <div className="flex-1 min-h-0">
             <PointsHistory userId={userId} initialPerPage={20} hideTotalEvents={true} />
           </div>

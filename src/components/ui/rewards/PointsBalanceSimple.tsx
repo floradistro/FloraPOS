@@ -11,8 +11,8 @@ export const PointsBalanceSimple: React.FC<PointsBalanceSimpleProps> = ({ userId
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <div className="text-neutral-500 font-medium text-xs mb-2">Current Balance</div>
-        <div className="text-neutral-400 text-xs">Loading...</div>
+        <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>CURRENT BALANCE</div>
+        <div className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Loading...</div>
       </div>
     );
   }
@@ -20,8 +20,8 @@ export const PointsBalanceSimple: React.FC<PointsBalanceSimpleProps> = ({ userId
   if (error) {
     return (
       <div className="space-y-2">
-        <div className="text-neutral-500 font-medium text-xs mb-2">Current Balance</div>
-        <div className="text-red-400 text-xs">Error loading balance</div>
+        <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>CURRENT BALANCE</div>
+        <div className="text-red-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Error loading balance</div>
       </div>
     );
   }
@@ -29,8 +29,8 @@ export const PointsBalanceSimple: React.FC<PointsBalanceSimpleProps> = ({ userId
   if (!balance) {
     return (
       <div className="space-y-2">
-        <div className="text-neutral-500 font-medium text-xs mb-2">Current Balance</div>
-        <div className="text-neutral-400 text-xs">No data available</div>
+        <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>CURRENT BALANCE</div>
+        <div className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>No data available</div>
       </div>
     );
   }
@@ -41,10 +41,10 @@ export const PointsBalanceSimple: React.FC<PointsBalanceSimpleProps> = ({ userId
 
   return (
     <div className="space-y-2">
-      <div className="text-neutral-500 font-medium text-xs mb-2">
+      <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
         CURRENT BALANCE
       </div>
-      <div className="text-white text-lg font-semibold">
+      <div className="text-white text-lg font-semibold" style={{ fontFamily: 'Tiempo, serif' }}>
         {balance.balance.toLocaleString()} {pointsUnit}
       </div>
     </div>

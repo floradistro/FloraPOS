@@ -163,28 +163,46 @@ export function Header({
   return (
     <div className="header-nav bg-transparent flex-shrink-0 relative z-40">
       <div className="flex items-center h-full py-4 px-2 sm:px-4 relative gap-2">
-        {/* Search Bar - Centered on viewport accounting for 60px sidebar */}
+        {/* Fixed Search Bar Container - Same position as adjustments view */}
         <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0" style={{ marginLeft: '30px' }}>
-          {/* Orders View - Unified search with customer selection */}
-          {currentView === 'orders' ? (
+          <UnifiedSearchInput
+            ref={unifiedSearchRef}
+            searchValue={searchQuery}
+            onSearchChange={handleSearch}
+            className="w-full max-w-[768px] min-w-[180px] sm:min-w-[200px] md:min-w-[300px]"
+            placeholder={currentView === 'orders' ? 'Search orders, customers...' : `Search ${currentView.charAt(0).toUpperCase() + currentView.slice(1)}...`}
+            selectedCustomer={selectedCustomer}
+            onCustomerSelect={onCustomerSelect}
+            selectedProduct={selectedProduct}
+            onProductSelect={onProductSelect}
+            products={products}
+            productsLoading={productsLoading}
+            categories={currentView === 'orders' ? [] : categories}
+            selectedCategory={currentView === 'orders' ? '' : selectedCategory}
+            onCategoryChange={currentView === 'orders' ? () => {} : onCategoryChange}
+            categoriesLoading={categoriesLoading}
+            productOnlyMode={currentView === 'blueprint-fields'}
+            isAuditMode={isAuditMode}
+            pendingAdjustments={pendingAdjustments}
+            onCreateAudit={onCreateAudit}
+            onCreateAuditWithDetails={onCreateAuditWithDetails}
+            onRemoveAdjustment={onRemoveAdjustment}
+            onUpdateAdjustment={onUpdateAdjustment}
+            isApplying={isApplying}
+          />
+        </div>
+
+        
+        {/* Right group - All Navigation Buttons and Filters */}
+        <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
+          {/* Orders View Filters */}
+          {currentView === 'orders' && (
             <>
-              {/* Unified Customer Search */}
-              <UnifiedSearchInput
-                searchValue={searchQuery}
-                onSearchChange={handleSearch}
-                className="w-full max-w-[300px] min-w-[180px]"
-                placeholder="Search orders, customers..."
-                selectedCustomer={selectedCustomer}
-                onCustomerSelect={onCustomerSelect}
-                categories={[]}
-                selectedCategory=""
-                onCategoryChange={() => {}}
-              />
 
               {/* Status Filter with Icon */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" />
                 </svg>
                 <select
                   value={statusFilter}
@@ -203,7 +221,7 @@ export function Header({
               </div>
 
               {/* Date Range Filters with Icon - Responsive */}
-              <div className="flex items-center gap-1 flex-wrap">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 <svg className="w-4 h-4 text-neutral-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -227,7 +245,7 @@ export function Header({
               {/* Show Selected Only Filter Toggle */}
               <button
                 onClick={() => onShowSelectedOnlyChange?.(!showSelectedOnly)}
-                className={`px-3 h-[30px] rounded-lg transition-all duration-300 ease-out text-sm flex items-center gap-1 whitespace-nowrap border ${
+                className={`px-3 h-[30px] rounded-lg transition-all duration-300 ease-out text-sm flex items-center gap-1 whitespace-nowrap border flex-shrink-0 ${
                   showSelectedOnly 
                     ? 'bg-neutral-800/90 text-white border-neutral-500' 
                     : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
@@ -242,9 +260,9 @@ export function Header({
 
               {/* Clear Selection Button */}
               {selectedOrdersCount > 0 && onClearOrderSelection && (
-              <button
-                onClick={onClearOrderSelection}
-                className="px-3 h-[30px] bg-red-600/20 text-red-300 border border-red-500/30 hover:bg-red-600/30 rounded-lg transition-all duration-300 ease-out text-sm flex items-center gap-1 whitespace-nowrap"
+                <button
+                  onClick={onClearOrderSelection}
+                  className="px-3 h-[30px] bg-red-600/20 text-red-300 border border-red-500/30 hover:bg-red-600/30 rounded-lg transition-all duration-300 ease-out text-sm flex items-center gap-1 whitespace-nowrap flex-shrink-0"
                   title="Clear Selection"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,38 +272,7 @@ export function Header({
                 </button>
               )}
             </>
-          ) : (
-            /* Other Views - Unified Search Bar */
-            <UnifiedSearchInput
-              ref={unifiedSearchRef}
-              searchValue={searchQuery}
-              onSearchChange={handleSearch}
-              className="w-full max-w-[768px] min-w-[180px] sm:min-w-[200px] md:min-w-[300px]"
-              placeholder={`Search ${currentView.charAt(0).toUpperCase() + currentView.slice(1)}...`}
-              selectedCustomer={selectedCustomer}
-              onCustomerSelect={onCustomerSelect}
-              selectedProduct={selectedProduct}
-              onProductSelect={onProductSelect}
-              products={products}
-              productsLoading={productsLoading}
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={onCategoryChange}
-              categoriesLoading={categoriesLoading}
-              productOnlyMode={currentView === 'blueprint-fields'}
-              isAuditMode={isAuditMode}
-              pendingAdjustments={pendingAdjustments}
-              onCreateAudit={onCreateAudit}
-              onCreateAuditWithDetails={onCreateAuditWithDetails}
-              onRemoveAdjustment={onRemoveAdjustment}
-              onUpdateAdjustment={onUpdateAdjustment}
-              isApplying={isApplying}
-            />
           )}
-        </div>
-        
-        {/* Right group - All Navigation Buttons */}
-        <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
 
           {/* Adjustments view navigation buttons */}
           {(currentView === 'adjustments' || currentView === 'history') && (

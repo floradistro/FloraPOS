@@ -772,7 +772,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                                     setEditingAdjustment(key);
                                     setEditValue(adjustment.toString());
                                   }}
-                                  className="text-neutral-400 hover:text-blue-400 transition-colors"
+                                  className="text-neutral-400 hover:text-neutral-200 transition-colors"
                                   title="Edit adjustment"
                                 >
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

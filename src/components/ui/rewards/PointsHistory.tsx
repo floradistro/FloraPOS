@@ -13,7 +13,7 @@ interface HistoryEventItemProps {
   event: PointsHistoryEvent;
 }
 
-const HistoryEventItem: React.FC<HistoryEventItemProps> = ({ event }) => {
+const HistoryEventCard: React.FC<HistoryEventItemProps> = ({ event }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -27,45 +27,49 @@ const HistoryEventItem: React.FC<HistoryEventItemProps> = ({ event }) => {
   const eventDescription = event.description?.trim() || `${event.type.replace('-', ' ')} transaction`;
 
   return (
-    <tr className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
-      {/* Date */}
-      <td className="px-3 py-3 text-neutral-400 text-xs align-top">
-        {event.formatted_date || formatDate(event.date)}
-      </td>
-      
-      {/* Type */}
-      <td className="px-3 py-3 align-top">
-        <span className="text-xs text-neutral-400">
-          {formatEventType(event.type)}
-        </span>
-      </td>
-      
-      {/* Description */}
-      <td className="px-3 py-3 text-neutral-500 text-xs align-top">
-        <div className="truncate leading-relaxed" title={eventDescription}>
-          {eventDescription}
+    <div className="rounded-lg overflow-hidden p-2 cursor-pointer transition-all duration-300 ease-out border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-neutral-600/5 hover:-translate-y-1 hover:shadow-lg hover:shadow-neutral-700/20">
+      <div className="grid grid-cols-12 gap-4 items-center">
+        {/* Date */}
+        <div className="col-span-2">
+          <span className="text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+            {event.formatted_date || formatDate(event.date)}
+          </span>
         </div>
-        {event.description?.trim() && event.description.trim() !== `${event.type.replace('-', ' ')} transaction` && (
-          <div className="text-neutral-600 text-xs mt-1 italic">
-            {event.type === 'manual-adjust' ? 'Reason: ' : 'Details: '}{event.description.trim()}
+        
+        {/* Type */}
+        <div className="col-span-2">
+          <span className="text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+            {formatEventType(event.type)}
+          </span>
+        </div>
+        
+        {/* Description */}
+        <div className="col-span-4">
+          <div className="text-neutral-200 font-normal text-base mb-1 truncate" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }} title={eventDescription}>
+            {eventDescription}
           </div>
-        )}
-      </td>
-      
-      {/* Order # */}
-      <td className="px-3 py-3 text-neutral-500 text-xs align-top">
-        {event.order_id ? `#${event.order_id}` : 'N/A'}
-      </td>
-      
-      {/* Points */}
-      <td className="px-3 py-3 text-right align-top">
-        <span className={`text-xs font-semibold ${
-          isPositive ? 'text-neutral-300' : 'text-neutral-300'
-        }`}>
-          {isPositive ? '+' : ''}{event.points.toLocaleString()} pts
-        </span>
-      </td>
-    </tr>
+          {event.description?.trim() && event.description.trim() !== `${event.type.replace('-', ' ')} transaction` && (
+            <div className="text-xs text-neutral-500 italic" style={{ fontFamily: 'Tiempo, serif' }}>
+              {event.type === 'manual-adjust' ? 'Reason: ' : 'Details: '}{event.description.trim()}
+            </div>
+          )}
+        </div>
+        
+        {/* Order # */}
+        <div className="col-span-2">
+          <span className="text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+            {event.order_id ? `#${event.order_id}` : 'N/A'}
+          </span>
+        </div>
+        
+        {/* Points */}
+        <div className="col-span-2 text-right">
+          <span className="text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
+            {isPositive ? '+' : ''}{event.points.toLocaleString()} pts
+          </span>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -169,11 +173,11 @@ export const PointsHistory: React.FC<PointsHistoryProps> = ({
           </div>
         </div>
         
-        <div className="flex-1 bg-neutral-900/40 rounded overflow-hidden flex flex-col">
+        <div className="flex-1 bg-transparent border border-neutral-600/30 rounded overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <LoadingSpinner size="lg" />
-              <p className="mt-4 text-sm text-neutral-400">Loading points history...</p>
+              <p className="mt-4 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>Loading points history...</p>
             </div>
           </div>
         </div>
@@ -190,7 +194,7 @@ export const PointsHistory: React.FC<PointsHistoryProps> = ({
           </div>
         </div>
         
-        <div className="flex-1 bg-neutral-900/40 rounded overflow-hidden flex flex-col">
+        <div className="flex-1 bg-transparent border border-neutral-600/30 rounded overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
@@ -198,7 +202,7 @@ export const PointsHistory: React.FC<PointsHistoryProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="text-sm text-red-400">Failed to load points history</p>
+              <p className="text-sm text-red-400" style={{ fontFamily: 'Tiempo, serif' }}>Failed to load points history</p>
             </div>
           </div>
         </div>
@@ -210,62 +214,58 @@ export const PointsHistory: React.FC<PointsHistoryProps> = ({
     <div className="h-full flex flex-col">
       {!hideTotalEvents && (
         <div className="flex items-center justify-between mb-2">
-          <div className="text-xs text-neutral-500">
+          <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
             {history?.pagination.total || allEvents.length} total events
           </div>
         </div>
       )}
       
-      <div className="bg-neutral-900/40 rounded overflow-hidden flex-1">
+      <div className="flex-1">
         <div className="h-full overflow-y-auto scrollable-container" ref={scrollRef} onScroll={handleScroll}>
           {!isLoading && allEvents.length === 0 ? (
             <div className="text-center py-8">
               <svg className="w-8 h-8 mx-auto mb-2 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
-              <p className="text-xs text-neutral-500">No points history available</p>
+              <p className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>No points history available</p>
             </div>
           ) : (
-            <table className="w-full table-fixed">
-              {/* Table Header */}
-              <thead className="sticky top-0 bg-neutral-800/95 backdrop-blur-sm border-b border-white/[0.1] z-10">
-                <tr>
-                  <th className="px-3 py-3 text-left text-xs font-semibold text-neutral-300 w-[15%]">Date</th>
-                  <th className="px-3 py-3 text-left text-xs font-semibold text-neutral-300 w-[20%]">Type</th>
-                  <th className="px-3 py-3 text-left text-xs font-semibold text-neutral-300 w-[35%]">Description</th>
-                  <th className="px-3 py-3 text-left text-xs font-semibold text-neutral-300 w-[15%]">Order #</th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold text-neutral-300 w-[15%]">Points</th>
-                </tr>
-              </thead>
+            <div className="h-full overflow-auto p-4">
+              {/* Header */}
+              <div className="mb-6">
+                <div className="grid grid-cols-12 gap-4 px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="col-span-2 text-left">Date</div>
+                  <div className="col-span-2 text-left">Type</div>
+                  <div className="col-span-4 text-left">Description</div>
+                  <div className="col-span-2 text-left">Order #</div>
+                  <div className="col-span-2 text-right">Points</div>
+                </div>
+              </div>
               
-              {/* Table Body */}
-              <tbody>
+              {/* Event Cards */}
+              <div className="space-y-2">
                 {allEvents.map((event, index) => (
-                  <HistoryEventItem key={`${event.id}-${index}`} event={event} />
+                  <HistoryEventCard key={`${event.id}-${index}`} event={event} />
                 ))}
                 
                 {/* Loading more indicator */}
                 {loadingMore && (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-4 text-center">
-                      <div className="flex items-center justify-center">
-                        <LoadingSpinner size="sm" />
-                        <span className="ml-2 text-xs text-neutral-500">Loading more...</span>
-                      </div>
-                    </td>
-                  </tr>
+                  <div className="py-4 text-center">
+                    <div className="flex items-center justify-center">
+                      <LoadingSpinner size="sm" />
+                      <span className="ml-2 text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>Loading more...</span>
+                    </div>
+                  </div>
                 )}
                 
                 {/* End of list indicator */}
                 {!hasMore && allEvents.length > 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-2 text-center">
-                      <span className="text-xs text-neutral-600">End of history</span>
-                    </td>
-                  </tr>
+                  <div className="py-2 text-center">
+                    <span className="text-xs text-neutral-600" style={{ fontFamily: 'Tiempo, serif' }}>End of history</span>
+                  </div>
                 )}
-              </tbody>
-            </table>
+              </div>
+            </div>
           )}
         </div>
       </div>

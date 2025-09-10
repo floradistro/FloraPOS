@@ -88,7 +88,8 @@ export const InlinePointsAdjustment: React.FC<InlinePointsAdjustmentProps> = ({
           value={points || ''}
           onChange={(e) => setPoints(Number(e.target.value) || 0)}
           placeholder="Points"
-          className="px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+          className="px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+          style={{ fontFamily: 'Tiempo, serif' }}
           disabled={adjustPoints.isPending}
         />
         <div className="relative flex-1" ref={presetRef}>
@@ -97,7 +98,8 @@ export const InlinePointsAdjustment: React.FC<InlinePointsAdjustmentProps> = ({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Reason (e.g., Customer service credit, Loyalty bonus, Referral reward)"
-            className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs pr-8"
+            className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs pr-8 placeholder:text-neutral-500"
+            style={{ fontFamily: 'Tiempo, serif' }}
             disabled={adjustPoints.isPending}
           />
           <button
@@ -110,7 +112,7 @@ export const InlinePointsAdjustment: React.FC<InlinePointsAdjustmentProps> = ({
           </button>
           
           {showPresets && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-neutral-800 border border-white/[0.1] rounded text-xs z-10 max-h-32 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-transparent backdrop-blur border border-neutral-600/40 rounded text-xs z-10 max-h-32 overflow-y-auto">
               {reasonPresets.map((preset, index) => (
                 <button
                   key={index}
@@ -119,7 +121,8 @@ export const InlinePointsAdjustment: React.FC<InlinePointsAdjustmentProps> = ({
                     setDescription(preset);
                     setShowPresets(false);
                   }}
-                  className="w-full px-2 py-1 text-left hover:bg-neutral-700 text-neutral-300 hover:text-white"
+                  className="w-full px-2 py-1 text-left hover:bg-gradient-to-r hover:from-neutral-700/20 hover:to-neutral-800/20 text-neutral-300 hover:text-white transition-colors"
+                  style={{ fontFamily: 'Tiempo, serif' }}
                 >
                   {preset}
                 </button>
@@ -130,7 +133,7 @@ export const InlinePointsAdjustment: React.FC<InlinePointsAdjustmentProps> = ({
       </div>
 
       {points !== 0 && (
-        <div className="text-xs text-neutral-500">
+        <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
           {currentBalance.toLocaleString()} → {' '}
           <span className={isPositive ? 'text-green-400' : 'text-red-400'}>
             {newBalance.toLocaleString()}
@@ -139,14 +142,15 @@ export const InlinePointsAdjustment: React.FC<InlinePointsAdjustmentProps> = ({
       )}
 
       {(error || adjustPoints.error) && (
-        <div className="text-xs text-red-400">
+        <div className="text-xs text-red-400" style={{ fontFamily: 'Tiempo, serif' }}>
           {error || adjustPoints.error?.message}
         </div>
       )}
 
       <button
         type="submit"
-        className="w-full px-2 py-1 bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] rounded text-neutral-400 hover:text-neutral-300 text-xs transition-colors disabled:opacity-50"
+        className="w-full px-2 py-1 bg-transparent hover:bg-neutral-600/10 border border-neutral-600/40 hover:border-neutral-500/50 rounded text-neutral-400 hover:text-neutral-300 text-xs transition-colors disabled:opacity-50"
+        style={{ fontFamily: 'Tiempo, serif' }}
         disabled={!points || !description.trim() || adjustPoints.isPending}
       >
         {adjustPoints.isPending ? 'Adjusting...' : 'Adjust Points'}

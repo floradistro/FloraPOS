@@ -605,11 +605,11 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
   }));
 
   return (
-    <div className="h-full bg-neutral-900 flex flex-col">
+    <div className="h-full bg-transparent flex flex-col">
 
       
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto bg-neutral-900 relative">
+      <div className="flex-1 overflow-y-auto bg-transparent relative">
         {/* Loading Overlay */}
         {loading && !hideLoadingOverlay && (
           <LoadingSpinner 
@@ -634,7 +634,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
         {/* Add Customer Form */}
         {showAddForm && (
-          <div className="border-b border-white/[0.08] px-6 py-4 bg-neutral-800/30">
+          <div className="border-b border-white/[0.08] px-6 py-4 bg-transparent">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">Add New Customer</h3>
               <IconButton
@@ -651,18 +651,20 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="space-y-3">
-                <input
+                  <input
                   type="text"
                   value={editForm.username || ''}
                   onChange={(e) => updateField('username', e.target.value)}
-                  className="w-full px-3 py-2 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-sm"
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-sm placeholder:text-neutral-500"
+                  style={{ fontFamily: 'Tiempo, serif' }}
                   placeholder="Username *"
                 />
                 <input
                   type="email"
                   value={editForm.email || ''}
                   onChange={(e) => updateField('email', e.target.value)}
-                  className="w-full px-3 py-2 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-sm"
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-sm placeholder:text-neutral-500"
+                  style={{ fontFamily: 'Tiempo, serif' }}
                   placeholder="Email *"
                 />
               </div>
@@ -671,14 +673,16 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                   type="text"
                   value={editForm.display_name || ''}
                   onChange={(e) => updateField('display_name', e.target.value)}
-                  className="w-full px-3 py-2 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-sm"
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-sm placeholder:text-neutral-500"
+                  style={{ fontFamily: 'Tiempo, serif' }}
                   placeholder="Display Name"
                 />
                 <input
                   type="text"
                   value={editForm.name || ''}
                   onChange={(e) => updateField('name', e.target.value)}
-                  className="w-full px-3 py-2 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-sm"
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-sm placeholder:text-neutral-500"
+                  style={{ fontFamily: 'Tiempo, serif' }}
                   placeholder="Full Name"
                 />
               </div>
@@ -687,7 +691,8 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                   type="password"
                   value={editForm.password || ''}
                   onChange={(e) => updateField('password', e.target.value)}
-                  className="w-full px-3 py-2 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-sm"
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-sm placeholder:text-neutral-500"
+                  style={{ fontFamily: 'Tiempo, serif' }}
                   placeholder="Password *"
                 />
                 <div className="flex gap-2">
@@ -717,7 +722,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
         {/* Table View */}
         <div className="w-full">
           {/* Table Header */}
-          <div className="sticky top-0 bg-neutral-900 backdrop-blur border-b border-white/[0.08] px-6 py-3 z-10">
+          <div className="sticky top-0 bg-transparent backdrop-blur border-b border-white/[0.08] px-6 py-3 z-10">
                          <div className="flex items-center gap-3 text-xs font-medium text-neutral-400 relative">
               <div className="w-6"></div> {/* Space for expand icon */}
               {columns.find(c => c.id === 'customer')?.visible && (
@@ -753,7 +758,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
               {/* Column Selector Dropdown */}
               {isColumnSelectorOpen && (
-                <div className="absolute right-0 top-full mt-1 w-64 bg-neutral-800 border border-white/[0.08] rounded-lg shadow-lg" style={{ zIndex: 99999 }}>
+                <div className="absolute right-0 top-full mt-1 w-64 bg-transparent backdrop-blur border border-white/[0.08] rounded-lg shadow-lg" style={{ zIndex: 99999 }}>
                   <div className="p-3">
                     <div className="text-xs font-medium text-neutral-300 mb-3">Configure Table Columns</div>
                     
@@ -807,10 +812,10 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
           {users.map((user) => (
             <div
               key={user.id}
-              className={`group mb-2 rounded-lg border-b border-white/[0.02] relative overflow-hidden ${
+              className={`group mb-2 rounded-lg relative overflow-hidden transition-all duration-300 ease-out ${
                 selectedUsers.has(user.id)
-                  ? 'bg-neutral-800/50 hover:bg-neutral-800/70 border-l-4 border-l-neutral-400'
-                  : 'bg-neutral-900/40 hover:bg-neutral-800/60'
+                  ? 'border border-neutral-400/40 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 shadow-lg shadow-neutral-700/10 hover:from-neutral-500/30 hover:to-neutral-600/50'
+                  : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-neutral-700/20'
               } ${expandedCards.has(user.id) ? 'h-[calc(100vh-200px)] min-h-[600px]' : 'h-auto'}`}
               style={{
                 transition: 'height 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease',
@@ -858,10 +863,10 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                 {/* Customer Name */}
                 {columns.find(c => c.id === 'customer')?.visible && (
                   <div className="flex-1 min-w-0">
-                    <div className="text-neutral-500 text-sm">
+                    <div className="text-neutral-200 text-sm font-normal" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
                       {user.display_name || user.name || user.username}
                     </div>
-                    <div className="text-xs text-neutral-600 truncate">
+                    <div className="text-xs text-neutral-400 truncate" style={{ fontFamily: 'Tiempo, serif' }}>
                       ID: {user.id}
                     </div>
                   </div>
@@ -869,35 +874,35 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
                 {/* Email */}
                 {columns.find(c => c.id === 'email')?.visible && (
-                  <div className="w-64 text-neutral-500 text-sm truncate">
+                  <div className="w-64 text-neutral-300 text-sm truncate" style={{ fontFamily: 'Tiempo, serif' }}>
                     {user.email}
                   </div>
                 )}
 
                 {/* Joined Date */}
                 {columns.find(c => c.id === 'joined')?.visible && (
-                  <div className="w-40 text-neutral-500 text-xs">
+                  <div className="w-40 text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>
                     {new Date().toLocaleDateString()}
                   </div>
                 )}
 
                 {/* Total Orders */}
                 {columns.find(c => c.id === 'orders')?.visible && (
-                  <div className="w-32 text-neutral-500 text-xs">
+                  <div className="w-32 text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>
                     0 orders
                   </div>
                 )}
 
                 {/* Total Spent */}
                 {columns.find(c => c.id === 'spent')?.visible && (
-                  <div className="w-32 text-neutral-500 text-xs">
+                  <div className="w-32 text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>
                     $0.00
                   </div>
                 )}
 
                 {/* Last Order */}
                 {columns.find(c => c.id === 'lastOrder')?.visible && (
-                  <div className="w-40 text-neutral-500 text-xs">
+                  <div className="w-40 text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>
                     Never
                   </div>
                 )}
@@ -906,7 +911,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
               {/* Expanded View */}
               {expandedCards.has(user.id) && (
                 <div 
-                  className="absolute inset-x-0 top-[60px] bottom-0 bg-neutral-800/30 hover:bg-neutral-800/50 border-t border-white/[0.02] overflow-y-auto p-4"
+                  className="absolute inset-x-0 top-[60px] bottom-0 bg-transparent hover:bg-neutral-600/10 border-t border-neutral-500/30 overflow-y-auto p-4"
                   style={{
                     animation: 'expandTopDown 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards',
                     transformOrigin: 'top',
@@ -923,6 +928,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         size="sm"
                         variant={activeCustomerTab[user.id] === 'contact' ? 'primary' : 'ghost'}
                         className="text-xs"
+                        style={{ fontFamily: 'Tiempo, serif' }}
                       >
                         Details
                       </Button>
@@ -931,6 +937,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         size="sm"
                         variant={activeCustomerTab[user.id] === 'rewards' ? 'primary' : 'ghost'}
                         className="text-xs"
+                        style={{ fontFamily: 'Tiempo, serif' }}
                       >
                         Rewards
                       </Button>
@@ -939,6 +946,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         size="sm"
                         variant={activeCustomerTab[user.id] === 'orders' ? 'primary' : 'ghost'}
                         className="text-xs"
+                        style={{ fontFamily: 'Tiempo, serif' }}
                       >
                         Order History
                       </Button>
@@ -968,21 +976,24 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                         </>
                       ) : (
                         <>
-                          <Button
+                          <button
                             onClick={() => startEditing(user)}
-                            size="sm"
-                            className="text-xs"
+                            className="text-neutral-400 hover:text-neutral-200 transition-colors p-1"
+                            title="Edit Customer"
                           >
-                            Edit
-                          </Button>
-                          <Button
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
                             onClick={() => deleteCustomer(user.id)}
-                            variant="danger"
-                            size="sm"
-                            className="text-xs"
+                            className="text-neutral-400 hover:text-red-400 transition-colors p-1"
+                            title="Delete Customer"
                           >
-                            Delete
-                          </Button>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
                         </>
                       )}
                     </div>
@@ -995,43 +1006,45 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
                          {/* Contact Information */}
                          <div className="space-y-2">
-                           <div className="text-neutral-500 font-medium text-xs mb-2">
+                           <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
                              Contact Information
                            </div>
                           {editingUser === user.id ? (
                             <>
-                              <div className="bg-neutral-900/40 rounded p-2">
-                                <div className="text-neutral-600 text-xs mb-1">Email:</div>
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+                                <div className="text-neutral-400 text-xs mb-1" style={{ fontFamily: 'Tiempo, serif' }}>Email:</div>
                                 <input
                                   type="email"
                                   value={editForm.email || ''}
                                   onChange={(e) => updateField('email', e.target.value)}
-                                  className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                  className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                 />
                               </div>
-                              <div className="bg-neutral-900/40 rounded p-2">
-                                <div className="text-neutral-600 text-xs mb-1">Phone:</div>
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+                                <div className="text-neutral-400 text-xs mb-1" style={{ fontFamily: 'Tiempo, serif' }}>Phone:</div>
                                 <input
                                   type="tel"
                                   value={editForm.phone || ''}
                                   onChange={(e) => updateField('phone', e.target.value)}
-                                  className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                  className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                   placeholder="Phone number"
                                 />
                               </div>
                             </>
                           ) : (
                             <>
-                              <div className="bg-neutral-900/40 rounded p-2">
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
                                 <div className="flex justify-between items-center">
-                                  <span className="text-neutral-600 text-xs">Email:</span>
-                                  <span className="text-neutral-500 text-xs">{user.email}</span>
+                                  <span className="text-neutral-400 text-xs">Email:</span>
+                                  <span className="text-neutral-300 text-xs">{user.email}</span>
                                 </div>
                               </div>
-                              <div className="bg-neutral-900/40 rounded p-2">
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
                                 <div className="flex justify-between items-center">
-                                  <span className="text-neutral-600 text-xs">Phone:</span>
-                                  <span className="text-neutral-500 text-xs">{customerData[user.id]?.billing?.phone || customerData[user.id]?.phone || 'Not set'}</span>
+                                  <span className="text-neutral-400 text-xs">Phone:</span>
+                                  <span className="text-neutral-300 text-xs">{customerData[user.id]?.billing?.phone || customerData[user.id]?.phone || 'Not set'}</span>
                                 </div>
                               </div>
                             </>
@@ -1040,32 +1053,34 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
                         {/* Account Details */}
                         <div className="space-y-2">
-                          <div className="text-neutral-500 font-medium text-xs mb-2">
+                          <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
                             Account Details
                           </div>
                           {editingUser === user.id ? (
                             <>
-                              <div className="bg-neutral-900/40 rounded p-2">
-                                <div className="text-neutral-600 text-xs mb-1">Display Name:</div>
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+                                <div className="text-neutral-400 text-xs mb-1">Display Name:</div>
                                 <input
                                   type="text"
                                   value={editForm.display_name || ''}
                                   onChange={(e) => updateField('display_name', e.target.value)}
-                                  className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                  className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                 />
                               </div>
-                              <div className="bg-neutral-900/40 rounded p-2">
-                                <div className="text-neutral-600 text-xs mb-1">Full Name:</div>
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+                                <div className="text-neutral-400 text-xs mb-1">Full Name:</div>
                                 <input
                                   type="text"
                                   value={editForm.name || ''}
                                   onChange={(e) => updateField('name', e.target.value)}
-                                  className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                  className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                   placeholder="Full name"
                                 />
                               </div>
-                              <div className="bg-neutral-900/40 rounded p-2">
-                                <div className="text-neutral-600 text-xs mb-1">Password:</div>
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+                                <div className="text-neutral-400 text-xs mb-1">Password:</div>
                                 <input
                                   type="password"
                                   value={editForm.password || ''}
@@ -1077,22 +1092,22 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                             </>
                           ) : (
                             <>
-                              <div className="bg-neutral-900/40 rounded p-2">
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
                                 <div className="flex justify-between items-center">
-                                  <span className="text-neutral-600 text-xs">Username:</span>
-                                  <span className="text-neutral-500 text-xs">{user.username}</span>
+                                  <span className="text-neutral-400 text-xs">Username:</span>
+                                  <span className="text-neutral-300 text-xs">{user.username}</span>
                                 </div>
                               </div>
-                              <div className="bg-neutral-900/40 rounded p-2">
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
                                 <div className="flex justify-between items-center">
-                                  <span className="text-neutral-600 text-xs">Display Name:</span>
-                                  <span className="text-neutral-500 text-xs">{user.display_name || 'Not set'}</span>
+                                  <span className="text-neutral-400 text-xs">Display Name:</span>
+                                  <span className="text-neutral-300 text-xs">{user.display_name || 'Not set'}</span>
                                 </div>
                               </div>
-                              <div className="bg-neutral-900/40 rounded p-2">
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
                                 <div className="flex justify-between items-center">
-                                  <span className="text-neutral-600 text-xs">Customer ID:</span>
-                                  <span className="text-neutral-500 text-xs">{user.id}</span>
+                                  <span className="text-neutral-400 text-xs">Customer ID:</span>
+                                  <span className="text-neutral-300 text-xs">{user.id}</span>
                                 </div>
                               </div>
                             </>
@@ -1101,59 +1116,63 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
                         {/* Billing Address */}
                         <div className="space-y-2">
-                          <div className="text-neutral-500 font-medium text-xs mb-2">
+                          <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
                             Billing Address
                           </div>
                           {editingUser === user.id ? (
                             <>
-                              <div className="bg-neutral-900/40 rounded p-2">
-                                <div className="text-neutral-600 text-xs mb-1">Name:</div>
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+                                <div className="text-neutral-400 text-xs mb-1">Name:</div>
                                 <div className="flex gap-2 mb-2">
                                   <input
                                     type="text"
                                     value={editForm.billing?.first_name || ''}
                                     onChange={(e) => updateNestedField('billing', 'first_name', e.target.value)}
-                                    className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                    className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                     placeholder="First name"
                                   />
                                   <input
                                     type="text"
                                     value={editForm.billing?.last_name || ''}
                                     onChange={(e) => updateNestedField('billing', 'last_name', e.target.value)}
-                                    className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                    className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                     placeholder="Last name"
                                   />
                                 </div>
-                                <div className="text-neutral-600 text-xs mb-1">Street Address:</div>
+                                <div className="text-neutral-400 text-xs mb-1">Street Address:</div>
                                 <input
                                   type="text"
                                   value={editForm.billing?.address_1 || ''}
                                   onChange={(e) => updateNestedField('billing', 'address_1', e.target.value)}
-                                  className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs mb-2"
+                                  className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs mb-2"
                                   placeholder="Street address"
                                 />
                                 <input
                                   type="text"
                                   value={editForm.billing?.address_2 || ''}
                                   onChange={(e) => updateNestedField('billing', 'address_2', e.target.value)}
-                                  className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                  className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                   placeholder="Apt, suite, etc."
                                 />
                               </div>
-                              <div className="bg-neutral-900/40 rounded p-2">
-                                <div className="text-neutral-600 text-xs mb-1">City & State:</div>
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+                                <div className="text-neutral-400 text-xs mb-1">City & State:</div>
                                 <input
                                   type="text"
                                   value={editForm.billing?.city || ''}
                                   onChange={(e) => updateNestedField('billing', 'city', e.target.value)}
-                                  className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs mb-2"
+                                  className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs mb-2"
                                   placeholder="City"
                                 />
                                 <div className="flex gap-2">
                                   <select
                                     value={editForm.billing?.state || ''}
                                     onChange={(e) => updateNestedField('billing', 'state', e.target.value)}
-                                    className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                    className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                   >
                                     {US_STATES.map(state => (
                                       <option key={state.code} value={state.code} className="bg-neutral-800 text-neutral-300">
@@ -1165,7 +1184,8 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                                     type="text"
                                     value={editForm.billing?.postcode || ''}
                                     onChange={(e) => updateNestedField('billing', 'postcode', e.target.value)}
-                                    className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                    className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                     placeholder="Zip"
                                   />
                                 </div>
@@ -1173,17 +1193,17 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                             </>
                           ) : (
                             <>
-                              <div className="bg-neutral-900/40 rounded p-2">
-                                <div className="text-neutral-600 text-xs mb-1">Name:</div>
-                                <div className="text-neutral-500 text-xs mb-2">
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+                                <div className="text-neutral-400 text-xs mb-1">Name:</div>
+                                <div className="text-neutral-300 text-xs mb-2">
                                   {customerData[user.id]?.billing?.first_name || customerData[user.id]?.billing?.last_name ? (
                                     `${customerData[user.id].billing.first_name || ''} ${customerData[user.id].billing.last_name || ''}`.trim()
                                   ) : (
                                     'Not set'
                                   )}
                                 </div>
-                                <div className="text-neutral-600 text-xs mb-1">Address:</div>
-                                <div className="text-neutral-500 text-xs">
+                                <div className="text-neutral-400 text-xs mb-1">Address:</div>
+                                <div className="text-neutral-300 text-xs">
                                   {customerData[user.id]?.billing?.address_1 ? (
                                     <>
                                       {customerData[user.id].billing.address_1}
@@ -1205,59 +1225,63 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
                         {/* Shipping Address */}
                         <div className="space-y-2">
-                          <div className="text-neutral-500 font-medium text-xs mb-2">
+                          <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
                             Shipping Address
                           </div>
                           {editingUser === user.id ? (
                             <>
-                              <div className="bg-neutral-900/40 rounded p-2">
-                                <div className="text-neutral-600 text-xs mb-1">Name:</div>
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+                                <div className="text-neutral-400 text-xs mb-1">Name:</div>
                                 <div className="flex gap-2 mb-2">
                                   <input
                                     type="text"
                                     value={editForm.shipping?.first_name || ''}
                                     onChange={(e) => updateNestedField('shipping', 'first_name', e.target.value)}
-                                    className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                    className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                     placeholder="First name"
                                   />
                                   <input
                                     type="text"
                                     value={editForm.shipping?.last_name || ''}
                                     onChange={(e) => updateNestedField('shipping', 'last_name', e.target.value)}
-                                    className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                    className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                     placeholder="Last name"
                                   />
                                 </div>
-                                <div className="text-neutral-600 text-xs mb-1">Street Address:</div>
+                                <div className="text-neutral-400 text-xs mb-1">Street Address:</div>
                                 <input
                                   type="text"
                                   value={editForm.shipping?.address_1 || ''}
                                   onChange={(e) => updateNestedField('shipping', 'address_1', e.target.value)}
-                                  className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs mb-2"
+                                  className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs mb-2"
                                   placeholder="Street address"
                                 />
                                 <input
                                   type="text"
                                   value={editForm.shipping?.address_2 || ''}
                                   onChange={(e) => updateNestedField('shipping', 'address_2', e.target.value)}
-                                  className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                  className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                   placeholder="Apt, suite, etc."
                                 />
                               </div>
-                              <div className="bg-neutral-900/40 rounded p-2">
-                                <div className="text-neutral-600 text-xs mb-1">City & State:</div>
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+                                <div className="text-neutral-400 text-xs mb-1">City & State:</div>
                                 <input
                                   type="text"
                                   value={editForm.shipping?.city || ''}
                                   onChange={(e) => updateNestedField('shipping', 'city', e.target.value)}
-                                  className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs mb-2"
+                                  className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs mb-2"
                                   placeholder="City"
                                 />
                                 <div className="flex gap-2">
                                   <select
                                     value={editForm.shipping?.state || ''}
                                     onChange={(e) => updateNestedField('shipping', 'state', e.target.value)}
-                                    className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                    className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                   >
                                     {US_STATES.map(state => (
                                       <option key={state.code} value={state.code} className="bg-neutral-800 text-neutral-300">
@@ -1269,12 +1293,13 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                                     type="text"
                                     value={editForm.shipping?.postcode || ''}
                                     onChange={(e) => updateNestedField('shipping', 'postcode', e.target.value)}
-                                    className="w-full px-2 py-1 bg-neutral-900/60 border border-white/[0.1] rounded text-neutral-300 focus:border-white/[0.3] focus:outline-none text-xs"
+                                    className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
+                                  style={{ fontFamily: 'Tiempo, serif' }}
                                     placeholder="Zip"
                                   />
                                 </div>
                               </div>
-                              <div className="bg-neutral-900/40 rounded p-2">
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1301,17 +1326,17 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                             </>
                           ) : (
                             <>
-                              <div className="bg-neutral-900/40 rounded p-2">
-                                <div className="text-neutral-600 text-xs mb-1">Name:</div>
-                                <div className="text-neutral-500 text-xs mb-2">
+                              <div className="bg-transparent border border-neutral-600/40 rounded p-2">
+                                <div className="text-neutral-400 text-xs mb-1">Name:</div>
+                                <div className="text-neutral-300 text-xs mb-2">
                                   {customerData[user.id]?.shipping?.first_name || customerData[user.id]?.shipping?.last_name ? (
                                     `${customerData[user.id].shipping.first_name || ''} ${customerData[user.id].shipping.last_name || ''}`.trim()
                                   ) : (
                                     'Same as billing'
                                   )}
                                 </div>
-                                <div className="text-neutral-600 text-xs mb-1">Address:</div>
-                                <div className="text-neutral-500 text-xs">
+                                <div className="text-neutral-400 text-xs mb-1">Address:</div>
+                                <div className="text-neutral-300 text-xs">
                                   {customerData[user.id]?.shipping?.address_1 ? (
                                     <>
                                       {customerData[user.id].shipping.address_1}
@@ -1333,60 +1358,61 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                        
                        {/* Customer Preferences - Full Width Section */}
                        <div className="col-span-full mt-6">
-                         <div className="text-neutral-500 font-medium text-sm mb-4 border-b border-white/[0.08] pb-2">
+                         <div className="text-neutral-300 font-medium text-sm mb-4 border-b border-white/[0.08] pb-2" style={{ fontFamily: 'Tiempo, serif' }}>
                            Customer Preferences
                          </div>
                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                            <div className="space-y-3">
-                             <div className="text-neutral-400 font-medium text-xs mb-3">
+                             <div className="text-neutral-300 font-medium text-xs mb-3" style={{ fontFamily: 'Tiempo, serif' }}>
                                Communication
                              </div>
-                             <div className="bg-neutral-900/40 rounded p-3">
+                             <div className="bg-transparent border border-neutral-600/40 rounded p-3">
                                <div className="flex justify-between items-center">
-                                 <span className="text-neutral-600 text-xs">Email Notifications:</span>
-                                 <span className="text-neutral-400 text-xs font-medium">Enabled</span>
+                                 <span className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Email Notifications:</span>
+                                 <span className="text-neutral-300 text-xs font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Enabled</span>
                                </div>
                              </div>
-                             <div className="bg-neutral-900/40 rounded p-3">
+                             <div className="bg-transparent border border-neutral-600/40 rounded p-3">
                                <div className="flex justify-between items-center">
-                                 <span className="text-neutral-600 text-xs">SMS Notifications:</span>
-                                 <span className="text-neutral-400 text-xs font-medium">Disabled</span>
+                                 <span className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>SMS Notifications:</span>
+                                 <span className="text-neutral-300 text-xs font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Disabled</span>
                                </div>
                              </div>
                            </div>
                            <div className="space-y-3">
-                             <div className="text-neutral-400 font-medium text-xs mb-3">
+                             <div className="text-neutral-300 font-medium text-xs mb-3" style={{ fontFamily: 'Tiempo, serif' }}>
                                Shopping Preferences
                              </div>
-                             <div className="bg-neutral-900/40 rounded p-3">
+                             <div className="bg-transparent border border-neutral-600/40 rounded p-3">
                                <div className="flex justify-between items-center">
-                                 <span className="text-neutral-600 text-xs">Language:</span>
-                                 <span className="text-neutral-400 text-xs font-medium">English</span>
+                                 <span className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Language:</span>
+                                 <span className="text-neutral-300 text-xs font-medium" style={{ fontFamily: 'Tiempo, serif' }}>English</span>
                                </div>
                              </div>
-                             <div className="bg-neutral-900/40 rounded p-3">
+                             <div className="bg-transparent border border-neutral-600/40 rounded p-3">
                                <div className="flex justify-between items-center">
-                                 <span className="text-neutral-600 text-xs">Currency:</span>
-                                 <span className="text-neutral-400 text-xs font-medium">USD</span>
+                                 <span className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Currency:</span>
+                                 <span className="text-neutral-300 text-xs font-medium" style={{ fontFamily: 'Tiempo, serif' }}>USD</span>
                                </div>
                              </div>
                            </div>
                            <div className="space-y-3">
-                             <div className="text-neutral-400 font-medium text-xs mb-3">
+                             <div className="text-neutral-300 font-medium text-xs mb-3" style={{ fontFamily: 'Tiempo, serif' }}>
                                Marketing & Actions
                              </div>
-                             <div className="bg-neutral-900/40 rounded p-3">
+                             <div className="bg-transparent border border-neutral-600/40 rounded p-3">
                                <div className="flex justify-between items-center">
-                                 <span className="text-neutral-600 text-xs">Newsletter:</span>
-                                 <span className="text-neutral-400 text-xs font-medium">Subscribed</span>
+                                 <span className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Newsletter:</span>
+                                 <span className="text-neutral-300 text-xs font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Subscribed</span>
                                </div>
                              </div>
                              {editingUser !== user.id && (
-                               <div className="bg-neutral-900/40 rounded p-3">
-                                 <div className="text-neutral-600 text-xs mb-2">Password:</div>
+                               <div className="bg-transparent border border-neutral-600/40 rounded p-3">
+                                 <div className="text-neutral-400 text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>Password:</div>
                                  <button
                                    onClick={() => sendPasswordReset(user.id)}
-                                   className="px-3 py-1.5 bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] rounded text-neutral-400 hover:text-neutral-300 text-xs smooth-hover transition-colors"
+                                   className="px-3 py-1.5 bg-transparent hover:bg-neutral-600/10 border border-neutral-600/40 hover:border-neutral-500/50 rounded text-neutral-400 hover:text-neutral-300 text-xs smooth-hover transition-colors"
+                                   style={{ fontFamily: 'Tiempo, serif' }}
                                  >
                                    Send Reset Link
                                  </button>

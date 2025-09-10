@@ -13,7 +13,7 @@ interface OrderItemProps {
   order: CustomerOrder;
 }
 
-const OrderItem: React.FC<OrderItemProps> = ({ order }) => {
+const OrderCard: React.FC<OrderItemProps> = ({ order }) => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -30,50 +30,54 @@ const OrderItem: React.FC<OrderItemProps> = ({ order }) => {
     : 'No items';
 
   return (
-    <tr className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
-      {/* Order Number */}
-      <td className="px-3 py-3 text-left align-top">
-        <span className="text-neutral-300 text-xs font-medium">
-          #{order.number || order.id}
-        </span>
-      </td>
-      
-      {/* Status */}
-      <td className="px-3 py-3 align-top">
-        <span className="text-xs text-neutral-400">
-          {customerOrdersService.getOrderStatusLabel(order.status)}
-        </span>
-      </td>
-      
-      {/* Date */}
-      <td className="px-3 py-3 text-neutral-400 text-xs align-top">
-        {formatDate(order.date_created)}
-      </td>
-      
-      {/* Items */}
-      <td className="px-3 py-3 text-neutral-500 text-xs align-top">
-        <div className="truncate leading-relaxed" title={itemsSummary}>
-          {itemsSummary}
+    <div className="rounded-lg overflow-hidden p-2 cursor-pointer transition-all duration-300 ease-out border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-neutral-600/5 hover:-translate-y-1 hover:shadow-lg hover:shadow-neutral-700/20">
+      <div className="grid grid-cols-12 gap-4 items-center">
+        {/* Order Number */}
+        <div className="col-span-2">
+          <span className="text-neutral-200 font-normal text-base" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
+            #{order.number || order.id}
+          </span>
         </div>
-        <div className="text-neutral-600 text-xs mt-1">
-          {order.line_items.length} item{order.line_items.length !== 1 ? 's' : ''}
+        
+        {/* Status */}
+        <div className="col-span-2">
+          <span className="text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+            {customerOrdersService.getOrderStatusLabel(order.status)}
+          </span>
         </div>
-      </td>
-      
-      {/* Payment Method */}
-      <td className="px-3 py-3 text-neutral-500 text-xs align-top">
-        <div className="truncate" title={order.payment_method_title || 'N/A'}>
-          {order.payment_method_title || 'N/A'}
+        
+        {/* Date */}
+        <div className="col-span-2">
+          <span className="text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+            {formatDate(order.date_created)}
+          </span>
         </div>
-      </td>
-      
-      {/* Total */}
-      <td className="px-3 py-3 text-right align-top">
-        <span className="text-neutral-300 text-xs font-semibold">
-          {formatTotal(order.total, order.currency)}
-        </span>
-      </td>
-    </tr>
+        
+        {/* Items */}
+        <div className="col-span-3">
+          <div className="text-neutral-200 font-normal text-base mb-1 truncate" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }} title={itemsSummary}>
+            {itemsSummary}
+          </div>
+          <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
+            {order.line_items.length} item{order.line_items.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+        
+        {/* Payment Method */}
+        <div className="col-span-2">
+          <span className="text-sm text-neutral-400 truncate" style={{ fontFamily: 'Tiempo, serif' }} title={order.payment_method_title || 'N/A'}>
+            {order.payment_method_title || 'N/A'}
+          </span>
+        </div>
+        
+        {/* Total */}
+        <div className="col-span-1 text-right">
+          <span className="text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
+            {formatTotal(order.total, order.currency)}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -176,16 +180,16 @@ export const EnhancedCustomerOrderHistory: React.FC<EnhancedCustomerOrderHistory
         </div>
         
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/[0.08]">
-          <div className="text-neutral-400 font-medium text-xs mb-3">
+          <div className="text-neutral-300 font-medium text-xs mb-3">
             Order History
           </div>
         </div>
         
-        <div className="flex-1 bg-neutral-900/40 rounded overflow-hidden flex flex-col">
+        <div className="flex-1 flex flex-col">
           <div className="flex-1 overflow-y-auto flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <LoadingSpinner size="lg" />
-              <p className="mt-4 text-sm text-neutral-400">Loading order history...</p>
+              <p className="mt-4 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>Loading order history...</p>
             </div>
           </div>
         </div>
@@ -202,12 +206,12 @@ export const EnhancedCustomerOrderHistory: React.FC<EnhancedCustomerOrderHistory
         </div>
         
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/[0.08]">
-          <div className="text-neutral-400 font-medium text-xs mb-3">
+          <div className="text-neutral-300 font-medium text-xs mb-3">
             Order History
           </div>
         </div>
         
-        <div className="flex-1 bg-neutral-900/40 rounded overflow-hidden flex flex-col">
+        <div className="flex-1 flex flex-col">
           <div className="flex-1 overflow-y-auto flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
@@ -215,7 +219,7 @@ export const EnhancedCustomerOrderHistory: React.FC<EnhancedCustomerOrderHistory
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <p className="text-sm text-red-400">Failed to load order history</p>
+              <p className="text-sm text-red-400" style={{ fontFamily: 'Tiempo, serif' }}>Failed to load order history</p>
             </div>
           </div>
         </div>
@@ -227,20 +231,20 @@ export const EnhancedCustomerOrderHistory: React.FC<EnhancedCustomerOrderHistory
     <div className="w-full h-full flex flex-col space-y-4">
       {/* Customer Order Stats */}
       <div>
-        <h3 className="text-neutral-400 font-medium text-xs mb-2">Order & Transaction Stats</h3>
+        <h3 className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>Order & Transaction Stats</h3>
         <CustomerOrderStats userId={userId} />
       </div>
 
       {/* Order History */}
       <div className="flex-1 flex flex-col min-h-0">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-neutral-400 font-medium text-xs">Order History</h3>
-          <div className="text-xs text-neutral-500">
+          <h3 className="text-neutral-300 font-medium text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Order History</h3>
+          <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
             {orders?.meta.total || allOrders.length} total orders
           </div>
         </div>
         
-        <div className="bg-neutral-900/40 rounded overflow-hidden flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col">
           <div className="flex-1 min-h-0 overflow-y-auto scrollable-container" ref={scrollRef} onScroll={handleScroll}>
             {!isLoading && allOrders.length === 0 ? (
               <div className="flex items-center justify-center h-full min-h-[300px]">
@@ -248,51 +252,47 @@ export const EnhancedCustomerOrderHistory: React.FC<EnhancedCustomerOrderHistory
                   <svg className="w-8 h-8 mx-auto mb-2 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                   </svg>
-                  <p className="text-xs text-neutral-500">No orders available</p>
+                  <p className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>No orders available</p>
                 </div>
               </div>
             ) : (
-              <table className="w-full table-fixed">
-                {/* Table Header */}
-                <thead className="sticky top-0 bg-neutral-800/95 backdrop-blur-sm border-b border-white/[0.1] z-10">
-                  <tr>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-neutral-300 w-[15%]">Order #</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-neutral-300 w-[20%]">Status</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-neutral-300 w-[15%]">Date</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-neutral-300 w-[25%]">Items</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-neutral-300 w-[15%]">Payment</th>
-                    <th className="px-3 py-3 text-right text-xs font-semibold text-neutral-300 w-[10%]">Total</th>
-                  </tr>
-                </thead>
+              <div className="h-full overflow-auto p-4">
+                {/* Header */}
+                <div className="mb-6">
+                  <div className="grid grid-cols-12 gap-4 px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="col-span-2 text-left">Order #</div>
+                    <div className="col-span-2 text-left">Status</div>
+                    <div className="col-span-2 text-left">Date</div>
+                    <div className="col-span-3 text-left">Items</div>
+                    <div className="col-span-2 text-left">Payment</div>
+                    <div className="col-span-1 text-right">Total</div>
+                  </div>
+                </div>
                 
-                {/* Table Body */}
-                <tbody>
+                {/* Order Cards */}
+                <div className="space-y-2">
                   {allOrders.map((order, index) => (
-                    <OrderItem key={`${order.id}-${index}`} order={order} />
+                    <OrderCard key={`${order.id}-${index}`} order={order} />
                   ))}
                   
                   {/* Loading more indicator */}
                   {loadingMore && (
-                    <tr>
-                      <td colSpan={6} className="px-3 py-4 text-center">
-                        <div className="flex items-center justify-center">
-                          <LoadingSpinner size="sm" />
-                          <span className="ml-2 text-xs text-neutral-500">Loading more...</span>
-                        </div>
-                      </td>
-                    </tr>
+                    <div className="py-4 text-center">
+                      <div className="flex items-center justify-center">
+                        <LoadingSpinner size="sm" />
+                        <span className="ml-2 text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>Loading more...</span>
+                      </div>
+                    </div>
                   )}
                   
                   {/* End of list indicator */}
                   {!hasMore && allOrders.length > 0 && (
-                    <tr>
-                      <td colSpan={6} className="px-3 py-2 text-center">
-                        <span className="text-xs text-neutral-600">End of order history</span>
-                      </td>
-                    </tr>
+                    <div className="py-2 text-center">
+                      <span className="text-xs text-neutral-600" style={{ fontFamily: 'Tiempo, serif' }}>End of order history</span>
+                    </div>
                   )}
-                </tbody>
-              </table>
+                </div>
+              </div>
             )}
           </div>
         </div>
