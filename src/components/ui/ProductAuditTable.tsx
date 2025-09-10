@@ -62,10 +62,10 @@ export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
               <React.Fragment key={product.id}>
                 {/* Main Product Card */}
                 <div 
-                  className={`rounded-lg overflow-hidden p-2 cursor-pointer transition-all duration-300 ease-out ${
+                  className={`rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out ${
                     isSelected
-                      ? 'border-2 border-white/30 bg-gradient-to-br from-neutral-500/40 to-neutral-600/80 shadow-lg shadow-white/5 transform scale-[1.02]'
-                      : 'border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-neutral-600/5 hover:-translate-y-1 hover:shadow-lg hover:shadow-neutral-700/20'
+                      ? 'border-2 border-white/20 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 shadow-md shadow-white/5'
+                      : 'border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10'
                   }`}
                   onClick={(e) => onProductSelection(product, e)}
                 >

@@ -532,9 +532,9 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
   }));
 
   return (
-    <div className="h-full bg-neutral-900 flex flex-col">
+    <div className="h-full bg-transparent flex flex-col">
       {/* Content Area - Header removed, filters now in main Header */}
-      <div className="flex-1 overflow-y-auto bg-neutral-900 relative">
+      <div className="flex-1 overflow-y-auto bg-transparent relative">
         {/* Loading Overlay */}
         {loading && !hideLoadingOverlay && (
           <LoadingSpinner 
@@ -562,8 +562,8 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
         {/* Table View */}
         <div className="w-full">
           {/* Table Header */}
-          <div className="sticky top-0 bg-neutral-900 backdrop-blur border-b border-white/[0.08] px-6 py-3 z-10">
-            <div className="flex items-center gap-3 text-xs md:text-base font-medium text-neutral-400 relative">
+          <div className="sticky top-0 bg-transparent backdrop-blur px-6 py-3 z-10">
+            <div className="flex items-center gap-3 text-xs md:text-base font-medium text-neutral-400 relative" style={{ fontFamily: 'Tiempo, serif' }}>
               <div className="w-6"></div> {/* Space for expand icon */}
               {columns.find(c => c.id === 'order')?.visible && (
                 <div className="w-32">Order</div>
@@ -664,10 +664,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
             {orders.map((order) => (
               <div
                 key={order.id}
-                className={`group transition-all mb-2 rounded-lg border-b border-white/[0.02] ${
+                className={`group transition-all duration-200 ease-out mb-2 rounded-lg overflow-visible p-2 cursor-pointer ${
                   selectedOrders.has(order.id)
-                    ? 'bg-neutral-800/50 hover:bg-neutral-800/70 border-l-4 border-l-neutral-400'
-                    : 'bg-neutral-900/40 hover:bg-neutral-800/60'
+                    ? 'border-2 border-white/20 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 shadow-md shadow-white/5'
+                    : 'border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10'
                 }`}
               >
                 {/* Order Row - Single Line */}
@@ -710,7 +710,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                   {/* Order Number */}
                   {columns.find(c => c.id === 'order')?.visible && (
                     <div className="w-32">
-                      <div className="text-neutral-500 text-sm">
+                      <div className="text-neutral-200 font-normal text-base" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
                         #{order.id}
                       </div>
                     </div>
@@ -719,10 +719,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                   {/* Customer */}
                   {columns.find(c => c.id === 'customer')?.visible && (
                     <div className="flex-1 min-w-0">
-                      <div className="text-neutral-500 text-sm">
+                      <div className="text-neutral-200 font-normal text-base" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
                         {order.billing.first_name} {order.billing.last_name}
                       </div>
-                      <div className="text-xs text-neutral-600 truncate">
+                      <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
                         {order.billing.email}
                       </div>
                     </div>
@@ -730,56 +730,56 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
 
                   {/* Location */}
                   {columns.find(c => c.id === 'location')?.visible && (
-                    <div className="w-32 text-neutral-500 text-xs">
+                    <div className="w-32 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
                       {getOrderLocation(order)}
                     </div>
                   )}
 
                   {/* Source */}
                   {columns.find(c => c.id === 'source')?.visible && (
-                    <div className="w-24 text-neutral-500 text-xs">
+                    <div className="w-24 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
                       {getOrderSource(order)}
                     </div>
                   )}
 
                   {/* Date */}
                   {columns.find(c => c.id === 'date')?.visible && (
-                    <div className="w-40 text-neutral-500 text-xs">
+                    <div className="w-40 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
                       {formatDate(order.date_created)}
                     </div>
                   )}
 
                   {/* Status */}
                   {columns.find(c => c.id === 'status')?.visible && (
-                    <div className="w-32 text-neutral-500 text-xs">
+                    <div className="w-32 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
                       {formatStatus(order.status)}
                     </div>
                   )}
 
                   {/* Total */}
                   {columns.find(c => c.id === 'total')?.visible && (
-                    <div className="w-32 text-neutral-400 text-sm">
+                    <div className="w-32 text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
                       {order.currency} {order.total}
                     </div>
                   )}
 
                   {/* Payment Method */}
                   {columns.find(c => c.id === 'payment')?.visible && (
-                    <div className="w-40 text-neutral-500 text-xs">
+                    <div className="w-40 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
                       {order.payment_method_title || 'N/A'}
                     </div>
                   )}
 
                   {/* Shipping Method */}
                   {columns.find(c => c.id === 'shipping')?.visible && (
-                    <div className="w-40 text-neutral-500 text-xs">
+                    <div className="w-40 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
                       {order.shipping_lines?.[0]?.method_title || 'N/A'}
                     </div>
                   )}
 
                   {/* Items Count */}
                   {columns.find(c => c.id === 'items')?.visible && (
-                    <div className="w-24 text-neutral-500 text-xs">
+                    <div className="w-24 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
                       {order.line_items?.length || 0} items
                     </div>
                   )}
@@ -787,7 +787,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
 
                 {/* Expanded View */}
                 {expandedCards.has(order.id) && (
-                  <div className="mx-6 mb-2 rounded p-4 bg-neutral-800/30 hover:bg-neutral-800/50 border-t border-white/[0.02]">
+                  <div className="mx-6 mb-2 rounded p-4 bg-transparent border-t border-white/[0.06]">
                     {/* Tab Controls */}
                     <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/[0.08]">
                       <Button
@@ -795,6 +795,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                         size="sm"
                         variant={activeOrderTab[order.id] === 'items' || !activeOrderTab[order.id] ? 'primary' : 'ghost'}
                         className="text-xs"
+                        style={{ fontFamily: 'Tiempo, serif' }}
                       >
                         Items
                       </Button>
@@ -803,6 +804,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                         size="sm"
                         variant={activeOrderTab[order.id] === 'customer' ? 'primary' : 'ghost'}
                         className="text-xs"
+                        style={{ fontFamily: 'Tiempo, serif' }}
                       >
                         Customer
                       </Button>
@@ -811,6 +813,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                         size="sm"
                         variant={activeOrderTab[order.id] === 'shipping' ? 'primary' : 'ghost'}
                         className="text-xs"
+                        style={{ fontFamily: 'Tiempo, serif' }}
                       >
                         Shipping
                       </Button>
@@ -819,6 +822,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                         size="sm"
                         variant={activeOrderTab[order.id] === 'payment' ? 'primary' : 'ghost'}
                         className="text-xs"
+                        style={{ fontFamily: 'Tiempo, serif' }}
                       >
                         Payment
                       </Button>
@@ -827,6 +831,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                         size="sm"
                         variant={activeOrderTab[order.id] === 'notes' ? 'primary' : 'ghost'}
                         className="text-xs"
+                        style={{ fontFamily: 'Tiempo, serif' }}
                       >
                         Notes
                       </Button>
@@ -838,7 +843,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                       {(activeOrderTab[order.id] === 'items' || !activeOrderTab[order.id]) && (
                         <>
                           <div className="lg:col-span-2 space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
                               Order Items
                             </div>
                             {order.line_items?.map((item) => {
@@ -862,7 +867,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                               }
                               
                               return (
-                                <div key={item.id} className="bg-neutral-900/40 rounded p-2">
+                                <div key={item.id} className="bg-transparent border border-white/[0.06] rounded p-2">
                                   <div className="flex justify-between items-start">
                                     <div className="flex-1">
                                       <div className="text-neutral-300 text-sm">{item.name}</div>
@@ -907,24 +912,24 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                             })}
                           </div>
                           <div className="space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2">
                               Order Summary
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="flex justify-between items-center">
                                 <span className="text-neutral-600 text-xs">Subtotal:</span>
                                 <span className="text-neutral-400 text-xs">{order.currency} {order.subtotal}</span>
                               </div>
                             </div>
                             {order.shipping_lines?.length > 0 && (
-                              <div className="bg-neutral-900/40 rounded p-2">
+                              <div className="bg-transparent border border-white/[0.06] rounded p-2">
                                 <div className="flex justify-between items-center">
                                   <span className="text-neutral-600 text-xs">Shipping:</span>
                                   <span className="text-neutral-400 text-xs">{order.currency} {order.shipping_lines[0].total}</span>
                                 </div>
                               </div>
                             )}
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="flex justify-between items-center">
                                 <span className="text-neutral-600 text-xs font-medium">Total:</span>
                                 <span className="text-neutral-400 text-sm font-medium">{order.currency} {order.total}</span>
@@ -938,22 +943,22 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                       {activeOrderTab[order.id] === 'customer' && (
                         <>
                           <div className="space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2">
                               Customer Information
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="flex justify-between items-center">
                                 <span className="text-neutral-600 text-xs">Name:</span>
                                 <span className="text-neutral-500 text-xs">{order.billing.first_name} {order.billing.last_name}</span>
                               </div>
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="flex justify-between items-center">
                                 <span className="text-neutral-600 text-xs">Email:</span>
                                 <span className="text-neutral-500 text-xs">{order.billing.email}</span>
                               </div>
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="flex justify-between items-center">
                                 <span className="text-neutral-600 text-xs">Phone:</span>
                                 <span className="text-neutral-500 text-xs">{order.billing.phone || 'Not provided'}</span>
@@ -961,10 +966,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2">
                               Billing Address
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="text-neutral-500 text-xs">
                                 {order.billing.address_1}<br />
                                 {order.billing.address_2 && <>{order.billing.address_2}<br /></>}
@@ -974,10 +979,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2">
                               Customer ID
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="flex justify-between items-center">
                                 <span className="text-neutral-600 text-xs">User ID:</span>
                                 <span className="text-neutral-500 text-xs">{order.customer_id || 'Guest'}</span>
@@ -991,10 +996,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                       {activeOrderTab[order.id] === 'shipping' && (
                         <>
                           <div className="space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2">
                               Shipping Address
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="text-neutral-500 text-xs">
                                 {order.shipping.first_name} {order.shipping.last_name}<br />
                                 {order.shipping.address_1}<br />
@@ -1005,11 +1010,11 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2">
                               Shipping Method
                             </div>
                             {order.shipping_lines?.map((shipping, index) => (
-                              <div key={index} className="bg-neutral-900/40 rounded p-2">
+                              <div key={index} className="bg-transparent border border-white/[0.06] rounded p-2">
                                 <div className="flex justify-between items-center">
                                   <span className="text-neutral-500 text-xs">{shipping.method_title}</span>
                                   <span className="text-neutral-400 text-xs">{order.currency} {shipping.total}</span>
@@ -1017,16 +1022,16 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                               </div>
                             ))}
                             {(!order.shipping_lines || order.shipping_lines.length === 0) && (
-                              <div className="bg-neutral-900/40 rounded p-2">
+                              <div className="bg-transparent border border-white/[0.06] rounded p-2">
                                 <div className="text-neutral-500 text-xs">No shipping method selected</div>
                               </div>
                             )}
                           </div>
                           <div className="space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2">
                               Tracking
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="text-neutral-500 text-xs">No tracking information available</div>
                             </div>
                           </div>
@@ -1037,16 +1042,16 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                       {activeOrderTab[order.id] === 'payment' && (
                         <>
                           <div className="space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2">
                               Payment Method
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="flex justify-between items-center">
                                 <span className="text-neutral-600 text-xs">Method:</span>
                                 <span className="text-neutral-500 text-xs">{order.payment_method_title || 'Not specified'}</span>
                               </div>
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="flex justify-between items-center">
                                 <span className="text-neutral-600 text-xs">Transaction ID:</span>
                                 <span className="text-neutral-500 text-xs">{order.transaction_id || 'N/A'}</span>
@@ -1054,10 +1059,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2">
                               Payment Status
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="flex justify-between items-center">
                                 <span className="text-neutral-600 text-xs">Status:</span>
                                 <span className="text-neutral-500 text-xs">
@@ -1067,10 +1072,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2">
                               Actions
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <select
                                 value={order.status}
                                 onChange={(e) => updateOrderStatus(order.id, e.target.value)}
@@ -1099,18 +1104,18 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                       {activeOrderTab[order.id] === 'notes' && (
                         <>
                           <div className="lg:col-span-3 space-y-2">
-                            <div className="text-neutral-500 font-medium text-xs mb-2">
+                            <div className="text-neutral-300 font-medium text-xs mb-2">
                               Order Notes
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="text-neutral-500 text-xs">
                                 {order.customer_note || 'No notes available for this order'}
                               </div>
                             </div>
-                            <div className="text-neutral-500 font-medium text-xs mb-2 mt-4">
+                            <div className="text-neutral-300 font-medium text-xs mb-2 mt-4">
                               Order Metadata
                             </div>
-                            <div className="bg-neutral-900/40 rounded p-2">
+                            <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="space-y-1">
                                 <div className="flex justify-between items-center">
                                   <span className="text-neutral-600 text-xs">Order ID:</span>

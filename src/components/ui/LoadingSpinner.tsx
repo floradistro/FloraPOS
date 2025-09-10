@@ -35,7 +35,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   if (overlay) {
     return (
-      <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="absolute inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50">
         {content}
       </div>
     );

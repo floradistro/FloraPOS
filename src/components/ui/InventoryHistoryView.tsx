@@ -321,7 +321,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
         ) : (
           <div className="h-full overflow-auto">
             {/* Table Header */}
-            <div className="sticky top-0 bg-neutral-900 backdrop-blur border-b border-white/[0.08] px-6 py-3 z-10">
+            <div className="sticky top-0 bg-transparent backdrop-blur px-6 py-3 z-10">
               <div className="flex items-center gap-3 text-xs font-medium text-neutral-400">
                 <div className="w-6"></div> {/* Space for expand icon */}
                 <div className="flex-1">Product</div>
@@ -353,7 +353,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                       return (
                         <div 
                           key={`batch-${batch.id}`}
-                          className={`group mb-2 rounded-lg border-b border-white/[0.02] relative overflow-hidden bg-neutral-900/40 hover:bg-neutral-800/60 ${
+                          className={`group mb-2 rounded-lg relative overflow-visible border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10 transition-all duration-200 ease-out ${
                             isExpanded ? 'h-[calc(100vh-200px)] min-h-[600px]' : 'h-auto'
                           }`}
                           style={{
@@ -386,27 +386,27 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                             </button>
                             
                             {/* Product */}
-                            <div className="flex-1 text-neutral-500 text-sm truncate">
-                              <div className="text-neutral-500 text-sm">
+                            <div className="flex-1 text-sm truncate">
+                              <div className="text-neutral-200 font-normal text-base" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
                                 {batch.batch_name} • {batch.total_products} {batch.total_products === 1 ? 'product' : 'products'}
                               </div>
-                              <div className="text-xs text-neutral-600 truncate">
+                              <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
                                 {batch.audit_number}
                               </div>
                             </div>
 
                             {/* Change */}
-                            <div className="w-24 text-neutral-500 text-xs">
+                            <div className="w-24 text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
                               {batch.net_change > 0 ? '+' : ''}{parseFloat(batch.net_change.toString()).toFixed(4)}
                             </div>
 
                             {/* User */}
-                            <div className="w-32 text-neutral-500 text-xs">
+                            <div className="w-32 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
                               {batch.user_name}
                             </div>
 
                             {/* Date & Time */}
-                            <div className="w-32 text-neutral-500 text-xs">
+                            <div className="w-32 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
                               {formatDateTime(batch.created_at)}
                             </div>
                           </div>
@@ -414,7 +414,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                           {/* Expanded View */}
                           {isExpanded && (
                             <div 
-                              className="absolute inset-x-0 top-[60px] bottom-0 bg-neutral-800/30 hover:bg-neutral-800/50 border-t border-white/[0.02] overflow-y-auto p-4"
+                              className="absolute inset-x-0 top-[60px] bottom-0 bg-transparent border-t border-white/[0.06] overflow-y-auto p-4"
                               style={{
                                 animation: 'expandTopDown 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards',
                                 transformOrigin: 'top',
@@ -428,7 +428,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                                 {batch.entries && batch.entries.map((entry) => (
                                   <div 
                                     key={`entry-${entry.id}`}
-                                    className="bg-neutral-900/40 rounded p-3 border border-white/[0.05]"
+                                    className="bg-transparent rounded p-3 border border-white/[0.06]"
                                   >
                                     <div className="flex items-center gap-3">
                                       <div className="flex-1 text-neutral-500 text-sm truncate">
@@ -465,38 +465,38 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                       return (
                         <div 
                           key={`standalone-${entry.id}`}
-                          className="group mb-2 rounded-lg border-b border-white/[0.02] relative overflow-hidden bg-neutral-900/40 hover:bg-neutral-800/60"
+                          className="group mb-2 rounded-lg relative overflow-visible border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10 transition-all duration-200 ease-out"
                         >
                           <div className="flex items-center gap-3 px-6 py-3">
                             {/* No expand icon for standalone */}
                             <div className="w-6"></div>
                             
                             {/* Product */}
-                            <div className="flex-1 text-neutral-500 text-sm truncate">
-                              <div className="text-neutral-500 text-sm">
+                            <div className="flex-1 text-sm truncate">
+                              <div className="text-neutral-200 font-normal text-base" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
                                 {getProductName(entry.product_id, entry.variation_id)}
                               </div>
-                              <div className="text-xs text-neutral-600 truncate">
+                              <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
                                 Entry #{entry.id}
                               </div>
                             </div>
 
                             {/* Change */}
-                            <div className="w-24 text-neutral-500 text-xs">
+                            <div className="w-24 text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
                               {entry.quantity_change !== null && entry.quantity_change !== undefined && !isNaN(parseFloat(entry.quantity_change.toString())) 
                                 ? (parseFloat(entry.quantity_change.toString()) > 0 ? '+' : '') + parseFloat(entry.quantity_change.toString()).toFixed(4)
                                 : '—'}
                             </div>
 
                             {/* User */}
-                            <div className="w-32 text-neutral-500 text-xs">
+                            <div className="w-32 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
                               {entry.user_name && entry.user_name !== 'System' && entry.user_name.trim() !== '' 
                                 ? entry.user_name 
                                 : user?.username || `User #${entry.user_id}`}
                             </div>
 
                             {/* Date & Time */}
-                            <div className="w-32 text-neutral-500 text-xs">
+                            <div className="w-32 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
                               {formatDateTime(entry.created_at)}
                             </div>
                           </div>
@@ -538,10 +538,10 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
       </div>
 
       {loading && auditLog.length > 0 && (
-        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-          <div className="bg-neutral-800 rounded-lg p-4 flex items-center gap-3">
+        <div className="absolute inset-0 bg-transparent flex items-center justify-center">
+          <div className="bg-transparent border border-white/[0.06] rounded-lg p-4 flex items-center gap-3 backdrop-blur-sm">
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white/20"></div>
-            <span className="text-neutral-300">Updating...</span>
+            <span className="text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>Updating...</span>
           </div>
         </div>
       )}

@@ -812,10 +812,10 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
           {users.map((user) => (
             <div
               key={user.id}
-              className={`group mb-2 rounded-lg relative overflow-hidden transition-all duration-300 ease-out ${
+              className={`group mb-2 rounded-lg relative overflow-visible transition-all duration-200 ease-out ${
                 selectedUsers.has(user.id)
-                  ? 'border border-neutral-400/40 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 shadow-lg shadow-neutral-700/10 hover:from-neutral-500/30 hover:to-neutral-600/50'
-                  : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-neutral-700/20'
+                  ? 'border-2 border-white/20 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 shadow-md shadow-white/5'
+                  : 'border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10'
               } ${expandedCards.has(user.id) ? 'h-[calc(100vh-200px)] min-h-[600px]' : 'h-auto'}`}
               style={{
                 transition: 'height 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease',

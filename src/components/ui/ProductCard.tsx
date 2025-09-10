@@ -119,9 +119,9 @@ const ProductCard = memo<ProductCardProps>(({
             : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:shadow-md'
           : isSalesView 
             ? isSelected
-              ? 'border-2 border-white/30 bg-gradient-to-br from-neutral-500/40 to-neutral-600/80 shadow-lg shadow-white/5 hover:from-neutral-500/50 hover:to-neutral-600/90 transform scale-[1.02]'
-              : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-neutral-700/20'
-            : 'border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-neutral-600/5 hover:-translate-y-1 hover:shadow-lg'
+              ? 'border-2 border-white/20 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 shadow-md shadow-white/5 hover:from-neutral-500/25 hover:to-neutral-600/45'
+              : 'border border-white/[0.06] bg-transparent hover:bg-white/[0.02] hover:border-white/[0.12] hover:shadow-md hover:shadow-neutral-700/10'
+            : 'border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10'
       }`}
     >
       {/* Product Image and Name Row */}

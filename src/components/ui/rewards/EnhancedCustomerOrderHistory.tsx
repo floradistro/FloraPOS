@@ -30,7 +30,7 @@ const OrderCard: React.FC<OrderItemProps> = ({ order }) => {
     : 'No items';
 
   return (
-    <div className="rounded-lg overflow-hidden p-2 cursor-pointer transition-all duration-300 ease-out border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-neutral-600/5 hover:-translate-y-1 hover:shadow-lg hover:shadow-neutral-700/20">
+    <div className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10">
       <div className="grid grid-cols-12 gap-4 items-center">
         {/* Order Number */}
         <div className="col-span-2">

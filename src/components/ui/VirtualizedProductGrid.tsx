@@ -39,7 +39,7 @@ const GridCell = ({ columnIndex, rowIndex, style, data }: ProductGridItem) => {
   // you'd extract the product card component from ProductGrid
   return (
     <div style={style} className="p-2">
-      <div className="bg-neutral-900 rounded-lg p-3 h-full transition-all duration-300 ease-out hover:bg-neutral-800/80 hover:-translate-y-1 hover:shadow-lg cursor-pointer shadow-sm border border-white/[0.06] hover:border-white/[0.12]">
+      <div className="bg-neutral-900 rounded-lg p-3 h-full transition-all duration-200 ease-out hover:bg-neutral-800/80 hover:shadow-md cursor-pointer shadow-sm border border-white/[0.06] hover:border-white/[0.12]">
         <div className="flex flex-col h-full">
           <h3 className="text-neutral-400 font-medium text-sm mb-2 line-clamp-2">
             {product.name}
