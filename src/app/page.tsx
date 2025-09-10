@@ -582,22 +582,8 @@ export default function HomePage() {
     setShowCheckout(false);
     setIsCheckoutLoading(false);
     
-    // Refresh inventory to show updated quantities after sale
-    
-    if (productGridRef.current?.refreshInventory) {
-      try {
-        await productGridRef.current.refreshInventory();
-      } catch (error) {
-        console.error('Failed to refresh inventory after order:', error);
-        // Retry once after 2 seconds
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        try {
-          await productGridRef.current.refreshInventory();
-        } catch (retryError) {
-          console.error('Failed to refresh inventory on retry:', retryError);
-        }
-      }
-    }
+    // Note: Removed inventory refresh to prevent visual refresh animation
+    // Inventory updates will be reflected naturally on next page interaction
     
     // Invalidate customer-related queries to refresh order history and points
     console.log('🔄 Invalidating customer queries after order completion');
