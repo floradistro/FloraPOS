@@ -50,6 +50,7 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showEditableFields, setShowEditableFields] = useState(false);
+    const [loadingProductFields, setLoadingProductFields] = useState(false);
 
     useImperativeHandle(ref, () => ({
       refresh: refreshData
@@ -63,50 +64,75 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
       setShowEditableFields(false);
     };
 
+    const loadProductsForSearch = async () => {
+      try {
+        // Load products for search dropdown only (no blueprint fields yet)
+        let allProducts: Product[] = [];
+        let page = 1;
+        let hasMore = true;
+        
+        while (hasMore) {
+          const response = await fetch(
+            `https://api.floradistro.com/wp-json/wc/v3/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=100&page=${page}&status=publish`
+          );
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch products: ${response.statusText}`);
+          }
+
+          const productsData = await response.json();
+          
+          if (productsData && productsData.length > 0) {
+            allProducts = [...allProducts, ...productsData];
+            page++;
+            hasMore = productsData.length === 100;
+          } else {
+            hasMore = false;
+          }
+        }
+        
+        console.log('BlueprintFieldsGrid: Loaded products for search:', allProducts.length);
+        setProducts(allProducts);
+        
+        // Notify parent component about loaded products for search
+        if (onProductsLoad) {
+          onProductsLoad(allProducts);
+        }
+      } catch (error) {
+        console.error('Error loading products for search:', error);
+        setError('Failed to load products for search');
+      }
+    };
+
+    const loadBlueprintFields = async (productId: number, productName: string) => {
+      try {
+        setLoadingProductFields(true);
+        const fields = await BlueprintFieldsService.getProductBlueprintFieldsWithFallback(
+          productId, 
+          productName
+        );
+        if (fields) {
+          setProductFields(prev => ({
+            ...prev,
+            [productId]: fields
+          }));
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch fields for product ${productId}:`, error);
+      } finally {
+        setLoadingProductFields(false);
+      }
+    };
+
     const refreshData = async () => {
       setLoading(true);
       setError(null);
       
       try {
-        // Fetch products from the flower category
-        const response = await fetch(
-          `https://api.floradistro.com/wp-json/wc/v3/products?category=25&consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=50`
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch products: ${response.statusText}`);
-        }
-
-        const productsData = await response.json();
-        console.log('BlueprintFieldsGrid: Loaded products:', productsData?.length);
-        setProducts(productsData || []);
-        // Notify parent component about loaded products
-        if (onProductsLoad) {
-          console.log('BlueprintFieldsGrid: Calling onProductsLoad with products');
-          onProductsLoad(productsData || []);
-        }
-
-        // Fetch blueprint fields for each product
-        const fieldsData: Record<number, ProductBlueprintFields> = {};
-        
-        for (const product of productsData) {
-          try {
-            const fields = await BlueprintFieldsService.getProductBlueprintFieldsWithFallback(
-              product.id, 
-              product.name
-            );
-            if (fields) {
-              fieldsData[product.id] = fields;
-            }
-          } catch (error) {
-            console.warn(`Failed to fetch fields for product ${product.id}:`, error);
-          }
-        }
-
-        setProductFields(fieldsData);
+        await loadProductsForSearch();
       } catch (error) {
-        console.error('Error fetching blueprint fields data:', error);
-        setError('Failed to load blueprint fields data');
+        console.error('Error in refreshData:', error);
+        setError('Failed to load data');
       } finally {
         setLoading(false);
       }
@@ -116,6 +142,14 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
       refreshData();
     }, []);
 
+    // Load blueprint fields when a product is selected
+    useEffect(() => {
+      if (parentSelectedProduct && !productFields[parentSelectedProduct.id]) {
+        console.log('Loading blueprint fields for selected product:', parentSelectedProduct.name);
+        loadBlueprintFields(parentSelectedProduct.id, parentSelectedProduct.name);
+      }
+    }, [parentSelectedProduct]);
+
     useEffect(() => {
       onLoadingChange?.(loading, products.length > 0);
     }, [loading, products.length, onLoadingChange]);
@@ -124,8 +158,8 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
       return (
         <LoadingSpinner 
           size="lg" 
-          text="Loading Blueprint Fields"
-          subText="Fetching product configurations..."
+          text="Loading Products"
+          subText="Preparing product catalog for search..."
           centered
           fullHeight
         />
@@ -140,7 +174,7 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
             <div className="space-y-2">
-              <p className="text-red-400 text-xl font-light">Error Loading Blueprint Fields</p>
+              <p className="text-red-400 text-xl font-light">Error Loading Products</p>
               <p className="text-neutral-500 text-base">{error}</p>
             </div>
             <button
@@ -170,8 +204,19 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
             </div>
           )}
 
+          {/* Loading indicator for blueprint fields */}
+          {parentSelectedProduct && loadingProductFields && (
+            <div className="flex flex-col items-center w-full animate-fadeIn gap-4">
+              <LoadingSpinner 
+                size="md" 
+                text={`Loading Blueprint Fields for ${parentSelectedProduct.name}`}
+                subText="Fetching product configuration..."
+              />
+            </div>
+          )}
+
           {/* Label Preview - Centered */}
-          {parentSelectedProduct && productFields[parentSelectedProduct.id] && (
+          {parentSelectedProduct && productFields[parentSelectedProduct.id] && !loadingProductFields && (
             <div className="flex flex-col items-center w-full animate-fadeIn label-preview-container gap-4">
               {/* Edit Controls */}
               {!showEditableFields && (
@@ -197,7 +242,7 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
           )}
           
           {/* No Product Selected Message - Centered */}
-          {!parentSelectedProduct && (
+          {!parentSelectedProduct && !loadingProductFields && (
             <div className="text-center">
               <img 
                 src="/logo123.png" 
@@ -207,8 +252,9 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
                   animation: 'subtle-float 3s ease-in-out infinite'
                 }}
               />
-              <p className="text-neutral-300 text-2xl mb-3 font-light">No Product Selected</p>
-              <p className="text-neutral-500 text-base">Select a product from the dropdown above to preview its label</p>
+              <p className="text-neutral-300 text-2xl mb-3 font-light">Select a Product</p>
+              <p className="text-neutral-500 text-base mb-2">Use the search bar above to find and select a product</p>
+              <p className="text-neutral-600 text-sm">You can search through the entire product catalog to create labels</p>
               
               {/* Custom CSS animations */}
               <style jsx>{`

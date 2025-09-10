@@ -6,6 +6,7 @@ export { HeaderCustomerSelector } from './HeaderCustomerSelector';
 export { default as CustomersView } from './CustomersView';
 export { default as OrdersView } from './OrdersView';
 export { SearchInput } from './SearchInput';
+export { UnifiedSearchInput, type UnifiedSearchInputRef } from './UnifiedSearchInput';
 export { IconButton } from './IconButton';
 export { Divider } from './Divider';
 export { ProductGrid } from './ProductGrid';

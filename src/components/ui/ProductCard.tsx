@@ -1,6 +1,7 @@
 'use client';
 
 import React, { memo, useCallback, useState } from 'react';
+import Image from 'next/image';
 import { Product } from './ProductGrid';
 import { QuantitySelector } from './QuantitySelector';
 
@@ -124,9 +125,9 @@ const ProductCard = memo<ProductCardProps>(({
       }`}
     >
       {/* Product Image and Name Row */}
-      <div className="flex gap-4 items-start mb-4">
+      <div className="flex gap-4 items-center mb-4">
         {/* Product Image */}
-        <div className="w-24 h-24 relative overflow-hidden flex-shrink-0">
+        <div className="w-16 h-16 relative overflow-hidden flex-shrink-0">
           {product.image ? (
             <img 
               src={product.image} 
@@ -136,104 +137,107 @@ const ProductCard = memo<ProductCardProps>(({
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <svg className="w-12 h-12 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
+              <Image 
+                src="/logo123.png" 
+                alt="Flora POS Logo" 
+                width={64}
+                height={64}
+                className="object-contain opacity-30"
+                priority
+              />
             </div>
           )}
         </div>
 
-        {/* Product Name and Category */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center items-center text-center h-24">
-          <h3 className="text-neutral-200 font-normal text-lg mb-2 line-clamp-2 leading-tight">
+        {/* Product Name and Category - Centered in remaining space */}
+        <div className="flex-1 flex flex-col justify-center items-center text-center">
+          <h3 className="text-neutral-200 font-normal text-lg mb-2 line-clamp-2 leading-tight" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
             {product.name}
           </h3>
           {product.categories.length > 0 && (
-            <p className="text-neutral-400 text-sm mb-2">
+            <p className="text-neutral-400 text-sm mb-2" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
               {product.categories[0].name}
             </p>
           )}
         </div>
+      </div>
 
-        {/* Quantity Selector for Non-Variant Products in Adjustment Mode */}
-        {isAuditMode && !product.has_variants && (
-          <div className="flex items-center">
-            <div className="relative flex items-center">
-              {/* Decrease Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onInventoryAdjustment?.(product.id, null, product.blueprintPricing ? -0.1 : -1, 'Manual decrease');
-                }}
-                className="absolute left-1 z-10 w-6 h-6 text-neutral-500 hover:text-red-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
-                title={product.blueprintPricing ? "Decrease by 0.1" : "Decrease by 1"}
+      {/* Quantity Selector for Non-Variant Products in Adjustment Mode */}
+      {isAuditMode && !product.has_variants && (
+        <div className="flex items-center">
+          <div className="relative flex items-center">
+            {/* Decrease Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onInventoryAdjustment?.(product.id, null, product.blueprintPricing ? -0.1 : -1, 'Manual decrease');
+              }}
+              className="absolute left-1 z-10 w-6 h-6 text-neutral-500 hover:text-red-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
+              title={product.blueprintPricing ? "Decrease by 0.1" : "Decrease by 1"}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                 </svg>
-              </button>
-              
-              <input
-                type="number"
-                min="0"
-                step={product.blueprintPricing ? "0.1" : "1"}
-                value={(() => {
-                  const key = `${product.id}`;
-                  const value = editedStockValues[key] !== undefined ? editedStockValues[key] : stockDisplay;
-                  return typeof value === 'string' ? value : (typeof value === 'number' ? (product.blueprintPricing ? value.toFixed(2) : Math.floor(value).toString()) : value);
-                })()}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  onStockValueChange?.(product.id, null, e.target.value);
-                }}
-                onFocus={(e) => {
-                  e.stopPropagation();
-                  onStockFieldFocus?.(`${product.id}`);
-                }}
-                onBlur={(e) => {
-                  e.stopPropagation();
-                  const key = `${product.id}`;
-                  const newStock = editedStockValues[key];
-                  
-                  onStockFieldBlur?.(`${product.id}`);
-                  if (newStock !== undefined && newStock !== stockDisplay) {
-                    const numericValue = typeof newStock === 'string' ? parseFloat(newStock) || 0 : newStock;
-                    onStockValueApply?.(product.id, null, numericValue, stockDisplay);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.currentTarget.blur();
-                  }
-                }}
-                          className="w-32 h-8 text-sm text-center bg-neutral-500/50 border border-neutral-400 rounded text-neutral-200 focus:border-neutral-300 focus:outline-none font-medium pl-6 pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              
-              {/* Increase Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onInventoryAdjustment?.(product.id, null, product.blueprintPricing ? 0.1 : 1, 'Manual increase');
-                }}
-                className="absolute right-1 z-10 w-6 h-6 text-neutral-500 hover:text-green-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
-                title={product.blueprintPricing ? "Increase by 0.1" : "Increase by 1"}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-            </div>
+            </button>
+            
+            <input
+              type="number"
+              min="0"
+              step={product.blueprintPricing ? "0.1" : "1"}
+              value={(() => {
+                const key = `${product.id}`;
+                const value = editedStockValues[key] !== undefined ? editedStockValues[key] : stockDisplay;
+                return typeof value === 'string' ? value : (typeof value === 'number' ? (product.blueprintPricing ? value.toFixed(2) : Math.floor(value).toString()) : value);
+              })()}
+              onChange={(e) => {
+                e.stopPropagation();
+                onStockValueChange?.(product.id, null, e.target.value);
+              }}
+              onFocus={(e) => {
+                e.stopPropagation();
+                onStockFieldFocus?.(`${product.id}`);
+              }}
+              onBlur={(e) => {
+                e.stopPropagation();
+                const key = `${product.id}`;
+                const newStock = editedStockValues[key];
+                
+                onStockFieldBlur?.(`${product.id}`);
+                if (newStock !== undefined && newStock !== stockDisplay) {
+                  const numericValue = typeof newStock === 'string' ? parseFloat(newStock) || 0 : newStock;
+                  onStockValueApply?.(product.id, null, numericValue, stockDisplay);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur();
+                }
+              }}
+              className="w-32 h-8 text-sm text-center bg-neutral-500/50 border border-neutral-400 rounded text-neutral-200 focus:border-neutral-300 focus:outline-none font-medium pl-6 pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            
+            {/* Increase Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onInventoryAdjustment?.(product.id, null, product.blueprintPricing ? 0.1 : 1, 'Manual increase');
+              }}
+              className="absolute right-1 z-10 w-6 h-6 text-neutral-500 hover:text-green-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
+              title={product.blueprintPricing ? "Increase by 0.1" : "Increase by 1"}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Variant Selector and Quantity Selector / Audit Controls */}
       <div className="mb-4">
         {isAuditMode ? (
-          /* Audit Mode - Stacked Quantity Editors for Variants */
           <div className="space-y-2">
             {product.has_variants && product.variants ? (
-              /* Variant Products - Stacked Quantity Editors */
               <div className="space-y-1">
                 {product.variants.slice(0, 4).map((variant) => {
                   const variantStock = userLocationId 

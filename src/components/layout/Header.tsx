@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { SearchInput } from '../ui/SearchInput';
+import { UnifiedSearchInput, UnifiedSearchInputRef, Category, Product } from '../ui/UnifiedSearchInput';
 import { IconButton } from '../ui/IconButton';
 import { Divider } from '../ui/Divider';
-import { CategoryFilter, Category } from '../ui/CategoryFilter';
 import { HeaderCustomerSelector } from '../ui/HeaderCustomerSelector';
-import { HeaderProductSelector, Product } from '../ui/HeaderProductSelector';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDebounce } from '../../hooks/useDebounce';
 import { WordPressUser } from '../../services/users-service';
@@ -61,7 +60,12 @@ interface HeaderProps {
   // Audit button props
   pendingAdjustments?: Map<string, number>;
   onCreateAudit?: () => void;
+  onCreateAuditWithDetails?: (name: string, description?: string) => Promise<void>;
+  onRemoveAdjustment?: (key: string) => void;
+  onUpdateAdjustment?: (key: string, newValue: number) => void;
   isApplying?: boolean;
+  // Search ref
+  unifiedSearchRef?: React.RefObject<UnifiedSearchInputRef>;
 }
 
 export function Header({ 
@@ -104,11 +108,27 @@ export function Header({
   onHistoryActionFilterChange,
   pendingAdjustments = new Map(),
   onCreateAudit,
-  isApplying = false
+  onCreateAuditWithDetails,
+  onRemoveAdjustment,
+  onUpdateAdjustment,
+  isApplying = false,
+  unifiedSearchRef
 }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { user, logout } = useAuth();
+  
+  // Debug logging for audit products
+  useEffect(() => {
+    if (isAuditMode && pendingAdjustments.size > 0) {
+      console.log('🎯 Header Debug:', {
+        isAuditMode,
+        pendingAdjustmentsSize: pendingAdjustments.size,
+        productsCount: products.length,
+        sampleProducts: products.slice(0, 3).map(p => ({ id: p.id, name: p.name }))
+      });
+    }
+  }, [isAuditMode, pendingAdjustments, products]);
   
   // Debounce search query to reduce API calls - 300ms delay for products
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -143,15 +163,22 @@ export function Header({
   return (
     <div className="header-nav bg-transparent flex-shrink-0 relative z-40">
       <div className="flex items-center h-full py-4 px-2 sm:px-4 relative gap-2">
-        {/* Search Bar - Responsive positioning that never overlaps */}
-        <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0">
-          {/* Orders View - No search bar, just filters centered */}
+        {/* Search Bar - Centered on viewport accounting for 60px sidebar */}
+        <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0" style={{ marginLeft: '30px' }}>
+          {/* Orders View - Unified search with customer selection */}
           {currentView === 'orders' ? (
             <>
-              {/* Customer Filter */}
-              <HeaderCustomerSelector
+              {/* Unified Customer Search */}
+              <UnifiedSearchInput
+                searchValue={searchQuery}
+                onSearchChange={handleSearch}
+                className="w-full max-w-[300px] min-w-[180px]"
+                placeholder="Search orders, customers..."
                 selectedCustomer={selectedCustomer}
                 onCustomerSelect={onCustomerSelect}
+                categories={[]}
+                selectedCategory=""
+                onCategoryChange={() => {}}
               />
 
               {/* Status Filter with Icon */}
@@ -228,45 +255,37 @@ export function Header({
               )}
             </>
           ) : (
-            /* Other Views - Responsive Search Bar */
-            <SearchInput
-              value={searchQuery}
-              onChange={handleSearch}
+            /* Other Views - Unified Search Bar */
+            <UnifiedSearchInput
+              ref={unifiedSearchRef}
+              searchValue={searchQuery}
+              onSearchChange={handleSearch}
               className="w-full max-w-[768px] min-w-[180px] sm:min-w-[200px] md:min-w-[300px]"
-              placeholder={currentView.charAt(0).toUpperCase() + currentView.slice(1)}
+              placeholder={`Search ${currentView.charAt(0).toUpperCase() + currentView.slice(1)}...`}
+              selectedCustomer={selectedCustomer}
+              onCustomerSelect={onCustomerSelect}
+              selectedProduct={selectedProduct}
+              onProductSelect={onProductSelect}
+              products={products}
+              productsLoading={productsLoading}
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategoryChange={onCategoryChange}
+              categoriesLoading={categoriesLoading}
+              productOnlyMode={currentView === 'blueprint-fields'}
+              isAuditMode={isAuditMode}
+              pendingAdjustments={pendingAdjustments}
+              onCreateAudit={onCreateAudit}
+              onCreateAuditWithDetails={onCreateAuditWithDetails}
+              onRemoveAdjustment={onRemoveAdjustment}
+              onUpdateAdjustment={onUpdateAdjustment}
+              isApplying={isApplying}
             />
           )}
         </div>
         
         {/* Right group - All Navigation Buttons */}
         <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
-          {/* View-specific filters and selectors */}
-          {currentView !== 'orders' && !isAuditMode && (
-            <HeaderCustomerSelector
-              selectedCustomer={selectedCustomer}
-              onCustomerSelect={onCustomerSelect}
-            />
-          )}
-          
-          {/* Product Selector - Show only in blueprint-fields view */}
-          {currentView === 'blueprint-fields' && (
-            <HeaderProductSelector
-              selectedProduct={selectedProduct}
-              onProductSelect={onProductSelect}
-              products={products}
-              loading={productsLoading}
-            />
-          )}
-          
-          {/* Show category filter only in products view */}
-          {currentView === 'products' && (
-            <CategoryFilter
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={handleCategoryChange}
-              loading={categoriesLoading}
-            />
-          )}
 
           {/* Adjustments view navigation buttons */}
           {(currentView === 'adjustments' || currentView === 'history') && (
@@ -357,35 +376,6 @@ export function Header({
             </>
           )}
 
-          {/* Audit Create Button */}
-          {isAuditMode && pendingAdjustments.size > 0 && (
-            <>
-              <div className="text-sm text-neutral-400">
-                {pendingAdjustments.size} adjustment{pendingAdjustments.size !== 1 ? 's' : ''} pending
-              </div>
-              <button
-                onClick={onCreateAudit}
-                disabled={isApplying}
-                className={`px-4 h-[30px] text-white rounded-lg transition-all duration-300 ease-out text-sm font-medium flex items-center gap-2 ${
-                  isApplying 
-                    ? 'bg-neutral-600 cursor-not-allowed' 
-                    : 'bg-green-600 hover:bg-green-700'
-                }`}
-                title="Create audit with pending adjustments"
-              >
-                {isApplying && (
-                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                )}
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
-                {isApplying ? 'Creating...' : 'Create Audit'}
-              </button>
-            </>
-          )}
         </div>
       </div>
     </div>

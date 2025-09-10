@@ -55,8 +55,6 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
   const [cashReceived, setCashReceived] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [taxRate, setTaxRate] = useState<TaxRate>({ rate: 0.08, name: 'Sales Tax', location: user?.location || 'Default' });
-  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
-  const [orderNumber, setOrderNumber] = useState<string>('');
   const [selectedCustomer, setSelectedCustomer] = useState<WordPressUser | null>(initialSelectedCustomer || null);
   
   // Alert state
@@ -493,25 +491,21 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         ReloadDebugger.logCheckoutStep('Inventory deduction completed successfully');
       }
 
-      setOrderNumber(orderNum);
-      setShowPaymentSuccess(true);
-
-      // Auto-close after 2 seconds and trigger order completion (reduced from 3s for better UX)
-      setTimeout(async () => {
-        try {
-          ReloadDebugger.logCheckoutStep('Triggering order completion callback');
-          await onOrderComplete(); // Backup approach - no parameters
-          ReloadDebugger.logCheckoutStep('Order completion callback finished');
-        } catch (error) {
-          console.error('Error during order completion:', error);
-          ReloadDebugger.logError('Order completion callback', error);
-        }
-        ReloadDebugger.logCheckoutStep('Closing checkout screen');
-        onClose();
-        
-        // Stop debugging after successful completion
-        ReloadDebugger.stopCheckoutDebug();
-      }, 2000);
+      // Immediately complete the order and close checkout without showing success popup
+      try {
+        ReloadDebugger.logCheckoutStep('Triggering order completion callback');
+        await onOrderComplete();
+        ReloadDebugger.logCheckoutStep('Order completion callback finished');
+      } catch (error) {
+        console.error('Error during order completion:', error);
+        ReloadDebugger.logError('Order completion callback', error);
+      }
+      
+      ReloadDebugger.logCheckoutStep('Closing checkout screen');
+      onClose();
+      
+      // Stop debugging after successful completion
+      ReloadDebugger.stopCheckoutDebug();
 
     } catch (error) {
       console.error('Order processing failed:', error);
@@ -530,35 +524,9 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
     }
   };
 
-  if (showPaymentSuccess) {
-    return (
-      <div className="flex-1 bg-neutral-900 flex flex-col h-full">
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-neutral-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-neutral-400 mb-2">Payment Successful!</h2>
-            <p className="text-neutral-400 mb-4">Order #{orderNumber}</p>
-            
-            {paymentMethod === 'cash' && change > 0 && (
-              <div className="bg-neutral-900/80 p-4 mb-4 border border-neutral-700/50 rounded-lg">
-                <div className="text-neutral-400 text-sm">Change Due:</div>
-                <div className="text-2xl font-bold text-neutral-400">${change.toFixed(2)}</div>
-              </div>
-            )}
-            
-            <p className="text-neutral-500 text-sm">Returning to cart...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div ref={ref} className="flex-1 bg-neutral-900 flex flex-col h-full">
+    <div ref={ref} className="flex-1 bg-transparent flex flex-col h-full">
       <div className="flex-1 overflow-y-auto">
 
         {/* Order Summary - Now has more room */}
@@ -568,6 +536,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
           taxRate={taxRate}
           taxAmount={taxAmount}
           total={total}
+          selectedCustomer={selectedCustomer}
         />
       </div>
 
@@ -584,19 +553,19 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       </div>
 
       {/* Footer */}
-      <div className="px-2 py-4 border-t border-neutral-700/50">
+      <div className="px-2 py-4 border-t border-white/[0.06]">
         <div className="flex gap-2">
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="flex-1 px-3 py-2 bg-neutral-900/80 hover:bg-red-600/20 border border-neutral-700/50 hover:border-red-500/50 text-neutral-200 hover:text-red-300 text-sm transition-all duration-300 ease-out rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-3 py-2 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 hover:text-red-400 text-sm transition-all duration-300 ease-out rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={processOrder}
             disabled={isProcessing || (paymentMethod === 'cash' && (cashReceivedNum < total || !cashReceived))}
-            className="flex-1 px-3 py-2 bg-neutral-900/80 hover:bg-green-600/20 border border-neutral-700/50 hover:border-green-500/50 text-neutral-200 hover:text-green-300 text-sm transition-all duration-300 ease-out font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:text-neutral-500"
+            className="flex-1 px-3 py-2 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 hover:text-green-400 text-sm transition-all duration-300 ease-out font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:text-neutral-500"
           >
             {isProcessing ? (
               <div className="flex items-center justify-center gap-2">

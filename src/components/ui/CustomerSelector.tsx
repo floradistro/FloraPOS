@@ -149,6 +149,7 @@ export function CustomerSelector({
           value={searchQuery}
           onChange={handleInputChange}
           onFocus={() => setIsOpen(true)}
+          style={{ fontFamily: 'Tiempos, serif' }}
           className="w-full px-2 py-2 bg-neutral-800/80 hover:bg-neutral-700/80 rounded text-white/90 placeholder-white/60 focus:bg-neutral-700/80 focus:outline-none text-sm pr-10 transition-colors"
           placeholder={placeholder}
         />

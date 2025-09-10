@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense, lazy, useRef, useCallback, useMem
 import { Header } from '../components/layout/Header';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Cart } from '../components/ui/Cart';
+import { UnifiedSearchInput, UnifiedSearchInputRef } from '../components/ui/UnifiedSearchInput';
 import { ProductGrid } from '../components/ui/ProductGrid';
 import { AdjustmentsGrid, AdjustmentsGridRef } from '../components/ui/AdjustmentsGrid';
 import BlueprintFieldsGrid from '../components/ui/BlueprintFieldsGrid';
@@ -72,6 +73,10 @@ export default function HomePage() {
   const handleCustomerSelect = useCallback((customer: WordPressUser | null) => {
     setSelectedCustomer(customer);
   }, []);
+
+  const handleOpenCustomerSelector = useCallback(() => {
+    unifiedSearchRef.current?.openCustomerMode();
+  }, []);
   
   const handleProductSelect = useCallback((product: Product | null) => {
     setSelectedProduct(product);
@@ -104,11 +109,41 @@ export default function HomePage() {
   // Audit state for header
   const [pendingAdjustments, setPendingAdjustments] = useState(new Map<string, number>());
   const [isApplying, setIsApplying] = useState(false);
+  const [adjustmentProducts, setAdjustmentProducts] = useState<any[]>([]);
   
-  // Function to handle audit creation from header
+  // Function to handle audit creation from header (legacy modal)
   const handleCreateAudit = useCallback(() => {
     if (adjustmentsGridRef.current) {
       adjustmentsGridRef.current.createAudit();
+    }
+  }, []);
+
+  // Function to handle audit creation with details from search bar
+  const handleCreateAuditWithDetails = useCallback(async (name: string, description?: string) => {
+    if (adjustmentsGridRef.current) {
+      await adjustmentsGridRef.current.createAuditWithDetails(name, description);
+    }
+  }, []);
+
+  // Function to handle removing individual adjustments
+  const handleRemoveAdjustment = useCallback((key: string) => {
+    console.log('🏠 Main page handleRemoveAdjustment called:', key);
+    if (adjustmentsGridRef.current) {
+      console.log('🏠 Calling adjustmentsGridRef.current.removeAdjustment');
+      adjustmentsGridRef.current.removeAdjustment(key);
+    } else {
+      console.log('🏠 adjustmentsGridRef.current is null');
+    }
+  }, []);
+
+  // Function to handle updating individual adjustments
+  const handleUpdateAdjustment = useCallback((key: string, newValue: number) => {
+    console.log('🏠 Main page handleUpdateAdjustment called:', key, newValue);
+    if (adjustmentsGridRef.current) {
+      console.log('🏠 Calling adjustmentsGridRef.current.updateAdjustment');
+      adjustmentsGridRef.current.updateAdjustment(key, newValue);
+    } else {
+      console.log('🏠 adjustmentsGridRef.current is null');
     }
   }, []);
   
@@ -116,8 +151,20 @@ export default function HomePage() {
   useEffect(() => {
     if (currentView === 'adjustments' && adjustmentsGridRef.current) {
       const interval = setInterval(() => {
-        setPendingAdjustments(adjustmentsGridRef.current?.getPendingAdjustments() || new Map());
+        const products = adjustmentsGridRef.current?.getProducts() || [];
+        const adjustments = adjustmentsGridRef.current?.getPendingAdjustments() || new Map();
+        
+        // Debug logging
+        console.log('🔧 Main Page Debug:', {
+          currentView,
+          productsCount: products.length,
+          adjustmentsCount: adjustments.size,
+          sampleProducts: products.slice(0, 3).map(p => ({ id: p.id, name: p.name }))
+        });
+        
+        setPendingAdjustments(adjustments);
         setIsApplying(adjustmentsGridRef.current?.getIsApplying() || false);
+        setAdjustmentProducts(products);
       }, 500);
       
       return () => clearInterval(interval);
@@ -136,6 +183,7 @@ export default function HomePage() {
 
   const productGridRef = useRef<{ refreshInventory: () => Promise<void> }>(null);
   const adjustmentsGridRef = useRef<AdjustmentsGridRef>(null);
+  const unifiedSearchRef = useRef<UnifiedSearchInputRef>(null);
   const blueprintFieldsGridRef = useRef<{ refresh: () => Promise<void> }>(null);
   const customersViewRef = useRef<any>(null);
   const ordersViewRef = useRef<any>(null);
@@ -671,8 +719,8 @@ export default function HomePage() {
             onCustomerSelect={handleCustomerSelect}
             selectedProduct={selectedProduct}
             onProductSelect={handleProductSelect}
-            products={blueprintProducts}
-            productsLoading={blueprintProductsLoading}
+            products={currentView === 'adjustments' ? adjustmentProducts : blueprintProducts}
+            productsLoading={currentView === 'adjustments' ? false : blueprintProductsLoading}
             isAuditMode={isAuditMode}
             isRestockMode={isRestockMode}
             selectedCount={selectedProductsCount}
@@ -698,7 +746,11 @@ export default function HomePage() {
             // Audit button props
             pendingAdjustments={pendingAdjustments}
             onCreateAudit={handleCreateAudit}
+            onCreateAuditWithDetails={handleCreateAuditWithDetails}
+            onRemoveAdjustment={handleRemoveAdjustment}
+            onUpdateAdjustment={handleUpdateAdjustment}
             isApplying={isApplying}
+            unifiedSearchRef={unifiedSearchRef}
           />
           
           {/* Main Content Area */}
@@ -840,6 +892,7 @@ export default function HomePage() {
                 onCustomerSelect={handleCustomerSelect}
                 isProductsLoading={isProductsLoading}
                 isAuditMode={isAuditMode}
+                onOpenCustomerSelector={handleOpenCustomerSelector}
                 // onApplyAdjustments={handleApplyAdjustments} - removed
                 // onUpdateAdjustment={handleUpdateAdjustment} - removed
               />
@@ -866,6 +919,7 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
 
       {/* Status Bar */}
       <div className="flex-shrink-0 bg-transparent px-4 py-2 relative z-10">

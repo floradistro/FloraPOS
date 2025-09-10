@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 
 import { WordPressUser } from '../../services/users-service';
-import Image from 'next/image';
 import { CartItem } from '../../types';
 import { CATEGORY_DISPLAY_NAMES } from '../../constants';
 
@@ -19,11 +19,12 @@ interface CartProps {
   isAuditMode?: boolean;
   onApplyAdjustments?: (reason?: string) => void;
   onUpdateAdjustment?: (id: string, adjustmentAmount: number) => void;
+  onOpenCustomerSelector?: () => void;
 }
 
 const CartComponent = function Cart({ 
   items = [], 
-  onUpdateQuantity, 
+  onUpdateQuantity,
   onRemoveItem, 
   onClearCart, 
   onCheckout,
@@ -32,7 +33,8 @@ const CartComponent = function Cart({
   isProductsLoading = false,
   isAuditMode = false,
   onApplyAdjustments,
-  onUpdateAdjustment
+  onUpdateAdjustment,
+  onOpenCustomerSelector
 }: CartProps) {
 
   const [adjustmentReason, setAdjustmentReason] = useState('');
@@ -51,38 +53,121 @@ const CartComponent = function Cart({
           <div className="h-full"></div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <div className="w-32 h-32 flex items-center justify-center mb-4">
+            <div className="w-32 h-32 flex items-center justify-center mb-4 relative">
               <Image 
                 src="/logo123.png" 
                 alt="Flora POS Logo" 
                 width={128}
                 height={128}
-                className="object-contain opacity-30"
+                className="object-contain opacity-30 transition-all duration-500"
+                style={{
+                  animation: 'subtle-float 3s ease-in-out infinite'
+                }}
                 priority
               />
             </div>
             <h3 className="text-neutral-400 font-medium mb-2">
               {isAuditMode ? 'No adjustments pending' : 'Your cart is empty'}
             </h3>
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-neutral-600 mb-6">
               {isAuditMode ? 'Make inventory adjustments to see them here' : 'Add products to get started'}
             </p>
+            
+            {/* Add Customer Button - Only show in normal mode */}
+            {!isAuditMode && (
+              <button
+                onClick={() => {
+                  onOpenCustomerSelector?.();
+                }}
+                className="group relative px-6 py-3 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] rounded-lg transition-all duration-300 ease-out cursor-pointer"
+                style={{
+                  animation: 'fade-in-up 0.6s ease-out 0.3s both'
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-neutral-700/30 flex items-center justify-center group-hover:bg-neutral-600/30 transition-colors duration-300">
+                    <span className="text-neutral-400 group-hover:text-neutral-300 text-lg">+</span>
+                  </div>
+                  <div className="text-left">
+                    <div className="text-neutral-400 group-hover:text-neutral-300 font-medium text-sm transition-colors duration-300">
+                      Add Customer
+                    </div>
+                    <div className="text-neutral-600 group-hover:text-neutral-500 text-xs transition-colors duration-300">
+                      Select a customer to start
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Subtle glow effect */}
+                <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gradient-to-r from-transparent via-white/[0.02] to-transparent"></div>
+              </button>
+            )}
+
+            {/* Custom CSS animations */}
+            <style jsx>{`
+              @keyframes subtle-float {
+                0%, 100% { 
+                  transform: translateY(0px) scale(1);
+                  opacity: 0.3;
+                }
+                50% { 
+                  transform: translateY(-2px) scale(1.02);
+                  opacity: 0.4;
+                }
+              }
+              
+              @keyframes fade-in-up {
+                0% {
+                  opacity: 0;
+                  transform: translateY(20px);
+                }
+                100% {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+            `}</style>
           </div>
         ) : (
           <div className="h-full overflow-y-auto">
             <div className="gap-2 pt-2 px-2 pb-2 flex flex-col">
               {items.map((item) => (
-                <div key={item.id} className="bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 rounded-lg overflow-hidden p-2 relative transition-all duration-300 ease-out cursor-pointer">
+                <div key={item.id} className="bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] rounded-lg overflow-hidden p-2 relative transition-all duration-300 ease-out cursor-pointer">
                   <div className="flex items-center justify-between">
-                    {/* Product Details */}
+                    {/* Product Details with Image */}
                     <div className="flex-1 min-w-0 mr-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="text-sm font-medium text-neutral-400 truncate">{item.name}</h4>
-                        {item.category && (
-                          <span className="text-xs text-neutral-500 bg-neutral-600/20 px-2 py-0.5 rounded-full whitespace-nowrap">
-                            {CATEGORY_DISPLAY_NAMES[item.category] || item.category.charAt(0).toUpperCase() + item.category.slice(1)}
-                          </span>
-                        )}
+                      <div className="flex items-center gap-3 mb-1">
+                        {/* Product Image */}
+                        <div className="w-8 h-8 relative overflow-hidden flex-shrink-0 rounded">
+                          {item.image ? (
+                            <img 
+                              src={item.image} 
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-neutral-700/30">
+                              <Image 
+                                src="/logo123.png" 
+                                alt="Flora POS Logo" 
+                                width={32}
+                                height={32}
+                                className="object-contain opacity-20"
+                              />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Product Name and Category */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-neutral-400 truncate" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>{item.name}</h4>
+                          {item.category && (
+                            <span className="text-xs text-neutral-500 bg-neutral-600/20 px-2 py-0.5 rounded-full whitespace-nowrap">
+                              {CATEGORY_DISPLAY_NAMES[item.category] || item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {/* Pricing tier information */}
                       {item.pricing_tier && (
@@ -111,7 +196,7 @@ const CartComponent = function Cart({
                                     const step = 1; // You can make this dynamic based on product type
                                     onUpdateAdjustment(item.id, currentAmount - step);
                                   }}
-                                  className="w-5 h-5 bg-neutral-700/80 hover:bg-red-600/50 border border-neutral-500/50 hover:border-red-500/50 flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
+                                  className="w-5 h-5 bg-transparent hover:bg-red-600/50 border border-white/[0.06] hover:border-red-500/50 flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
                                   title="Decrease adjustment"
                                 >
                                   <svg className="w-2.5 h-2.5 text-neutral-300 hover:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +216,7 @@ const CartComponent = function Cart({
                                       e.currentTarget.blur();
                                     }
                                   }}
-                                  className={`w-16 h-6 text-xs text-center bg-neutral-700/80 border border-neutral-500/50 hover:border-neutral-400/60 rounded-lg font-medium focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                                  className={`w-16 h-6 text-xs text-center bg-transparent border border-white/[0.06] hover:border-white/[0.12] rounded-lg font-medium focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                                     item.adjustment_amount && item.adjustment_amount > 0 
                                       ? 'text-green-400' 
                                       : item.adjustment_amount && item.adjustment_amount < 0
@@ -147,7 +232,7 @@ const CartComponent = function Cart({
                                     const step = 1; // You can make this dynamic based on product type
                                     onUpdateAdjustment(item.id, currentAmount + step);
                                   }}
-                                  className="w-5 h-5 bg-neutral-700/80 hover:bg-green-600/50 border border-neutral-500/50 hover:border-green-500/50 flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
+                                  className="w-5 h-5 bg-transparent hover:bg-green-600/50 border border-white/[0.06] hover:border-green-500/50 flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
                                   title="Increase adjustment"
                                 >
                                   <svg className="w-2.5 h-2.5 text-neutral-300 hover:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,7 +264,7 @@ const CartComponent = function Cart({
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => onUpdateQuantity?.(item.id, Math.max(0, item.quantity - 1))}
-                                className="w-5 h-5 bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
+                                className="w-5 h-5 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
                               >
                                 <svg className="w-2.5 h-2.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
@@ -188,7 +273,7 @@ const CartComponent = function Cart({
                               <span className="text-sm text-neutral-400 min-w-[1.5rem] text-center">{item.quantity}</span>
                               <button
                                 onClick={() => onUpdateQuantity?.(item.id, item.quantity + 1)}
-                                className="w-5 h-5 bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
+                                className="w-5 h-5 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
                               >
                                 <svg className="w-2.5 h-2.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -210,7 +295,7 @@ const CartComponent = function Cart({
                     {/* Remove Button */}
                     <button
                       onClick={() => onRemoveItem?.(item.id)}
-                      className="w-5 h-5 bg-neutral-700/80 hover:bg-red-600/50 border border-neutral-500/50 hover:border-red-500/50 flex items-center justify-center transition-all duration-300 ease-out flex-shrink-0 rounded-lg"
+                      className="w-5 h-5 bg-transparent hover:bg-red-600/50 border border-white/[0.06] hover:border-red-500/50 flex items-center justify-center transition-all duration-300 ease-out flex-shrink-0 rounded-lg"
                       title="Remove item"
                     >
                       <svg className="w-3 h-3 text-neutral-500 hover:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,7 +316,7 @@ const CartComponent = function Cart({
           {/* Empty Cart Button */}
           <button
             onClick={() => setShowEmptyConfirm(true)}
-            className="w-full bg-neutral-700/80 hover:bg-red-600/20 border border-neutral-500/50 hover:border-red-500/50 text-neutral-200 hover:text-red-400 font-medium py-1 px-4 transition-all duration-300 ease-out flex items-center justify-center gap-2 rounded-lg"
+            className="w-full bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 hover:text-red-400 font-medium py-1 px-4 transition-all duration-300 ease-out flex items-center justify-center gap-2 rounded-lg"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -242,7 +327,7 @@ const CartComponent = function Cart({
           {/* Confirmation Dialog */}
           {showEmptyConfirm && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowEmptyConfirm(false)}>
-              <div className="bg-neutral-600/95 rounded-lg shadow-2xl max-w-md mx-4 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-neutral-700/95 border border-white/[0.08] rounded-lg shadow-2xl max-w-md mx-4 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
                 <div className="px-4 py-3 border-b border-neutral-500/20 flex items-center justify-between">
                   <h3 className="text-sm font-medium text-neutral-300">Burn List?</h3>
@@ -267,7 +352,7 @@ const CartComponent = function Cart({
                 <div className="px-4 py-3 border-t border-neutral-500/20 flex justify-end gap-3">
                   <button
                     onClick={() => setShowEmptyConfirm(false)}
-                    className="px-3 py-1.5 text-sm text-neutral-400 hover:text-neutral-300 hover:bg-neutral-600/20 rounded transition-all"
+                    className="px-3 py-1.5 text-sm text-neutral-400 hover:text-neutral-300 hover:bg-neutral-600/5 border border-transparent hover:border-white/[0.06] rounded transition-all"
                   >
                     Cancel
                   </button>
@@ -276,7 +361,7 @@ const CartComponent = function Cart({
                       onClearCart?.();
                       setShowEmptyConfirm(false);
                     }}
-                    className="px-3 py-1.5 text-sm bg-neutral-500/50 hover:bg-neutral-400/50 text-neutral-300 rounded transition-all"
+                    className="px-3 py-1.5 text-sm bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 hover:text-neutral-300 rounded transition-all"
                   >
                     Burn List
                   </button>
@@ -298,14 +383,14 @@ const CartComponent = function Cart({
                   value={adjustmentReason}
                   onChange={(e) => setAdjustmentReason(e.target.value)}
                   placeholder="e.g., Physical count, damaged goods, etc."
-                  className="w-full px-3 py-1 text-sm bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 rounded-lg text-neutral-200 placeholder-neutral-400 focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out"
+                  className="w-full px-3 py-1 text-sm bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] rounded-lg text-neutral-400 placeholder-neutral-500 focus:bg-neutral-600/5 focus:border-white/[0.12] focus:outline-none transition-all duration-300 ease-out"
                 />
               </div>
               
               {/* Apply Adjustments Button */}
               <button
                 onClick={() => onApplyAdjustments?.(adjustmentReason || 'Manual adjustment')}
-                className="w-full bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 text-neutral-200 font-medium py-3 px-4 transition-all duration-300 ease-out flex items-center justify-between rounded-lg cursor-pointer"
+                className="w-full bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 font-medium py-3 px-4 transition-all duration-300 ease-out flex items-center justify-between rounded-lg cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +405,7 @@ const CartComponent = function Cart({
             /* Checkout Button */
             <button
               onClick={() => onCheckout?.(selectedCustomer)}
-              className="w-full bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 text-neutral-200 font-medium py-3 px-4 transition-all duration-300 ease-out flex items-center justify-between rounded-lg cursor-pointer"
+              className="w-full bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 font-medium py-3 px-4 transition-all duration-300 ease-out flex items-center justify-between rounded-lg cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

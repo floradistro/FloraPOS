@@ -56,8 +56,12 @@ interface AdjustmentsGridProps {
 export interface AdjustmentsGridRef {
   refreshInventory: () => Promise<void>;
   createAudit: () => void;
+  createAuditWithDetails: (name: string, description?: string) => Promise<void>;
   getPendingAdjustments: () => Map<string, number>;
   getIsApplying: () => boolean;
+  getProducts: () => Product[];
+  removeAdjustment: (key: string) => void;
+  updateAdjustment: (key: string, newValue: number) => void;
 }
 
 export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridProps>(
@@ -164,12 +168,46 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       }
     };
 
+    // Remove individual adjustment
+    const removeAdjustment = useCallback((key: string) => {
+      console.log('🔧 AdjustmentsGrid removeAdjustment called:', key);
+      setPendingAdjustments(prev => {
+        const newAdjustments = new Map(prev);
+        console.log('🔧 Before delete:', Array.from(prev.entries()));
+        newAdjustments.delete(key);
+        console.log('🔧 After delete:', Array.from(newAdjustments.entries()));
+        return newAdjustments;
+      });
+    }, []);
+
+    // Update individual adjustment
+    const updateAdjustment = useCallback((key: string, newValue: number) => {
+      console.log('🔧 AdjustmentsGrid updateAdjustment called:', key, newValue);
+      setPendingAdjustments(prev => {
+        const newAdjustments = new Map(prev);
+        console.log('🔧 Before update:', Array.from(prev.entries()));
+        if (newValue === 0) {
+          newAdjustments.delete(key);
+        } else {
+          newAdjustments.set(key, newValue);
+        }
+        console.log('🔧 After update:', Array.from(newAdjustments.entries()));
+        return newAdjustments;
+      });
+    }, []);
+
     // Expose methods to parent
     useImperativeHandle(ref, () => ({
       refreshInventory,
       createAudit: () => setShowAuditDialog(true),
+      createAuditWithDetails: async (name: string, description?: string) => {
+        await applyAuditAdjustments(name, description);
+      },
       getPendingAdjustments: () => pendingAdjustments,
-      getIsApplying: () => isApplying
+      getIsApplying: () => isApplying,
+      getProducts: () => products,
+      removeAdjustment,
+      updateAdjustment
     }));
 
     const fetchProducts = useCallback(async () => {
@@ -477,13 +515,16 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
     };
 
     // Apply audit adjustments with batch audit trail
-    const applyAuditAdjustments = async () => {
+    const applyAuditAdjustments = async (customName?: string, customDescription?: string) => {
       if (pendingAdjustments.size === 0) {
         console.log('No adjustments to apply');
         return;
       }
 
-      if (!auditName.trim()) {
+      const finalAuditName = customName || auditName;
+      const finalAuditDescription = customDescription || auditDescription;
+
+      if (!finalAuditName.trim()) {
         setAdjustmentStatus({ 
           type: 'error', 
           message: 'Please provide an audit name for the audit trail' 
@@ -496,7 +537,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       setShowAuditDialog(false);
 
       try {
-        console.log(`Applying audit "${auditName}" with ${pendingAdjustments.size} adjustments...`);
+        console.log(`Applying audit "${finalAuditName}" with ${pendingAdjustments.size} adjustments...`);
         
         // Convert pending adjustments to API format
         const adjustments = Array.from(pendingAdjustments.entries()).map(([key, adjustment]) => {
@@ -505,7 +546,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
             product_id: productId,
             variation_id: variantId || null,
             adjustment_quantity: adjustment,
-            reason: `Audit: ${auditName}`,
+            reason: `Audit: ${finalAuditName}`,
             location_id: user?.location_id ? parseInt(user.location_id) : 20
           };
         });
@@ -516,8 +557,8 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            batch_name: auditName,
-            batch_description: auditDescription || `Audit created on ${new Date().toLocaleDateString()}`,
+            batch_name: finalAuditName,
+            batch_description: finalAuditDescription || `Audit created on ${new Date().toLocaleDateString()}`,
             location_id: user?.location_id ? parseInt(user.location_id) : 20,
             user_id: user?.id ? parseInt(user.id) : 1,
             user_name: user?.username || 'System',
@@ -596,7 +637,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
 
           setAdjustmentStatus({
             type: 'success',
-            message: `✅ Audit "${auditName}" completed successfully! Audit #${result.audit_number} - ${result.summary.successful} items processed`
+            message: `✅ Audit "${finalAuditName}" completed successfully! Audit #${result.audit_number} - ${result.summary.successful} items processed`
           });
         } else {
           console.error('❌ Audit adjustment failed:', result);

@@ -57,9 +57,6 @@ export function CategoryFilter({
           disabled
           className="flex items-center gap-2 px-3 h-[30px] bg-transparent border border-neutral-500/30 rounded-lg text-neutral-500 cursor-not-allowed text-sm"
         >
-          <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
           <span className="text-sm">Loading...</span>
         </button>
       </div>
@@ -72,12 +69,7 @@ export function CategoryFilter({
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 transition-all duration-300 ease-out min-w-[140px] justify-between text-sm"
       >
-        <div className="flex items-center gap-2">
-          <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
-          </svg>
-          <span className="truncate">{selectedCategoryName}</span>
-        </div>
+        <span className="truncate">{selectedCategoryName}</span>
         <svg 
           className={`w-4 h-4 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
           fill="none" 
@@ -89,21 +81,19 @@ export function CategoryFilter({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 py-2 bg-transparent border border-neutral-500/30 rounded-lg shadow-xl z-50 max-h-80 overflow-y-auto backdrop-blur-sm">
+        <div className="absolute top-full left-0 right-0 mt-2 py-2 bg-neutral-700/95 border border-white/[0.08] rounded-lg shadow-2xl z-50 max-h-80 overflow-y-auto backdrop-blur-sm">
           {/* All Categories Option */}
           <button
             onClick={() => handleCategorySelect(null)}
-            className={`w-full px-4 py-2 text-left text-sm transition-colors flex items-center justify-between ${
+            className={`w-full px-4 py-2 text-left text-sm transition-all flex items-center justify-between ${
               !selectedCategory
-                ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                : 'text-neutral-500 hover:bg-neutral-600/10 hover:text-neutral-300'
+                ? 'bg-neutral-600/5 text-neutral-300'
+                : 'text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300'
             }`}
           >
             <span>All Categories</span>
             {!selectedCategory && (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+              <span className="text-xs">✓</span>
             )}
           </button>
 
@@ -118,10 +108,10 @@ export function CategoryFilter({
               <button
                 key={category.id}
                 onClick={() => handleCategorySelect(category.slug)}
-                className={`w-full px-4 py-2 text-left text-sm transition-colors flex items-center justify-between ${
+                className={`w-full px-4 py-2 text-left text-sm transition-all flex items-center justify-between ${
                   selectedCategory === category.slug
-                    ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                    : 'text-neutral-500 hover:bg-neutral-600/10 hover:text-neutral-300'
+                    ? 'bg-neutral-600/5 text-neutral-300'
+                    : 'text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300'
                 }`}
               >
                 <span>{category.name}</span>
@@ -132,9 +122,7 @@ export function CategoryFilter({
                     </span>
                   )}
                   {selectedCategory === category.slug && (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <span className="text-xs">✓</span>
                   )}
                 </div>
               </button>
