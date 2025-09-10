@@ -55,7 +55,7 @@ export function CategoryFilter({
       <div className="relative">
         <button 
           disabled
-          className="flex items-center gap-2 px-3 h-[30px] bg-neutral-800/80 rounded text-neutral-500 cursor-not-allowed text-sm"
+          className="flex items-center gap-2 px-3 h-[30px] bg-transparent border border-neutral-500/30 rounded-lg text-neutral-500 cursor-not-allowed text-sm"
         >
           <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -70,7 +70,7 @@ export function CategoryFilter({
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 h-[30px] bg-neutral-800/80 hover:bg-neutral-700/80 rounded text-neutral-400 transition-colors min-w-[140px] justify-between text-sm"
+        className="flex items-center gap-2 px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 transition-all duration-300 ease-out min-w-[140px] justify-between text-sm"
       >
         <div className="flex items-center gap-2">
           <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,14 +89,14 @@ export function CategoryFilter({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 py-2 bg-neutral-800 rounded shadow-xl z-50 max-h-80 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-2 py-2 bg-transparent border border-neutral-500/30 rounded-lg shadow-xl z-50 max-h-80 overflow-y-auto backdrop-blur-sm">
           {/* All Categories Option */}
           <button
             onClick={() => handleCategorySelect(null)}
             className={`w-full px-4 py-2 text-left text-sm transition-colors flex items-center justify-between ${
               !selectedCategory
                 ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                : 'text-neutral-300 hover:bg-neutral-700/50 hover:text-white'
+                : 'text-neutral-500 hover:bg-neutral-600/10 hover:text-neutral-300'
             }`}
           >
             <span>All Categories</span>
@@ -109,7 +109,7 @@ export function CategoryFilter({
 
           {/* Divider */}
           {activeCategories.length > 0 && (
-            <div className="h-px bg-neutral-700/50 mx-2 my-2" />
+            <div className="h-px bg-neutral-600/10 mx-2 my-2" />
           )}
 
           {/* Category Options */}
@@ -121,13 +121,13 @@ export function CategoryFilter({
                 className={`w-full px-4 py-2 text-left text-sm transition-colors flex items-center justify-between ${
                   selectedCategory === category.slug
                     ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                    : 'text-neutral-300 hover:bg-neutral-700/50 hover:text-white'
+                    : 'text-neutral-500 hover:bg-neutral-600/10 hover:text-neutral-300'
                 }`}
               >
                 <span>{category.name}</span>
                 <div className="flex items-center gap-2">
                   {category.count && (
-                    <span className="text-xs text-neutral-500 bg-neutral-700/50 px-2 py-1 rounded">
+                    <span className="text-xs text-neutral-500 bg-neutral-600/10 px-2 py-1 rounded">
                       {category.count}
                     </span>
                   )}

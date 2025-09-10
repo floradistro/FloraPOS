@@ -31,7 +31,8 @@ export function QuantitySelector({
     setSelectedCategory(null);
   }, [blueprintPricing]);
 
-  const handleQuantitySelect = (quantity: number, price: number, category?: string) => {
+  const handleQuantitySelect = (e: React.MouseEvent, quantity: number, price: number, category?: string) => {
+    e.stopPropagation();
     console.log(`🔄 QuantitySelector: Button clicked - quantity: ${quantity}, price: ${price}, category: ${category}, productId: ${productId}`);
     setSelectedQuantity(quantity);
     setSelectedPrice(price);
@@ -75,21 +76,17 @@ export function QuantitySelector({
             {ruleGroup.tiers.map((tier, index) => (
               <Fragment key={`${ruleGroup.ruleId}-${tier.min}`}>
                 <button
-                  onClick={() => handleQuantitySelect(tier.min, tier.price, ruleGroup.productType)}
+                  onClick={(e) => handleQuantitySelect(e, tier.min, tier.price, ruleGroup.productType)}
                   disabled={disabled}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-xs transition-all relative ${
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-xs transition-all duration-300 ease-out border ${
                     selectedQuantity === tier.min && selectedCategory === ruleGroup.productType
-                      ? 'bg-white/10 text-neutral-400 font-medium'
-                      : 'bg-transparent text-neutral-500 hover:bg-white/5 hover:text-neutral-400'
-                  } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      ? 'bg-neutral-600/10 text-neutral-200 font-medium border-neutral-400/60'
+                      : 'bg-transparent text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-200 border-neutral-500/20 hover:border-neutral-400/40'
+                  } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${index === 0 ? 'rounded-l-lg' : ''} ${index === ruleGroup.tiers.length - 1 ? 'rounded-r-lg' : ''}`}
                 >
                   <div className="font-medium text-sm leading-tight">{tier.label}</div>
                   {!hidePrices && (
                     <div className="text-[8px] text-neutral-600">${tier.price.toFixed(2)}</div>
-                  )}
-                  {/* Faded vertical divider on the right */}
-                  {index < ruleGroup.tiers.length - 1 && (
-                    <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
                   )}
                 </button>
               </Fragment>

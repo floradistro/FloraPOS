@@ -544,7 +544,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
             <p className="text-neutral-400 mb-4">Order #{orderNumber}</p>
             
             {paymentMethod === 'cash' && change > 0 && (
-              <div className="bg-neutral-800/20 p-4 mb-4 border border-white/[0.06] rounded-lg">
+              <div className="bg-neutral-900/80 p-4 mb-4 border border-neutral-700/50 rounded-lg">
                 <div className="text-neutral-400 text-sm">Change Due:</div>
                 <div className="text-2xl font-bold text-neutral-400">${change.toFixed(2)}</div>
               </div>
@@ -560,25 +560,6 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
   return (
     <div ref={ref} className="flex-1 bg-neutral-900 flex flex-col h-full">
       <div className="flex-1 overflow-y-auto">
-        {/* Customer Selection */}
-        <div className="bg-transparent rounded-lg overflow-hidden p-2 relative transition-all duration-300 ease-out hover:bg-neutral-800/20 shadow-sm border border-white/[0.06] hover:border-white/[0.12] mb-2 pt-2 pr-2 pb-2">
-            <CustomerSelector
-              selectedCustomerId={selectedCustomer?.id}
-              onCustomerSelect={setSelectedCustomer}
-              placeholder="Search or select customer..."
-            />
-            {selectedCustomer && (
-              <div className="px-2 pb-3 pt-2">
-                <div className="text-xs text-neutral-400">
-                  <div className="flex justify-between items-center mb-1">
-                    <span>{selectedCustomer.display_name || selectedCustomer.name}</span>
-                    <CustomerPointsDisplay customerId={selectedCustomer.id} />
-                  </div>
-                  <div>{selectedCustomer.email}</div>
-                </div>
-              </div>
-            )}
-          </div>
 
         {/* Order Summary - Now has more room */}
         <OrderSummary
@@ -603,19 +584,19 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       </div>
 
       {/* Footer */}
-      <div className="px-2 py-4 border-t border-white/[0.06]">
+      <div className="px-2 py-4 border-t border-neutral-700/50">
         <div className="flex gap-2">
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="flex-1 px-3 py-2 bg-gradient-to-r from-red-500/70 to-red-600/70 hover:from-red-500/90 hover:to-red-600/90 disabled:bg-neutral-800 disabled:from-neutral-800 disabled:to-neutral-800 text-white text-sm transition-all duration-300 ease-out rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none disabled:shadow-none"
+            className="flex-1 px-3 py-2 bg-neutral-900/80 hover:bg-red-600/20 border border-neutral-700/50 hover:border-red-500/50 text-neutral-200 hover:text-red-300 text-sm transition-all duration-300 ease-out rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={processOrder}
             disabled={isProcessing || (paymentMethod === 'cash' && (cashReceivedNum < total || !cashReceived))}
-            className="flex-1 px-3 py-2 bg-gradient-to-r from-green-500/70 to-green-600/70 hover:from-green-500/90 hover:to-green-600/90 disabled:bg-neutral-700 disabled:from-neutral-700 disabled:to-neutral-700 disabled:text-neutral-500 text-white text-sm transition-all duration-300 ease-out font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] disabled:transform-none disabled:shadow-none"
+            className="flex-1 px-3 py-2 bg-neutral-900/80 hover:bg-green-600/20 border border-neutral-700/50 hover:border-green-500/50 text-neutral-200 hover:text-green-300 text-sm transition-all duration-300 ease-out font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:text-neutral-500"
           >
             {isProcessing ? (
               <div className="flex items-center justify-center gap-2">

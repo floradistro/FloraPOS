@@ -75,11 +75,11 @@ export function Sidebar({
   };
 
   return (
-    <div className="sidebar-nav h-full w-[60px] bg-transparent flex-shrink-0 relative z-40 border-r border-white/[0.08]">
+    <div className="sidebar-nav h-full w-[60px] bg-transparent flex-shrink-0 relative z-40">
       <div className="flex flex-col items-center justify-between h-full py-4">
         
         {/* Top section - Main Navigation */}
-        <div className="flex flex-col items-center gap-2 w-full px-2">
+        <div className="flex flex-col items-center gap-2 w-full">
           {/* Logo/Home */}
           <div className="mb-4 w-10 h-10 flex items-center justify-center">
             <img 
@@ -150,11 +150,11 @@ export function Sidebar({
         </div>
 
         {/* Middle section - Empty for now, can be used for future tools */}
-        <div className="flex flex-col items-center gap-2 w-full px-2">
+        <div className="flex flex-col items-center gap-2 w-full">
         </div>
 
         {/* Bottom section - System Actions */}
-        <div className="flex flex-col items-center gap-2 w-full px-2">
+        <div className="flex flex-col items-center gap-2 w-full">
           {/* Refresh */}
           <SidebarButton
             onClick={handleRefresh}

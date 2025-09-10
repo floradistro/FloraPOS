@@ -17,13 +17,13 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
       <div 
-        className={`bg-neutral-800 border border-neutral-700 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl ${className}`}
+        className={`bg-neutral-900/80 border border-neutral-700/50 rounded-lg p-6 max-w-md w-full mx-4 backdrop-blur-sm ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
           <h3 className="text-lg font-medium text-neutral-200 mb-4">{title}</h3>
         )}
-        <div className="text-neutral-300">
+        <div className="text-neutral-200">
           {children}
         </div>
       </div>

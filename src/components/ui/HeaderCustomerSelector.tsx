@@ -104,7 +104,7 @@ export function HeaderCustomerSelector({
       <div className="relative">
         <button 
           disabled
-          className="flex items-center gap-2 px-3 h-[30px] bg-neutral-800/80 rounded text-neutral-500 cursor-not-allowed text-sm"
+          className="flex items-center gap-2 px-3 h-[30px] bg-transparent border border-neutral-500/30 rounded-lg text-neutral-500 cursor-not-allowed text-sm"
         >
           <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -120,7 +120,7 @@ export function HeaderCustomerSelector({
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 h-[30px] bg-neutral-800/80 hover:bg-neutral-700/80 rounded text-neutral-400 transition-colors min-w-[160px] justify-between text-sm"
+        className="flex items-center gap-2 px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 transition-all duration-300 ease-out min-w-[160px] justify-between text-sm"
       >
         <div className="flex items-center gap-2">
           <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,7 +141,7 @@ export function HeaderCustomerSelector({
       {isOpen && dropdownPosition && typeof document !== 'undefined' && ReactDOM.createPortal(
         <div 
           ref={dropdownRef}
-          className="fixed bg-neutral-900/95 backdrop-blur-sm border border-white/[0.08] rounded-lg shadow-2xl overflow-hidden"
+          className="fixed bg-neutral-700/95 backdrop-blur-sm border border-white/[0.08] rounded-lg shadow-2xl overflow-hidden"
           style={{ 
             top: dropdownPosition.top,
             left: dropdownPosition.left,
@@ -152,10 +152,10 @@ export function HeaderCustomerSelector({
           {/* Header */}
           <div className="px-4 py-2.5 border-b border-white/[0.08] bg-neutral-800/50">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-medium text-neutral-300 uppercase tracking-wider">Select Customer</h3>
+              <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Select Customer</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-neutral-500 hover:text-neutral-300 transition-colors p-1 hover:bg-white/[0.05] rounded"
+                className="text-neutral-500 hover:text-neutral-500 transition-colors p-1 hover:bg-white/[0.05] rounded"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -172,7 +172,7 @@ export function HeaderCustomerSelector({
               className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between group ${
                 !selectedCustomer
                   ? 'bg-blue-600/20 text-blue-300'
-                  : 'text-neutral-300 hover:bg-white/[0.05] hover:text-white'
+                  : 'text-neutral-500 hover:bg-white/[0.05] hover:text-neutral-300'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -196,7 +196,7 @@ export function HeaderCustomerSelector({
               className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between group ${
                 selectedCustomer?.id === 0
                   ? 'bg-blue-600/20 text-blue-300'
-                  : 'text-neutral-300 hover:bg-white/[0.05] hover:text-white'
+                  : 'text-neutral-500 hover:bg-white/[0.05] hover:text-neutral-300'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -226,7 +226,7 @@ export function HeaderCustomerSelector({
                   className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between group ${
                     selectedCustomer?.id === customer.id
                       ? 'bg-blue-600/20 text-blue-300'
-                      : 'text-neutral-300 hover:bg-white/[0.05] hover:text-white'
+                      : 'text-neutral-500 hover:bg-white/[0.05] hover:text-neutral-300'
                   }`}
                 >
                   <div className="flex items-center gap-3">

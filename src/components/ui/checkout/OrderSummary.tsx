@@ -17,7 +17,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   total
 }) => {
   return (
-    <div className="bg-transparent rounded-lg overflow-hidden p-2 relative transition-all duration-300 ease-out hover:bg-neutral-800/20 shadow-sm border border-white/[0.06] hover:border-white/[0.12] mb-2 flex flex-col flex-1">
+    <div className="bg-neutral-900/80 hover:bg-neutral-800/90 border border-neutral-700/50 hover:border-neutral-600/60 rounded-lg overflow-hidden p-2 relative transition-all duration-300 ease-out mb-2 flex flex-col flex-1">
       {/* Header - Fixed */}
       <div className="pt-2 pr-2 pb-2 flex-shrink-0">
         <h3 className="text-sm font-medium text-neutral-400 mb-2">Order Summary</h3>
@@ -26,7 +26,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
       {/* Products List - Scrollable */}
       <div className="pr-2 space-y-0 mb-2 flex-1 overflow-y-auto">
         {items.map((item) => (
-          <div key={item.id} className="flex justify-between items-center text-xs p-2 bg-neutral-800/20 rounded-lg mb-2 last:mb-0 transition-all duration-300 ease-out hover:bg-neutral-700/30 border border-white/[0.04] hover:border-white/[0.08]">
+          <div key={item.id} className="flex justify-between items-center text-xs p-2 bg-neutral-900/80 hover:bg-neutral-800/90 border border-neutral-700/50 hover:border-neutral-600/60 rounded-lg mb-2 last:mb-0 transition-all duration-300 ease-out">
             <div className="flex-1 min-w-0">
               <div className="text-neutral-400 truncate">{item.name}</div>
               <div className="text-neutral-500">
@@ -47,7 +47,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
       </div>
 
       {/* Totals - Fixed at bottom */}
-      <div className="pt-2 pr-2 pb-2 border-t border-white/[0.06] space-y-1 flex-shrink-0">
+      <div className="pt-2 pr-2 pb-2 border-t border-neutral-700/50 space-y-1 flex-shrink-0">
         <div className="flex justify-between text-neutral-400 text-xs">
           <span>Subtotal</span>
           <span>${subtotal.toFixed(2)}</span>
@@ -56,7 +56,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
           <span>{taxRate.name} ({(taxRate.rate * 100).toFixed(2)}%)</span>
           <span>${taxAmount.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between text-neutral-400 text-sm font-semibold pt-1 border-t border-white/[0.06]">
+        <div className="flex justify-between text-neutral-400 text-sm font-semibold pt-1 border-t border-neutral-700/50">
           <span>Total</span>
           <span>${total.toFixed(2)}</span>
         </div>

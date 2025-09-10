@@ -43,14 +43,14 @@ const CartComponent = function Cart({
   const adjustmentCount = items.filter(item => item.is_adjustment).length;
 
   return (
-    <div className="w-full bg-transparent flex flex-col h-full rounded-lg" style={{ boxShadow: 'inset 6px 0 10px -6px rgba(0, 0, 0, 0.3), inset -6px 0 10px -6px rgba(0, 0, 0, 0.3), inset 0 6px 10px -6px rgba(0, 0, 0, 0.3), inset 0 -6px 10px -6px rgba(0, 0, 0, 0.3)' }}>
+    <div className="w-full bg-transparent flex flex-col h-full">
       {/* Cart Items */}
       <div className="flex-1 overflow-hidden">
         {isProductsLoading ? (
           // Show nothing while products are loading
           <div className="h-full"></div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-neutral-800/10 rounded-lg mx-2">
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             <div className="w-32 h-32 flex items-center justify-center mb-4">
               <Image 
                 src="/logo123.png" 
@@ -72,7 +72,7 @@ const CartComponent = function Cart({
           <div className="h-full overflow-y-auto">
             <div className="gap-2 pt-2 px-2 pb-2 flex flex-col">
               {items.map((item) => (
-                <div key={item.id} className="bg-transparent rounded-lg overflow-hidden p-2 relative transition-all duration-300 ease-out hover:bg-neutral-800/20 hover:-translate-y-1 hover:shadow-lg cursor-pointer shadow-sm border border-white/[0.06] hover:border-white/[0.12]">
+                <div key={item.id} className="bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 rounded-lg overflow-hidden p-2 relative transition-all duration-300 ease-out cursor-pointer">
                   <div className="flex items-center justify-between">
                     {/* Product Details */}
                     <div className="flex-1 min-w-0 mr-3">
@@ -111,7 +111,7 @@ const CartComponent = function Cart({
                                     const step = 1; // You can make this dynamic based on product type
                                     onUpdateAdjustment(item.id, currentAmount - step);
                                   }}
-                                  className="w-5 h-5 bg-neutral-700/50 hover:bg-red-600/50 flex items-center justify-center transition-colors rounded"
+                                  className="w-5 h-5 bg-neutral-700/80 hover:bg-red-600/50 border border-neutral-500/50 hover:border-red-500/50 flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
                                   title="Decrease adjustment"
                                 >
                                   <svg className="w-2.5 h-2.5 text-neutral-300 hover:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +131,7 @@ const CartComponent = function Cart({
                                       e.currentTarget.blur();
                                     }
                                   }}
-                                  className={`w-16 h-6 text-xs text-center bg-neutral-700/50 border border-neutral-600 rounded font-medium focus:border-neutral-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                                  className={`w-16 h-6 text-xs text-center bg-neutral-700/80 border border-neutral-500/50 hover:border-neutral-400/60 rounded-lg font-medium focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                                     item.adjustment_amount && item.adjustment_amount > 0 
                                       ? 'text-green-400' 
                                       : item.adjustment_amount && item.adjustment_amount < 0
@@ -147,7 +147,7 @@ const CartComponent = function Cart({
                                     const step = 1; // You can make this dynamic based on product type
                                     onUpdateAdjustment(item.id, currentAmount + step);
                                   }}
-                                  className="w-5 h-5 bg-neutral-700/50 hover:bg-green-600/50 flex items-center justify-center transition-colors rounded"
+                                  className="w-5 h-5 bg-neutral-700/80 hover:bg-green-600/50 border border-neutral-500/50 hover:border-green-500/50 flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
                                   title="Increase adjustment"
                                 >
                                   <svg className="w-2.5 h-2.5 text-neutral-300 hover:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,7 +179,7 @@ const CartComponent = function Cart({
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => onUpdateQuantity?.(item.id, Math.max(0, item.quantity - 1))}
-                                className="w-5 h-5 bg-neutral-700/50 hover:bg-neutral-600/80 flex items-center justify-center transition-colors rounded"
+                                className="w-5 h-5 bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
                               >
                                 <svg className="w-2.5 h-2.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
@@ -188,7 +188,7 @@ const CartComponent = function Cart({
                               <span className="text-sm text-neutral-400 min-w-[1.5rem] text-center">{item.quantity}</span>
                               <button
                                 onClick={() => onUpdateQuantity?.(item.id, item.quantity + 1)}
-                                className="w-5 h-5 bg-neutral-700/50 hover:bg-neutral-600/80 flex items-center justify-center transition-colors rounded"
+                                className="w-5 h-5 bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
                               >
                                 <svg className="w-2.5 h-2.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -210,7 +210,7 @@ const CartComponent = function Cart({
                     {/* Remove Button */}
                     <button
                       onClick={() => onRemoveItem?.(item.id)}
-                      className="w-5 h-5 hover:bg-neutral-600/50 flex items-center justify-center transition-colors flex-shrink-0 rounded"
+                      className="w-5 h-5 bg-neutral-700/80 hover:bg-red-600/50 border border-neutral-500/50 hover:border-red-500/50 flex items-center justify-center transition-all duration-300 ease-out flex-shrink-0 rounded-lg"
                       title="Remove item"
                     >
                       <svg className="w-3 h-3 text-neutral-500 hover:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,7 +231,7 @@ const CartComponent = function Cart({
           {/* Empty Cart Button */}
           <button
             onClick={() => setShowEmptyConfirm(true)}
-            className="w-full bg-neutral-800/50 hover:bg-red-600/20 border border-neutral-700 hover:border-red-500/50 text-neutral-400 hover:text-red-400 font-medium py-1 px-4 transition-all duration-300 ease-out flex items-center justify-center gap-2 rounded-lg"
+            className="w-full bg-neutral-700/80 hover:bg-red-600/20 border border-neutral-500/50 hover:border-red-500/50 text-neutral-200 hover:text-red-400 font-medium py-1 px-4 transition-all duration-300 ease-out flex items-center justify-center gap-2 rounded-lg"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -242,9 +242,9 @@ const CartComponent = function Cart({
           {/* Confirmation Dialog */}
           {showEmptyConfirm && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowEmptyConfirm(false)}>
-              <div className="bg-neutral-800/95 rounded-lg shadow-2xl max-w-md mx-4 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-neutral-600/95 rounded-lg shadow-2xl max-w-md mx-4 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
-                <div className="px-4 py-3 border-b border-neutral-700/20 flex items-center justify-between">
+                <div className="px-4 py-3 border-b border-neutral-500/20 flex items-center justify-between">
                   <h3 className="text-sm font-medium text-neutral-300">Burn List?</h3>
                   <button
                     onClick={() => setShowEmptyConfirm(false)}
@@ -264,10 +264,10 @@ const CartComponent = function Cart({
                 </div>
                 
                 {/* Actions */}
-                <div className="px-4 py-3 border-t border-neutral-700/20 flex justify-end gap-3">
+                <div className="px-4 py-3 border-t border-neutral-500/20 flex justify-end gap-3">
                   <button
                     onClick={() => setShowEmptyConfirm(false)}
-                    className="px-3 py-1.5 text-sm text-neutral-400 hover:text-neutral-300 hover:bg-neutral-800/20 rounded transition-all"
+                    className="px-3 py-1.5 text-sm text-neutral-400 hover:text-neutral-300 hover:bg-neutral-600/20 rounded transition-all"
                   >
                     Cancel
                   </button>
@@ -276,7 +276,7 @@ const CartComponent = function Cart({
                       onClearCart?.();
                       setShowEmptyConfirm(false);
                     }}
-                    className="px-3 py-1.5 text-sm bg-neutral-700/50 hover:bg-neutral-600/50 text-neutral-300 rounded transition-all"
+                    className="px-3 py-1.5 text-sm bg-neutral-500/50 hover:bg-neutral-400/50 text-neutral-300 rounded transition-all"
                   >
                     Burn List
                   </button>
@@ -298,14 +298,14 @@ const CartComponent = function Cart({
                   value={adjustmentReason}
                   onChange={(e) => setAdjustmentReason(e.target.value)}
                   placeholder="e.g., Physical count, damaged goods, etc."
-                  className="w-full px-3 py-1 text-sm bg-neutral-800/50 border border-neutral-700 rounded text-neutral-300 placeholder-neutral-500 focus:border-neutral-500 focus:outline-none"
+                  className="w-full px-3 py-1 text-sm bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 rounded-lg text-neutral-200 placeholder-neutral-400 focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out"
                 />
               </div>
               
               {/* Apply Adjustments Button */}
               <button
                 onClick={() => onApplyAdjustments?.(adjustmentReason || 'Manual adjustment')}
-                className="w-full bg-neutral-900 hover:bg-neutral-800/80 text-neutral-200 font-medium py-3 px-4 transition-all duration-300 ease-out flex items-center justify-between rounded-lg hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+                className="w-full bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 text-neutral-200 font-medium py-3 px-4 transition-all duration-300 ease-out flex items-center justify-between rounded-lg cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +320,7 @@ const CartComponent = function Cart({
             /* Checkout Button */
             <button
               onClick={() => onCheckout?.(selectedCustomer)}
-              className="w-full bg-neutral-900 hover:bg-neutral-800/80 text-neutral-200 font-medium py-3 px-4 transition-all duration-300 ease-out flex items-center justify-between rounded-lg hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+              className="w-full bg-neutral-700/80 hover:bg-neutral-600/90 border border-neutral-500/50 hover:border-neutral-400/60 text-neutral-200 font-medium py-3 px-4 transition-all duration-300 ease-out flex items-center justify-between rounded-lg cursor-pointer"
             >
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

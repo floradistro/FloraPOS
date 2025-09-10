@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { Product } from './ProductGrid';
 import { QuantitySelector } from './QuantitySelector';
 
@@ -10,6 +10,7 @@ interface ProductCardProps {
   selectedVariants: Record<number, number>;
   isAuditMode: boolean;
   isSalesView?: boolean; // New prop to identify sales view
+  isSelected?: boolean; // New prop for persistent selection state
   onVariantSelect: (productId: number, variantId: number) => void;
   onQuantityChange: (productId: number, quantity: number, price: number, category?: string) => void;
   onAddToCartWithVariant: (product: Product) => void;
@@ -31,6 +32,7 @@ const ProductCard = memo<ProductCardProps>(({
   selectedVariants,
   isAuditMode,
   isSalesView = false,
+  isSelected = false,
   onVariantSelect,
   onQuantityChange,
   onAddToCartWithVariant,
@@ -92,23 +94,33 @@ const ProductCard = memo<ProductCardProps>(({
     isInStock = stockDisplay > 0;
   }
 
-  const isSelected = isAuditMode && selectedProducts.has(product.id);
+  const isAuditSelected = isAuditMode && selectedProducts.has(product.id);
 
   const formatPrice = useCallback((price: number | string): string => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     return isNaN(numPrice) ? '$0.00' : `$${numPrice.toFixed(2)}`;
   }, []);
 
+  // Handle click with selection
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
+    // Call selection handler if provided
+    onProductSelection?.(product, e);
+  }, [onProductSelection, product]);
+
   return (
     <div 
       key={product.id} 
-      onClick={(e) => onProductSelection?.(product, e)}
-      className={`bg-transparent rounded-lg overflow-hidden p-2 relative transition-all duration-300 ease-out cursor-pointer shadow-sm ${
+      onClick={handleCardClick}
+      className={`rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-300 ease-out ${
         isAuditMode 
-          ? isSelected
-            ? 'border border-white/[0.15] bg-neutral-800/30 hover:bg-neutral-800/40'
-            : 'border border-white/[0.06] hover:border-white/[0.12] hover:bg-neutral-800/20'
-          : 'border border-white/[0.06] hover:border-white/[0.12] hover:bg-neutral-800/20 hover:-translate-y-1 hover:shadow-lg'
+          ? isAuditSelected
+            ? 'border-2 border-blue-500/30 bg-gradient-to-br from-blue-950/40 to-neutral-600/60 shadow-lg shadow-blue-500/10 hover:from-blue-950/50 hover:to-neutral-600/70'
+            : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:shadow-md'
+          : isSalesView 
+            ? isSelected
+              ? 'border-2 border-white/30 bg-gradient-to-br from-neutral-500/40 to-neutral-600/80 shadow-lg shadow-white/5 hover:from-neutral-500/50 hover:to-neutral-600/90 transform scale-[1.02]'
+              : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:-translate-y-1 hover:shadow-lg hover:shadow-neutral-700/20'
+            : 'border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-neutral-600/5 hover:-translate-y-1 hover:shadow-lg'
       }`}
     >
       {/* Product Image and Name Row */}
@@ -171,10 +183,15 @@ const ProductCard = memo<ProductCardProps>(({
                   return typeof value === 'string' ? value : (typeof value === 'number' ? (product.blueprintPricing ? value.toFixed(2) : Math.floor(value).toString()) : value);
                 })()}
                 onChange={(e) => {
+                  e.stopPropagation();
                   onStockValueChange?.(product.id, null, e.target.value);
                 }}
-                onFocus={() => onStockFieldFocus?.(`${product.id}`)}
-                onBlur={() => {
+                onFocus={(e) => {
+                  e.stopPropagation();
+                  onStockFieldFocus?.(`${product.id}`);
+                }}
+                onBlur={(e) => {
+                  e.stopPropagation();
                   const key = `${product.id}`;
                   const newStock = editedStockValues[key];
                   
@@ -189,7 +206,7 @@ const ProductCard = memo<ProductCardProps>(({
                     e.currentTarget.blur();
                   }
                 }}
-                className="w-32 h-8 text-sm text-center bg-neutral-700/50 border border-neutral-600 rounded text-neutral-300 focus:border-neutral-500 focus:outline-none font-medium pl-6 pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          className="w-32 h-8 text-sm text-center bg-neutral-500/50 border border-neutral-400 rounded text-neutral-200 focus:border-neutral-300 focus:outline-none font-medium pl-6 pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               
               {/* Increase Button */}
@@ -228,7 +245,7 @@ const ProductCard = memo<ProductCardProps>(({
                   const displayStock = editedValue !== undefined ? editedValue : variantStock;
 
                   return (
-                    <div key={variant.id} className="flex items-center justify-between py-2 px-3 bg-transparent border-b border-neutral-800/30 last:border-b-0">
+                    <div key={variant.id} className="flex items-center justify-between py-2 px-3 bg-transparent border-b border-neutral-600/30 last:border-b-0">
                       {/* Variant Name */}
                       <div className="flex-1 min-w-0 mr-2">
                         <div className="text-xs font-medium text-neutral-200 truncate">
@@ -259,10 +276,15 @@ const ProductCard = memo<ProductCardProps>(({
                           step={product.blueprintPricing ? "0.1" : "1"}
                           value={typeof displayStock === 'string' ? displayStock : (typeof displayStock === 'number' ? (product.blueprintPricing ? displayStock.toFixed(2) : Math.floor(displayStock).toString()) : displayStock)}
                           onChange={(e) => {
+                            e.stopPropagation();
                             onStockValueChange?.(product.id, variant.id, e.target.value);
                           }}
-                          onFocus={() => onStockFieldFocus?.(`${product.id}-${variant.id}`)}
-                          onBlur={() => {
+                          onFocus={(e) => {
+                            e.stopPropagation();
+                            onStockFieldFocus?.(`${product.id}-${variant.id}`);
+                          }}
+                          onBlur={(e) => {
+                            e.stopPropagation();
                             onStockFieldBlur?.(`${product.id}-${variant.id}`);
                             if (editedValue !== undefined && editedValue !== variantStock) {
                               const numericValue = typeof editedValue === 'string' ? parseFloat(editedValue) || 0 : editedValue;
@@ -274,7 +296,7 @@ const ProductCard = memo<ProductCardProps>(({
                               e.currentTarget.blur();
                             }
                           }}
-                          className="w-40 h-6 text-sm text-center bg-neutral-700/50 border border-neutral-600 rounded text-neutral-300 focus:border-neutral-500 focus:outline-none pl-6 pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          className="w-40 h-6 text-sm text-center bg-neutral-500/50 border border-neutral-400 rounded text-neutral-200 focus:border-neutral-300 focus:outline-none pl-6 pr-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                         
                         {/* Increase Button */}
@@ -295,7 +317,7 @@ const ProductCard = memo<ProductCardProps>(({
                   );
                 })}
                 {product.variants.length > 4 && (
-                  <div className="text-xs text-neutral-600 text-center py-1 border-t border-dashed border-neutral-800/20">
+                  <div className="text-xs text-neutral-600 text-center py-1 border-t border-dashed border-neutral-600/20">
                     +{product.variants.length - 4} more variants
                   </div>
                 )}
@@ -319,14 +341,17 @@ const ProductCard = memo<ProductCardProps>(({
                   return (
                     <button
                       key={variant.id}
-                      onClick={() => onVariantSelect(product.id, variant.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onVariantSelect(product.id, variant.id);
+                      }}
                       disabled={!variantInStock}
                       className={`w-full px-2 py-2 ${isSalesView ? 'text-sm' : 'text-xs'} rounded transition-colors text-left ${
                         isVariantSelected
-                          ? 'bg-transparent border border-neutral-600 text-neutral-200'
+                          ? 'bg-transparent border border-neutral-400 text-neutral-200'
                           : variantInStock
-                          ? 'bg-transparent border border-neutral-800 text-neutral-300 hover:border-neutral-700 hover:text-neutral-200 hover:bg-neutral-800/10'
-                          : 'bg-transparent border border-neutral-800/40 text-neutral-600 cursor-not-allowed opacity-50'
+                          ? 'bg-transparent border border-neutral-600 text-neutral-300 hover:border-neutral-500 hover:text-neutral-200 hover:bg-neutral-600/10'
+                          : 'bg-transparent border border-neutral-600/40 text-neutral-600 cursor-not-allowed opacity-50'
                       }`}
                     >
                       <div className={`truncate font-medium ${isSalesView ? 'text-sm' : ''}`}>{variant.name}</div>
@@ -339,7 +364,7 @@ const ProductCard = memo<ProductCardProps>(({
                   );
                 })}
                 {product.variants.length > 6 && (
-                  <div className="text-xs text-neutral-500 text-center py-2 col-span-2 border border-dashed border-neutral-800 rounded">
+                  <div className="text-xs text-neutral-500 text-center py-2 col-span-2 border border-dashed border-neutral-600 rounded">
                     +{product.variants.length - 6} more variants
                   </div>
                 )}
@@ -347,7 +372,7 @@ const ProductCard = memo<ProductCardProps>(({
 
               {/* Show quantity selector ONLY after variant is selected and NOT in audit mode */}
               {!isAuditMode && selectedVariants[product.id] && (
-                <div className="mt-3 pt-3 border-t border-neutral-800">
+                <div className="mt-3 pt-3 border-t border-neutral-600">
                   <QuantitySelector
                     productId={selectedVariants[product.id]} // Use variant ID
                     basePrice={parseFloat(
@@ -422,7 +447,10 @@ const ProductCard = memo<ProductCardProps>(({
         ((product.has_variants && selectedVariants[product.id] && product.selected_quantity && product.selected_price) || 
           (!product.has_variants && ((product.selected_quantity && product.selected_price) || !product.blueprintPricing))) ? (
           <button
-            onClick={() => onAddToCartWithVariant(product)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToCartWithVariant(product);
+            }}
             disabled={!isInStock}
             className="absolute bottom-2 right-2 text-neutral-400 hover:text-white transition-colors disabled:opacity-50"
             title={isInStock ? 'Add to Cart' : 'Out of Stock'}

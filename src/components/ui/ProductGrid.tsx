@@ -78,6 +78,9 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
     
   // Selected variants state - tracks which variant is selected for each product
   const [selectedVariants, setSelectedVariants] = useState<Record<number, number>>({});
+  
+  // Selected product state for highlighting in sales view
+  const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
 
   // Memoized filtered products for performance
   const filteredProducts = useMemo(() => {
@@ -379,6 +382,17 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
   }, []);
 
 
+  // Handle product selection for highlighting
+  const handleProductSelection = useCallback((product: Product) => {
+    if (selectedProduct === product.id) {
+      // Deselect if clicking the same product
+      setSelectedProduct(null);
+    } else {
+      // Select new product
+      setSelectedProduct(product.id);
+    }
+  }, [selectedProduct]);
+
   // Enhanced add to cart that handles variants
   const handleAddToCartWithVariant = (product: Product) => {
     if (product.has_variants && product.variants) {
@@ -567,7 +581,7 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
   return (
     <div>
       {/* Regular Grid View */}
-      <div className="grid grid-cols-2 xl:grid-cols-3 gap-2 p-2">
+      <div className="grid grid-cols-3 max-[1024px]:grid-cols-2 gap-2 p-2">
         {filteredProducts.map((product) => {
           const userLocationId = user?.location_id ? parseInt(user.location_id) : undefined;
           
@@ -582,6 +596,8 @@ export const ProductGrid = forwardRef<{ refreshInventory: () => Promise<void> },
               onVariantSelect={handleVariantSelect}
               onQuantityChange={handleQuantityChange}
               onAddToCartWithVariant={handleAddToCartWithVariant}
+              onProductSelection={handleProductSelection}
+              isSelected={selectedProduct === product.id}
             />
           );
         })}

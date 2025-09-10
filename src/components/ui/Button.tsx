@@ -8,10 +8,10 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const buttonVariants = {
-  primary: 'bg-neutral-800/50 hover:bg-neutral-800/70 text-neutral-300 hover:text-neutral-200 border-b border-white/[0.02]',
-  secondary: 'bg-neutral-900/40 hover:bg-neutral-800/60 text-neutral-400 hover:text-neutral-300 border-b border-white/[0.02]',
-  ghost: 'bg-transparent hover:bg-neutral-800/50 text-neutral-500 hover:text-neutral-400 border-b border-transparent',
-  danger: 'bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 border-b border-white/[0.02]'
+  primary: 'bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 text-neutral-200 hover:text-white',
+  secondary: 'bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 text-neutral-300 hover:text-neutral-200',
+  ghost: 'bg-transparent hover:bg-neutral-600/5 border border-transparent text-neutral-400 hover:text-neutral-200',
+  danger: 'bg-transparent hover:bg-red-600/10 border border-red-500/30 hover:border-red-400/50 text-red-300 hover:text-red-200'
 };
 
 const buttonSizes = {
@@ -27,7 +27,7 @@ export function Button({
   className = '', 
   ...props 
 }: ButtonProps) {
-  const baseClasses = 'rounded-lg smooth-hover  flex-shrink-0';
+  const baseClasses = 'rounded-lg transition-all duration-300 ease-out flex-shrink-0';
   const variantClasses = buttonVariants[variant];
   const sizeClasses = buttonSizes[size];
   

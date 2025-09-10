@@ -8,9 +8,9 @@ interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
 }
 
 const iconButtonVariants = {
-  default: 'text-neutral-500 hover:text-neutral-300 bg-transparent hover:bg-white/[0.08] border-none relative',
-  active: 'text-white bg-transparent border-none relative after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-4 after:h-0.5 after:bg-blue-500 after:rounded-full',
-  ghost: 'text-neutral-500 hover:text-neutral-300 bg-transparent hover:bg-white/[0.06] border-none'
+  default: 'text-neutral-400 hover:text-neutral-200 bg-neutral-900/80 hover:bg-neutral-800/90 border border-neutral-700/50 hover:border-neutral-600/60 relative',
+  active: 'text-white bg-neutral-800/90 border border-neutral-500 relative after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-4 after:h-0.5 after:bg-blue-500 after:rounded-full',
+  ghost: 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/20 border-none'
 };
 
 const iconButtonSizes = {
@@ -26,7 +26,7 @@ export function IconButton({
   className = '', 
   ...props 
 }: IconButtonProps) {
-  const baseClasses = 'rounded-sm vscode-button-hover';
+  const baseClasses = 'rounded-lg transition-all duration-300 ease-out';
   const variantClasses = iconButtonVariants[variant];
   const sizeClasses = iconButtonSizes[size];
   

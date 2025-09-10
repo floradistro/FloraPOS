@@ -576,7 +576,7 @@ export default function HomePage() {
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-700 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-neutral-400">Loading...</p>
@@ -594,7 +594,7 @@ export default function HomePage() {
     <div className="flex flex-col h-screen bg-transparent relative overflow-hidden">
       {/* Subtle 3D Wave Background */}
       <div className="absolute inset-0 opacity-[0.03]">
-        <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 via-neutral-900 to-black"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-neutral-600 via-neutral-700 to-neutral-800"></div>
         <svg 
           className="absolute inset-0 w-full h-full object-cover"
           viewBox="0 0 1200 800" 
@@ -603,14 +603,14 @@ export default function HomePage() {
         >
           <defs>
             <linearGradient id="waveGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#404040" stopOpacity="0.8"/>
-              <stop offset="50%" stopColor="#262626" stopOpacity="0.6"/>
-              <stop offset="100%" stopColor="#171717" stopOpacity="0.4"/>
+              <stop offset="0%" stopColor="#606060" stopOpacity="0.8"/>
+              <stop offset="50%" stopColor="#464646" stopOpacity="0.6"/>
+              <stop offset="100%" stopColor="#373737" stopOpacity="0.4"/>
             </linearGradient>
             <linearGradient id="waveGradient2" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#525252" stopOpacity="0.6"/>
-              <stop offset="50%" stopColor="#404040" stopOpacity="0.4"/>
-              <stop offset="100%" stopColor="#262626" stopOpacity="0.2"/>
+              <stop offset="0%" stopColor="#727272" stopOpacity="0.6"/>
+              <stop offset="50%" stopColor="#606060" stopOpacity="0.4"/>
+              <stop offset="100%" stopColor="#464646" stopOpacity="0.2"/>
             </linearGradient>
             <filter id="blur">
               <feGaussianBlur stdDeviation="2"/>
@@ -714,7 +714,7 @@ export default function HomePage() {
         )}
         
             {/* Main Content */}
-            <main className={`flex-1 relative transition-all duration-500 ease-in-out pl-2 ${
+            <main className={`flex-1 relative transition-all duration-500 ease-in-out ${
               currentView !== 'products' && currentView !== 'blueprint-fields' ? 'mr-[-320px]' : 'mr-0'
             }`}>
           {/* Loading Overlays - Only show refresh overlays for views without their own loading */}
@@ -825,7 +825,7 @@ export default function HomePage() {
             </main>
 
         {/* Cart Panel - Only show for products and blueprint-fields views */}
-        <div className={`w-80 flex-shrink-0 transition-transform duration-500 ease-in-out pr-2 ${
+        <div className={`w-80 flex-shrink-0 transition-transform duration-500 ease-in-out ${
           currentView !== 'products' && currentView !== 'blueprint-fields' ? 'transform translate-x-full' : 'transform translate-x-0'
         }`}>
           {!showCheckout && currentView !== 'blueprint-fields' && currentView === 'products' ? (
@@ -868,7 +868,7 @@ export default function HomePage() {
       </div>
 
       {/* Status Bar */}
-      <div className="flex-shrink-0 bg-neutral-900/50 border-t border-white/[0.08] px-4 py-2 relative z-10">
+      <div className="flex-shrink-0 bg-transparent px-4 py-2 relative z-10">
         <div className="flex items-center justify-between relative">
           <div className="flex items-center gap-3 text-xs text-neutral-500">
             <span>Online</span>
