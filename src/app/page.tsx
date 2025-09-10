@@ -59,6 +59,8 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentView, setCurrentView] = useState<ViewType>('products');
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showOrderSuccess, setShowOrderSuccess] = useState(false);
+  const [orderSuccessTotal, setOrderSuccessTotal] = useState(0);
   const [isAuditMode, setIsAuditMode] = useState(false);
   const [isRestockMode, setIsRestockMode] = useState(false);
   
@@ -893,6 +895,8 @@ export default function HomePage() {
                 isProductsLoading={isProductsLoading}
                 isAuditMode={isAuditMode}
                 onOpenCustomerSelector={handleOpenCustomerSelector}
+                showOrderSuccess={showOrderSuccess}
+                orderSuccessTotal={orderSuccessTotal}
                 // onApplyAdjustments={handleApplyAdjustments} - removed
                 // onUpdateAdjustment={handleUpdateAdjustment} - removed
               />

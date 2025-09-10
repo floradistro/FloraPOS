@@ -20,6 +20,8 @@ interface CartProps {
   onApplyAdjustments?: (reason?: string) => void;
   onUpdateAdjustment?: (id: string, adjustmentAmount: number) => void;
   onOpenCustomerSelector?: () => void;
+  showOrderSuccess?: boolean;
+  orderSuccessTotal?: number;
 }
 
 const CartComponent = function Cart({ 
@@ -34,7 +36,9 @@ const CartComponent = function Cart({
   isAuditMode = false,
   onApplyAdjustments,
   onUpdateAdjustment,
-  onOpenCustomerSelector
+  onOpenCustomerSelector,
+  showOrderSuccess = false,
+  orderSuccessTotal = 0
 }: CartProps) {
 
   const [adjustmentReason, setAdjustmentReason] = useState('');
@@ -53,28 +57,66 @@ const CartComponent = function Cart({
           <div className="h-full"></div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <div className="w-32 h-32 flex items-center justify-center mb-4 relative">
-              <Image 
-                src="/logo123.png" 
-                alt="Flora POS Logo" 
-                width={128}
-                height={128}
-                className="object-contain opacity-30 transition-all duration-500"
-                style={{
-                  animation: 'subtle-float 3s ease-in-out infinite'
-                }}
-                priority
-              />
-            </div>
-            <h3 className="text-neutral-400 font-medium mb-2">
-              {isAuditMode ? 'No adjustments pending' : 'Your cart is empty'}
-            </h3>
-            <p className="text-sm text-neutral-600 mb-6">
-              {isAuditMode ? 'Make inventory adjustments to see them here' : 'Add products to get started'}
-            </p>
+            {showOrderSuccess ? (
+              // Order Success Animation
+              <div className="flex flex-col items-center justify-center h-full">
+                <div className="w-32 h-32 flex items-center justify-center mb-6 relative">
+                  <div className="absolute inset-0 bg-green-500/20 rounded-full animate-ping"></div>
+                  <div className="absolute inset-2 bg-green-500/30 rounded-full animate-pulse"></div>
+                  <div className="relative w-16 h-16 bg-green-500/40 rounded-full flex items-center justify-center">
+                    <svg 
+                      className="w-8 h-8 text-green-300 animate-bounce" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      style={{
+                        animation: 'success-checkmark 0.6s ease-in-out'
+                      }}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="text-center space-y-3">
+                  <h3 className="text-green-400 font-semibold text-lg animate-fade-in-up" style={{ fontFamily: 'Tiempo, serif' }}>
+                    Order Complete!
+                  </h3>
+                  <p className="text-green-300/80 text-sm animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                    ${orderSuccessTotal.toFixed(2)} processed successfully
+                  </p>
+                  <div className="flex items-center justify-center gap-2 text-neutral-400 text-xs animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span>Transaction completed</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Empty Cart State
+              <>
+                <div className="w-32 h-32 flex items-center justify-center mb-4 relative">
+                  <Image 
+                    src="/logo123.png" 
+                    alt="Flora POS Logo" 
+                    width={128}
+                    height={128}
+                    className="object-contain opacity-30 transition-all duration-500"
+                    style={{
+                      animation: 'subtle-float 3s ease-in-out infinite'
+                    }}
+                    priority
+                  />
+                </div>
+                <h3 className="text-neutral-400 font-medium mb-2">
+                  {isAuditMode ? 'No adjustments pending' : 'Your cart is empty'}
+                </h3>
+                <p className="text-sm text-neutral-600 mb-6">
+                  {isAuditMode ? 'Make inventory adjustments to see them here' : 'Add products to get started'}
+                </p>
+              </>
+            )}
             
-            {/* Add Customer Button - Only show in normal mode */}
-            {!isAuditMode && (
+            {/* Add Customer Button - Only show in normal mode and not during success */}
+            {!isAuditMode && !showOrderSuccess && (
               <button
                 onClick={() => {
                   onOpenCustomerSelector?.();
@@ -125,6 +167,25 @@ const CartComponent = function Cart({
                   opacity: 1;
                   transform: translateY(0);
                 }
+              }
+              
+              @keyframes success-checkmark {
+                0% {
+                  opacity: 0;
+                  transform: scale(0) rotate(-45deg);
+                }
+                50% {
+                  opacity: 1;
+                  transform: scale(1.2) rotate(0deg);
+                }
+                100% {
+                  opacity: 1;
+                  transform: scale(1) rotate(0deg);
+                }
+              }
+              
+              .animate-fade-in-up {
+                animation: fade-in-up 0.6s ease-out both;
               }
             `}</style>
           </div>
