@@ -951,7 +951,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
                   Cancel
                 </button>
                 <button
-                  onClick={applyAuditAdjustments}
+                  onClick={() => applyAuditAdjustments()}
                   disabled={!auditName.trim() || isApplying}
                   className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors ${
                     !auditName.trim() || isApplying
