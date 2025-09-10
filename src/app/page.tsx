@@ -59,8 +59,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentView, setCurrentView] = useState<ViewType>('products');
   const [showCheckout, setShowCheckout] = useState(false);
-  const [showOrderSuccess, setShowOrderSuccess] = useState(false);
-  const [orderSuccessTotal, setOrderSuccessTotal] = useState(0);
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const [isAuditMode, setIsAuditMode] = useState(false);
   const [isRestockMode, setIsRestockMode] = useState(false);
   
@@ -556,6 +555,7 @@ export default function HomePage() {
       if (customer) {
         setSelectedCustomer(customer);
       }
+      setIsCheckoutLoading(true);
       setShowCheckout(true);
       
       // Trigger prefetching for checkout data
@@ -577,12 +577,12 @@ export default function HomePage() {
   };
 
   const handleOrderComplete = async () => {
-    // Clear cart after successful order
+    // Clear cart and close checkout immediately
     setCartItems([]);
     setShowCheckout(false);
+    setIsCheckoutLoading(false);
     
     // Refresh inventory to show updated quantities after sale
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
     if (productGridRef.current?.refreshInventory) {
       try {
@@ -895,8 +895,7 @@ export default function HomePage() {
                 isProductsLoading={isProductsLoading}
                 isAuditMode={isAuditMode}
                 onOpenCustomerSelector={handleOpenCustomerSelector}
-                showOrderSuccess={showOrderSuccess}
-                orderSuccessTotal={orderSuccessTotal}
+                isCheckoutLoading={isCheckoutLoading}
                 // onApplyAdjustments={handleApplyAdjustments} - removed
                 // onUpdateAdjustment={handleUpdateAdjustment} - removed
               />
