@@ -610,13 +610,6 @@ export default function HomePage() {
     
     // Clear selected customer for next order
     setSelectedCustomer(null);
-    
-    // Show success alert immediately
-    setAlertModal({
-      isOpen: true,
-      title: 'Order Complete',
-      message: 'Order completed successfully!'
-    });
   };
 
   const handleCloseCheckout = () => {
