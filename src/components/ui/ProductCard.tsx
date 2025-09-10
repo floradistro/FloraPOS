@@ -112,9 +112,9 @@ const ProductCard = memo<ProductCardProps>(({
       }`}
     >
       {/* Product Image and Name Row */}
-      <div className="flex gap-3 items-start mb-3">
+      <div className="flex gap-4 items-start mb-4">
         {/* Product Image */}
-        <div className="w-16 h-16 relative overflow-hidden flex-shrink-0">
+        <div className="w-28 h-28 relative overflow-hidden flex-shrink-0">
           {product.image ? (
             <img 
               src={product.image} 
@@ -124,7 +124,7 @@ const ProductCard = memo<ProductCardProps>(({
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-14 h-14 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
@@ -132,12 +132,12 @@ const ProductCard = memo<ProductCardProps>(({
         </div>
 
         {/* Product Name and Category */}
-        <div className="flex-1 min-w-0">
-          <h3 className="text-neutral-400 font-medium text-sm mb-1 line-clamp-2">
+        <div className="flex-1 min-w-0 flex flex-col justify-center items-center text-center h-28">
+          <h3 className="text-neutral-200 font-semibold text-2xl mb-2 line-clamp-2 leading-tight">
             {product.name}
           </h3>
           {product.categories.length > 0 && (
-            <p className="text-neutral-500 text-xs mb-1">
+            <p className="text-neutral-400 text-base mb-2">
               {product.categories[0].name}
             </p>
           )}
@@ -231,7 +231,7 @@ const ProductCard = memo<ProductCardProps>(({
                     <div key={variant.id} className="flex items-center justify-between py-2 px-3 bg-transparent border-b border-neutral-800/30 last:border-b-0">
                       {/* Variant Name */}
                       <div className="flex-1 min-w-0 mr-2">
-                        <div className="text-xs font-medium text-neutral-300 truncate">
+                        <div className="text-xs font-medium text-neutral-200 truncate">
                           {variant.name}
                         </div>
                       </div>
@@ -325,13 +325,13 @@ const ProductCard = memo<ProductCardProps>(({
                         isVariantSelected
                           ? 'bg-transparent border border-neutral-600 text-neutral-200'
                           : variantInStock
-                          ? 'bg-transparent border border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-300 hover:bg-neutral-800/10'
+                          ? 'bg-transparent border border-neutral-800 text-neutral-300 hover:border-neutral-700 hover:text-neutral-200 hover:bg-neutral-800/10'
                           : 'bg-transparent border border-neutral-800/40 text-neutral-600 cursor-not-allowed opacity-50'
                       }`}
                     >
                       <div className={`truncate font-medium ${isSalesView ? 'text-sm' : ''}`}>{variant.name}</div>
                       <div className="mt-1">
-                        <span className={`${isSalesView ? 'text-sm' : 'text-xs'} ${variantInStock ? 'text-neutral-500' : 'text-red-400'}`}>
+                        <span className={`${isSalesView ? 'text-sm' : 'text-xs'} ${variantInStock ? 'text-neutral-400' : 'text-red-400'}`}>
                           {variantInStock ? `${variantStock} in stock` : 'Out of stock'}
                         </span>
                       </div>
@@ -393,7 +393,7 @@ const ProductCard = memo<ProductCardProps>(({
           </span>
         ) : (
           /* Normal Mode - Display Only */
-          <span className="text-xs text-neutral-500">
+          <span className="text-xs text-neutral-400">
             {product.has_variants && !selectedVariants[product.id] 
               ? `${stockDisplay} total stock` 
               : `${stockDisplay} in stock`}
@@ -403,10 +403,10 @@ const ProductCard = memo<ProductCardProps>(({
 
       {/* Selected Price - Bottom Left - Only show in normal mode */}
       {!isAuditMode && (
-        <div className="absolute bottom-2 left-2 text-xs text-neutral-500">
+        <div className="absolute bottom-2 left-2 text-xs text-neutral-400">
           {product.has_variants && selectedVariants[product.id] ? (
             product.selected_price ? formatPrice(product.selected_price) : (
-              <span className="text-neutral-600">Select quantity</span>
+              <span className="text-neutral-500">Select quantity</span>
             )
           ) : product.selected_price ? (
             formatPrice(product.selected_price)
