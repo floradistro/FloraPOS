@@ -76,51 +76,59 @@ export default function HomePage() {
   }, []);
 
 
-  // Function to update quantities for specific sold products
-  const updateSoldProductQuantities = useCallback(async (soldItems: Array<{ productId: number; variantId?: number; soldQuantity: number }>) => {
-    try {
-      // Fetch fresh data for only the sold products
-      const productIds = soldItems.map(item => item.productId);
-      const uniqueProductIds = Array.from(new Set(productIds));
+  // Function to calculate and update quantities for sold products
+  const updateSoldProductQuantities = useCallback((soldItems: Array<{ productId: number; variantId?: number; soldQuantity: number }>) => {
+    console.log('🎯 Calculating quantity updates for sold items:', soldItems);
+    
+    // Get current ProductGrid state and calculate new quantities
+    if (productGridRef.current?.updateProductQuantities) {
+      // For now, we'll use the inventory deduction service result
+      // Since the backend has already deducted inventory, we need to get fresh data
+      // Let's use a simple approach: re-fetch just the sold products
       
-      // Fetch each product individually to get fresh inventory
-      const updates = await Promise.all(
-        uniqueProductIds.map(async (productId) => {
-          try {
-            const response = await fetch(`/api/proxy/flora-im/products?include=${productId}&per_page=1&_t=${Date.now()}`, {
-              headers: { 'Cache-Control': 'no-cache' }
-            });
-            
-            if (response.ok) {
-              const result = await response.json();
-              if (result.success && result.data && result.data[0]) {
-                const product = result.data[0];
-                const locationInventory = product.inventory?.find((inv: any) => 
-                  parseInt(inv.location_id) === parseInt(user?.location_id?.toString() || '0')
-                );
-                
-                return {
-                  productId: product.id,
-                  newQuantity: parseFloat(locationInventory?.stock || locationInventory?.quantity || 0)
-                };
+      const updates = soldItems.map(item => ({
+        productId: item.productId,
+        variantId: item.variantId,
+        newQuantity: 0 // Will be updated when we get fresh data
+      }));
+      
+      // Trigger immediate state update with placeholder, then fetch real data
+      setTimeout(async () => {
+        try {
+          // Fetch the entire product list but only update sold products
+          const response = await fetch(`/api/proxy/flora-im/products?per_page=100&_t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-cache' }
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              const realUpdates = soldItems.map(soldItem => {
+                const freshProduct = result.data.find((p: any) => p.id === soldItem.productId);
+                if (freshProduct) {
+                  const locationInventory = freshProduct.inventory?.find((inv: any) => 
+                    parseInt(inv.location_id) === parseInt(user?.location_id?.toString() || '0')
+                  );
+                  
+                  return {
+                    productId: soldItem.productId,
+                    variantId: soldItem.variantId,
+                    newQuantity: parseFloat(locationInventory?.stock || locationInventory?.quantity || 0)
+                  };
+                }
+                return null;
+              }).filter(Boolean);
+              
+              if (realUpdates.length > 0) {
+                productGridRef.current?.updateProductQuantities(realUpdates);
+                console.log('🎯 Updated quantities with fresh data:', realUpdates);
               }
             }
-            return null;
-          } catch (error) {
-            console.error(`Failed to fetch product ${productId}:`, error);
-            return null;
           }
-        })
-      );
-      
-      const validUpdates = updates.filter((update): update is { productId: number; newQuantity: number } => update !== null);
-      if (validUpdates.length > 0 && productGridRef.current?.updateProductQuantities) {
-        productGridRef.current.updateProductQuantities(validUpdates);
-        console.log('🎯 Updated quantities for specific products:', validUpdates);
-      }
-      
-    } catch (error) {
-      console.error('Error updating sold product quantities:', error);
+        } catch (error) {
+          console.error('Error fetching fresh quantities:', error);
+        }
+      }, 1000); // 1 second delay for backend processing
     }
   }, [user?.location_id]);
 
