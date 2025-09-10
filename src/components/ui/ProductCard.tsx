@@ -114,7 +114,7 @@ const ProductCard = memo<ProductCardProps>(({
       {/* Product Image and Name Row */}
       <div className="flex gap-4 items-start mb-4">
         {/* Product Image */}
-        <div className="w-28 h-28 relative overflow-hidden flex-shrink-0">
+        <div className="w-24 h-24 relative overflow-hidden flex-shrink-0">
           {product.image ? (
             <img 
               src={product.image} 
@@ -124,7 +124,7 @@ const ProductCard = memo<ProductCardProps>(({
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <svg className="w-14 h-14 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-12 h-12 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
@@ -132,12 +132,12 @@ const ProductCard = memo<ProductCardProps>(({
         </div>
 
         {/* Product Name and Category */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center items-center text-center h-28">
-          <h3 className="text-neutral-200 font-semibold text-2xl mb-2 line-clamp-2 leading-tight">
+        <div className="flex-1 min-w-0 flex flex-col justify-center items-center text-center h-24">
+          <h3 className="text-neutral-200 font-normal text-lg mb-2 line-clamp-2 leading-tight">
             {product.name}
           </h3>
           {product.categories.length > 0 && (
-            <p className="text-neutral-400 text-base mb-2">
+            <p className="text-neutral-400 text-sm mb-2">
               {product.categories[0].name}
             </p>
           )}
