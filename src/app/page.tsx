@@ -76,6 +76,54 @@ export default function HomePage() {
   }, []);
 
 
+  // Function to update quantities for specific sold products
+  const updateSoldProductQuantities = useCallback(async (soldItems: Array<{ productId: number; variantId?: number; soldQuantity: number }>) => {
+    try {
+      // Fetch fresh data for only the sold products
+      const productIds = soldItems.map(item => item.productId);
+      const uniqueProductIds = Array.from(new Set(productIds));
+      
+      // Fetch each product individually to get fresh inventory
+      const updates = await Promise.all(
+        uniqueProductIds.map(async (productId) => {
+          try {
+            const response = await fetch(`/api/proxy/flora-im/products?include=${productId}&per_page=1&_t=${Date.now()}`, {
+              headers: { 'Cache-Control': 'no-cache' }
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              if (result.success && result.data && result.data[0]) {
+                const product = result.data[0];
+                const locationInventory = product.inventory?.find((inv: any) => 
+                  parseInt(inv.location_id) === parseInt(user?.location_id?.toString() || '0')
+                );
+                
+                return {
+                  productId: product.id,
+                  newQuantity: parseFloat(locationInventory?.stock || locationInventory?.quantity || 0)
+                };
+              }
+            }
+            return null;
+          } catch (error) {
+            console.error(`Failed to fetch product ${productId}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      const validUpdates = updates.filter((update): update is { productId: number; newQuantity: number } => update !== null);
+      if (validUpdates.length > 0 && productGridRef.current?.updateProductQuantities) {
+        productGridRef.current.updateProductQuantities(validUpdates);
+        console.log('🎯 Updated quantities for specific products:', validUpdates);
+      }
+      
+    } catch (error) {
+      console.error('Error updating sold product quantities:', error);
+    }
+  }, [user?.location_id]);
+
   const handleOpenCustomerSelector = useCallback(() => {
     unifiedSearchRef.current?.openCustomerMode();
   }, []);
@@ -185,6 +233,7 @@ export default function HomePage() {
 
   const productGridRef = useRef<{ 
     refreshInventory: () => Promise<void>;
+    updateProductQuantities: (updates: Array<{ productId: number; variantId?: number; newQuantity: number }>) => void;
   }>(null);
   const adjustmentsGridRef = useRef<AdjustmentsGridRef>(null);
   const unifiedSearchRef = useRef<UnifiedSearchInputRef>(null);
@@ -580,24 +629,47 @@ export default function HomePage() {
   };
 
   const handleOrderComplete = async () => {
+    // Calculate quantity changes before clearing cart
+    const quantityUpdates = cartItems
+      .filter(item => !item.is_adjustment && item.quantity > 0)
+      .map(item => {
+        // Calculate new quantity by subtracting sold amount from current
+        // We'll get the current quantity from the ProductGrid state
+        return {
+          productId: parseInt(item.id.toString()),
+          variantId: item.variation_id,
+          soldQuantity: item.quantity
+        };
+      });
+
     // Clear cart and close checkout immediately
     setCartItems([]);
     setShowCheckout(false);
     setIsCheckoutLoading(false);
     
-    // Trigger a silent refresh of the product grid after a short delay
-    // This allows the backend inventory deduction to complete
-    setTimeout(async () => {
-      if (productGridRef.current?.refreshInventory) {
+    // Update only the quantities of sold products
+    if (productGridRef.current?.updateProductQuantities && quantityUpdates.length > 0) {
+      // Calculate the new quantities based on current state
+      const updates = quantityUpdates.map(item => {
+        // For now, we'll fetch the current quantity from the grid and subtract
+        // This is a simplified approach - the exact current stock will be calculated
+        return {
+          productId: item.productId,
+          variantId: item.variantId,
+          newQuantity: 0 // Will be calculated from current state
+        };
+      });
+      
+      // Delay slightly to allow backend processing, then update quantities
+      setTimeout(() => {
         try {
-          console.log('🔄 Refreshing inventory after order completion...');
-          await productGridRef.current.refreshInventory();
-          console.log('✅ Inventory refreshed successfully');
+          // Get fresh quantities for sold products only
+          updateSoldProductQuantities(quantityUpdates);
         } catch (error) {
-          console.error('❌ Failed to refresh inventory:', error);
+          console.error('❌ Failed to update product quantities:', error);
         }
-      }
-    }, 1000); // 1 second delay to allow backend processing
+      }, 500);
+    }
     
     // Invalidate customer-related queries to refresh order history and points
     console.log('🔄 Invalidating customer queries after order completion');

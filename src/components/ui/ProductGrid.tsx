@@ -62,6 +62,7 @@ interface ProductGridProps {
 
 export const ProductGrid = forwardRef<{ 
   refreshInventory: () => Promise<void>;
+  updateProductQuantities: (updates: Array<{ productId: number; variantId?: number; newQuantity: number }>) => void;
 }, ProductGridProps>(
   ({ onAddToCart, searchQuery, categoryFilter, onLoadingChange }, ref) => {
     const { user } = useAuth();
@@ -128,10 +129,54 @@ export const ProductGrid = forwardRef<{
     }
   };
 
+  // Update specific product quantities without full reload
+  const updateProductQuantities = useCallback((updates: Array<{ productId: number; variantId?: number; newQuantity: number }>) => {
+    console.log('🎯 [POSV1] Updating specific product quantities:', updates);
+    
+    setProducts(prevProducts => 
+      prevProducts.map(product => {
+        const update = updates.find(u => u.productId === product.id);
+        if (!update) return product;
+
+        if (update.variantId && product.variants) {
+          // Update variant quantity
+          return {
+            ...product,
+            variants: product.variants.map(variant => {
+              if (variant.id === update.variantId) {
+                return {
+                  ...variant,
+                  inventory: variant.inventory?.map(inv => ({
+                    ...inv,
+                    stock: update.newQuantity
+                  })) || [],
+                  total_stock: update.newQuantity
+                };
+              }
+              return variant;
+            })
+          };
+        } else {
+          // Update main product quantity
+          return {
+            ...product,
+            inventory: product.inventory.map(inv => ({
+              ...inv,
+              stock: update.newQuantity
+            })),
+            total_stock: update.newQuantity
+          };
+        }
+      })
+    );
+    
+    console.log('✅ [POSV1] Product quantities updated in state');
+  }, []);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
-    refreshInventory
+    refreshInventory,
+    updateProductQuantities
   }));
 
   // Removed individual blueprint pricing function - using batch only
