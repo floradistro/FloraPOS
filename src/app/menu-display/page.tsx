@@ -527,7 +527,7 @@ export default function MenuDisplayPage() {
               
               {/* Left Content */}
               <div className="flex-1">
-                {renderMenuSection(leftMenuCategory, null)}
+                {renderMenuSection(leftMenuCategory)}
               </div>
             </div>
             
@@ -550,7 +550,7 @@ export default function MenuDisplayPage() {
               
               {/* Right Content */}
               <div className="flex-1">
-                {renderMenuSection(rightMenuCategory, null)}
+                {renderMenuSection(rightMenuCategory)}
               </div>
             </div>
           </div>
