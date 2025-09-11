@@ -52,7 +52,7 @@ export function SearchInput({
         value={internalValue}
         onChange={handleChange}
         style={{ fontFamily: 'Tiempos, serif' }}
-        className="w-full pl-10 pr-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none text-sm text-center placeholder:text-center transition-all duration-300 ease-out min-w-0"
+        className="w-full pl-10 pr-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none text-sm transition-all duration-200 ease-out min-w-0"
       />
     </div>
   );

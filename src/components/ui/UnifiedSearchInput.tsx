@@ -97,7 +97,7 @@ const CustomerPoints = ({ customerId }: { customerId: number }) => {
   const pointsUnit = pointsBalance.balance === 1 ? singular : plural;
   
   return (
-    <span className="text-white text-xs font-medium bg-gradient-to-r from-purple-600 via-fuchsia-500 via-pink-500 via-rose-400 via-pink-400 via-fuchsia-400 to-purple-600 px-2 py-0.5 rounded ml-2 animate-pulse bg-[length:300%_100%] animate-[gradient_4s_ease-in-out_infinite]" style={{ boxShadow: '0 0 8px rgba(217, 70, 239, 0.6), 0 0 16px rgba(217, 70, 239, 0.4)' }}>
+    <span className="text-white text-xs font-medium bg-purple-600/40 px-2 py-0.5 rounded ml-2 border border-purple-500/30 transition-all duration-200">
       {pointsBalance.balance.toLocaleString()} {pointsUnit}
     </span>
   );
@@ -407,7 +407,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           readOnly={showProductSelection || false}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
-          className={`w-full h-[30px] bg-transparent hover:bg-neutral-600/10 rounded-lg placeholder-neutral-400 focus:bg-neutral-600/10 focus:outline-none text-sm text-center placeholder:text-center transition-all duration-500 ease-out min-w-0 ${
+          className={`w-full h-[30px] bg-transparent hover:bg-neutral-600/10 rounded-lg placeholder-neutral-400 focus:bg-neutral-600/10 focus:outline-none text-sm text-center placeholder:text-center transition-all duration-200 ease-out min-w-0 ${
             showProductSelection
               ? 'text-neutral-200 font-medium'
               : isAuditDropdownMode
@@ -415,9 +415,9 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 : 'text-neutral-400'
           } ${
             isAuditMode && pendingAdjustments && pendingAdjustments.size > 0
-              ? 'border-2 border-transparent bg-gradient-to-r from-purple-600/40 via-fuchsia-500/40 via-pink-500/40 via-rose-400/40 via-pink-400/40 via-fuchsia-400/40 to-purple-600/40 shadow-2xl shadow-fuchsia-500/50 bg-[length:300%_100%] animate-[gradient_5s_ease-in-out_infinite] hover:shadow-pink-500/50 focus:shadow-purple-500/50'
+              ? 'border-2 border-purple-500/30 bg-purple-500/10 shadow-lg shadow-purple-500/20'
               : hasSelections 
-                ? 'border-2 border-transparent bg-gradient-to-r from-purple-600/40 via-fuchsia-500/40 via-pink-500/40 via-rose-400/40 via-pink-400/40 via-fuchsia-400/40 to-purple-600/40 shadow-2xl shadow-fuchsia-500/50 bg-[length:300%_100%] animate-[gradient_5s_ease-in-out_infinite] hover:shadow-pink-500/50 focus:shadow-purple-500/50' 
+                ? 'border-2 border-blue-500/30 bg-blue-500/10 shadow-lg shadow-blue-500/20' 
                 : 'border border-neutral-500/30 hover:border-neutral-400/50 focus:border-neutral-300'
           } ${
             selectedCustomer && selectedCustomer.id > 0 && !internalValue && !isCustomerMode 
@@ -521,8 +521,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 setIsAuditDropdownMode(true);
                 setIsOpen(true);
               }}
-              className="text-white text-xs font-medium bg-gradient-to-r from-purple-600 via-fuchsia-500 via-pink-500 via-rose-400 via-pink-400 via-fuchsia-400 to-purple-600 px-2 py-0.5 rounded animate-pulse bg-[length:300%_100%] animate-[gradient_4s_ease-in-out_infinite] pointer-events-auto"
-              style={{ boxShadow: '0 0 8px rgba(217, 70, 239, 0.6), 0 0 16px rgba(217, 70, 239, 0.4)' }}
+              className="text-white text-xs font-medium bg-purple-600/40 px-2 py-0.5 rounded border border-purple-500/30 pointer-events-auto transition-all duration-200"
               title={`Create audit with ${pendingAdjustments.size} pending adjustments`}
             >
               {pendingAdjustments.size} Adjustments

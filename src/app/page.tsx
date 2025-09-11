@@ -117,7 +117,7 @@ export default function HomePage() {
                   };
                 }
                 return null;
-              }).filter(Boolean);
+              }).filter(update => update !== null) as Array<{ productId: number; variantId?: number; newQuantity: number }>;
               
               if (realUpdates.length > 0) {
                 productGridRef.current?.updateProductQuantities(realUpdates);

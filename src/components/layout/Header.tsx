@@ -207,7 +207,7 @@ export function Header({
                 <select
                   value={statusFilter}
                   onChange={(e) => onStatusFilterChange?.(e.target.value)}
-                  className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out min-w-[120px]"
+                  className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out min-w-[120px]"
                 >
                   <option value="any">All Status</option>
                   <option value="pending">Pending</option>
@@ -229,7 +229,7 @@ export function Header({
                   type="date"
                   value={dateFrom}
                   onChange={(e) => onDateFromChange?.(e.target.value)}
-                  className="px-2 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out w-28 sm:w-36"
+                  className="px-2 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out w-28 sm:w-36"
                   title="From Date"
                 />
                 <span className="text-neutral-500 text-xs sm:text-sm">to</span>
@@ -237,7 +237,7 @@ export function Header({
                   type="date"
                   value={dateTo}
                   onChange={(e) => onDateToChange?.(e.target.value)}
-                  className="px-2 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out w-28 sm:w-36"
+                  className="px-2 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out w-28 sm:w-36"
                   title="To Date"
                 />
               </div>
@@ -245,7 +245,7 @@ export function Header({
               {/* Show Selected Only Filter Toggle */}
               <button
                 onClick={() => onShowSelectedOnlyChange?.(!showSelectedOnly)}
-                className={`px-3 h-[30px] rounded-lg transition-all duration-300 ease-out text-sm flex items-center gap-1 whitespace-nowrap border flex-shrink-0 ${
+                className={`px-3 h-[30px] rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-1 whitespace-nowrap border flex-shrink-0 ${
                   showSelectedOnly 
                     ? 'bg-neutral-800/90 text-white border-neutral-500' 
                     : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
@@ -262,7 +262,7 @@ export function Header({
               {selectedOrdersCount > 0 && onClearOrderSelection && (
                 <button
                   onClick={onClearOrderSelection}
-                  className="px-3 h-[30px] bg-red-600/20 text-red-300 border border-red-500/30 hover:bg-red-600/30 rounded-lg transition-all duration-300 ease-out text-sm flex items-center gap-1 whitespace-nowrap flex-shrink-0"
+                  className="px-3 h-[30px] bg-red-600/20 text-red-300 border border-red-500/30 hover:bg-red-600/30 rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-1 whitespace-nowrap flex-shrink-0"
                   title="Clear Selection"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,7 +280,7 @@ export function Header({
               {/* History Button */}
               <button
                 onClick={() => onViewChange?.('history')}
-                className={`flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-300 ease-out rounded-lg border whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap ${
                   currentView === 'history'
                     ? 'bg-neutral-800/90 text-white border-neutral-500' 
                     : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-300'
@@ -298,7 +298,7 @@ export function Header({
                   <select
                     value={historyDateFilter}
                     onChange={(e) => onHistoryDateFilterChange?.(e.target.value)}
-                    className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out"
+                    className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
                   >
                     <option value="1">Last 24 hours</option>
                     <option value="7">Last 7 days</option>
@@ -311,7 +311,7 @@ export function Header({
                   <select
                     value={historyActionFilter}
                     onChange={(e) => onHistoryActionFilterChange?.(e.target.value)}
-                    className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out"
+                    className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
                   >
                     <option value="all">All Actions</option>
                     <option value="inventory_update">Inventory Updates</option>
@@ -327,7 +327,7 @@ export function Header({
               {currentView === 'adjustments' && (
                 <button
                   onClick={onRestock}
-                  className={`flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-300 ease-out rounded-lg border whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap ${
                     isRestockMode
                       ? 'bg-neutral-800/90 text-white border-neutral-500' 
                       : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-300'
@@ -343,7 +343,7 @@ export function Header({
               {currentView === 'adjustments' && (
                 <button
                   onClick={onAudit}
-                  className={`flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-300 ease-out rounded-lg border whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap ${
                     isAuditMode
                       ? 'bg-neutral-800/90 text-white border-neutral-500' 
                       : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-300'
