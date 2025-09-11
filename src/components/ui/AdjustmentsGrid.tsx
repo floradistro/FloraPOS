@@ -4,6 +4,7 @@ import React, { useState, useEffect, forwardRef, useImperativeHandle, useMemo, u
 import { useAuth } from '../../contexts/AuthContext';
 import { ProductAuditTable } from './ProductAuditTable';
 import { BlueprintPricingService, BlueprintPricingData } from '../../services/blueprint-pricing-service';
+import { PurchaseOrdersService, type RestockProduct } from '../../services/purchase-orders-service';
 
 export interface Product {
   id: number;
@@ -62,6 +63,13 @@ export interface AdjustmentsGridRef {
   getProducts: () => Product[];
   removeAdjustment: (key: string) => void;
   updateAdjustment: (key: string, newValue: number) => void;
+  // Purchase order methods
+  createPurchaseOrder: () => void;
+  createPurchaseOrderWithDetails: (supplierName: string, notes?: string) => Promise<void>;
+  getPendingRestockProducts: () => Map<string, number>;
+  getIsCreatingPO: () => boolean;
+  removeRestockProduct: (key: string) => void;
+  updateRestockQuantity: (key: string, quantity: number) => void;
 }
 
 export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridProps>(
@@ -87,6 +95,13 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
     const [showAuditDialog, setShowAuditDialog] = useState(false);
     const [auditName, setAuditName] = useState('');
     const [auditDescription, setAuditDescription] = useState('');
+    
+    // Purchase order states (only shown in restock mode)
+    const [pendingRestockProducts, setPendingRestockProducts] = useState<Map<string, number>>(new Map());
+    const [showPODialog, setShowPODialog] = useState(false);
+    const [supplierName, setSupplierName] = useState('');
+    const [poNotes, setPONotes] = useState('');
+    const [isCreatingPO, setIsCreatingPO] = useState(false);
 
     // Notify parent of loading state changes
     useEffect(() => {
@@ -207,7 +222,32 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       getIsApplying: () => isApplying,
       getProducts: () => products,
       removeAdjustment,
-      updateAdjustment
+      updateAdjustment,
+      // Purchase order methods
+      createPurchaseOrder: () => setShowPODialog(true),
+      createPurchaseOrderWithDetails: async (supplierName: string, notes?: string) => {
+        await createPurchaseOrderFromRestock(supplierName, notes);
+      },
+      getPendingRestockProducts: () => pendingRestockProducts,
+      getIsCreatingPO: () => isCreatingPO,
+      removeRestockProduct: (key: string) => {
+        setPendingRestockProducts(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(key);
+          return newMap;
+        });
+      },
+      updateRestockQuantity: (key: string, quantity: number) => {
+        setPendingRestockProducts(prev => {
+          const newMap = new Map(prev);
+          if (quantity > 0) {
+            newMap.set(key, quantity);
+          } else {
+            newMap.delete(key);
+          }
+          return newMap;
+        });
+      }
     }));
 
     const fetchProducts = useCallback(async () => {
@@ -437,6 +477,115 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         return newSet;
       });
     }, []);
+
+    // Handle restock quantity adjustment (for purchase orders)
+    const handleRestockAdjustment = (productId: number, variantId: number | null, quantity: number, reason: string = 'Restock quantity') => {
+      try {
+        const key = variantId ? `${productId}-${variantId}` : `${productId}`;
+        
+        console.log(`🛒 [Restock] Product ${productId}${variantId ? `-${variantId}` : ''}: Setting restock quantity to ${quantity}`);
+        
+        // Update pending restock products
+        setPendingRestockProducts(prev => {
+          const newRestockProducts = new Map(prev);
+          
+          if (quantity > 0) {
+            newRestockProducts.set(key, quantity);
+            console.log(`✅ [Restock] Added product ${key} with quantity ${quantity}`);
+          } else {
+            newRestockProducts.delete(key);
+            console.log(`❌ [Restock] Removed product ${key}`);
+          }
+          
+          console.log(`📊 [Restock] Total pending products: ${newRestockProducts.size}`);
+          return newRestockProducts;
+        });
+        
+      } catch (error) {
+        console.error(`❌ [Restock] Error adjusting restock quantity:`, error);
+        setAdjustmentStatus({
+          type: 'error',
+          message: `Failed to adjust restock quantity: ${error instanceof Error ? error.message : 'Unknown error'}`
+        });
+      }
+    };
+
+    // Create purchase order from restock products
+    const createPurchaseOrderFromRestock = async (supplierName: string, notes?: string) => {
+      if (pendingRestockProducts.size === 0) {
+        console.log('No restock products to create PO from');
+        return;
+      }
+
+      if (!supplierName.trim()) {
+        setAdjustmentStatus({ 
+          type: 'error', 
+          message: 'Please provide a supplier name for the purchase order' 
+        });
+        return;
+      }
+
+      setIsCreatingPO(true);
+      setAdjustmentStatus({ type: null, message: '' });
+      setShowPODialog(false);
+
+      try {
+        console.log(`Creating PO "${supplierName}" with ${pendingRestockProducts.size} products...`);
+        
+        // Convert pending restock products to RestockProduct format
+        const restockProducts: RestockProduct[] = Array.from(pendingRestockProducts.entries()).map(([key, quantity]) => {
+          const [productId, variantId] = key.split('-').map(Number);
+          const product = products.find(p => p.id === productId);
+          
+          if (!product) {
+            throw new Error(`Product not found: ${productId}`);
+          }
+
+          return {
+            product_id: productId,
+            variation_id: variantId || undefined,
+            name: product.name,
+            sku: product.sku,
+            restock_quantity: quantity,
+            suggested_cost: 0, // TODO: Could add cost estimation
+            current_stock: product.total_stock
+          };
+        });
+
+        // TODO: For now, we'll use a default supplier ID (1)
+        // In a real implementation, you'd have a supplier selection UI
+        const result = await PurchaseOrdersService.generatePurchaseOrderFromRestock({
+          products: restockProducts,
+          supplier_id: 1, // Default supplier
+          location_id: user?.location_id ? parseInt(user.location_id) : 20,
+          po_name: supplierName,
+          notes: notes || `Purchase order created from restock on ${new Date().toLocaleDateString()}`
+        });
+
+        if (result.success && result.data) {
+          setAdjustmentStatus({
+            type: 'success',
+            message: `Purchase order ${result.data.po_number} created successfully with ${restockProducts.length} items`
+          });
+          
+          // Clear pending restock products
+          setPendingRestockProducts(new Map());
+          
+          console.log(`✅ Created purchase order: ${result.data.po_number}`);
+        } else {
+          throw new Error(result.error || 'Failed to create purchase order');
+        }
+
+      } catch (error) {
+        console.error('❌ Failed to create purchase order:', error);
+        setAdjustmentStatus({
+          type: 'error',
+          message: `Failed to create purchase order: ${error instanceof Error ? error.message : 'Unknown error'}`
+        });
+      } finally {
+        setIsCreatingPO(false);
+      }
+    };
 
     // Handle inventory adjustment directly - now handles both incremental and absolute adjustments
     const handleInventoryAdjustment = (productId: number, variantId: number | null, adjustment: number, reason: string = 'Manual adjustment') => {
@@ -870,14 +1019,16 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
             editedStockValues={editedStockValues}
             userLocationId={user?.location_id ? parseInt(user.location_id) : undefined}
             onProductSelection={handleProductSelection}
-            onInventoryAdjustment={handleInventoryAdjustment}
+            onInventoryAdjustment={isRestockMode ? handleRestockAdjustment : handleInventoryAdjustment}
             onStockValueChange={handleStockValueChange}
             onStockFieldFocus={handleStockFieldFocus}
             onStockFieldBlur={handleStockFieldBlur}
             onStockValueApply={handleStockValueApply}
             setSelectedProducts={setSelectedProducts}
-            pendingAdjustments={pendingAdjustments}
+            pendingAdjustments={isRestockMode ? pendingRestockProducts : pendingAdjustments}
             onSetAdjustmentValue={setAdjustmentValue}
+            isRestockMode={isRestockMode}
+            isAuditMode={isAuditMode}
           />
         </div>
         

@@ -18,3 +18,4 @@ export { Modal, ConfirmModal, AlertModal } from './Modal';
 export { WarningMessages } from './WarningMessages';
 export { SettingsDropdown } from './SettingsDropdown';
 export { InventoryHistoryView } from './InventoryHistoryView';
+export { MenuView } from './MenuView';

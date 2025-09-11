@@ -198,10 +198,72 @@ export interface OrderData {
 }
 
 // ====================
+// PURCHASE ORDER TYPES
+// ====================
+
+export interface PurchaseOrderItem {
+  id?: number;
+  product_id: number;
+  variation_id?: number;
+  sku: string;
+  product_name: string;
+  quantity_ordered: number;
+  quantity_received?: number;
+  unit_cost: number;
+  line_total?: number;
+  tax_rate?: number;
+  discount_amount?: number;
+  notes?: string;
+}
+
+export interface PurchaseOrder {
+  id?: number;
+  po_number?: string;
+  supplier_id: number;
+  location_id: number;
+  status: 'draft' | 'pending' | 'partial' | 'completed' | 'cancelled';
+  expected_date?: string;
+  subtotal: number;
+  tax_amount?: number;
+  shipping_cost?: number;
+  total_amount: number;
+  notes?: string;
+  created_by?: number;
+  created_at?: string;
+  received_date?: string;
+  supplier_name?: string;
+  location_name?: string;
+  created_by_name?: string;
+  items?: PurchaseOrderItem[];
+}
+
+export interface Supplier {
+  id: number;
+  name: string;
+  contact_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  status: 'active' | 'inactive';
+  created_at?: string;
+}
+
+export interface RestockProduct {
+  product_id: number;
+  variation_id?: number;
+  name: string;
+  sku: string;
+  restock_quantity: number;
+  suggested_cost?: number;
+  current_stock?: number;
+  min_stock_level?: number;
+}
+
+// ====================
 // VIEW TYPES
 // ====================
 
-export type ViewType = 'products' | 'adjustments' | 'customers' | 'orders' | 'blueprint-fields' | 'history';
+export type ViewType = 'products' | 'adjustments' | 'customers' | 'orders' | 'blueprint-fields' | 'history' | 'menu';
 
 // ====================
 // API TYPES

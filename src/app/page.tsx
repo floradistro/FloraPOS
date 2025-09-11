@@ -47,7 +47,7 @@ import { Category } from '../components/ui/CategoryFilter';
 import { CategoriesService } from '../services/categories-service';
 import { CartService } from '../services/cart-service';
 import { ReloadDebugger } from '../lib/debug-reload';
-import { AlertModal, SettingsDropdown, InventoryHistoryView } from '../components/ui';
+import { AlertModal, SettingsDropdown, InventoryHistoryView, MenuView } from '../components/ui';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function HomePage() {
@@ -169,6 +169,10 @@ export default function HomePage() {
   const [isApplying, setIsApplying] = useState(false);
   const [adjustmentProducts, setAdjustmentProducts] = useState<any[]>([]);
   
+  // Purchase order state
+  const [pendingRestockProducts, setPendingRestockProducts] = useState<Map<string, number>>(new Map());
+  const [isCreatingPO, setIsCreatingPO] = useState(false);
+  
   // Function to handle audit creation from header (legacy modal)
   const handleCreateAudit = useCallback(() => {
     if (adjustmentsGridRef.current) {
@@ -180,6 +184,20 @@ export default function HomePage() {
   const handleCreateAuditWithDetails = useCallback(async (name: string, description?: string) => {
     if (adjustmentsGridRef.current) {
       await adjustmentsGridRef.current.createAuditWithDetails(name, description);
+    }
+  }, []);
+
+  // Function to handle purchase order creation from header (legacy modal)
+  const handleCreatePurchaseOrder = useCallback(() => {
+    if (adjustmentsGridRef.current) {
+      adjustmentsGridRef.current.createPurchaseOrder();
+    }
+  }, []);
+
+  // Function to handle purchase order creation with details from search bar
+  const handleCreatePurchaseOrderWithDetails = useCallback(async (supplierName: string, notes?: string) => {
+    if (adjustmentsGridRef.current) {
+      await adjustmentsGridRef.current.createPurchaseOrderWithDetails(supplierName, notes);
     }
   }, []);
 
@@ -204,25 +222,53 @@ export default function HomePage() {
       console.log('🏠 adjustmentsGridRef.current is null');
     }
   }, []);
+
+  // Function to handle removing individual restock products
+  const handleRemoveRestockProduct = useCallback((key: string) => {
+    console.log('🛒 Main page handleRemoveRestockProduct called:', key);
+    if (adjustmentsGridRef.current) {
+      console.log('🛒 Calling adjustmentsGridRef.current.removeRestockProduct');
+      adjustmentsGridRef.current.removeRestockProduct(key);
+    } else {
+      console.log('🛒 adjustmentsGridRef.current is null');
+    }
+  }, []);
+
+  // Function to handle updating individual restock quantities
+  const handleUpdateRestockQuantity = useCallback((key: string, newQuantity: number) => {
+    console.log('🛒 Main page handleUpdateRestockQuantity called:', key, newQuantity);
+    if (adjustmentsGridRef.current) {
+      console.log('🛒 Calling adjustmentsGridRef.current.updateRestockQuantity');
+      adjustmentsGridRef.current.updateRestockQuantity(key, newQuantity);
+    } else {
+      console.log('🛒 adjustmentsGridRef.current is null');
+    }
+  }, []);
   
-  // Update pending adjustments and applying state periodically
+  // Update pending adjustments and purchase order state periodically
   useEffect(() => {
     if (currentView === 'adjustments' && adjustmentsGridRef.current) {
       const interval = setInterval(() => {
         const products = adjustmentsGridRef.current?.getProducts() || [];
         const adjustments = adjustmentsGridRef.current?.getPendingAdjustments() || new Map();
+        const restockProducts = adjustmentsGridRef.current?.getPendingRestockProducts() || new Map();
+        const creatingPO = adjustmentsGridRef.current?.getIsCreatingPO() || false;
         
         // Debug logging
         console.log('🔧 Main Page Debug:', {
           currentView,
           productsCount: products.length,
           adjustmentsCount: adjustments.size,
+          restockProductsCount: restockProducts.size,
+          isCreatingPO: creatingPO,
           sampleProducts: products.slice(0, 3).map(p => ({ id: p.id, name: p.name }))
         });
         
         setPendingAdjustments(adjustments);
         setIsApplying(adjustmentsGridRef.current?.getIsApplying() || false);
         setAdjustmentProducts(products);
+        setPendingRestockProducts(restockProducts);
+        setIsCreatingPO(creatingPO);
       }, 500);
       
       return () => clearInterval(interval);
@@ -825,6 +871,13 @@ export default function HomePage() {
             onRemoveAdjustment={handleRemoveAdjustment}
             onUpdateAdjustment={handleUpdateAdjustment}
             isApplying={isApplying}
+            // Purchase order props
+            pendingRestockProducts={pendingRestockProducts}
+            onCreatePurchaseOrder={handleCreatePurchaseOrder}
+            onCreatePurchaseOrderWithDetails={handleCreatePurchaseOrderWithDetails}
+            onRemoveRestockProduct={handleRemoveRestockProduct}
+            onUpdateRestockQuantity={handleUpdateRestockQuantity}
+            isCreatingPO={isCreatingPO}
             unifiedSearchRef={unifiedSearchRef}
           />
           
@@ -945,6 +998,17 @@ export default function HomePage() {
                     selectedCustomer={selectedCustomer}
                   />
                 </Suspense>
+              </StandardErrorBoundary>
+            </div>
+          )}
+
+          {currentView === 'menu' && (
+            <div className="h-full overflow-y-auto">
+              <StandardErrorBoundary componentName="MenuView">
+                <MenuView
+                  searchQuery={searchQuery}
+                  categoryFilter={selectedCategory || undefined}
+                />
               </StandardErrorBoundary>
             </div>
           )}

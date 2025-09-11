@@ -68,6 +68,15 @@ interface UnifiedSearchInputProps {
   onUpdateAdjustment?: (key: string, newValue: number) => void;
   isApplying?: boolean;
   
+  // Purchase Order props
+  isRestockMode?: boolean;
+  pendingRestockProducts?: Map<string, number>;
+  onCreatePurchaseOrder?: () => void;
+  onCreatePurchaseOrderWithDetails?: (supplierName: string, notes?: string) => Promise<void>;
+  onRemoveRestockProduct?: (key: string) => void;
+  onUpdateRestockQuantity?: (key: string, newQuantity: number) => void;
+  isCreatingPO?: boolean;
+  
   // Mode control
   customerOnlyMode?: boolean; // When true, only shows customers, no categories or search
   productOnlyMode?: boolean; // When true, only shows products for blueprint view
@@ -78,6 +87,7 @@ export interface UnifiedSearchInputRef {
   openCustomerMode: () => void;
   openProductMode: () => void;
   openAuditMode: () => void;
+  openPurchaseOrderMode: () => void;
   close: () => void;
 }
 
@@ -125,6 +135,13 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   onRemoveAdjustment,
   onUpdateAdjustment,
   isApplying = false,
+  isRestockMode = false,
+  pendingRestockProducts = new Map(),
+  onCreatePurchaseOrder,
+  onCreatePurchaseOrderWithDetails,
+  onRemoveRestockProduct,
+  onUpdateRestockQuantity,
+  isCreatingPO = false,
   customerOnlyMode = false,
   productOnlyMode = false,
   autoOpen = false
@@ -143,6 +160,11 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const [auditDescription, setAuditDescription] = useState('');
   const [editingAdjustment, setEditingAdjustment] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  const [isPurchaseOrderMode, setIsPurchaseOrderMode] = useState(false);
+  const [supplierName, setSupplierName] = useState('');
+  const [poNotes, setPONotes] = useState('');
+  const [editingRestockProduct, setEditingRestockProduct] = useState<string | null>(null);
+  const [editRestockValue, setEditRestockValue] = useState<string>('');
   
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -173,10 +195,22 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsCustomerMode(false);
       setIsProductMode(false);
       setIsEditingProduct(false);
+      setIsPurchaseOrderMode(false);
       setIsOpen(true);
       setInternalValue('');
       setAuditName('');
       setAuditDescription('');
+    },
+    openPurchaseOrderMode: () => {
+      setIsPurchaseOrderMode(true);
+      setIsAuditDropdownMode(false);
+      setIsCustomerMode(false);
+      setIsProductMode(false);
+      setIsEditingProduct(false);
+      setIsOpen(true);
+      setInternalValue('');
+      setSupplierName('');
+      setPONotes('');
     },
     close: () => {
       setIsOpen(false);
@@ -184,6 +218,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsProductMode(false);
       setIsEditingProduct(false);
       setIsAuditDropdownMode(false);
+      setIsPurchaseOrderMode(false);
       setInternalValue('');
       setAuditName('');
       setAuditDescription('');
@@ -270,6 +305,20 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   };
 
   const handleInputFocus = () => {
+    // If in restock mode with pending products, open purchase order mode
+    if (isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0 && !isPurchaseOrderMode) {
+      setIsPurchaseOrderMode(true);
+      setIsOpen(true);
+      return;
+    }
+    
+    // If in audit mode with pending adjustments, open audit mode
+    if (isAuditMode && pendingAdjustments && pendingAdjustments.size > 0 && !isAuditDropdownMode) {
+      setIsAuditDropdownMode(true);
+      setIsOpen(true);
+      return;
+    }
+    
     // If in product-only mode with selected product, enter editing mode and restore last search
     if (productOnlyMode && selectedProduct && !internalValue && !isEditingProduct) {
       setIsEditingProduct(true);
@@ -392,7 +441,9 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           type="text"
           placeholder={
             isAuditDropdownMode 
-              ? `Create audit with ${pendingAdjustments?.size || 0} adjustments...` 
+              ? `Create audit with ${pendingAdjustments?.size || 0} adjustments...`
+              : isPurchaseOrderMode
+                ? `Create purchase order with ${pendingRestockProducts?.size || 0} products...`
               : isCustomerMode 
                 ? "Search customers..." 
                 : (isProductMode || productOnlyMode) 
@@ -407,15 +458,27 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           readOnly={showProductSelection || false}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
+          onClick={(e) => {
+            // If in restock mode with pending products, open purchase order mode on click
+            if (isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0 && !isPurchaseOrderMode) {
+              e.preventDefault();
+              setIsPurchaseOrderMode(true);
+              setIsOpen(true);
+            }
+          }}
           className={`w-full h-[30px] bg-transparent hover:bg-neutral-600/10 rounded-lg placeholder-neutral-400 focus:bg-neutral-600/10 focus:outline-none text-sm text-center placeholder:text-center transition-all duration-200 ease-out min-w-0 ${
             showProductSelection
               ? 'text-neutral-200 font-medium'
               : isAuditDropdownMode
                 ? 'text-neutral-300 font-medium'
-                : 'text-neutral-400'
+                : isPurchaseOrderMode
+                  ? 'text-neutral-300 font-medium'
+                  : 'text-neutral-400'
           } ${
-            isAuditMode && pendingAdjustments && pendingAdjustments.size > 0
-              ? 'border-2 border-purple-500/30 bg-purple-500/10 shadow-lg shadow-purple-500/20'
+            isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0
+              ? 'border-2 border-green-500/30 bg-green-500/10 shadow-lg shadow-green-500/20 cursor-pointer'
+              : isAuditMode && pendingAdjustments && pendingAdjustments.size > 0
+                ? 'border-2 border-purple-500/30 bg-purple-500/10 shadow-lg shadow-purple-500/20 cursor-pointer'
               : hasSelections 
                 ? 'border-2 border-blue-500/30 bg-blue-500/10 shadow-lg shadow-blue-500/20' 
                 : 'border border-neutral-500/30 hover:border-neutral-400/50 focus:border-neutral-300'
@@ -513,6 +576,22 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           </button>
         )}
 
+        {/* Clear purchase order mode button */}
+        {isPurchaseOrderMode && (
+          <button
+            onClick={() => {
+              setIsPurchaseOrderMode(false);
+              setIsOpen(false);
+              setSupplierName('');
+              setPONotes('');
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+            title="Exit purchase order mode"
+          >
+            <span className="text-xs">✕</span>
+          </button>
+        )}
+
         {/* Audit mode indicator */}
         {isAuditMode && pendingAdjustments && pendingAdjustments.size > 0 && !isCustomerMode && !isProductMode && !showProductSelection && (
           <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -525,6 +604,22 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               title={`Create audit with ${pendingAdjustments.size} pending adjustments`}
             >
               {pendingAdjustments.size} Adjustments
+            </button>
+          </div>
+        )}
+
+        {/* Restock mode indicator */}
+        {isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0 && !isCustomerMode && !isProductMode && !showProductSelection && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+            <button
+              onClick={() => {
+                setIsPurchaseOrderMode(true);
+                setIsOpen(true);
+              }}
+              className="text-white text-xs font-medium bg-green-600/40 px-2 py-0.5 rounded border border-green-500/30 pointer-events-auto transition-all duration-200 hover:bg-green-600/60"
+              title={`Create purchase order with ${pendingRestockProducts.size} products`}
+            >
+              {pendingRestockProducts.size} Products
             </button>
           </div>
         )}
@@ -662,6 +757,158 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                     )}
                   </button>
                 ))}
+              </div>
+            </>
+          )}
+
+          {/* Purchase Order Section - Only show in restock mode */}
+          {isRestockMode && isPurchaseOrderMode && pendingRestockProducts && pendingRestockProducts.size > 0 && (
+            <>
+              {(filteredCustomers.length > 0 || filteredProducts.length > 0) && (
+                <div className="h-px bg-neutral-500/20 mx-2" />
+              )}
+              
+              <div className="px-4 py-2.5 border-b border-neutral-500/20 bg-transparent">
+                <h3 className="text-xs font-medium text-neutral-300 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+                  Create Purchase Order ({pendingRestockProducts.size} products)
+                </h3>
+              </div>
+              
+              <div className="p-4 space-y-3 bg-transparent">
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
+                    Supplier Name
+                  </label>
+                  <input
+                    type="text"
+                    value={supplierName}
+                    onChange={(e) => setSupplierName(e.target.value)}
+                    placeholder="Enter supplier name..."
+                    className="w-full px-3 py-2 bg-neutral-600/50 border border-neutral-500/30 rounded text-sm text-white placeholder-neutral-400 focus:border-green-500/50 focus:outline-none"
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={poNotes}
+                    onChange={(e) => setPONotes(e.target.value)}
+                    placeholder="Purchase order notes..."
+                    rows={2}
+                    className="w-full px-3 py-2 bg-neutral-600/50 border border-neutral-500/30 rounded text-sm text-white placeholder-neutral-400 focus:border-green-500/50 focus:outline-none resize-none"
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                  />
+                </div>
+
+                {/* Pending restock products list */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
+                    Products to Restock:
+                  </h4>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {Array.from(pendingRestockProducts.entries()).map(([key, quantity]) => {
+                      const [productId, variantId] = key.split('-').map(Number);
+                      const product = products?.find(p => p.id === productId);
+                      const variant = (product as any)?.variants?.find((v: any) => v.id === variantId);
+                      const displayName = variant ? `${product?.name} - ${variant.name}` : product?.name || 'Unknown Product';
+                      
+                      return (
+                        <div key={key} className="flex items-center justify-between py-1 px-2 bg-neutral-700/30 rounded text-xs">
+                          <span className="text-neutral-200 truncate flex-1" style={{ fontFamily: 'Tiempos, serif' }}>
+                            {displayName}
+                          </span>
+                          <div className="flex items-center gap-2 ml-2">
+                            <span className="text-green-400 font-medium">
+                              {quantity} units
+                            </span>
+                            {editingRestockProduct === key ? (
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={editRestockValue}
+                                onChange={(e) => setEditRestockValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    const newValue = parseInt(editRestockValue) || 0;
+                                    onUpdateRestockQuantity?.(key, newValue);
+                                    setEditingRestockProduct(null);
+                                    setEditRestockValue('');
+                                  } else if (e.key === 'Escape') {
+                                    setEditingRestockProduct(null);
+                                    setEditRestockValue('');
+                                  }
+                                }}
+                                onBlur={() => {
+                                  const newValue = parseInt(editRestockValue) || 0;
+                                  onUpdateRestockQuantity?.(key, newValue);
+                                  setEditingRestockProduct(null);
+                                  setEditRestockValue('');
+                                }}
+                                className="w-16 px-1 py-0.5 text-xs bg-neutral-600 border border-neutral-500 rounded text-white text-center focus:outline-none focus:border-green-500"
+                                autoFocus
+                              />
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditingRestockProduct(key);
+                                    setEditRestockValue(quantity.toString());
+                                  }}
+                                  className="text-neutral-400 hover:text-neutral-200 transition-colors"
+                                  title="Edit quantity"
+                                >
+                                  ✏️
+                                </button>
+                                <button
+                                  onClick={() => onRemoveRestockProduct?.(key)}
+                                  className="text-neutral-400 hover:text-red-400 transition-colors"
+                                  title="Remove from purchase order"
+                                >
+                                  ✕
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => {
+                      setIsPurchaseOrderMode(false);
+                      setIsOpen(false);
+                      setSupplierName('');
+                      setPONotes('');
+                    }}
+                    className="flex-1 px-3 py-2 bg-neutral-600 hover:bg-neutral-500 text-white text-sm rounded transition-colors"
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (supplierName.trim()) {
+                        onCreatePurchaseOrderWithDetails?.(supplierName.trim(), poNotes.trim() || undefined);
+                        setIsPurchaseOrderMode(false);
+                        setIsOpen(false);
+                        setSupplierName('');
+                        setPONotes('');
+                      }
+                    }}
+                    disabled={!supplierName.trim() || isCreatingPO}
+                    className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                  >
+                    {isCreatingPO ? 'Creating...' : 'Create PO'}
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -884,7 +1131,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           )}
 
           {/* Categories Section - Only show if not in customer-only or product-only mode */}
-          {!isCustomerMode && !isProductMode && !productOnlyMode && !isAuditDropdownMode && filteredCategories.length > 0 && (
+          {!isCustomerMode && !isProductMode && !productOnlyMode && !isAuditDropdownMode && !isPurchaseOrderMode && filteredCategories.length > 0 && (
             <>
               {filteredCustomers.length > 0 && (
                 <div className="h-px bg-neutral-500/20 mx-2" />

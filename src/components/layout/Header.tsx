@@ -64,6 +64,13 @@ interface HeaderProps {
   onRemoveAdjustment?: (key: string) => void;
   onUpdateAdjustment?: (key: string, newValue: number) => void;
   isApplying?: boolean;
+  // Purchase order props
+  pendingRestockProducts?: Map<string, number>;
+  onCreatePurchaseOrder?: () => void;
+  onCreatePurchaseOrderWithDetails?: (supplierName: string, notes?: string) => Promise<void>;
+  onRemoveRestockProduct?: (key: string) => void;
+  onUpdateRestockQuantity?: (key: string, newQuantity: number) => void;
+  isCreatingPO?: boolean;
   // Search ref
   unifiedSearchRef?: React.RefObject<UnifiedSearchInputRef>;
 }
@@ -112,6 +119,12 @@ export function Header({
   onRemoveAdjustment,
   onUpdateAdjustment,
   isApplying = false,
+  pendingRestockProducts = new Map(),
+  onCreatePurchaseOrder,
+  onCreatePurchaseOrderWithDetails,
+  onRemoveRestockProduct,
+  onUpdateRestockQuantity,
+  isCreatingPO = false,
   unifiedSearchRef
 }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -129,6 +142,18 @@ export function Header({
       });
     }
   }, [isAuditMode, pendingAdjustments, products]);
+  
+  // Debug logging for restock products
+  useEffect(() => {
+    if (isRestockMode && pendingRestockProducts.size > 0) {
+      console.log('🛒 Header PO Debug:', {
+        isRestockMode,
+        pendingRestockProductsSize: pendingRestockProducts.size,
+        productsCount: products.length,
+        sampleProducts: products.slice(0, 3).map(p => ({ id: p.id, name: p.name }))
+      });
+    }
+  }, [isRestockMode, pendingRestockProducts, products]);
   
   // Debounce search query to reduce API calls - 300ms delay for products
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -181,14 +206,22 @@ export function Header({
             selectedCategory={currentView === 'orders' ? '' : selectedCategory}
             onCategoryChange={currentView === 'orders' ? () => {} : onCategoryChange}
             categoriesLoading={categoriesLoading}
+            // Pass mode-specific props
             productOnlyMode={currentView === 'blueprint-fields'}
             isAuditMode={isAuditMode}
+            isRestockMode={isRestockMode}
             pendingAdjustments={pendingAdjustments}
+            pendingRestockProducts={pendingRestockProducts}
             onCreateAudit={onCreateAudit}
             onCreateAuditWithDetails={onCreateAuditWithDetails}
+            onCreatePurchaseOrder={onCreatePurchaseOrder}
+            onCreatePurchaseOrderWithDetails={onCreatePurchaseOrderWithDetails}
             onRemoveAdjustment={onRemoveAdjustment}
             onUpdateAdjustment={onUpdateAdjustment}
             isApplying={isApplying}
+            onRemoveRestockProduct={onRemoveRestockProduct}
+            onUpdateRestockQuantity={onUpdateRestockQuantity}
+            isCreatingPO={isCreatingPO}
           />
         </div>
 
