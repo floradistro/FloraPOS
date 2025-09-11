@@ -2,36 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BlueprintPricingService } from '../../services/blueprint-pricing-service';
-
-interface Product {
-  id: number;
-  name: string;
-  sku: string;
-  regular_price: string;
-  sale_price?: string;
-  categories: Array<{
-    id: number;
-    name: string;
-    slug: string;
-  }>;
-  inventory: Array<{
-    location_id: string;
-    location_name: string;
-    stock: number;
-    manage_stock: boolean;
-  }>;
-  meta_data?: Array<{
-    id: number;
-    key: string;
-    value: any;
-  }>;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-}
+import { Product, Category } from '../../types';
 
 export default function MenuDisplayPage() {
   const [products, setProducts] = useState<Product[]>([]);
