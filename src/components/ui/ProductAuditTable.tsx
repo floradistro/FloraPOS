@@ -17,6 +17,8 @@ interface ProductAuditTableProps {
   setSelectedProducts: (products: Set<number>) => void;
   pendingAdjustments?: Map<string, number>;
   onSetAdjustmentValue?: (productId: number, variantId: number | null, value: number) => void;
+  isRestockMode?: boolean;
+  isAuditMode?: boolean;
 }
 
 export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
@@ -32,7 +34,9 @@ export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
   onStockValueApply,
   setSelectedProducts,
   pendingAdjustments = new Map(),
-  onSetAdjustmentValue
+  onSetAdjustmentValue,
+  isRestockMode = false,
+  isAuditMode = false
 }) => {
   return (
     <div className="h-full overflow-auto p-4">
