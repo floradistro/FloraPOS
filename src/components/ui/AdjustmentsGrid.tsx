@@ -552,21 +552,95 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           };
         });
 
-        // TODO: For now, we'll use a default supplier ID (1)
-        // In a real implementation, you'd have a supplier selection UI
-        const result = await PurchaseOrdersService.generatePurchaseOrderFromRestock({
-          products: restockProducts,
-          supplier_id: 1, // Default supplier
+        // Create purchase order using standard endpoint
+        const poItems = PurchaseOrdersService.transformRestockProductsToPOItems(restockProducts);
+        const totals = PurchaseOrdersService.calculatePOTotals(poItems);
+        
+        const result = await PurchaseOrdersService.createPurchaseOrder({
+          supplier_id: 1, // Default supplier - TODO: Add supplier selection
           location_id: user?.location_id ? parseInt(user.location_id) : 20,
-          po_name: supplierName,
-          notes: notes || `Purchase order created from restock on ${new Date().toLocaleDateString()}`
+          status: 'draft',
+          subtotal: totals.subtotal,
+          tax_amount: totals.tax_amount,
+          shipping_cost: totals.shipping_cost,
+          total_amount: totals.total_amount,
+          notes: notes || `Purchase order "${supplierName}" created from restock on ${new Date().toLocaleDateString()}`,
+          supplier_name: supplierName,
+          items: poItems
         });
 
         if (result.success && result.data) {
-          setAdjustmentStatus({
-            type: 'success',
-            message: `Purchase order ${result.data.po_number} created successfully with ${restockProducts.length} items`
-          });
+          // For POS systems, we'll also update the stock immediately after creating the PO
+          // This simulates receiving the purchase order instantly
+          console.log('📦 Updating stock levels for restocked products...');
+          
+          try {
+            const stockUpdates = restockProducts.map(product => ({
+              product_id: product.product_id,
+              variation_id: product.variation_id || null,
+              adjustment_quantity: product.restock_quantity,
+              reason: `Restock via PO ${result.data.po_number}`,
+              location_id: user?.location_id ? parseInt(user.location_id) : 20
+            }));
+
+            // Apply stock updates via the inventory adjustment API
+            const updateResponse = await fetch('/api/inventory/adjust', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ adjustments: stockUpdates })
+            });
+
+            if (updateResponse.ok) {
+              const updateResult = await updateResponse.json();
+              console.log('✅ Stock levels updated successfully:', updateResult);
+              
+              // Store restock operation metadata for history tracking
+              if (typeof window !== 'undefined' && window.localStorage) {
+                try {
+                  const restockMetadata = {
+                    po_number: result.data.po_number,
+                    timestamp: new Date().toISOString(),
+                    user_id: user?.id || 0,
+                    user_name: user?.username || 'Unknown',
+                    location_id: user?.location_id ? parseInt(user.location_id) : 20,
+                    products: restockProducts.map(p => ({
+                      product_id: p.product_id,
+                      variation_id: p.variation_id || null,
+                      quantity: p.restock_quantity,
+                      name: p.name
+                    }))
+                  };
+                  
+                  const existingRestocks = JSON.parse(localStorage.getItem('restock_operations') || '[]');
+                  existingRestocks.push(restockMetadata);
+                  localStorage.setItem('restock_operations', JSON.stringify(existingRestocks));
+                  console.log('💾 Stored restock metadata:', restockMetadata);
+                } catch (e) {
+                  console.warn('Failed to store restock metadata:', e);
+                }
+              }
+              
+              setAdjustmentStatus({
+                type: 'success',
+                message: `Purchase order ${result.data.po_number} created and stock updated for ${restockProducts.length} items`
+              });
+
+              // Trigger inventory refresh to show updated stock levels
+              window.dispatchEvent(new CustomEvent('inventoryUpdated'));
+            } else {
+              console.warn('PO created but stock update failed');
+              setAdjustmentStatus({
+                type: 'warning',
+                message: `Purchase order ${result.data.po_number} created but stock update failed. Please manually adjust inventory.`
+              });
+            }
+          } catch (stockError) {
+            console.error('Error updating stock after PO creation:', stockError);
+            setAdjustmentStatus({
+              type: 'warning',
+              message: `Purchase order ${result.data.po_number} created but stock update failed. Please manually adjust inventory.`
+            });
+          }
           
           // Clear pending restock products
           setPendingRestockProducts(new Map());

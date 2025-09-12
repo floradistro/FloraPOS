@@ -578,9 +578,17 @@ export default function HomePage() {
   };
 
   const handleRestock = () => {
-    setIsRestockMode(!isRestockMode);
+    const newRestockMode = !isRestockMode;
+    setIsRestockMode(newRestockMode);
     setIsAuditMode(false); // Disable audit mode when restock is active
-    console.log('Restock mode toggled:', !isRestockMode);
+    console.log('Restock mode toggled:', newRestockMode);
+    
+    // If entering restock mode and there are pending restock products, open search dropdown in purchase order mode
+    if (newRestockMode && pendingRestockProducts.size > 0) {
+      setTimeout(() => {
+        unifiedSearchRef.current?.openPurchaseOrderMode();
+      }, 100); // Small delay to ensure state is updated
+    }
   };
 
   const handleAudit = () => {

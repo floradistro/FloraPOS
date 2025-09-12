@@ -26,9 +26,27 @@ export class CacheManager {
         console.log('🧹 Cleared all service worker caches');
       }
       
-      // Clear localStorage
+      // Clear localStorage but preserve important data
+      const preserveKeys = ['restock_operations', 'mock_purchase_orders', 'pos_user', 'pos_token'];
+      const preservedData: { [key: string]: string } = {};
+      
+      // Save important data
+      preserveKeys.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value) {
+          preservedData[key] = value;
+        }
+      });
+      
+      // Clear all localStorage
       localStorage.clear();
-      console.log('🧹 Cleared localStorage');
+      
+      // Restore important data
+      Object.entries(preservedData).forEach(([key, value]) => {
+        localStorage.setItem(key, value);
+      });
+      
+      console.log('🧹 Cleared localStorage (preserved:', Object.keys(preservedData).join(', '), ')');
       
       // Clear sessionStorage
       sessionStorage.clear();

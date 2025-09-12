@@ -42,6 +42,29 @@ interface AuditBatch {
   entries?: AuditLogEntry[];
 }
 
+interface RestockOperation {
+  po_number: string;
+  timestamp: string;
+  user_id: number;
+  user_name: string;
+  location_id: number;
+  products: Array<{
+    product_id: number;
+    variation_id: number | null;
+    quantity: number;
+    name: string;
+  }>;
+}
+
+interface RestockBatch {
+  po_number: string;
+  timestamp: string;
+  user_name: string;
+  total_products: number;
+  net_change: number;
+  entries: AuditLogEntry[];
+}
+
 interface InventoryHistoryViewProps {
   onBack: () => void;
   dateFilter: string;
@@ -52,7 +75,9 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
   const { user } = useAuth();
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [auditBatches, setAuditBatches] = useState<AuditBatch[]>([]);
+  const [restockBatches, setRestockBatches] = useState<RestockBatch[]>([]);
   const [expandedBatches, setExpandedBatches] = useState<Set<number>>(new Set());
+  const [expandedRestocks, setExpandedRestocks] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -169,6 +194,18 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
       setAuditLog(entries);
       setTotalPages(Math.ceil((auditData.total || 0) / itemsPerPage));
 
+      // Process restock operations and match with audit entries
+      let restockBatches = processRestockOperations(entries);
+      
+      // If no restock batches found from stored metadata, try pattern-based detection
+      if (restockBatches.length === 0) {
+        console.log('🔍 No stored restock operations found, trying pattern-based detection...');
+        restockBatches = identifyPotentialRestockGroups(entries);
+        console.log('📦 Pattern-based restock batches found:', restockBatches.length);
+      }
+      
+      setRestockBatches(restockBatches);
+
       // Extract product IDs from entries and fetch their names
       const productIds = entries
         .map((entry: AuditLogEntry) => entry.product_id)
@@ -223,6 +260,112 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
     }
   };
 
+  // Process restock operations and match them with audit entries
+  const processRestockOperations = (auditEntries: AuditLogEntry[]) => {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return [];
+    }
+
+    try {
+      const restockOps: RestockOperation[] = JSON.parse(localStorage.getItem('restock_operations') || '[]');
+      const restockBatches: RestockBatch[] = [];
+
+      console.log('🔍 Processing restock operations:', restockOps.length);
+
+      restockOps.forEach(restock => {
+        console.log('📦 Processing restock:', restock.po_number, 'with', restock.products.length, 'products');
+        
+        // Find audit entries that match this restock operation
+        // Match by timestamp (within 10 minutes) and product IDs - increased window
+        const restockTime = new Date(restock.timestamp);
+        const matchingEntries = auditEntries.filter(entry => {
+          const entryTime = new Date(entry.created_at);
+          const timeDiff = Math.abs(entryTime.getTime() - restockTime.getTime());
+          const isWithinTimeWindow = timeDiff <= 10 * 60 * 1000; // 10 minutes (increased from 5)
+
+          const matchesProduct = restock.products.some(p => 
+            p.product_id === parseInt(entry.product_id) &&
+            (p.variation_id || 0) === parseInt(entry.variation_id || '0')
+          );
+
+          console.log('🔍 Checking entry:', entry.id, 'product:', entry.product_id, 'time diff:', Math.round(timeDiff/1000), 's', 'matches product:', matchesProduct, 'within window:', isWithinTimeWindow);
+
+          return isWithinTimeWindow && matchesProduct && !entry.batch_id;
+        });
+
+        if (matchingEntries.length > 0) {
+          const totalChange = matchingEntries.reduce((sum, entry) => {
+            const change = parseFloat(entry.quantity_change?.toString() || '0');
+            return sum + change;
+          }, 0);
+
+          console.log('✅ Created restock batch:', restock.po_number, 'with', matchingEntries.length, 'entries, net change:', totalChange);
+
+          restockBatches.push({
+            po_number: restock.po_number,
+            timestamp: restock.timestamp,
+            user_name: restock.user_name,
+            total_products: matchingEntries.length,
+            net_change: totalChange,
+            entries: matchingEntries
+          });
+        } else {
+          console.log('❌ No matching entries found for restock:', restock.po_number);
+        }
+      });
+
+      console.log('📦 Final restock batches created:', restockBatches.length);
+      return restockBatches;
+    } catch (error) {
+      console.warn('Failed to process restock operations:', error);
+      return [];
+    }
+  };
+
+  // Fallback: Group recent positive adjustments that might be restocks
+  const identifyPotentialRestockGroups = (auditEntries: AuditLogEntry[]) => {
+    // Look for groups of positive quantity changes that happened within a short time window
+    const recentEntries = auditEntries.filter(entry => {
+      const entryTime = new Date(entry.created_at);
+      const now = new Date();
+      const hoursDiff = (now.getTime() - entryTime.getTime()) / (1000 * 60 * 60);
+      const hasPositiveChange = parseFloat(entry.quantity_change?.toString() || '0') > 0;
+      
+      return hoursDiff <= 24 && hasPositiveChange && !entry.batch_id; // Last 24 hours, positive changes, not already batched
+    });
+
+    // Group by time clusters (entries within 2 minutes of each other)
+    const timeGroups: AuditLogEntry[][] = [];
+    recentEntries.forEach(entry => {
+      const entryTime = new Date(entry.created_at);
+      
+      // Find existing group within 2 minutes
+      const existingGroup = timeGroups.find(group => {
+        const groupTime = new Date(group[0].created_at);
+        const timeDiff = Math.abs(entryTime.getTime() - groupTime.getTime());
+        return timeDiff <= 2 * 60 * 1000; // 2 minutes
+      });
+
+      if (existingGroup) {
+        existingGroup.push(entry);
+      } else {
+        timeGroups.push([entry]);
+      }
+    });
+
+    // Convert multi-entry groups to potential restock batches
+    return timeGroups
+      .filter(group => group.length >= 2) // Only groups with 2+ entries
+      .map((group, index) => ({
+        po_number: `RESTOCK-${group[0].id}`, // Use first entry ID as identifier
+        timestamp: group[0].created_at,
+        user_name: group[0].user_name || 'System',
+        total_products: group.length,
+        net_change: group.reduce((sum, entry) => sum + parseFloat(entry.quantity_change?.toString() || '0'), 0),
+        entries: group
+      }));
+  };
+
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       month: 'short',
@@ -258,17 +401,45 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
     });
   };
 
-  // Group entries: batched entries and standalone entries
+  const toggleRestockExpansion = (poNumber: string) => {
+    setExpandedRestocks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(poNumber)) {
+        newSet.delete(poNumber);
+      } else {
+        newSet.add(poNumber);
+      }
+      return newSet;
+    });
+  };
+
+  // Group entries: audit batches, restock batches, and standalone entries
   const groupedEntries = () => {
     const batchedEntryIds = new Set();
+    
+    // Track audit batch entries
     auditBatches.forEach(batch => {
       batch.entries?.forEach(entry => batchedEntryIds.add(entry.id));
+    });
+    
+    // Track restock batch entries
+    restockBatches.forEach(batch => {
+      batch.entries.forEach(entry => batchedEntryIds.add(entry.id));
     });
 
     const standaloneEntries = auditLog.filter(entry => !batchedEntryIds.has(entry.id));
     
+    console.log('📊 Grouping results:', {
+      auditBatches: auditBatches.length,
+      restockBatches: restockBatches.length,
+      batchedEntryIds: batchedEntryIds.size,
+      standaloneEntries: standaloneEntries.length,
+      totalAuditEntries: auditLog.length
+    });
+    
     return {
-      batches: auditBatches,
+      auditBatches: auditBatches,
+      restockBatches: restockBatches,
       standalone: standaloneEntries
     };
   };
@@ -325,6 +496,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
               <div className="flex items-center gap-3 text-xs font-medium text-neutral-400">
                 <div className="w-6"></div> {/* Space for expand icon */}
                 <div className="flex-1">Product</div>
+                <div className="w-20">Type</div>
                 <div className="w-24">Change</div>
                 <div className="w-32">User</div>
                 <div className="w-32">Date & Time</div>
@@ -334,18 +506,34 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
             {/* Entries */}
             <div>
                 {(() => {
-                  const { batches, standalone } = groupedEntries();
+                  const { auditBatches, restockBatches, standalone } = groupedEntries();
                   const allItems = [
-                    ...batches.map(batch => ({ type: 'batch' as const, data: batch })),
+                    ...auditBatches.map(batch => ({ type: 'audit-batch' as const, data: batch })),
+                    ...restockBatches.map(batch => ({ type: 'restock-batch' as const, data: batch })),
                     ...standalone.map(entry => ({ type: 'entry' as const, data: entry }))
                   ].sort((a, b) => {
-                    const aDate = a.type === 'batch' ? a.data.created_at : a.data.created_at;
-                    const bDate = b.type === 'batch' ? b.data.created_at : b.data.created_at;
+                    let aDate, bDate;
+                    if (a.type === 'audit-batch') {
+                      aDate = a.data.created_at;
+                    } else if (a.type === 'restock-batch') {
+                      aDate = a.data.timestamp;
+                    } else {
+                      aDate = a.data.created_at;
+                    }
+                    
+                    if (b.type === 'audit-batch') {
+                      bDate = b.data.created_at;
+                    } else if (b.type === 'restock-batch') {
+                      bDate = b.data.timestamp;
+                    } else {
+                      bDate = b.data.created_at;
+                    }
+                    
                     return new Date(bDate).getTime() - new Date(aDate).getTime();
                   });
 
                   return allItems.map((item) => {
-                    if (item.type === 'batch') {
+                    if (item.type === 'audit-batch') {
                       const batch = item.data;
                       const batchId = typeof batch.id === 'string' ? parseInt(batch.id) : batch.id;
                       const isExpanded = expandedBatches.has(batchId);
@@ -353,13 +541,8 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                       return (
                         <div 
                           key={`batch-${batch.id}`}
-                          className={`group mb-2 rounded-lg relative overflow-visible border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10 transition-all duration-200 ease-out ${
-                            isExpanded ? 'h-[calc(100vh-200px)] min-h-[600px]' : 'h-auto'
-                          }`}
-                          style={{
-                            transition: 'height 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease',
-                            willChange: isExpanded ? 'height' : 'auto'
-                          }}
+                          className="group mb-2 rounded-lg relative overflow-visible border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10 transition-all duration-200 ease-out"
+                          style={{ minHeight: isExpanded ? '460px' : 'auto' }} // 60px header + 400px content
                         >
                           {/* Batch Summary Row */}
                           <div 
@@ -372,6 +555,19 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleBatchExpansion(batchId);
+                                
+                                // Center the expanded item after a short delay
+                                if (!isExpanded) {
+                                  setTimeout(() => {
+                                    const groupElement = e.currentTarget?.closest?.('.group');
+                                    if (groupElement) {
+                                      groupElement.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'center'
+                                      });
+                                    }
+                                  }, 200);
+                                }
                               }}
                               className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-neutral-600 hover:text-neutral-400 smooth-hover"
                             >
@@ -395,6 +591,13 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                               </div>
                             </div>
 
+                            {/* Type */}
+                            <div className="w-20 text-sm text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
+                              <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded">
+                                Audit
+                              </span>
+                            </div>
+
                             {/* Change */}
                             <div className="w-24 text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
                               {batch.net_change > 0 ? '+' : ''}{parseFloat(batch.net_change.toString()).toFixed(4)}
@@ -414,8 +617,9 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                           {/* Expanded View */}
                           {isExpanded && (
                             <div 
-                              className="absolute inset-x-0 top-[60px] bottom-0 bg-transparent border-t border-white/[0.06] overflow-y-auto p-4"
+                              className="absolute inset-x-0 top-[60px] bg-transparent border-t border-white/[0.06] overflow-y-auto p-4"
                               style={{
+                                height: '400px', // Fixed height
                                 animation: 'expandTopDown 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards',
                                 transformOrigin: 'top',
                               }}
@@ -428,6 +632,130 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                                 {batch.entries && batch.entries.map((entry) => (
                                   <div 
                                     key={`entry-${entry.id}`}
+                                    className="bg-transparent rounded p-3 border border-white/[0.06]"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex-1 text-neutral-500 text-sm truncate">
+                                        <div className="text-neutral-500 text-sm">
+                                          {getProductName(entry.product_id, entry.variation_id)}
+                                        </div>
+                                        <div className="text-xs text-neutral-600 truncate">
+                                          {formatDateTime(entry.created_at)}
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="w-24 text-neutral-500 text-xs">
+                                        {entry.quantity_change !== null && entry.quantity_change !== undefined && !isNaN(parseFloat(entry.quantity_change.toString())) 
+                                          ? (parseFloat(entry.quantity_change.toString()) > 0 ? '+' : '') + parseFloat(entry.quantity_change.toString()).toFixed(4)
+                                          : '—'}
+                                      </div>
+                                      
+                                      <div className="w-32 text-neutral-500 text-xs">
+                                        {entry.user_name && entry.user_name !== 'System' && entry.user_name.trim() !== '' 
+                                          ? entry.user_name 
+                                          : user?.username || `User #${entry.user_id}`}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    } else if (item.type === 'restock-batch') {
+                      const batch = item.data;
+                      const isExpanded = expandedRestocks.has(batch.po_number);
+                      
+                      return (
+                        <div 
+                          key={`restock-${batch.po_number}`}
+                          className="group mb-2 rounded-lg relative overflow-visible border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10 transition-all duration-200 ease-out"
+                          style={{ minHeight: isExpanded ? '460px' : 'auto' }} // 60px header + 400px content
+                        >
+                          <div className="flex items-center gap-3 px-6 py-3">
+                            {/* Expand/Collapse Icon */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleRestockExpansion(batch.po_number);
+                                
+                                // Center the expanded item after a short delay
+                                if (!isExpanded) {
+                                  setTimeout(() => {
+                                    const groupElement = e.currentTarget?.closest?.('.group');
+                                    if (groupElement) {
+                                      groupElement.scrollIntoView({
+                                        behavior: 'smooth',
+                                        block: 'center'
+                                      });
+                                    }
+                                  }, 200);
+                                }
+                              }}
+                              className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-neutral-600 hover:text-neutral-400 smooth-hover"
+                            >
+                              <svg
+                                className={`w-3 h-3 transition-transform duration-300 ease-out ${isExpanded ? 'rotate-90' : ''}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                            
+                            {/* Product */}
+                            <div className="flex-1 text-sm truncate">
+                              <div className="text-neutral-200 font-normal text-base" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
+                                {batch.po_number} • {batch.total_products} {batch.total_products === 1 ? 'product' : 'products'}
+                              </div>
+                              <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
+                                Purchase Order
+                              </div>
+                            </div>
+
+                            {/* Type */}
+                            <div className="w-20 text-sm text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
+                              <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">
+                                Restock
+                              </span>
+                            </div>
+
+                            {/* Change */}
+                            <div className="w-24 text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
+                              {batch.net_change > 0 ? '+' : ''}{parseFloat(batch.net_change.toString()).toFixed(4)}
+                            </div>
+
+                            {/* User */}
+                            <div className="w-32 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+                              {batch.user_name}
+                            </div>
+
+                            {/* Date & Time */}
+                            <div className="w-32 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+                              {formatDateTime(batch.timestamp)}
+                            </div>
+                          </div>
+
+                          {/* Expanded View */}
+                          {isExpanded && (
+                            <div 
+                              className="absolute inset-x-0 top-[60px] bg-transparent border-t border-white/[0.06] overflow-y-auto p-4"
+                              style={{
+                                height: '400px', // Fixed height
+                                animation: 'expandTopDown 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards',
+                                transformOrigin: 'top',
+                              }}
+                            >
+                              <div className="space-y-2">
+                                <div className="text-xs text-neutral-400 mb-4">
+                                  Restock Entries for {batch.po_number}
+                                </div>
+                                
+                                {batch.entries && batch.entries.map((entry) => (
+                                  <div 
+                                    key={`restock-entry-${entry.id}`}
                                     className="bg-transparent rounded p-3 border border-white/[0.06]"
                                   >
                                     <div className="flex items-center gap-3">
@@ -479,6 +807,19 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                               <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
                                 Entry #{entry.id}
                               </div>
+                            </div>
+
+                            {/* Type */}
+                            <div className="w-20 text-sm text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
+                              {(entry.action === 'restock' || entry.details?.includes('Restock via PO')) ? (
+                                <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">
+                                  Restock
+                                </span>
+                              ) : (
+                                <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded">
+                                  Audit
+                                </span>
+                              )}
                             </div>
 
                             {/* Change */}

@@ -352,6 +352,7 @@ export function Header({
                     <option value="stock_conversion">Stock Conversions</option>
                     <option value="manual_adjustment">Manual Adjustments</option>
                     <option value="order_deduction">Order Deductions</option>
+                    <option value="restock">Restocks</option>
                   </select>
                 </>
               )}

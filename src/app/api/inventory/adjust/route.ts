@@ -58,7 +58,9 @@ export async function POST(request: NextRequest) {
             product_id: product_id,
             variation_id: variation_id || null,
             location_id: locationIdToUse,
-            quantity: newStock // Send the absolute new quantity, not the adjustment
+            quantity: newStock, // Send the absolute new quantity, not the adjustment
+            reason: reason || 'Inventory adjustment',
+            action: reason?.includes('Restock via PO') ? 'restock' : 'manual_adjustment'
           };
 
           console.log(`Sending inventory update to Flora IM:`, updateData);
