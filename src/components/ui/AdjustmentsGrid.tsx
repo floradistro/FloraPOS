@@ -579,7 +579,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
               product_id: product.product_id,
               variation_id: product.variation_id || null,
               adjustment_quantity: product.restock_quantity,
-              reason: `Restock via PO ${result.data.po_number}`,
+              reason: `Restock via PO ${result.data?.po_number || 'Unknown'}`,
               location_id: user?.location_id ? parseInt(user.location_id) : 20
             }));
 
@@ -598,7 +598,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
               if (typeof window !== 'undefined' && window.localStorage) {
                 try {
                   const restockMetadata = {
-                    po_number: result.data.po_number,
+                    po_number: result.data?.po_number || 'Unknown',
                     timestamp: new Date().toISOString(),
                     user_id: user?.id || 0,
                     user_name: user?.username || 'Unknown',
@@ -622,7 +622,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
               
               setAdjustmentStatus({
                 type: 'success',
-                message: `Purchase order ${result.data.po_number} created and stock updated for ${restockProducts.length} items`
+                message: `Purchase order ${result.data?.po_number || 'Unknown'} created and stock updated for ${restockProducts.length} items`
               });
 
               // Trigger inventory refresh to show updated stock levels
@@ -630,22 +630,22 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
             } else {
               console.warn('PO created but stock update failed');
               setAdjustmentStatus({
-                type: 'warning',
-                message: `Purchase order ${result.data.po_number} created but stock update failed. Please manually adjust inventory.`
+                type: 'error',
+                message: `Purchase order ${result.data?.po_number || 'Unknown'} created but stock update failed. Please manually adjust inventory.`
               });
             }
           } catch (stockError) {
             console.error('Error updating stock after PO creation:', stockError);
             setAdjustmentStatus({
-              type: 'warning',
-              message: `Purchase order ${result.data.po_number} created but stock update failed. Please manually adjust inventory.`
+              type: 'error',
+              message: `Purchase order ${result.data?.po_number || 'Unknown'} created but stock update failed. Please manually adjust inventory.`
             });
           }
           
           // Clear pending restock products
           setPendingRestockProducts(new Map());
           
-          console.log(`✅ Created purchase order: ${result.data.po_number}`);
+          console.log(`✅ Created purchase order: ${result.data?.po_number || 'Unknown'}`);
         } else {
           throw new Error(result.error || 'Failed to create purchase order');
         }

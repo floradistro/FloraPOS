@@ -284,8 +284,8 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
           const isWithinTimeWindow = timeDiff <= 10 * 60 * 1000; // 10 minutes (increased from 5)
 
           const matchesProduct = restock.products.some(p => 
-            p.product_id === parseInt(entry.product_id) &&
-            (p.variation_id || 0) === parseInt(entry.variation_id || '0')
+            p.product_id === entry.product_id &&
+            (p.variation_id || 0) === (entry.variation_id || 0)
           );
 
           console.log('🔍 Checking entry:', entry.id, 'product:', entry.product_id, 'time diff:', Math.round(timeDiff/1000), 's', 'matches product:', matchesProduct, 'within window:', isWithinTimeWindow);
