@@ -102,6 +102,10 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
     const [supplierName, setSupplierName] = useState('');
     const [poNotes, setPONotes] = useState('');
     const [isCreatingPO, setIsCreatingPO] = useState(false);
+    
+    // Filtering and sorting states
+    const [showOnlySelected, setShowOnlySelected] = useState(false);
+    const [sortAlphabetically, setSortAlphabetically] = useState(true);
 
     // Notify parent of loading state changes
     useEffect(() => {
@@ -133,9 +137,18 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         }
         // If neither mode is active, show all products (default behavior)
         
-        return matchesSearch && matchesCategory && matchesStockCriteria;
+        // Show only selected filter
+        const matchesSelectedFilter = !showOnlySelected || selectedProducts.has(product.id);
+        
+        return matchesSearch && matchesCategory && matchesStockCriteria && matchesSelectedFilter;
       }).sort((a, b) => {
-        // Sort products with variants to the bottom
+        if (sortAlphabetically) {
+          // Primary sort: Alphabetical by name
+          const nameComparison = a.name.localeCompare(b.name);
+          if (nameComparison !== 0) return nameComparison;
+        }
+        
+        // Secondary sort: Sort products with variants to the bottom
         const aHasVariants = a.has_variants && a.variants && a.variants.length > 0;
         const bHasVariants = b.has_variants && b.variants && b.variants.length > 0;
         
@@ -144,7 +157,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         
         return 0;
       });
-    }, [products, searchQuery, categoryFilter, isAuditMode, isRestockMode]);
+    }, [products, searchQuery, categoryFilter, isAuditMode, isRestockMode, showOnlySelected, selectedProducts, sortAlphabetically]);
 
 
     // Handle product selection
@@ -1119,6 +1132,10 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
             onSetAdjustmentValue={setAdjustmentValue}
             isRestockMode={isRestockMode}
             isAuditMode={isAuditMode}
+            showOnlySelected={showOnlySelected}
+            onShowOnlySelectedChange={setShowOnlySelected}
+            sortAlphabetically={sortAlphabetically}
+            onSortAlphabeticallyChange={setSortAlphabetically}
           />
         </div>
         

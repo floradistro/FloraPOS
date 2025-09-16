@@ -98,7 +98,11 @@ export const ProductGrid = forwardRef<{
     
     return matchesSearch && matchesCategory;
   }).sort((a, b) => {
-    // Sort products with variants to the bottom (they are taller)
+    // Primary sort: Alphabetical by name
+    const nameComparison = a.name.localeCompare(b.name);
+    if (nameComparison !== 0) return nameComparison;
+    
+    // Secondary sort: Sort products with variants to the bottom (they are taller)
     const aHasVariants = a.has_variants && a.variants && a.variants.length > 0;
     const bHasVariants = b.has_variants && b.variants && b.variants.length > 0;
     

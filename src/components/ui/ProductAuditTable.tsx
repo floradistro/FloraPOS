@@ -19,6 +19,11 @@ interface ProductAuditTableProps {
   onSetAdjustmentValue?: (productId: number, variantId: number | null, value: number) => void;
   isRestockMode?: boolean;
   isAuditMode?: boolean;
+  // Filter and sort controls
+  showOnlySelected?: boolean;
+  onShowOnlySelectedChange?: (show: boolean) => void;
+  sortAlphabetically?: boolean;
+  onSortAlphabeticallyChange?: (sort: boolean) => void;
 }
 
 export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
@@ -36,10 +41,47 @@ export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
   pendingAdjustments = new Map(),
   onSetAdjustmentValue,
   isRestockMode = false,
-  isAuditMode = false
+  isAuditMode = false,
+  showOnlySelected = false,
+  onShowOnlySelectedChange,
+  sortAlphabetically = true,
+  onSortAlphabeticallyChange
 }) => {
   return (
     <div className="h-full overflow-auto p-4">
+      {/* Filter Controls */}
+      <div className="mb-4 flex items-center gap-4 px-4">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="showOnlySelected"
+            checked={showOnlySelected}
+            onChange={(e) => onShowOnlySelectedChange?.(e.target.checked)}
+            className="w-4 h-4 text-blue-600 bg-neutral-700 border-neutral-600 rounded focus:ring-blue-500 focus:ring-2"
+          />
+          <label htmlFor="showOnlySelected" className="text-sm text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
+            Show only selected ({selectedProducts.size})
+          </label>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="sortAlphabetically"
+            checked={sortAlphabetically}
+            onChange={(e) => onSortAlphabeticallyChange?.(e.target.checked)}
+            className="w-4 h-4 text-blue-600 bg-neutral-700 border-neutral-600 rounded focus:ring-blue-500 focus:ring-2"
+          />
+          <label htmlFor="sortAlphabetically" className="text-sm text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
+            Sort alphabetically
+          </label>
+        </div>
+        
+        <div className="ml-auto text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
+          Showing {filteredProducts.length} products
+        </div>
+      </div>
+      
       {/* Header */}
       <div className="mb-6">
         <div className="grid grid-cols-12 gap-4 px-4 py-3 text-xs font-medium text-neutral-400 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
