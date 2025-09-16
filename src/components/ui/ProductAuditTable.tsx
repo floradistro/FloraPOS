@@ -50,35 +50,44 @@ export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
   return (
     <div className="h-full overflow-auto p-4">
       {/* Filter Controls */}
-      <div className="mb-4 flex items-center gap-4 px-4">
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="showOnlySelected"
-            checked={showOnlySelected}
-            onChange={(e) => onShowOnlySelectedChange?.(e.target.checked)}
-            className="w-4 h-4 text-blue-600 bg-neutral-700 border-neutral-600 rounded focus:ring-blue-500 focus:ring-2"
-          />
-          <label htmlFor="showOnlySelected" className="text-sm text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
-            Show only selected ({selectedProducts.size})
-          </label>
-        </div>
+      <div className="mb-4 flex items-center gap-3 px-4">
+        {/* Show Only Selected Toggle */}
+        <button
+          onClick={() => onShowOnlySelectedChange?.(!showOnlySelected)}
+          className={`px-3 h-[30px] rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-2 whitespace-nowrap border flex-shrink-0 ${
+            showOnlySelected 
+              ? 'bg-neutral-800/90 text-white border-neutral-500' 
+              : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+          }`}
+          title={showOnlySelected ? 'Show all products' : 'Show only selected products'}
+          style={{ fontFamily: 'Tiempos, serif' }}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" />
+          </svg>
+          {showOnlySelected ? `Selected (${selectedProducts.size})` : 'Show Selected'}
+        </button>
         
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="sortAlphabetically"
-            checked={sortAlphabetically}
-            onChange={(e) => onSortAlphabeticallyChange?.(e.target.checked)}
-            className="w-4 h-4 text-blue-600 bg-neutral-700 border-neutral-600 rounded focus:ring-blue-500 focus:ring-2"
-          />
-          <label htmlFor="sortAlphabetically" className="text-sm text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
-            Sort alphabetically
-          </label>
-        </div>
+        {/* Sort Alphabetically Toggle */}
+        <button
+          onClick={() => onSortAlphabeticallyChange?.(!sortAlphabetically)}
+          className={`px-3 h-[30px] rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-2 whitespace-nowrap border flex-shrink-0 ${
+            sortAlphabetically 
+              ? 'bg-neutral-800/90 text-white border-neutral-500' 
+              : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+          }`}
+          title={sortAlphabetically ? 'Disable alphabetical sorting' : 'Enable alphabetical sorting'}
+          style={{ fontFamily: 'Tiempos, serif' }}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+          </svg>
+          {sortAlphabetically ? 'A-Z' : 'Sort A-Z'}
+        </button>
         
+        {/* Products Count */}
         <div className="ml-auto text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-          Showing {filteredProducts.length} products
+          {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
         </div>
       </div>
       
