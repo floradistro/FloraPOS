@@ -483,18 +483,20 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       try {
         const key = variantId ? `${productId}-${variantId}` : `${productId}`;
         
-        console.log(`🛒 [Restock] Product ${productId}${variantId ? `-${variantId}` : ''}: Setting restock quantity to ${quantity}`);
+        console.log(`🛒 [Restock] Product ${productId}${variantId ? `-${variantId}` : ''}: Adjusting restock quantity by ${quantity}`);
         
-        // Update pending restock products
+        // Update pending restock products - add to existing quantity
         setPendingRestockProducts(prev => {
           const newRestockProducts = new Map(prev);
+          const currentQuantity = newRestockProducts.get(key) || 0;
+          const newQuantity = currentQuantity + quantity;
           
-          if (quantity > 0) {
-            newRestockProducts.set(key, quantity);
-            console.log(`✅ [Restock] Added product ${key} with quantity ${quantity}`);
+          if (newQuantity > 0) {
+            newRestockProducts.set(key, newQuantity);
+            console.log(`✅ [Restock] Updated product ${key} to quantity ${newQuantity} (was ${currentQuantity})`);
           } else {
             newRestockProducts.delete(key);
-            console.log(`❌ [Restock] Removed product ${key}`);
+            console.log(`❌ [Restock] Removed product ${key} (quantity would be ${newQuantity})`);
           }
           
           console.log(`📊 [Restock] Total pending products: ${newRestockProducts.size}`);
@@ -692,15 +694,29 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
     const setAdjustmentValue = (productId: number, variantId: number | null, value: number) => {
       const key = variantId ? `${productId}-${variantId}` : `${productId}`;
       
-      setPendingAdjustments(prev => {
-        const newAdjustments = new Map(prev);
-        if (value === 0) {
-          newAdjustments.delete(key);
-        } else {
-          newAdjustments.set(key, value);
-        }
-        return newAdjustments;
-      });
+      if (isRestockMode) {
+        // In restock mode, update pending restock products
+        setPendingRestockProducts(prev => {
+          const newRestockProducts = new Map(prev);
+          if (value === 0) {
+            newRestockProducts.delete(key);
+          } else {
+            newRestockProducts.set(key, value);
+          }
+          return newRestockProducts;
+        });
+      } else {
+        // In audit mode, update pending adjustments
+        setPendingAdjustments(prev => {
+          const newAdjustments = new Map(prev);
+          if (value === 0) {
+            newAdjustments.delete(key);
+          } else {
+            newAdjustments.set(key, value);
+          }
+          return newAdjustments;
+        });
+      }
     };
 
     // Handle direct stock value changes

@@ -204,12 +204,10 @@ export default function MenuDisplayPage() {
               {tiers.map((tier, index) => (
                 <div
                   key={`${ruleName}-${index}`}
-                  className={`relative bg-gradient-to-br from-neutral-700/80 via-neutral-600/60 to-neutral-700/80 hover:from-neutral-600/90 hover:via-neutral-500/70 hover:to-neutral-600/90 border border-neutral-400/40 hover:border-neutral-300/60 rounded-lg px-4 py-3 transition-all duration-500 ease-out shadow-lg shadow-black/30 hover:shadow-xl hover:shadow-black/40 backdrop-blur-sm hover:scale-105 ${
+                  className={`relative rounded-lg px-4 py-3 transition-all duration-300 ease-out cursor-pointer border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10 hover:scale-105 ${
                     orientation === 'vertical' ? 'text-sm' : 'text-xs'
                   }`}
                 >
-                  {/* Inner glow effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-lg pointer-events-none"></div>
                   
                   <div className="text-neutral-100 font-medium text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                     {tier.label}
@@ -258,8 +256,7 @@ export default function MenuDisplayPage() {
     return (
       <div className="flex-1 h-full overflow-y-auto">
         {sectionTitle && (
-          <div className="bg-transparent px-6 py-4 border-b border-neutral-500/30 relative">
-            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+          <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
             <h2 className="font-bold text-white uppercase tracking-wider drop-shadow-md relative z-10 text-xl text-center" style={{ fontFamily: 'Tiempo, serif' }}>
               {sectionTitle}
             </h2>
@@ -285,7 +282,7 @@ export default function MenuDisplayPage() {
               <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-4' : ''}>
                 {/* Category Header - Only show if not in dual mode or if multiple categories */}
                 {(!isDualMenu || productsByCategory.length > 1) && (
-                  <div className="bg-transparent px-6 py-4 border-b border-neutral-500/30 relative mb-4">
+                  <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative mb-4">
                     <h3 className="font-bold text-white uppercase tracking-wider drop-shadow-md relative z-10 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
                       {category.name}
                     </h3>
@@ -300,8 +297,8 @@ export default function MenuDisplayPage() {
                     
                     <div className="overflow-x-auto relative z-10">
                       <table className="w-full border-collapse">
-                        <thead className="bg-neutral-700/20 border-b border-neutral-500/30 sticky top-0 z-20">
-                          <tr className="border-b border-neutral-400/30">
+                        <thead className="bg-neutral-900/40 border-b border-white/[0.06] sticky top-0 z-20 backdrop-blur-sm">
+                          <tr className="border-b border-white/[0.06]">
                             <th className="text-left text-white font-medium px-3 py-2 text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
                               Product Name
                             </th>
@@ -322,10 +319,10 @@ export default function MenuDisplayPage() {
                             return (
                               <tr 
                                 key={product.id}
-                                className={`border-b border-neutral-500/30 hover:bg-neutral-600/10 transition-all duration-300 ease-out ${
+                                className={`border-b border-white/[0.06] hover:bg-white/[0.02] transition-all duration-300 ease-out cursor-pointer ${
                                   index % 2 === 0 
                                     ? 'bg-transparent' 
-                                    : 'bg-neutral-700/10'
+                                    : 'bg-white/[0.01]'
                                 }`}
                               >
                                 <td className="px-3 py-2 text-white font-medium leading-tight text-sm" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.5)' }}>
@@ -355,9 +352,8 @@ export default function MenuDisplayPage() {
                       return (
                         <div 
                           key={product.id} 
-                          className="relative bg-transparent border border-neutral-500/30 rounded-xl transition-all duration-300 ease-out hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:shadow-md p-4"
+                          className="relative rounded-lg overflow-hidden p-4 transition-all duration-300 ease-out cursor-pointer border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10"
                         >
-                          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-xl pointer-events-none"></div>
                           
                           
                           {/* Product Image - Only for specific categories */}
@@ -477,7 +473,7 @@ export default function MenuDisplayPage() {
       
       {/* Header - Hide in dual menu mode */}
       {!isDualMenu && (
-        <div className={`bg-transparent border-b border-neutral-500/30 px-6 flex-shrink-0 relative z-10 ${
+        <div className={`bg-transparent border-b border-white/[0.06] px-6 flex-shrink-0 relative z-10 ${
           orientation === 'vertical' ? 'py-6' : 'py-5'
         }`}>
         
@@ -511,7 +507,7 @@ export default function MenuDisplayPage() {
             {/* Left Menu with Header */}
             <div className="w-1/2 flex flex-col">
               {/* Left Header */}
-              <div className="bg-transparent px-6 py-4 border-b border-neutral-500/30 relative">
+              <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
                 <h1 className="font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent drop-shadow-lg text-2xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                   {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Left Menu' : 'Left Menu'}
                 </h1>
@@ -532,9 +528,9 @@ export default function MenuDisplayPage() {
             </div>
             
             {/* Right Menu with Header */}
-            <div className="w-1/2 flex flex-col border-l border-neutral-500/30">
+            <div className="w-1/2 flex flex-col border-l border-white/[0.06]">
               {/* Right Header */}
-              <div className="bg-transparent px-6 py-4 border-b border-neutral-500/30 relative">
+              <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
                 <h1 className="font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent drop-shadow-lg text-2xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                   {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Right Menu' : 'Right Menu'}
                 </h1>
@@ -575,7 +571,7 @@ export default function MenuDisplayPage() {
                   <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-8' : ''}>
                     {/* Category Header - Only show if not filtered to single category */}
                     {!selectedCategoryName && (
-                      <div className="bg-transparent px-6 py-4 border-b border-neutral-500/30 relative">
+                      <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
                         {/* Header inner glow */}
                         
                         <h2 className={`font-bold text-white uppercase tracking-wider drop-shadow-md relative z-10 ${
@@ -596,8 +592,8 @@ export default function MenuDisplayPage() {
                         
                         <div className="overflow-x-auto h-full relative z-10">
                           <table className="w-full h-full border-collapse">
-                            <thead className="bg-neutral-700/20 border-b border-neutral-500/30 sticky top-0 z-20">
-                              <tr className="border-b border-neutral-400/30">
+                            <thead className="bg-neutral-900/40 border-b border-white/[0.06] sticky top-0 z-20 backdrop-blur-sm">
+                              <tr className="border-b border-white/[0.06]">
                                 <th className={`text-left text-white font-medium px-2 py-1 ${
                                   orientation === 'vertical' ? 'text-sm' : 'text-xs'
                                 }`} style={{ fontFamily: 'Tiempo, serif' }}>
@@ -625,10 +621,10 @@ export default function MenuDisplayPage() {
                                 return (
                                   <tr 
                                     key={product.id}
-                              className={`border-b border-neutral-500/30 hover:bg-neutral-600/10 transition-all duration-300 ease-out ${
+                              className={`border-b border-white/[0.06] hover:bg-white/[0.02] transition-all duration-300 ease-out cursor-pointer ${
                                 index % 2 === 0 
                                   ? 'bg-transparent' 
-                                  : 'bg-neutral-700/10'
+                                  : 'bg-white/[0.01]'
                               }`}
                                   >
                                     <td className={`px-2 py-1 text-white font-medium leading-tight ${
@@ -669,12 +665,10 @@ export default function MenuDisplayPage() {
                           return (
                             <div 
                               key={product.id} 
-                              className={`relative bg-transparent border border-neutral-500/30 rounded-xl transition-all duration-300 ease-out hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:shadow-md ${
+                              className={`relative rounded-lg overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
                                 orientation === 'vertical' ? 'p-6' : 'p-5'
-                              }`}
+                              } border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10`}
                             >
-                              {/* Inner glow effect */}
-                              <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent rounded-xl pointer-events-none"></div>
                               
                               
                               {/* Product Image - Only for specific categories */}
