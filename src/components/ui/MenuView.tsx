@@ -162,7 +162,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     })).filter(group => group.products.length > 0);
 
     return (
-      <div className="h-full bg-black text-white overflow-hidden flex flex-col">
+      <div className="h-full bg-black text-white overflow-hidden flex flex-col border-2 border-white/20">
         {/* Header */}
         <div className={`bg-transparent border-b border-white/[0.06] px-6 flex-shrink-0 relative z-10 ${
           previewOrient === 'vertical' ? 'py-2' : 'py-1'

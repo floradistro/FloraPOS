@@ -461,7 +461,7 @@ export default function MenuDisplayPage() {
   }
 
   return (
-    <div className="h-screen bg-black text-white overflow-hidden flex flex-col relative">
+    <div className="h-screen bg-black text-white overflow-hidden flex flex-col relative border-2 border-white/20">
       {/* Subtle 3D Wave Background */}
       <div className="absolute inset-0 opacity-[0.03]">
         <div className="absolute inset-0 bg-black"></div>
@@ -514,7 +514,7 @@ export default function MenuDisplayPage() {
           /* Dual Menu Layout - Side by Side */
           <div className="flex h-full">
             {/* Left Menu with Header */}
-            <div className="w-1/2 flex flex-col">
+            <div className="w-1/2 flex flex-col border-2 border-white/20 border-r-1">
               {/* Left Header */}
               <div className="bg-transparent px-6 py-1 border-b border-white/[0.06] relative">
                 <h1 className="font-bold text-white  text-6xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
@@ -537,7 +537,7 @@ export default function MenuDisplayPage() {
             </div>
             
             {/* Right Menu with Header */}
-            <div className="w-1/2 flex flex-col border-l border-white/[0.06]">
+            <div className="w-1/2 flex flex-col border-2 border-white/20 border-l-1">
               {/* Right Header */}
               <div className="bg-transparent px-6 py-1 border-b border-white/[0.06] relative">
                 <h1 className="font-bold text-white  text-6xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
