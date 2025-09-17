@@ -162,17 +162,17 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     })).filter(group => group.products.length > 0);
 
     return (
-      <div className="h-full bg-neutral-900 text-white overflow-hidden flex flex-col">
+      <div className="h-full bg-black text-white overflow-hidden flex flex-col">
         {/* Header */}
         <div className={`bg-transparent border-b border-white/[0.06] px-6 flex-shrink-0 relative z-10 ${
-          previewOrient === 'vertical' ? 'py-6' : 'py-5'
+          previewOrient === 'vertical' ? 'py-2' : 'py-1'
         }`}>
-          <div className={`flex flex-col items-center gap-4 relative z-10 ${
-            previewOrient === 'vertical' ? 'gap-6' : 'gap-5'
+          <div className={`flex flex-col items-center relative z-10 ${
+            previewOrient === 'vertical' ? 'gap-1' : 'gap-0'
           }`}>
             <div className="text-center">
               <h1 className={`font-bold text-white ${
-                previewOrient === 'vertical' ? 'text-4xl' : 'text-3xl'
+                previewOrient === 'vertical' ? 'text-8xl' : 'text-7xl'
               }`} style={{ fontFamily: 'Tiempo, serif' }}>
                 {categoryFilter ? `${previewCategories.find(c => c.slug === categoryFilter)?.name || categoryFilter} Menu` : 'Flora Menu'}
               </h1>
@@ -195,7 +195,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               {productsByCategory.map(({ category, products: categoryProducts }) => (
                 <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-8' : ''}>
                   {!categoryFilter && (
-                    <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
+                    <div className="bg-transparent px-6 py-1 border-b border-white/[0.06] relative">
                       <h2 className={`font-bold text-white uppercase tracking-wider relative z-10 ${
                         previewOrient === 'vertical' ? 'text-lg' : 'text-xl'
                       }`} style={{ fontFamily: 'Tiempo, serif' }}>
@@ -236,8 +236,8 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                               return (
                                 <tr 
                                   key={product.id}
-                                  className={`border-b border-white/[0.06] hover:bg-white/[0.02] transition-all duration-300 ease-out cursor-pointer ${
-                                    index % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.01]'
+                                  className={`border-b border-white/[0.06] hover:bg-neutral-700 transition-all duration-300 ease-out cursor-pointer ${
+                                    index % 2 === 0 ? 'bg-black' : 'bg-neutral-900'
                                   }`}
                                 >
                                   <td className={`px-2 py-1 text-white font-medium leading-tight ${
@@ -263,7 +263,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                       </div>
                     </div>
                   ) : (
-                    <div className={`grid gap-4 px-6 py-4 ${
+                    <div className={`grid gap-2 px-6 py-2 ${
                       previewOrient === 'vertical' 
                         ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
                         : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
@@ -273,7 +273,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                           key={product.id} 
                           className={`relative rounded-lg overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
                             previewOrient === 'vertical' ? 'p-6' : 'p-5'
-                          } border border-white/[0.15] bg-black/30 hover:border-white/[0.25] hover:bg-black/40 backdrop-blur-sm`}
+                          } border border-white/[0.2] bg-black hover:border-white/[0.4] hover:bg-neutral-900 backdrop-blur-sm`}
                         >
                           {shouldShowImages(category.name) && (
                             <div className="flex justify-center mb-3 relative z-10">
