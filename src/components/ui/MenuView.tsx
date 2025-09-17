@@ -186,8 +186,8 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           {productsByCategory.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <p className="text-2xl text-neutral-100 mb-3">No products currently available</p>
-                <p className="text-lg text-neutral-200">Check back soon for updates</p>
+                <p className="text-2xl text-white mb-3">No products currently available</p>
+                <p className="text-lg text-white">Check back soon for updates</p>
               </div>
             </div>
           ) : (
@@ -289,7 +289,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center rounded-lg">
-                                    <svg className={`text-neutral-400 ${
+                                    <svg className={`text-white ${
                                       previewOrient === 'vertical' ? 'w-8 h-8' : 'w-6 h-6'
                                     }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
@@ -311,8 +311,8 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                           }`}>
                             {product.sku && (
                               <div className="text-center pt-2 border-t border-neutral-600">
-                                <div className="text-neutral-300 mb-1" style={{ fontFamily: 'Tiempo, serif' }}>SKU</div>
-                                <div className="text-neutral-100 font-mono text-xs">{product.sku}</div>
+                                <div className="text-white mb-1" style={{ fontFamily: 'Tiempo, serif' }}>SKU</div>
+                                <div className="text-white font-mono text-xs">{product.sku}</div>
                               </div>
                             )}
                           </div>
@@ -529,7 +529,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center text-red-400">
           <p className="text-lg font-medium mb-2">Failed to load products</p>
-          <p className="text-sm text-neutral-200 mb-4">{error}</p>
+          <p className="text-sm text-white mb-4">{error}</p>
           <button
             onClick={fetchProducts}
             className="px-4 py-2 bg-neutral-600 hover:bg-neutral-600/10 hover:border-neutral-400/40 rounded-lg text-white transition-colors"
@@ -552,14 +552,14 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
         <div className="flex items-center gap-4">
           {/* Orientation Toggle */}
           <div className="flex items-center gap-2">
-            <span className="text-sm text-neutral-200" style={{ fontFamily: 'Tiempo, serif' }}>Orientation:</span>
+            <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Orientation:</span>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setOrientation('horizontal')}
                 className={`p-2 rounded-lg transition-all duration-200 ease-out ${
                   orientation === 'horizontal' 
                     ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                    : 'text-neutral-300 hover:text-neutral-100 bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
                 }`}
                 title="Horizontal Orientation"
               >
@@ -572,7 +572,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 className={`p-2 rounded-lg transition-all duration-200 ease-out ${
                   orientation === 'vertical' 
                     ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                    : 'text-neutral-300 hover:text-neutral-100 bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
                 }`}
                 title="Vertical Orientation"
               >
@@ -586,11 +586,11 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           <div className="flex items-center gap-3">
             {/* Category Selector */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-neutral-200" style={{ fontFamily: 'Tiempo, serif' }}>Category:</span>
+              <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Category:</span>
               <select
                 value={selectedMenuCategory || ''}
                 onChange={(e) => setSelectedMenuCategory(e.target.value || null)}
-                className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
+                className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
               >
                 <option value="">All Categories</option>
                 {getUniqueCategories().map(category => (
@@ -604,7 +604,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           <div className="flex items-center gap-3">
             <button
               onClick={() => openPopoutMenu(selectedMenuCategory || undefined)}
-              className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-neutral-300 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-100"
+              className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-white border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-white"
               style={{ fontFamily: 'Tiempo, serif' }}
             >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -616,7 +616,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               {orientation === 'horizontal' && (
                 <button
                   onClick={handleDualMenuLaunch}
-                  className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-neutral-300 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-100"
+                  className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-white border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-white"
                   style={{ fontFamily: 'Tiempo, serif' }}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -644,16 +644,16 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               <button
                 key={category.id}
                 onClick={() => openPopoutMenu(category.slug)}
-                className="rounded-lg p-4 text-left transition-all duration-200 ease-out border bg-transparent text-neutral-300 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-100 group"
+                className="rounded-lg p-4 text-left transition-all duration-200 ease-out border bg-transparent text-white border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-white group"
                 style={{ fontFamily: 'Tiempo, serif' }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif' }}>{category.name}</h4>
-                  <svg className="w-4 h-4 text-neutral-200 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-white group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </div>
-                <div className="text-xs text-neutral-200" style={{ fontFamily: 'Tiempo, serif' }}>
+                <div className="text-xs text-white" style={{ fontFamily: 'Tiempo, serif' }}>
                   {categoryProducts.length} products • {orientation}
                 </div>
                 <div className="text-xs text-green-400 mt-1 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
@@ -703,7 +703,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => focusWindow(windowId)}
-                        className="p-1 text-neutral-300 hover:text-neutral-100 transition-all duration-200 ease-out"
+                        className="p-1 text-white hover:text-white transition-all duration-200 ease-out"
                         title="Focus Window"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -722,7 +722,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                       </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-neutral-200">
+                  <div className="flex items-center gap-2 text-sm text-white">
                     <span className={`px-2 py-1 rounded text-xs ${
                       orientation === 'vertical' ? 'bg-purple-600/20 text-purple-300' : 'bg-blue-600/20 text-blue-300'
                     }`}>
@@ -755,21 +755,21 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               : filteredProducts.length
             }
           </div>
-          <div className="text-sm text-neutral-200" style={{ fontFamily: 'Tiempo, serif' }}>
+          <div className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>
             {selectedMenuCategory ? 'Category Products' : 'Available Products'}
           </div>
         </div>
         <div className="rounded-lg p-4 border bg-transparent border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 transition-all duration-200 ease-out">
           <div className="text-2xl font-bold text-white" style={{ fontFamily: 'Tiempo, serif' }}>{productsByCategory.length}</div>
-          <div className="text-sm text-neutral-200" style={{ fontFamily: 'Tiempo, serif' }}>Categories</div>
+          <div className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Categories</div>
         </div>
         <div className="rounded-lg p-4 border bg-transparent border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 transition-all duration-200 ease-out">
           <div className="text-2xl font-bold text-white capitalize" style={{ fontFamily: 'Tiempo, serif' }}>{orientation}</div>
-          <div className="text-sm text-neutral-200" style={{ fontFamily: 'Tiempo, serif' }}>Display Mode</div>
+          <div className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Display Mode</div>
         </div>
         <div className="rounded-lg p-4 border bg-transparent border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 transition-all duration-200 ease-out">
           <div className="text-2xl font-bold text-white" style={{ fontFamily: 'Tiempo, serif' }}>{user?.location || 'Unknown'}</div>
-          <div className="text-sm text-neutral-200" style={{ fontFamily: 'Tiempo, serif' }}>Location</div>
+          <div className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Location</div>
         </div>
       </div>
 
@@ -777,7 +777,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
       <div className="flex-1 rounded-lg overflow-hidden border border-neutral-500/30 bg-transparent">
         <div className="flex items-center justify-between p-4 border-b border-neutral-500/30">
           <h2 className="text-lg font-semibold text-white" style={{ fontFamily: 'Tiempo, serif' }}>Live Menu Preview</h2>
-          <div className="text-xs text-neutral-200" style={{ fontFamily: 'Tiempo, serif' }}>
+          <div className="text-xs text-white" style={{ fontFamily: 'Tiempo, serif' }}>
             Both orientations shown side by side
           </div>
         </div>
@@ -786,8 +786,8 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           {productsByCategory.length === 0 ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <p className="text-neutral-200" style={{ fontFamily: 'Tiempo, serif' }}>No products available for preview</p>
-                <p className="text-sm text-neutral-300 mt-2" style={{ fontFamily: 'Tiempo, serif' }}>Add products to see live menu previews</p>
+                <p className="text-white" style={{ fontFamily: 'Tiempo, serif' }}>No products available for preview</p>
+                <p className="text-sm text-white mt-2" style={{ fontFamily: 'Tiempo, serif' }}>Add products to see live menu previews</p>
               </div>
             </div>
           ) : (
@@ -799,7 +799,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                   <div className="flex gap-6 justify-center">
                     {/* Horizontal Preview */}
                     <div className="relative">
-                      <div className="absolute -top-6 left-0 text-xs text-neutral-200 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <div className="absolute -top-6 left-0 text-xs text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                         Horizontal (1920×1080)
                       </div>
                       <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
@@ -824,7 +824,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
 
                     {/* Vertical Preview */}
                     <div className="relative">
-                      <div className="absolute -top-6 left-0 text-xs text-neutral-200 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <div className="absolute -top-6 left-0 text-xs text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                         Vertical (1080×1920)
                       </div>
                       <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
@@ -864,14 +864,14 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                       <h3 className="text-lg font-semibold text-white" style={{ fontFamily: 'Tiempo, serif' }}>
                         {category.name} Menu
                       </h3>
-                      <span className="text-xs text-neutral-200" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <span className="text-xs text-white" style={{ fontFamily: 'Tiempo, serif' }}>
                         {categoryProducts.length} products
                       </span>
                     </div>
                     <div className="flex gap-6 justify-center">
                       {/* Horizontal Preview */}
                       <div className="relative">
-                        <div className="absolute -top-6 left-0 text-xs text-neutral-200 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                        <div className="absolute -top-6 left-0 text-xs text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                           Horizontal
                         </div>
                         <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
@@ -896,7 +896,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
 
                       {/* Vertical Preview */}
                       <div className="relative">
-                        <div className="absolute -top-6 left-0 text-xs text-neutral-200 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                        <div className="absolute -top-6 left-0 text-xs text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                           Vertical
                         </div>
                         <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
@@ -927,7 +927,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
         </div>
         
         <div className="p-3 border-t border-neutral-500/30">
-          <div className="text-xs text-neutral-300 text-center" style={{ fontFamily: 'Tiempo, serif' }}>
+          <div className="text-xs text-white text-center" style={{ fontFamily: 'Tiempo, serif' }}>
             Live menu previews • Each category shown in both orientations • Updates automatically
           </div>
         </div>
@@ -943,7 +943,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               </h2>
               <button
                 onClick={() => setShowDualMenuSelector(false)}
-                className="text-neutral-200 hover:text-white transition-colors"
+                className="text-white hover:text-white transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -951,7 +951,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               </button>
             </div>
             
-            <p className="text-neutral-100 mb-8 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
+            <p className="text-white mb-8 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
               Select which categories to display on each side of the dual menu layout.
             </p>
             
@@ -964,7 +964,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 <select
                   value={leftMenuCategory || ''}
                   onChange={(e) => setLeftMenuCategory(e.target.value || null)}
-                  className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
+                  className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
                 >
                   <option value="">Select Category</option>
                   {getUniqueCategories().map(category => (
@@ -983,7 +983,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 <select
                   value={rightMenuCategory || ''}
                   onChange={(e) => setRightMenuCategory(e.target.value || null)}
-                  className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
+                  className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
                 >
                   <option value="">Select Category</option>
                   {getUniqueCategories().map(category => (
@@ -1021,7 +1021,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setShowDualMenuSelector(false)}
-                className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-neutral-300 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-100"
+                className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-white border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-white"
                 style={{ fontFamily: 'Tiempo, serif' }}
               >
                 Cancel
@@ -1029,7 +1029,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               <button
                 onClick={launchDualMenu}
                 disabled={!leftMenuCategory || !rightMenuCategory}
-                className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-neutral-300 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-white border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ fontFamily: 'Tiempo, serif' }}
               >
                 Launch Dual Menu
