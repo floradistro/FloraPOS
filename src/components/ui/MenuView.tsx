@@ -162,7 +162,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     })).filter(group => group.products.length > 0);
 
     return (
-      <div className="h-full bg-gradient-to-br from-neutral-600 via-neutral-700 to-neutral-800 text-white overflow-hidden flex flex-col">
+      <div className="h-full bg-neutral-700 text-white overflow-hidden flex flex-col">
         {/* Header */}
         <div className={`bg-transparent border-b border-white/[0.06] px-6 flex-shrink-0 relative z-10 ${
           previewOrient === 'vertical' ? 'py-6' : 'py-5'
@@ -171,7 +171,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
             previewOrient === 'vertical' ? 'gap-6' : 'gap-5'
           }`}>
             <div className="text-center">
-              <h1 className={`font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent drop-shadow-lg ${
+              <h1 className={`font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent ${
                 previewOrient === 'vertical' ? 'text-4xl' : 'text-3xl'
               }`} style={{ fontFamily: 'Tiempo, serif' }}>
                 {categoryFilter ? `${previewCategories.find(c => c.slug === categoryFilter)?.name || categoryFilter} Menu` : 'Flora Menu'}
@@ -196,7 +196,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-8' : ''}>
                   {!categoryFilter && (
                     <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
-                      <h2 className={`font-bold text-white uppercase tracking-wider drop-shadow-md relative z-10 ${
+                      <h2 className={`font-bold text-white uppercase tracking-wider relative z-10 ${
                         previewOrient === 'vertical' ? 'text-lg' : 'text-xl'
                       }`} style={{ fontFamily: 'Tiempo, serif' }}>
                         {category.name}
@@ -242,7 +242,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                 >
                                   <td className={`px-2 py-1 text-white font-medium leading-tight ${
                                     previewOrient === 'vertical' ? 'text-sm' : 'text-xs'
-                                  }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.5)' }}>
+                                  }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                     {product.name}
                                   </td>
                                   <td className={`px-2 py-1 text-center text-neutral-200 ${
@@ -273,7 +273,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                           key={product.id} 
                           className={`relative rounded-lg overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
                             previewOrient === 'vertical' ? 'p-6' : 'p-5'
-                          } border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10`}
+                          } border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] `}
                         >
                           {shouldShowImages(category.name) && (
                             <div className="flex justify-center mb-3 relative z-10">
@@ -302,7 +302,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                           
                           <h3 className={`font-semibold text-white leading-tight mb-4 relative z-10 text-center ${
                             previewOrient === 'vertical' ? 'text-xl' : 'text-lg'
-                          }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 2px 4px rgba(0, 0, 0, 0.8), 0 0 12px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.9)' }}>
+                          }`} style={{ fontFamily: 'Tiempo, serif' }}>
                             {product.name}
                           </h3>
                           
@@ -472,7 +472,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               {tiers.map((tier, index) => (
                 <div
                   key={`${ruleName}-${index}`}
-                  className="bg-gradient-to-br from-neutral-500 to-neutral-600 border border-neutral-400 rounded px-2 py-1 text-[9px] shadow-sm"
+                  className="bg-gradient-to-br from-neutral-500 to-neutral-600 border border-neutral-400 rounded px-2 py-1 text-[9px] "
                 >
                   <div className="text-white font-medium text-center">{tier.label}</div>
                   <div className="text-green-400 font-bold text-center">${tier.price.toFixed(2)}</div>
@@ -802,7 +802,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                       <div className="absolute -top-6 left-0 text-xs text-neutral-400 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                         Horizontal (1920×1080)
                       </div>
-                      <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300" 
+                      <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
                            style={{ width: '240px', height: '135px' }}>
                         <div 
                           className="origin-top-left"
@@ -827,7 +827,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                       <div className="absolute -top-6 left-0 text-xs text-neutral-400 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                         Vertical (1080×1920)
                       </div>
-                      <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300" 
+                      <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
                            style={{ width: '108px', height: '192px' }}>
                         <div 
                           className="origin-top-left"
@@ -874,7 +874,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                         <div className="absolute -top-6 left-0 text-xs text-neutral-400 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                           Horizontal
                         </div>
-                        <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300" 
+                        <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
                              style={{ width: '240px', height: '135px' }}>
                           <div 
                             className="origin-top-left"
@@ -899,7 +899,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                         <div className="absolute -top-6 left-0 text-xs text-neutral-400 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                           Vertical
                         </div>
-                        <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300" 
+                        <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
                              style={{ width: '108px', height: '192px' }}>
                           <div 
                             className="origin-top-left"

@@ -115,13 +115,13 @@ const ProductCard = memo<ProductCardProps>(({
       className={`rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-300 ease-out ${
         isAuditMode 
           ? isAuditSelected
-            ? 'border-2 border-blue-500/30 bg-gradient-to-br from-blue-950/40 to-neutral-600/60 shadow-lg shadow-blue-500/10 hover:from-blue-950/50 hover:to-neutral-600/70'
-            : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:shadow-md'
+            ? 'border-2 border-blue-500/30 bg-gradient-to-br from-blue-950/40 to-neutral-600/60 hover:from-blue-950/50 hover:to-neutral-600/70'
+            : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40'
           : isSalesView 
             ? isSelected
-              ? 'border-2 border-white/20 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 shadow-md shadow-white/5 hover:from-neutral-500/25 hover:to-neutral-600/45'
-              : 'border border-white/[0.06] bg-transparent hover:bg-white/[0.02] hover:border-white/[0.12] hover:shadow-md hover:shadow-neutral-700/10'
-            : 'border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10'
+              ? 'border-2 border-white/20 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 hover:from-neutral-500/25 hover:to-neutral-600/45'
+              : 'border border-white/[0.06] bg-transparent hover:bg-white/[0.02] hover:border-white/[0.12]'
+            : 'border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02]'
       }`}
     >
       {/* Product Image and Name Row */}
@@ -151,11 +151,11 @@ const ProductCard = memo<ProductCardProps>(({
 
         {/* Product Name and Category - Centered in remaining space */}
         <div className="flex-1 flex flex-col justify-center items-center text-center">
-          <h3 className="text-neutral-200 font-normal text-lg mb-2 line-clamp-2 leading-tight" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
+          <h3 className="text-neutral-200 font-normal text-lg mb-2 line-clamp-2 leading-tight" style={{ fontFamily: 'Tiempos, serif' }}>
             {product.name}
           </h3>
           {product.categories.length > 0 && (
-            <p className="text-neutral-400 text-sm mb-2" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+            <p className="text-neutral-400 text-sm mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
               {product.categories[0].name}
             </p>
           )}

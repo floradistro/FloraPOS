@@ -204,7 +204,7 @@ export default function MenuDisplayPage() {
               {tiers.map((tier, index) => (
                 <div
                   key={`${ruleName}-${index}`}
-                  className={`relative rounded-lg px-4 py-3 transition-all duration-300 ease-out cursor-pointer border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10 hover:scale-105 ${
+                  className={`relative rounded-lg px-4 py-3 transition-all duration-300 ease-out cursor-pointer border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02]  hover:scale-105 ${
                     orientation === 'vertical' ? 'text-sm' : 'text-xs'
                   }`}
                 >
@@ -212,7 +212,7 @@ export default function MenuDisplayPage() {
                   <div className="text-neutral-100 font-medium text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                     {tier.label}
                   </div>
-                  <div className="text-white font-bold text-center mt-1 relative z-10 drop-shadow-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="text-white font-bold text-center mt-1 relative z-10 " style={{ fontFamily: 'Tiempo, serif' }}>
                     ${tier.price.toFixed(2)}
                   </div>
                 </div>
@@ -257,7 +257,7 @@ export default function MenuDisplayPage() {
       <div className="flex-1 h-full overflow-y-auto">
         {sectionTitle && (
           <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
-            <h2 className="font-bold text-white uppercase tracking-wider drop-shadow-md relative z-10 text-xl text-center" style={{ fontFamily: 'Tiempo, serif' }}>
+            <h2 className="font-bold text-white uppercase tracking-wider  relative z-10 text-xl text-center" style={{ fontFamily: 'Tiempo, serif' }}>
               {sectionTitle}
             </h2>
             <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-neutral-400/60 to-transparent mt-2 mx-auto"></div>
@@ -283,7 +283,7 @@ export default function MenuDisplayPage() {
                 {/* Category Header - Only show if not in dual mode or if multiple categories */}
                 {(!isDualMenu || productsByCategory.length > 1) && (
                   <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative mb-4">
-                    <h3 className="font-bold text-white uppercase tracking-wider drop-shadow-md relative z-10 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <h3 className="font-bold text-white uppercase tracking-wider  relative z-10 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
                       {category.name}
                     </h3>
                     <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-neutral-400/60 to-transparent mt-2"></div>
@@ -325,7 +325,7 @@ export default function MenuDisplayPage() {
                                     : 'bg-white/[0.01]'
                                 }`}
                               >
-                                <td className="px-3 py-2 text-white font-medium leading-tight text-sm" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.5)' }}>
+                                <td className="px-3 py-2 text-white font-medium leading-tight text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
                                   {product.name}
                                 </td>
                                 <td className="px-3 py-2 text-center text-neutral-200 text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
@@ -352,7 +352,7 @@ export default function MenuDisplayPage() {
                       return (
                         <div 
                           key={product.id} 
-                          className="relative rounded-lg overflow-hidden p-4 transition-all duration-300 ease-out cursor-pointer border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10"
+                          className="relative rounded-lg overflow-hidden p-4 transition-all duration-300 ease-out cursor-pointer border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] "
                         >
                           
                           
@@ -379,7 +379,7 @@ export default function MenuDisplayPage() {
                           )}
                           
                           {/* Product Name - Center */}
-                          <h4 className="font-semibold text-white leading-tight mb-4 relative z-10 text-xl text-center" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 2px 4px rgba(0, 0, 0, 0.8), 0 0 12px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.9)' }}>
+                          <h4 className="font-semibold text-white leading-tight mb-4 relative z-10 text-xl text-center" style={{ fontFamily: 'Tiempo, serif' }}>
                             {product.name}
                           </h4>
                           
@@ -452,10 +452,10 @@ export default function MenuDisplayPage() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-neutral-600 via-neutral-700 to-neutral-800 text-white overflow-hidden flex flex-col relative">
+    <div className="h-screen bg-neutral-700 text-white overflow-hidden flex flex-col relative">
       {/* Subtle 3D Wave Background */}
       <div className="absolute inset-0 opacity-[0.03]">
-        <div className="absolute inset-0 bg-gradient-to-br from-neutral-600 via-neutral-700 to-neutral-800"></div>
+        <div className="absolute inset-0 bg-neutral-700"></div>
         <svg 
           className="absolute inset-0 w-full h-full object-cover"
           viewBox="0 0 100 100" 
@@ -482,7 +482,7 @@ export default function MenuDisplayPage() {
         }`}>
           {/* Title - Centered */}
           <div className="text-center">
-            <h1 className={`font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent drop-shadow-lg ${
+            <h1 className={`font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent  ${
               orientation === 'vertical' ? 'text-4xl' : 'text-3xl'
             }`} style={{ fontFamily: 'Tiempo, serif' }}>
               {selectedCategoryName ? `${selectedCategoryName} Menu` : 'Flora Menu'}
@@ -508,7 +508,7 @@ export default function MenuDisplayPage() {
             <div className="w-1/2 flex flex-col">
               {/* Left Header */}
               <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
-                <h1 className="font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent drop-shadow-lg text-2xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
+                <h1 className="font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent  text-2xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                   {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Left Menu' : 'Left Menu'}
                 </h1>
                 <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-neutral-400 to-transparent mx-auto mt-3 opacity-60"></div>
@@ -531,7 +531,7 @@ export default function MenuDisplayPage() {
             <div className="w-1/2 flex flex-col border-l border-white/[0.06]">
               {/* Right Header */}
               <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
-                <h1 className="font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent drop-shadow-lg text-2xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
+                <h1 className="font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent  text-2xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                   {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Right Menu' : 'Right Menu'}
                 </h1>
                 <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-neutral-400 to-transparent mx-auto mt-3 opacity-60"></div>
@@ -574,7 +574,7 @@ export default function MenuDisplayPage() {
                       <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
                         {/* Header inner glow */}
                         
-                        <h2 className={`font-bold text-white uppercase tracking-wider drop-shadow-md relative z-10 ${
+                        <h2 className={`font-bold text-white uppercase tracking-wider  relative z-10 ${
                           orientation === 'vertical' ? 'text-lg' : 'text-xl'
                         }`} style={{ fontFamily: 'Tiempo, serif' }}>
                           {category.name}
@@ -629,7 +629,7 @@ export default function MenuDisplayPage() {
                                   >
                                     <td className={`px-2 py-1 text-white font-medium leading-tight ${
                                       orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                    }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.5)' }}>
+                                    }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                       {product.name}
                                     </td>
                                     <td className={`px-2 py-1 text-center text-neutral-200 ${
@@ -667,7 +667,7 @@ export default function MenuDisplayPage() {
                               key={product.id} 
                               className={`relative rounded-lg overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
                                 orientation === 'vertical' ? 'p-6' : 'p-5'
-                              } border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10`}
+                              } border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] `}
                             >
                               
                               
@@ -700,7 +700,7 @@ export default function MenuDisplayPage() {
                               {/* Product Name - Center */}
                               <h3 className={`font-semibold text-white leading-tight mb-4 relative z-10 text-center ${
                                 orientation === 'vertical' ? 'text-xl' : 'text-lg'
-                              }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 2px 4px rgba(0, 0, 0, 0.8), 0 0 12px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.9)' }}>
+                              }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                 {product.name}
                               </h3>
                               
