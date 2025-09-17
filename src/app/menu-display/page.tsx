@@ -452,10 +452,10 @@ export default function MenuDisplayPage() {
   }
 
   return (
-    <div className="h-screen bg-neutral-700 text-white overflow-hidden flex flex-col relative">
+    <div className="h-screen bg-neutral-900 text-white overflow-hidden flex flex-col relative">
       {/* Subtle 3D Wave Background */}
       <div className="absolute inset-0 opacity-[0.03]">
-        <div className="absolute inset-0 bg-neutral-700"></div>
+        <div className="absolute inset-0 bg-neutral-900"></div>
         <svg 
           className="absolute inset-0 w-full h-full object-cover"
           viewBox="0 0 100 100" 
@@ -482,7 +482,7 @@ export default function MenuDisplayPage() {
         }`}>
           {/* Title - Centered */}
           <div className="text-center">
-            <h1 className={`font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent  ${
+            <h1 className={`font-bold text-white  ${
               orientation === 'vertical' ? 'text-4xl' : 'text-3xl'
             }`} style={{ fontFamily: 'Tiempo, serif' }}>
               {selectedCategoryName ? `${selectedCategoryName} Menu` : 'Flora Menu'}
@@ -508,7 +508,7 @@ export default function MenuDisplayPage() {
             <div className="w-1/2 flex flex-col">
               {/* Left Header */}
               <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
-                <h1 className="font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent  text-2xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
+                <h1 className="font-bold text-white  text-2xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                   {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Left Menu' : 'Left Menu'}
                 </h1>
                 <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-neutral-400 to-transparent mx-auto mt-3 opacity-60"></div>
@@ -531,7 +531,7 @@ export default function MenuDisplayPage() {
             <div className="w-1/2 flex flex-col border-l border-white/[0.06]">
               {/* Right Header */}
               <div className="bg-transparent px-6 py-4 border-b border-white/[0.06] relative">
-                <h1 className="font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent  text-2xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
+                <h1 className="font-bold text-white  text-2xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                   {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Right Menu' : 'Right Menu'}
                 </h1>
                 <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-neutral-400 to-transparent mx-auto mt-3 opacity-60"></div>
@@ -667,7 +667,7 @@ export default function MenuDisplayPage() {
                               key={product.id} 
                               className={`relative rounded-lg overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
                                 orientation === 'vertical' ? 'p-6' : 'p-5'
-                              } border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] `}
+                              } border border-white/[0.15] bg-black/30 hover:border-white/[0.25] hover:bg-black/40 backdrop-blur-sm`}
                             >
                               
                               

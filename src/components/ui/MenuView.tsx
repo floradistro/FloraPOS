@@ -162,7 +162,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     })).filter(group => group.products.length > 0);
 
     return (
-      <div className="h-full bg-neutral-700 text-white overflow-hidden flex flex-col">
+      <div className="h-full bg-neutral-900 text-white overflow-hidden flex flex-col">
         {/* Header */}
         <div className={`bg-transparent border-b border-white/[0.06] px-6 flex-shrink-0 relative z-10 ${
           previewOrient === 'vertical' ? 'py-6' : 'py-5'
@@ -171,7 +171,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
             previewOrient === 'vertical' ? 'gap-6' : 'gap-5'
           }`}>
             <div className="text-center">
-              <h1 className={`font-bold bg-gradient-to-r from-white via-neutral-100 to-white bg-clip-text text-transparent ${
+              <h1 className={`font-bold text-white ${
                 previewOrient === 'vertical' ? 'text-4xl' : 'text-3xl'
               }`} style={{ fontFamily: 'Tiempo, serif' }}>
                 {categoryFilter ? `${previewCategories.find(c => c.slug === categoryFilter)?.name || categoryFilter} Menu` : 'Flora Menu'}
@@ -273,7 +273,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                           key={product.id} 
                           className={`relative rounded-lg overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
                             previewOrient === 'vertical' ? 'p-6' : 'p-5'
-                          } border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] `}
+                          } border border-white/[0.15] bg-black/30 hover:border-white/[0.25] hover:bg-black/40 backdrop-blur-sm`}
                         >
                           {shouldShowImages(category.name) && (
                             <div className="flex justify-center mb-3 relative z-10">
