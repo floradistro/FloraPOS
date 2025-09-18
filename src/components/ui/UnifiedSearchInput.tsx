@@ -181,6 +181,8 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const [showIDScanner, setShowIDScanner] = useState(false);
   const [scannerStream, setScannerStream] = useState<MediaStream | null>(null);
   const [scannerStatus, setScannerStatus] = useState<string>('Ready to scan');
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualBarcodeText, setManualBarcodeText] = useState('');
   
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -482,78 +484,104 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
 
   const startInlineScanning = async (video: HTMLVideoElement) => {
     try {
-      setScannerStatus('Starting scanner...');
+      setScannerStatus('Initializing...');
       
-      // Use direct canvas approach for stability
-      const { BrowserPDF417Reader } = await import('@zxing/browser');
-      const reader = new BrowserPDF417Reader();
+      // Use core ZXing library with multiple format support
+      const { MultiFormatReader, BarcodeFormat, HTMLCanvasElementLuminanceSource, HybridBinarizer, BinaryBitmap } = await import('@zxing/library');
+      
+      const reader = new MultiFormatReader();
+      
+      // Enable multiple barcode formats for US IDs
+      const hints = new Map();
+      hints.set(2, [
+        BarcodeFormat.PDF_417,
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.CODE_39,
+        BarcodeFormat.CODABAR,
+        BarcodeFormat.DATA_MATRIX
+      ]);
+      reader.setHints(hints);
       
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
-      if (!ctx) return;
+      if (!ctx) {
+        setScannerStatus('Canvas error');
+        return;
+      }
       
-      let scanning = true;
+      let isScanning = true;
+      let scanAttempts = 0;
       
       const scan = async () => {
-        if (!video || !showIDScanner || !scanning) return;
+        if (!video || !showIDScanner || !isScanning) return;
         
-        // Wait for video to be ready
         if (video.readyState < 2) {
-          setTimeout(scan, 100);
+          setTimeout(scan, 200);
           return;
         }
         
-        // Set canvas size
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        if (canvas.width === 0 || canvas.height === 0) {
-          setTimeout(scan, 100);
-          return;
-        }
-        
-        // Draw frame
-        ctx.drawImage(video, 0, 0);
+        scanAttempts++;
+        setScannerStatus(`Scanning... (${scanAttempts})`);
         
         try {
-          const result = await reader.decodeFromCanvas(canvas);
-          if (result) {
-            const barcodeText = result.getText();
-            console.log('✅ Barcode found:', barcodeText.substring(0, 100));
+          // Set canvas to video size
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+          
+          if (canvas.width > 0 && canvas.height > 0) {
+            // Draw current video frame
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            setScannerStatus('Processing ID data...');
-            scanning = false;
+            // Create luminance source from canvas
+            const luminanceSource = new HTMLCanvasElementLuminanceSource(canvas);
+            const binaryBitmap = new BinaryBitmap(new HybridBinarizer(luminanceSource));
             
-            const { parseIDBarcode } = await import('../../utils/idParser');
-            const parsedData = parseIDBarcode(barcodeText);
-            
-            if (parsedData) {
-              console.log('✅ Parsed ID data:', parsedData);
-              setScannerStatus('Success!');
-              handleIDDataScanned(parsedData);
-              return;
-            } else {
-              console.log('❌ Could not parse ID data');
-              setScannerStatus('Invalid ID - try repositioning');
-              scanning = true;
+            try {
+              const result = reader.decode(binaryBitmap);
+              const barcodeText = result.getText();
+              
+              console.log('🎯 BARCODE DETECTED!');
+              console.log('Format:', result.getBarcodeFormat());
+              console.log('Text length:', barcodeText.length);
+              console.log('Raw data:', barcodeText);
+              
+              setScannerStatus('Barcode found! Processing...');
+              isScanning = false;
+              
+              const { parseIDBarcode } = await import('../../utils/idParser');
+              const parsedData = parseIDBarcode(barcodeText);
+              
+              if (parsedData) {
+                console.log('✅ Successfully parsed ID data:', parsedData);
+                setScannerStatus('Success! Data extracted');
+                handleIDDataScanned(parsedData);
+                return;
+              } else {
+                console.log('❌ Failed to parse ID data from barcode');
+                setScannerStatus('Could not parse ID - try different angle');
+                isScanning = true;
+              }
+            } catch (decodeError) {
+              // No barcode in this frame, continue
             }
           }
         } catch (error) {
-          // Continue scanning
+          console.error('Scan error:', error);
         }
         
-        if (scanning && showIDScanner) {
-          setTimeout(scan, 300); // Scan every 300ms
+        // Continue scanning
+        if (isScanning && showIDScanner) {
+          setTimeout(scan, 500); // Scan every 500ms
         }
       };
       
-      setScannerStatus('Hold ID barcode steady in frame');
-      scan();
+      setScannerStatus('Ready - position ID barcode in camera');
+      setTimeout(scan, 1000); // Start after 1 second delay
       
     } catch (error) {
-      console.error('Scanner failed:', error);
-      setScannerStatus('Scanner error');
+      console.error('❌ Failed to initialize scanner:', error);
+      setScannerStatus('Scanner initialization failed');
     }
   };
 
@@ -884,59 +912,102 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                         {showIDScanner ? 'Stop Scanning' : 'Scan State ID'}
                       </button>
 
-                      {/* Inline Camera Scanner */}
-                      {showIDScanner && scannerStream && (
-                        <div className="relative bg-black rounded border border-neutral-600">
-                          <video
-                            ref={(video) => {
-                              if (video && scannerStream) {
-                                video.srcObject = scannerStream;
-                                video.play();
-                                
-                                // Start scanning when video loads
-                                video.onloadedmetadata = () => {
-                                  startInlineScanning(video);
+                      {/* Manual Entry or Camera Scanner */}
+                      {showIDScanner && (
+                        <div className="space-y-2">
+                          {/* Toggle between camera and manual entry */}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setShowManualEntry(!showManualEntry)}
+                              className="flex-1 px-2 py-1 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-neutral-300 hover:text-white rounded text-xs transition-colors"
+                            >
+                              {showManualEntry ? 'Use Camera' : 'Manual Entry'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                // Quick test data
+                                const testData = {
+                                  firstName: 'John',
+                                  lastName: 'Doe',
+                                  address: '123 Main St',
+                                  city: 'Charlotte',
+                                  state: 'NC',
+                                  zipCode: '28202'
                                 };
-                              }
-                            }}
-                            className="w-full h-32 object-cover rounded"
-                            autoPlay
-                            playsInline
-                            muted
-                          />
-                          
-                          {/* Scanning Overlay */}
-                          <div className="absolute inset-2 border-2 border-blue-400 rounded pointer-events-none">
-                            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-300"></div>
-                            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-300"></div>
-                            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-300"></div>
-                            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-300"></div>
+                                handleIDDataScanned(testData);
+                              }}
+                              className="px-3 py-1 bg-green-600/80 hover:bg-green-600 text-white text-xs rounded transition-colors"
+                            >
+                              Test Fill
+                            </button>
                           </div>
                           
-                          <div className="absolute bottom-1 left-1 right-1 text-center">
-                            <div className="bg-black/70 rounded px-2 py-1">
-                              <p className="text-white text-xs">{scannerStatus}</p>
+                          {showManualEntry ? (
+                            /* Manual barcode text entry */
+                            <div className="space-y-2">
+                              <textarea
+                                placeholder="Paste barcode text here..."
+                                value={manualBarcodeText}
+                                onChange={(e) => setManualBarcodeText(e.target.value)}
+                                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs h-20 resize-none"
+                                style={{ fontFamily: 'monospace' }}
+                              />
+                              <button
+                                onClick={async () => {
+                                  if (manualBarcodeText.trim()) {
+                                    const { parseIDBarcode } = await import('../../utils/idParser');
+                                    const parsedData = parseIDBarcode(manualBarcodeText);
+                                    if (parsedData) {
+                                      handleIDDataScanned(parsedData);
+                                    } else {
+                                      alert('Could not parse ID data from text');
+                                    }
+                                  }
+                                }}
+                                className="w-full px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                              >
+                                Parse Text
+                              </button>
                             </div>
-                          </div>
-                          
-                          {/* Test Button for Development */}
-                          <button
-                            onClick={() => {
-                              // Test data for development
-                              const testData = {
-                                firstName: 'John',
-                                lastName: 'Doe',
-                                address: '123 Main St',
-                                city: 'Charlotte',
-                                state: 'NC',
-                                zipCode: '28202'
-                              };
-                              handleIDDataScanned(testData);
-                            }}
-                            className="absolute top-1 right-1 px-2 py-1 bg-green-600/80 hover:bg-green-600 text-white text-xs rounded transition-colors"
-                          >
-                            Test
-                          </button>
+                          ) : (
+                            scannerStream ? (
+                              <div className="relative bg-black rounded border border-neutral-600">
+                                <video
+                                  ref={(video) => {
+                                    if (video && scannerStream) {
+                                      video.srcObject = scannerStream;
+                                      video.play();
+                                      
+                                      video.onloadedmetadata = () => {
+                                        startInlineScanning(video);
+                                      };
+                                    }
+                                  }}
+                                  className="w-full h-32 object-cover rounded"
+                                  autoPlay
+                                  playsInline
+                                  muted
+                                />
+                                
+                                <div className="absolute inset-2 border-2 border-blue-400 rounded pointer-events-none">
+                                  <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-300"></div>
+                                  <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-300"></div>
+                                  <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-300"></div>
+                                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-300"></div>
+                                </div>
+                                
+                                <div className="absolute bottom-1 left-1 right-1 text-center">
+                                  <div className="bg-black/70 rounded px-2 py-1">
+                                    <p className="text-white text-xs">{scannerStatus}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center py-4 text-neutral-400 text-xs">
+                                Camera not available
+                              </div>
+                            )
+                          )}
                         </div>
                       )}
                       <div className="grid grid-cols-2 gap-2">
