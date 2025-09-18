@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { useUserPointsBalance } from '../../hooks/useRewards';
-import { IDScanner } from './IDScanner';
 import { ParsedIDData } from '../../utils/idParser';
 
 interface HeaderCustomerSelectorProps {
@@ -56,6 +55,7 @@ export function HeaderCustomerSelector({
   });
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [showIDScanner, setShowIDScanner] = useState(false);
+  const [scannerStream, setScannerStream] = useState<MediaStream | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -68,14 +68,14 @@ export function HeaderCustomerSelector({
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const dropdownWidth = showNewCustomerForm ? 380 : 280; // Wider when form is shown
+      const dropdownWidth = showNewCustomerForm ? (showIDScanner ? 420 : 380) : 280; // Wider when scanner is active
       setDropdownPosition({
         top: rect.bottom + 8,
         left: rect.left - 60, // Offset to make dropdown wider than button
         width: dropdownWidth
       });
     }
-  }, [isOpen, showNewCustomerForm]);
+  }, [isOpen, showNewCustomerForm, showIDScanner]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -178,8 +178,27 @@ export function HeaderCustomerSelector({
     setShowNewCustomerForm(false);
   };
 
-  const handleIDScanClick = () => {
-    setShowIDScanner(true);
+  const handleIDScanClick = async () => {
+    if (showIDScanner) {
+      // Stop scanning
+      if (scannerStream) {
+        scannerStream.getTracks().forEach(track => track.stop());
+        setScannerStream(null);
+      }
+      setShowIDScanner(false);
+    } else {
+      // Start scanning
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+        });
+        setScannerStream(stream);
+        setShowIDScanner(true);
+      } catch (error) {
+        console.error('Camera access denied:', error);
+        alert('Camera access is required to scan ID. Please allow camera access and try again.');
+      }
+    }
   };
 
   const handleIDDataScanned = (data: ParsedIDData) => {
@@ -193,7 +212,50 @@ export function HeaderCustomerSelector({
       state: data.state,
       zipCode: data.zipCode
     });
+    
+    // Stop camera
+    if (scannerStream) {
+      scannerStream.getTracks().forEach(track => track.stop());
+      setScannerStream(null);
+    }
     setShowIDScanner(false);
+  };
+
+  const startInlineScanning = async (video: HTMLVideoElement) => {
+    const { BrowserPDF417Reader } = await import('@zxing/browser');
+    const codeReader = new BrowserPDF417Reader();
+    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    const scan = async () => {
+      if (!video || !ctx || !showIDScanner) return;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      
+      try {
+        const result = await codeReader.decodeFromCanvas(canvas);
+        if (result) {
+          const { parseIDBarcode } = await import('../../utils/idParser');
+          const parsedData = parseIDBarcode(result.getText());
+          
+          if (parsedData) {
+            handleIDDataScanned(parsedData);
+            return;
+          }
+        }
+      } catch (error) {
+        // Continue scanning
+      }
+      
+      if (showIDScanner) {
+        setTimeout(scan, 100); // Scan every 100ms
+      }
+    };
+    
+    scan();
   };
 
   const selectedCustomerName = selectedCustomer 
@@ -295,16 +357,61 @@ export function HeaderCustomerSelector({
             {showNewCustomerForm ? (
               <div className="px-4 py-3 border-b border-white/[0.08]">
                 <div className="space-y-3">
-                  {/* ID Scan Button */}
+                  {/* ID Scan Toggle */}
                   <button
                     onClick={handleIDScanClick}
-                    className="w-full px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 hover:border-blue-400/50 text-blue-300 hover:text-blue-200 rounded text-xs transition-colors flex items-center justify-center gap-2"
+                    className={`w-full px-3 py-2 border rounded text-xs transition-colors flex items-center justify-center gap-2 ${
+                      showIDScanner 
+                        ? 'bg-red-600/20 border-red-500/30 text-red-300 hover:bg-red-600/30' 
+                        : 'bg-blue-600/20 hover:bg-blue-600/30 border-blue-500/30 hover:border-blue-400/50 text-blue-300 hover:text-blue-200'
+                    }`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h4M4 4h5l2 3h3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h3l2-3z" />
+                      {showIDScanner ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h4M4 4h5l2 3h3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h3l2-3z" />
+                      )}
                     </svg>
-                    Scan State ID
+                    {showIDScanner ? 'Stop Scanning' : 'Scan State ID'}
                   </button>
+
+                  {/* Inline Camera Scanner */}
+                  {showIDScanner && scannerStream && (
+                    <div className="relative bg-black rounded border border-neutral-600">
+                      <video
+                        ref={(video) => {
+                          if (video && scannerStream) {
+                            video.srcObject = scannerStream;
+                            video.play();
+                            
+                            // Start scanning when video loads
+                            video.onloadedmetadata = () => {
+                              startInlineScanning(video);
+                            };
+                          }
+                        }}
+                        className="w-full h-32 object-cover rounded"
+                        autoPlay
+                        playsInline
+                        muted
+                      />
+                      
+                      {/* Scanning Overlay */}
+                      <div className="absolute inset-2 border-2 border-blue-400 rounded pointer-events-none">
+                        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-300"></div>
+                        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-300"></div>
+                        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-300"></div>
+                        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-300"></div>
+                      </div>
+                      
+                      <div className="absolute bottom-1 left-1 right-1 text-center">
+                        <div className="bg-black/70 rounded px-2 py-1">
+                          <p className="text-white text-xs">Position ID barcode in frame</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-2">
                     <input
                       type="text"
@@ -498,13 +605,6 @@ export function HeaderCustomerSelector({
         </div>,
         document.body
       )}
-
-      {/* ID Scanner Modal */}
-      <IDScanner
-        isOpen={showIDScanner}
-        onClose={() => setShowIDScanner(false)}
-        onDataScanned={handleIDDataScanned}
-      />
     </>
   );
 }
