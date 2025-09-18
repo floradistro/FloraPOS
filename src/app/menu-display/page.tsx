@@ -249,6 +249,17 @@ export default function MenuDisplayPage() {
     }
   }, [categoryFilter, categories]);
 
+  // Auto-balance flower products between columns
+  const balanceFlowerProducts = (products: Product[]) => {
+    const totalProducts = products.length;
+    const leftColumnCount = Math.ceil(totalProducts / 2);
+    
+    return {
+      leftColumn: products.slice(0, leftColumnCount),
+      rightColumn: products.slice(leftColumnCount)
+    };
+  };
+
   // Render a single menu section (for dual menu support)
   const renderMenuSection = (categorySlug: string | null, sectionTitle?: string) => {
     const sectionProducts = categorySlug 
@@ -269,7 +280,7 @@ export default function MenuDisplayPage() {
     })).filter(group => group.products.length > 0);
 
     return (
-      <div className="flex-1 h-full overflow-y-auto">
+      <div className="flex-1 h-full overflow-y-auto pb-8">
         {sectionTitle && (
           <div className="bg-gray-300/90 backdrop-blur-md px-8 py-4 border-b border-slate-200/60 relative shadow-sm">
             <h2 className="text-slate-800 uppercase tracking-widest relative z-10 text-xl text-center" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, letterSpacing: '0.15em' }}>
@@ -292,7 +303,7 @@ export default function MenuDisplayPage() {
             </div>
           </div>
         ) : (
-          <div className="h-full space-y-6 p-4">
+          <div className="space-y-6 p-4 pb-8">
             {productsByCategory.map(({ category, products: categoryProducts }) => (
               <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-4' : ''}>
                 {/* Category Header - Only show if not in dual mode or if multiple categories */}
@@ -307,55 +318,139 @@ export default function MenuDisplayPage() {
                 
                 {/* Products Display */}
                 {isFlowerCategory(category.name) ? (
-                    /* Table Layout for Flower Products - Edge to Edge */
-                    <div className="bg-gray-300/95 backdrop-blur-sm overflow-hidden relative -mx-4 rounded-xl shadow-lg border border-slate-200/40">
-                    
-                    <div className="overflow-x-auto relative z-10">
-                      <table className="w-full border-collapse">
-                        <thead className="bg-slate-50/95 border-b border-slate-300/60 sticky top-0 z-20 backdrop-blur-md">
-                          <tr className="border-b border-slate-300/60">
-                            <th className="text-left text-slate-800 font-semibold px-3 py-2 text-sm tracking-wide" style={{ fontFamily: 'Tiempo, serif' }}>
-                              Product Name
-                            </th>
-                            <th className="text-center text-slate-800 font-semibold px-3 py-2 text-sm tracking-wide" style={{ fontFamily: 'Tiempo, serif' }}>
-                              Type
-                            </th>
-                            <th className="text-center text-slate-800 font-semibold px-3 py-2 text-sm tracking-wide" style={{ fontFamily: 'Tiempo, serif' }}>
-                              THCA %
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {categoryProducts.map((product, index) => {
-                            const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
-                            const strainType = getStrainType(product);
-                            const thcaPercent = getTHCAPercentage(product);
+                    /* 2-Column Layout for Flower Products - Auto-balanced */
+                    (() => {
+                      const { leftColumn, rightColumn } = balanceFlowerProducts(categoryProducts);
+                      return (
+                        <div className="grid grid-cols-2 gap-6 py-6">
+                          {/* Left Column */}
+                          <div className="space-y-2">
+                            {leftColumn.map((product, index) => {
+                        const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
+                        const strainType = getStrainType(product);
+                        const thcaPercent = getTHCAPercentage(product);
 
-                            return (
-                              <tr 
-                                key={product.id}
-                                className={`border-b border-slate-200/40 hover:bg-slate-50/80 transition-all duration-300 ease-out cursor-pointer ${
-                                  index % 2 === 0 
-                                    ? 'bg-gray-300/60' 
-                                    : 'bg-slate-50/40'
-                                }`}
-                              >
-                                <td className="px-3 py-2 text-slate-900 font-semibold leading-relaxed text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
-                                  {product.name}
-                                </td>
-                                <td className="px-3 py-2 text-center text-slate-600 font-medium text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                        return (
+                          <div 
+                            key={product.id}
+                            className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:border-slate-400/50 hover:bg-gray-300/80 hover:shadow-md hover:shadow-neutral-700/10"
+                          >
+                            <div className="grid grid-cols-12 gap-4 items-center">
+                              {/* Product Info */}
+                              <div className="col-span-6 flex items-center gap-4">
+                                {/* Product Image */}
+                                <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                  {product.image ? (
+                                    <img 
+                                      src={product.image} 
+                                      alt={product.name}
+                                      className="w-full h-full object-contain rounded"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-neutral-800/30 rounded">
+                                      <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-slate-900 font-semibold text-sm leading-tight mb-1 truncate" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                                    {product.name}
+                                  </h3>
+                                  {product.sku && (
+                                    <p className="text-xs text-slate-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                                      {product.sku}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Type */}
+                              <div className="col-span-3 text-center">
+                                <span className="text-slate-700 font-medium text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
                                   {strainType}
-                                </td>
-                                <td className="px-3 py-2 text-center text-slate-800 font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                                </span>
+                              </div>
+
+                              {/* THCA % */}
+                              <div className="col-span-3 text-center">
+                                <span className="text-slate-800 font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
                                   {thcaPercent}
-                                </td>
-                              </tr>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                        })}
+                      </div>
+                      
+                          {/* Right Column */}
+                          <div className="space-y-2">
+                            {rightColumn.map((product, index) => {
+                        const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
+                        const strainType = getStrainType(product);
+                        const thcaPercent = getTHCAPercentage(product);
+
+                        return (
+                          <div 
+                            key={product.id}
+                            className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:border-slate-400/50 hover:bg-gray-300/80 hover:shadow-md hover:shadow-neutral-700/10"
+                          >
+                            <div className="grid grid-cols-12 gap-4 items-center">
+                              {/* Product Info */}
+                              <div className="col-span-6 flex items-center gap-4">
+                                {/* Product Image */}
+                                <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                  {product.image ? (
+                                    <img 
+                                      src={product.image} 
+                                      alt={product.name}
+                                      className="w-full h-full object-contain rounded"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-neutral-800/30 rounded">
+                                      <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-slate-900 font-semibold text-sm leading-tight mb-1 truncate" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                                    {product.name}
+                                  </h3>
+                                  {product.sku && (
+                                    <p className="text-xs text-slate-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                                      {product.sku}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Type */}
+                              <div className="col-span-3 text-center">
+                                <span className="text-slate-700 font-medium text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                                  {strainType}
+                                </span>
+                              </div>
+
+                              {/* THCA % */}
+                              <div className="col-span-3 text-center">
+                                <span className="text-slate-800 font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                                  {thcaPercent}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                             );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()
                 ) : (
                   /* Grid Layout for Non-Flower Products */
                   <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -367,7 +462,7 @@ export default function MenuDisplayPage() {
                       return (
                         <div 
                           key={product.id} 
-                          className="relative rounded-2xl overflow-hidden p-5 transition-all duration-300 ease-out cursor-pointer border border-slate-200/50 bg-gray-300/90 backdrop-blur-md hover:border-slate-300/70 hover:bg-gray-300/95 hover:scale-105 shadow-lg hover:shadow-xl"
+                          className="rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:bg-gray-300/80 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
                         >
                           
                           
@@ -595,7 +690,7 @@ export default function MenuDisplayPage() {
           </div>
         ) : (
           /* Single Menu Layout */
-          <div className="h-full overflow-y-auto">
+          <div className="flex-1 overflow-y-auto pb-8">
             {productsByCategory.length === 0 ? (
               <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -609,7 +704,7 @@ export default function MenuDisplayPage() {
               </div>
               </div>
             ) : (
-              <div className={`h-full ${orientation === 'vertical' ? 'space-y-6' : 'space-y-8'}`}>
+              <div className={`${orientation === 'vertical' ? 'space-y-6' : 'space-y-8'} pb-6`}>
                 {productsByCategory.map(({ category, products: categoryProducts }) => (
                   <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-8' : ''}>
                     {/* Category Header - Only show if not filtered to single category */}
@@ -631,72 +726,153 @@ export default function MenuDisplayPage() {
                     
                     {/* Conditional Layout: Table for Flower, Grid for Others */}
                     {isFlowerCategory(category.name) ? (
-                        /* Table Layout for Flower Products - Edge to Edge */
-                        <div className="bg-gradient-to-br from-gray-300/98 via-gray-300/95 to-gray-300/92 backdrop-blur-md flex-1 overflow-hidden relative -mx-4 rounded-xl shadow-xl border border-slate-200/40" style={{
-                          boxShadow: '0 12px 35px rgba(0,0,0,0.12), inset 0 1px 0 rgba(156,163,175,0.3)'
-                        }}>
-                        
-                        <div className="overflow-x-auto h-full relative z-10">
-                          <table className="w-full h-full border-collapse">
-                            <thead className="bg-gradient-to-r from-slate-50/98 via-slate-50/95 to-slate-50/98 border-b border-slate-300/60 sticky top-0 z-20 backdrop-blur-md" style={{
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                            }}>
-                              <tr className="border-b border-slate-300/60">
-                                <th className={`text-left text-slate-800 font-semibold px-3 py-2 tracking-wide ${
-                                  orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                }`} style={{ fontFamily: 'Tiempo, serif' }}>
-                                  Product Name
-                                </th>
-                                <th className={`text-center text-slate-800 font-semibold px-3 py-2 tracking-wide ${
-                                  orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                }`} style={{ fontFamily: 'Tiempo, serif' }}>
-                                  Type
-                                </th>
-                                <th className={`text-center text-slate-800 font-semibold px-3 py-2 tracking-wide ${
-                                  orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                }`} style={{ fontFamily: 'Tiempo, serif' }}>
-                                  THCA %
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {categoryProducts.map((product, index) => {
-                                const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
-                                const price = product.sale_price || product.regular_price;
-                                const strainType = getStrainType(product);
-                                const thcaPercent = getTHCAPercentage(product);
+                        /* 2-Column Layout for Flower Products - Auto-balanced */
+                        (() => {
+                          const { leftColumn, rightColumn } = balanceFlowerProducts(categoryProducts);
+                          return (
+                            <div className="grid grid-cols-2 gap-6 py-6">
+                              {/* Left Column */}
+                              <div className="space-y-2">
+                                {leftColumn.map((product, index) => {
+                            const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
+                            const price = product.sale_price || product.regular_price;
+                            const strainType = getStrainType(product);
+                            const thcaPercent = getTHCAPercentage(product);
 
-                                return (
-                                  <tr 
-                                    key={product.id}
-                              className={`border-b border-slate-200/40 hover:bg-gradient-to-r hover:from-slate-50/90 hover:via-slate-50/80 hover:to-slate-50/90 transition-all duration-500 ease-out cursor-pointer group ${
-                                index % 2 === 0 
-                                  ? 'bg-gradient-to-r from-gray-300/70 via-gray-300/60 to-gray-300/70' 
-                                  : 'bg-gradient-to-r from-slate-50/50 via-slate-50/40 to-slate-50/50'
-                              }`}
-                                  >
-                                    <td className={`px-3 py-2 text-slate-900 font-semibold leading-relaxed ${
+                            return (
+                              <div 
+                                key={product.id}
+                                className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:border-slate-400/50 hover:bg-gray-300/80 hover:shadow-md hover:shadow-neutral-700/10"
+                              >
+                                <div className="grid grid-cols-12 gap-4 items-center">
+                                  {/* Product Info */}
+                                  <div className="col-span-6 flex items-center gap-4">
+                                    {/* Product Image */}
+                                    <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                      {product.image ? (
+                                        <img 
+                                          src={product.image} 
+                                          alt={product.name}
+                                          className="w-full h-full object-contain rounded"
+                                          loading="lazy"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-neutral-800/30 rounded">
+                                          <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                          </svg>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className={`text-slate-900 font-semibold leading-tight mb-1 truncate ${
+                                        orientation === 'vertical' ? 'text-base' : 'text-sm'
+                                      }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                                        {product.name}
+                                      </h3>
+                                      {product.sku && (
+                                        <p className="text-xs text-slate-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                                          {product.sku}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Type */}
+                                  <div className="col-span-3 text-center">
+                                    <span className={`text-slate-700 font-medium ${
                                       orientation === 'vertical' ? 'text-sm' : 'text-xs'
                                     }`} style={{ fontFamily: 'Tiempo, serif' }}>
-                                      {product.name}
-                                    </td>
-                                    <td className={`px-3 py-2 text-center text-slate-600 font-medium ${
-                                      orientation === 'vertical' ? 'text-xs' : 'text-xs'
-                                    }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                       {strainType}
-                                    </td>
-                                    <td className={`px-3 py-2 text-center text-slate-800 font-semibold ${
-                                      orientation === 'vertical' ? 'text-xs' : 'text-xs'
+                                    </span>
+                                  </div>
+
+                                  {/* THCA % */}
+                                  <div className="col-span-3 text-center">
+                                    <span className={`text-slate-800 font-semibold ${
+                                      orientation === 'vertical' ? 'text-sm' : 'text-xs'
                                     }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                       {thcaPercent}
-                                    </td>
-                                  </tr>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                            })}
+                          </div>
+                          
+                              {/* Right Column */}
+                              <div className="space-y-2">
+                                {rightColumn.map((product, index) => {
+                            const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
+                            const price = product.sale_price || product.regular_price;
+                            const strainType = getStrainType(product);
+                            const thcaPercent = getTHCAPercentage(product);
+
+                            return (
+                              <div 
+                                key={product.id}
+                                className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:border-slate-400/50 hover:bg-gray-300/80 hover:shadow-md hover:shadow-neutral-700/10"
+                              >
+                                <div className="grid grid-cols-12 gap-4 items-center">
+                                  {/* Product Info */}
+                                  <div className="col-span-6 flex items-center gap-4">
+                                    {/* Product Image */}
+                                    <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                      {product.image ? (
+                                        <img 
+                                          src={product.image} 
+                                          alt={product.name}
+                                          className="w-full h-full object-contain rounded"
+                                          loading="lazy"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-neutral-800/30 rounded">
+                                          <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                          </svg>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className={`text-slate-900 font-semibold leading-tight mb-1 truncate ${
+                                        orientation === 'vertical' ? 'text-base' : 'text-sm'
+                                      }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                                        {product.name}
+                                      </h3>
+                                      {product.sku && (
+                                        <p className="text-xs text-slate-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                                          {product.sku}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Type */}
+                                  <div className="col-span-3 text-center">
+                                    <span className={`text-slate-700 font-medium ${
+                                      orientation === 'vertical' ? 'text-sm' : 'text-xs'
+                                    }`} style={{ fontFamily: 'Tiempo, serif' }}>
+                                      {strainType}
+                                    </span>
+                                  </div>
+
+                                  {/* THCA % */}
+                                  <div className="col-span-3 text-center">
+                                    <span className={`text-slate-800 font-semibold ${
+                                      orientation === 'vertical' ? 'text-sm' : 'text-xs'
+                                    }`} style={{ fontFamily: 'Tiempo, serif' }}>
+                                      {thcaPercent}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
                                 );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()
                     ) : (
                       /* Grid Layout for Non-Flower Products */
                       <div className={`grid gap-2 px-6 py-1 ${
@@ -713,61 +889,39 @@ export default function MenuDisplayPage() {
                           return (
                             <div 
                               key={product.id} 
-                              className={`relative rounded-2xl overflow-hidden transition-all duration-500 ease-out cursor-pointer group ${
-                                orientation === 'vertical' ? 'p-7' : 'p-6'
-                              } border border-slate-200/50 bg-gradient-to-br from-gray-300/95 via-gray-300/90 to-gray-300/85 backdrop-blur-md hover:border-slate-300/70 hover:from-gray-300/98 hover:via-gray-300/95 hover:to-gray-300/92 hover:scale-105 shadow-lg hover:shadow-2xl`}
-                              style={{
-                                boxShadow: '0 10px 30px rgba(0,0,0,0.1), inset 0 1px 0 rgba(156,163,175,0.2)'
-                              }}
+                              className={`rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:bg-gray-300/80 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10`}
                             >
-                              
-                              
-                              {/* Product Image - Only for specific categories */}
-                              {shouldShowImages(category.name) && (
-                                <div className="flex justify-center mb-3 relative z-10">
-                                  <div className={`relative overflow-hidden rounded-lg ${
-                                    orientation === 'vertical' ? 'w-20 h-20' : 'w-16 h-16'
-                                  }`}>
-                                    {product.image ? (
-                                      <img 
-                                        src={product.image} 
-                                        alt={product.name}
-                                        className="w-full h-full object-contain  rounded-lg"
-                                        loading="lazy"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center rounded-lg">
-                                        <svg className={`text-gray-400 ${
-                                          orientation === 'vertical' ? 'w-8 h-8' : 'w-6 h-6'
-                                        }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                      </div>
-                                    )}
-                                  </div>
+                              {/* Product Image and Name Row - Matching Audit Mode */}
+                              <div className="flex gap-4 items-center mb-4">
+                                {/* Product Image */}
+                                <div className="w-16 h-16 relative overflow-hidden flex-shrink-0">
+                                  {product.image ? (
+                                    <img 
+                                      src={product.image} 
+                                      alt={product.name}
+                                      className="w-full h-full object-contain"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-neutral-800/30 rounded">
+                                      <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      </svg>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                              
-                              {/* Product Name - Center */}
-                              <h3 className={`font-medium text-slate-900 leading-relaxed mb-5 relative z-10 text-center tracking-wide group-hover:text-slate-800 transition-colors duration-300 ${
-                                orientation === 'vertical' ? 'text-xl' : 'text-lg'
-                              }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                                {product.name}
-                              </h3>
-                              
-                              {/* Elegant hover glow effect */}
-                              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 bg-gradient-to-r from-gray-300/5 via-gray-300/10 to-gray-300/5 transition-opacity duration-500"></div>
-                              
-                              {/* Product Details - Bottom Centered */}
-                              <div className={`space-y-3 relative z-10 ${
-                                orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                              }`}>
-                                {product.sku && (
-                                  <div className="text-center pt-3 border-t border-slate-200/60">
-                                    <div className="text-slate-500 mb-1 font-medium tracking-wide" style={{ fontFamily: 'Tiempo, serif' }}>SKU</div>
-                                    <div className="text-slate-800 font-mono text-xs font-semibold">{product.sku}</div>
-                                  </div>
-                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h3 className={`text-slate-900 font-semibold leading-tight mb-1 truncate ${
+                                    orientation === 'vertical' ? 'text-base' : 'text-sm'
+                                  }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                                    {product.name}
+                                  </h3>
+                                  {product.sku && (
+                                    <p className="text-xs text-slate-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                                      {product.sku}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           );
