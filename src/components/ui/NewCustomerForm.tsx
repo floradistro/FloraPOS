@@ -209,11 +209,10 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-8 py-6 border-b border-neutral-700 flex items-center justify-between">
-          <h2 className="text-2xl font-dongraffiti text-white">Add New Customer</h2>
+        <div className="px-8 py-4 border-b border-neutral-700 flex items-center justify-end">
           <button
             onClick={handleClose}
-            className="text-neutral-400 hover:text-neutral-300 transition-colors p-1 hover:bg-neutral-700 rounded"
+            className="text-neutral-400 hover:text-neutral-300 transition-colors p-2 hover:bg-neutral-700 rounded-md"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -230,9 +229,7 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
           )}
 
           {/* Personal Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-white mb-4">Personal Information</h3>
-            
+          <div className="space-y-4 p-4 border border-neutral-600 rounded-md">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-300 mb-2">
@@ -294,9 +291,7 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
           </div>
 
           {/* Billing Address */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-white mb-4">Billing Address</h3>
-            
+          <div className="space-y-4 p-4 border border-neutral-600 rounded-md">
             <div>
               <label className="block text-sm font-medium text-neutral-400 mb-2">Address Line 1</label>
               <input
@@ -379,7 +374,7 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
           </div>
 
           {/* Shipping Address Toggle */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 p-4 border border-neutral-600 rounded-md">
             <input
               type="checkbox"
               id="useShippingAsBilling"
@@ -394,9 +389,7 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
 
           {/* Shipping Address (if different) */}
           {!useShippingAsBilling && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-white mb-4">Shipping Address</h3>
-              
+            <div className="space-y-4 p-4 border border-neutral-600 rounded-md">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-neutral-300 mb-2">First Name</label>
@@ -508,7 +501,7 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
           )}
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end space-x-3 pt-6 border-t border-neutral-700">
+          <div className="flex items-center justify-end space-x-3 pt-2">
             <button
               type="button"
               onClick={handleClose}
