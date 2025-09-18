@@ -223,64 +223,74 @@ export function HeaderCustomerSelector({
 
   const startInlineScanning = async (video: HTMLVideoElement) => {
     try {
-      // Use direct canvas approach for stability
-      const { BrowserPDF417Reader } = await import('@zxing/browser');
-      const reader = new BrowserPDF417Reader();
+      // Use core ZXing library
+      const { MultiFormatReader, BarcodeFormat, HTMLCanvasElementLuminanceSource, HybridBinarizer, BinaryBitmap } = await import('@zxing/library');
+      
+      const reader = new MultiFormatReader();
+      
+      // Enable multiple barcode formats
+      const hints = new Map();
+      hints.set(2, [
+        BarcodeFormat.PDF_417,
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.CODE_39,
+        BarcodeFormat.CODABAR,
+        BarcodeFormat.DATA_MATRIX
+      ]);
+      reader.setHints(hints);
       
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
       if (!ctx) return;
       
-      let scanning = true;
+      let isScanning = true;
       
       const scan = async () => {
-        if (!video || !showIDScanner || !scanning) return;
+        if (!video || !showIDScanner || !isScanning) return;
         
-        // Wait for video to be ready
         if (video.readyState < 2) {
-          setTimeout(scan, 100);
+          setTimeout(scan, 200);
           return;
         }
-        
-        // Set canvas size
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        if (canvas.width === 0 || canvas.height === 0) {
-          setTimeout(scan, 100);
-          return;
-        }
-        
-        // Draw frame
-        ctx.drawImage(video, 0, 0);
         
         try {
-          const result = await reader.decodeFromCanvas(canvas);
-          if (result) {
-            const barcodeText = result.getText();
-            console.log('✅ Barcode found:', barcodeText.substring(0, 100));
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          
+          if (canvas.width > 0 && canvas.height > 0) {
+            ctx.drawImage(video, 0, 0);
             
-            scanning = false;
+            const luminanceSource = new HTMLCanvasElementLuminanceSource(canvas);
+            const binaryBitmap = new BinaryBitmap(new HybridBinarizer(luminanceSource));
             
-            const { parseIDBarcode } = await import('../../utils/idParser');
-            const parsedData = parseIDBarcode(barcodeText);
-            
-            if (parsedData) {
-              console.log('✅ Parsed ID data:', parsedData);
-              handleIDDataScanned(parsedData);
-              return;
-            } else {
-              console.log('❌ Could not parse ID data');
-              scanning = true;
+            try {
+              const result = reader.decode(binaryBitmap);
+              const barcodeText = result.getText();
+              
+              console.log('Barcode detected:', barcodeText.substring(0, 100));
+              isScanning = false;
+              
+              const { parseIDBarcode } = await import('../../utils/idParser');
+              const parsedData = parseIDBarcode(barcodeText);
+              
+              if (parsedData) {
+                console.log('ID data parsed:', parsedData);
+                handleIDDataScanned(parsedData);
+                return;
+              } else {
+                isScanning = true;
+              }
+            } catch (decodeError) {
+              // Continue scanning
             }
           }
         } catch (error) {
           // Continue scanning
         }
         
-        if (scanning && showIDScanner) {
-          setTimeout(scan, 300); // Scan every 300ms
+        if (isScanning && showIDScanner) {
+          setTimeout(scan, 500);
         }
       };
       
