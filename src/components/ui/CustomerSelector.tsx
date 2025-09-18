@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useUserPointsBalance } from '../../hooks/useRewards';
+import { NewCustomerForm } from './NewCustomerForm';
 
 interface CustomerSelectorProps {
   selectedCustomerId?: number | null;
@@ -46,6 +47,7 @@ export function CustomerSelector({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<WordPressUser | null>(null);
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   
   // Debounce search query to reduce filtering computations - 500ms delay for customers
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
@@ -126,6 +128,19 @@ export function CustomerSelector({
     inputRef.current?.focus();
   };
 
+  const handleNewCustomerClick = () => {
+    setIsOpen(false);
+    setShowNewCustomerForm(true);
+  };
+
+  const handleCustomerCreated = (newCustomer: WordPressUser) => {
+    setCustomers(prev => [...prev, newCustomer]);
+    setSelectedCustomer(newCustomer);
+    setSearchQuery(newCustomer.display_name || newCustomer.name || newCustomer.username);
+    onCustomerSelect(newCustomer);
+    setShowNewCustomerForm(false);
+  };
+
   // Filter customers based on debounced search query - memoized for performance
   const filteredCustomers = useMemo(() => {
     return customers.filter(customer => {
@@ -182,6 +197,24 @@ export function CustomerSelector({
             </div>
           ) : filteredCustomers.length > 0 ? (
             <>
+              {/* New Customer Option */}
+              <button
+                onClick={handleNewCustomerClick}
+                className="w-full text-left px-2 py-2 hover:bg-neutral-700/50 text-neutral-300 hover:text-neutral-200 text-sm transition-colors border-b border-neutral-700/50 mb-1"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-neutral-700/50 rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="font-medium">Add New Customer</div>
+                    <div className="text-xs text-neutral-500">Create a new customer account</div>
+                  </div>
+                </div>
+              </button>
+
               {/* Guest Option */}
               <button
                 onClick={() => handleCustomerSelect({ id: 0, name: 'Guest Customer', email: 'guest@pos.local', username: 'guest', display_name: 'Guest Customer', roles: ['customer'] } as WordPressUser)}
@@ -219,6 +252,13 @@ export function CustomerSelector({
           )}
         </div>
       )}
+
+      {/* New Customer Form Modal */}
+      <NewCustomerForm
+        isOpen={showNewCustomerForm}
+        onClose={() => setShowNewCustomerForm(false)}
+        onCustomerCreated={handleCustomerCreated}
+      />
     </div>
   );
 }

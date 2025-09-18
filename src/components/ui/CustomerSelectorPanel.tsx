@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { WordPressUser } from '../../services/users-service';
 import { usersService } from '../../services/users-service';
+import { NewCustomerForm } from './NewCustomerForm';
 
 interface CustomerSelectorPanelProps {
   selectedCustomer?: WordPressUser | null;
@@ -14,6 +15,7 @@ export function CustomerSelectorPanel({ selectedCustomer, onCustomerSelect }: Cu
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
 
   // Load customers on mount
   useEffect(() => {
@@ -44,6 +46,16 @@ export function CustomerSelectorPanel({ selectedCustomer, onCustomerSelect }: Cu
     loadCustomers();
   };
 
+  const handleNewCustomerClick = () => {
+    setShowNewCustomerForm(true);
+  };
+
+  const handleCustomerCreated = (newCustomer: WordPressUser) => {
+    setCustomers(prev => [...prev, newCustomer]);
+    onCustomerSelect?.(newCustomer);
+    setShowNewCustomerForm(false);
+  };
+
   // Filter customers based on search query
   const filteredCustomers = customers.filter(customer => {
     const query = searchQuery.toLowerCase();
@@ -60,15 +72,26 @@ export function CustomerSelectorPanel({ selectedCustomer, onCustomerSelect }: Cu
       <div className="px-4 py-3 border-b border-neutral-700/50 bg-neutral-800/50">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-neutral-300">Customer Selection</h3>
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="text-neutral-500 hover:text-neutral-300 transition-colors p-1 hover:bg-white/[0.05] rounded disabled:opacity-50"
-          >
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleNewCustomerClick}
+              className="text-neutral-400 hover:text-neutral-300 transition-colors p-1 hover:bg-white/[0.05] rounded"
+              title="Add New Customer"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="text-neutral-500 hover:text-neutral-300 transition-colors p-1 hover:bg-white/[0.05] rounded disabled:opacity-50"
+            >
+              <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Search Input */}
@@ -188,6 +211,13 @@ export function CustomerSelectorPanel({ selectedCustomer, onCustomerSelect }: Cu
           )}
         </div>
       </div>
+
+      {/* New Customer Form Modal */}
+      <NewCustomerForm
+        isOpen={showNewCustomerForm}
+        onClose={() => setShowNewCustomerForm(false)}
+        onCustomerCreated={handleCustomerCreated}
+      />
     </div>
   );
 }

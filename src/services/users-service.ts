@@ -74,6 +74,58 @@ class UsersService {
       return null;
     }
   }
+
+  async createCustomer(customerData: {
+    email: string;
+    first_name: string;
+    last_name: string;
+    username?: string;
+    billing?: any;
+    shipping?: any;
+  }): Promise<WordPressUser> {
+    try {
+      const response = await fetch(`${this.baseUrl}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...customerData,
+          roles: ['customer']
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to create customer: ${response.status}`);
+      }
+
+      const newCustomer = await response.json();
+      
+      // Try to update customer with additional details if provided
+      if (customerData.billing || customerData.shipping) {
+        try {
+          await fetch(`${this.baseUrl}/customers/${newCustomer.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              billing: customerData.billing,
+              shipping: customerData.shipping
+            })
+          });
+        } catch (updateError) {
+          console.warn('Could not update customer details:', updateError);
+        }
+      }
+
+      return newCustomer;
+    } catch (error) {
+      console.error('Failed to create customer:', error);
+      throw new Error(`Failed to create customer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 }
 
 export const usersService = new UsersService();

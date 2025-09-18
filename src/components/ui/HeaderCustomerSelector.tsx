@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { useUserPointsBalance } from '../../hooks/useRewards';
+import { NewCustomerForm } from './NewCustomerForm';
 
 interface HeaderCustomerSelectorProps {
   selectedCustomer?: WordPressUser | null;
@@ -41,6 +42,7 @@ export function HeaderCustomerSelector({
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -93,6 +95,17 @@ export function HeaderCustomerSelector({
   const handleCustomerSelect = (customer: WordPressUser | null) => {
     onCustomerSelect?.(customer);
     setIsOpen(false);
+  };
+
+  const handleNewCustomerClick = () => {
+    setIsOpen(false);
+    setShowNewCustomerForm(true);
+  };
+
+  const handleCustomerCreated = (newCustomer: WordPressUser) => {
+    setCustomers(prev => [...prev, newCustomer]);
+    onCustomerSelect?.(newCustomer);
+    setShowNewCustomerForm(false);
   };
 
   const selectedCustomerName = selectedCustomer 
@@ -190,6 +203,27 @@ export function HeaderCustomerSelector({
               )}
             </button>
 
+            {/* New Customer Option */}
+            <button
+              onClick={handleNewCustomerClick}
+              className="w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between group text-neutral-300 hover:bg-white/[0.05] hover:text-neutral-200 border-b border-white/[0.08]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-neutral-700/50 rounded-full flex items-center justify-center group-hover:bg-neutral-600/50 transition-colors">
+                  <svg className="w-4 h-4 text-neutral-400 group-hover:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-medium">New Customer</div>
+                  <div className="text-xs text-neutral-500 group-hover:text-neutral-400">Add a new customer</div>
+                </div>
+              </div>
+              <svg className="w-4 h-4 text-neutral-500 group-hover:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
             {/* Guest Customer Option */}
             <button
               onClick={() => handleCustomerSelect({ id: 0, name: 'Guest Customer', email: 'guest@pos.local', username: 'guest', display_name: 'Guest Customer', roles: ['customer'] } as WordPressUser)}
@@ -266,6 +300,13 @@ export function HeaderCustomerSelector({
         </div>,
         document.body
       )}
+
+      {/* New Customer Form Modal */}
+      <NewCustomerForm
+        isOpen={showNewCustomerForm}
+        onClose={() => setShowNewCustomerForm(false)}
+        onCustomerCreated={handleCustomerCreated}
+      />
     </>
   );
 }

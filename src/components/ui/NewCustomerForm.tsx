@@ -1,0 +1,524 @@
+'use client';
+
+import React, { useState } from 'react';
+import { WordPressUser } from '../../services/users-service';
+
+interface NewCustomerFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCustomerCreated: (customer: WordPressUser) => void;
+}
+
+interface CustomerFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: {
+    address_1: string;
+    address_2: string;
+    city: string;
+    state: string;
+    postcode: string;
+    country: string;
+  };
+  shipping: {
+    first_name: string;
+    last_name: string;
+    address_1: string;
+    address_2: string;
+    city: string;
+    state: string;
+    postcode: string;
+    country: string;
+  };
+}
+
+export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCustomerFormProps) {
+  const [formData, setFormData] = useState<CustomerFormData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: {
+      address_1: '',
+      address_2: '',
+      city: '',
+      state: '',
+      postcode: '',
+      country: 'US'
+    },
+    shipping: {
+      first_name: '',
+      last_name: '',
+      address_1: '',
+      address_2: '',
+      city: '',
+      state: '',
+      postcode: '',
+      country: 'US'
+    }
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [useShippingAsBilling, setUseShippingAsBilling] = useState(true);
+
+  const handleInputChange = (field: keyof CustomerFormData, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    setError(null);
+  };
+
+  const handleAddressChange = (type: 'address' | 'shipping', field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        [field]: value
+      }
+    }));
+    setError(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.firstName.trim() || !formData.email.trim()) {
+      setError('First name and email are required');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Generate username from email
+      const username = formData.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      // Prepare shipping address (copy from billing if needed)
+      const shippingAddress = useShippingAsBilling ? {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        address_1: formData.address.address_1,
+        address_2: formData.address.address_2,
+        city: formData.address.city,
+        state: formData.address.state,
+        postcode: formData.address.postcode,
+        country: formData.address.country
+      } : formData.shipping;
+
+      const customerData = {
+        email: formData.email.trim(),
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
+        username: username,
+        billing: {
+          first_name: formData.firstName.trim(),
+          last_name: formData.lastName.trim(),
+          address_1: formData.address.address_1,
+          address_2: formData.address.address_2,
+          city: formData.address.city,
+          state: formData.address.state,
+          postcode: formData.address.postcode,
+          country: formData.address.country,
+          email: formData.email.trim(),
+          phone: formData.phone
+        },
+        shipping: shippingAddress
+      };
+
+      const response = await fetch('/api/users-matrix/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(customerData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create customer');
+      }
+
+      const newCustomer = await response.json();
+      
+      // Try to update the customer with additional data
+      try {
+        await fetch(`/api/users-matrix/customers/${newCustomer.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            billing: customerData.billing,
+            shipping: shippingAddress
+          })
+        });
+      } catch (updateError) {
+        console.warn('Could not update customer details:', updateError);
+      }
+
+      onCustomerCreated(newCustomer);
+      handleClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create customer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      address: {
+        address_1: '',
+        address_2: '',
+        city: '',
+        state: '',
+        postcode: '',
+        country: 'US'
+      },
+      shipping: {
+        first_name: '',
+        last_name: '',
+        address_1: '',
+        address_2: '',
+        city: '',
+        state: '',
+        postcode: '',
+        country: 'US'
+      }
+    });
+    setError(null);
+    setLoading(false);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={handleClose}>
+      <div 
+        className="bg-neutral-900/80 border border-neutral-700/50 rounded-lg backdrop-blur-sm w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-neutral-700/50 flex items-center justify-between">
+          <h2 className="text-lg font-medium text-neutral-200">Add New Customer</h2>
+          <button
+            onClick={handleClose}
+            className="text-neutral-400 hover:text-neutral-200 transition-colors p-1 hover:bg-neutral-600/10 rounded"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="text-neutral-200">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Personal Information */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wider">Personal Information</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">
+                  First Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.firstName}
+                  onChange={(e) => handleInputChange('firstName', e.target.value)}
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  placeholder="Enter first name"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">Last Name</label>
+                <input
+                  type="text"
+                  value={formData.lastName}
+                  onChange={(e) => handleInputChange('lastName', e.target.value)}
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  placeholder="Enter last name"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">
+                  Email <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  placeholder="Enter email address"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  placeholder="Enter phone number"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Billing Address */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wider">Billing Address</h3>
+            
+            <div>
+              <label className="block text-sm font-medium text-neutral-400 mb-2">Address Line 1</label>
+              <input
+                type="text"
+                value={formData.address.address_1}
+                onChange={(e) => handleAddressChange('address', 'address_1', e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter street address"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-400 mb-2">Address Line 2</label>
+              <input
+                type="text"
+                value={formData.address.address_2}
+                onChange={(e) => handleAddressChange('address', 'address_2', e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Apartment, suite, etc. (optional)"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">City</label>
+                <input
+                  type="text"
+                  value={formData.address.city}
+                  onChange={(e) => handleAddressChange('address', 'city', e.target.value)}
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  placeholder="Enter city"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">State</label>
+                <input
+                  type="text"
+                  value={formData.address.state}
+                  onChange={(e) => handleAddressChange('address', 'state', e.target.value)}
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  placeholder="State/Province"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">ZIP Code</label>
+                <input
+                  type="text"
+                  value={formData.address.postcode}
+                  onChange={(e) => handleAddressChange('address', 'postcode', e.target.value)}
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  placeholder="ZIP/Postal Code"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-400 mb-2">Country</label>
+              <select
+                value={formData.address.country}
+                onChange={(e) => handleAddressChange('address', 'country', e.target.value)}
+                className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+              >
+                <option value="US">United States</option>
+                <option value="CA">Canada</option>
+                <option value="GB">United Kingdom</option>
+                <option value="AU">Australia</option>
+                <option value="DE">Germany</option>
+                <option value="FR">France</option>
+                <option value="IT">Italy</option>
+                <option value="ES">Spain</option>
+                <option value="NL">Netherlands</option>
+                <option value="BE">Belgium</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Shipping Address Toggle */}
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              id="useShippingAsBilling"
+              checked={useShippingAsBilling}
+              onChange={(e) => setUseShippingAsBilling(e.target.checked)}
+              className="w-4 h-4 text-neutral-400 bg-transparent border-neutral-500/30 rounded focus:border-neutral-400/50 focus:outline-none transition-all duration-300"
+            />
+            <label htmlFor="useShippingAsBilling" className="text-sm font-medium text-neutral-300">
+              Use billing address for shipping
+            </label>
+          </div>
+
+          {/* Shipping Address (if different) */}
+          {!useShippingAsBilling && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wider">Shipping Address</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-400 mb-2">First Name</label>
+                  <input
+                    type="text"
+                    value={formData.shipping.first_name}
+                    onChange={(e) => handleAddressChange('shipping', 'first_name', e.target.value)}
+                    className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                    placeholder="Enter first name"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-neutral-400 mb-2">Last Name</label>
+                  <input
+                    type="text"
+                    value={formData.shipping.last_name}
+                    onChange={(e) => handleAddressChange('shipping', 'last_name', e.target.value)}
+                    className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                    placeholder="Enter last name"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">Address Line 1</label>
+                <input
+                  type="text"
+                  value={formData.shipping.address_1}
+                  onChange={(e) => handleAddressChange('shipping', 'address_1', e.target.value)}
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  placeholder="Enter street address"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">Address Line 2</label>
+                <input
+                  type="text"
+                  value={formData.shipping.address_2}
+                  onChange={(e) => handleAddressChange('shipping', 'address_2', e.target.value)}
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  placeholder="Apartment, suite, etc. (optional)"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-400 mb-2">City</label>
+                  <input
+                    type="text"
+                    value={formData.shipping.city}
+                    onChange={(e) => handleAddressChange('shipping', 'city', e.target.value)}
+                    className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                    placeholder="Enter city"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-neutral-400 mb-2">State</label>
+                  <input
+                    type="text"
+                    value={formData.shipping.state}
+                    onChange={(e) => handleAddressChange('shipping', 'state', e.target.value)}
+                    className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                    placeholder="State/Province"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-neutral-400 mb-2">ZIP Code</label>
+                  <input
+                    type="text"
+                    value={formData.shipping.postcode}
+                    onChange={(e) => handleAddressChange('shipping', 'postcode', e.target.value)}
+                    className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                    placeholder="ZIP/Postal Code"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">Country</label>
+                <select
+                  value={formData.shipping.country}
+                  onChange={(e) => handleAddressChange('shipping', 'country', e.target.value)}
+                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                >
+                  <option value="US">United States</option>
+                  <option value="CA">Canada</option>
+                  <option value="GB">United Kingdom</option>
+                  <option value="AU">Australia</option>
+                  <option value="DE">Germany</option>
+                  <option value="FR">France</option>
+                  <option value="IT">Italy</option>
+                  <option value="ES">Spain</option>
+                  <option value="NL">Netherlands</option>
+                  <option value="BE">Belgium</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Form Actions */}
+          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-neutral-700/50">
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={loading}
+              className="px-3 py-2 text-sm bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 text-neutral-300 hover:text-neutral-200 rounded-lg transition-all duration-300 ease-out disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 text-sm bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 text-neutral-200 hover:text-white rounded-lg transition-all duration-300 ease-out flex items-center gap-2 disabled:opacity-50"
+            >
+              {loading && (
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              )}
+              {loading ? 'Creating...' : 'Create Customer'}
+            </button>
+          </div>
+        </form>
+        </div>
+      </div>
+    </div>
+  );
+}
