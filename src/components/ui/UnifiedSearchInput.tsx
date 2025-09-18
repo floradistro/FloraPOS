@@ -180,6 +180,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [showIDScanner, setShowIDScanner] = useState(false);
   const [scannerStream, setScannerStream] = useState<MediaStream | null>(null);
+  const [scannerStatus, setScannerStatus] = useState<string>('Ready to scan');
   
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -474,40 +475,78 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   };
 
   const startInlineScanning = async (video: HTMLVideoElement) => {
-    const { BrowserPDF417Reader } = await import('@zxing/browser');
-    const codeReader = new BrowserPDF417Reader();
-    
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    const scan = async () => {
-      if (!video || !ctx || !showIDScanner) return;
+    try {
+      // Import multiple barcode readers for better detection
+      const { BrowserMultiFormatReader, BrowserPDF417Reader } = await import('@zxing/browser');
       
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
+      // Try multiple readers for better compatibility
+      const readers = [
+        new BrowserPDF417Reader(),
+        new BrowserMultiFormatReader()
+      ];
       
-      try {
-        const result = await codeReader.decodeFromCanvas(canvas);
-        if (result) {
-          const { parseIDBarcode } = await import('../../utils/idParser');
-          const parsedData = parseIDBarcode(result.getText());
-          
-          if (parsedData) {
-            handleIDDataScanned(parsedData);
-            return;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) return;
+      
+      const scan = async () => {
+        if (!video || !ctx || !showIDScanner || video.readyState !== 4) return;
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        if (canvas.width === 0 || canvas.height === 0) {
+          setScannerStatus('Camera loading...');
+          setTimeout(scan, 100);
+          return;
+        }
+        
+        setScannerStatus('Scanning for barcode...');
+        ctx.drawImage(video, 0, 0);
+        
+        // Try each reader
+        for (const reader of readers) {
+          try {
+            const result = await reader.decodeFromCanvas(canvas);
+            if (result) {
+              const barcodeText = result.getText();
+              console.log('Barcode detected:', barcodeText.substring(0, 100) + '...');
+              setScannerStatus('Barcode found! Parsing...');
+              
+              const { parseIDBarcode } = await import('../../utils/idParser');
+              const parsedData = parseIDBarcode(barcodeText);
+              
+              if (parsedData) {
+                console.log('ID data parsed successfully:', parsedData);
+                setScannerStatus('ID data extracted!');
+                handleIDDataScanned(parsedData);
+                return;
+              } else {
+                console.log('Barcode detected but could not parse ID data');
+                setScannerStatus('Invalid ID format. Try repositioning...');
+                setTimeout(() => setScannerStatus('Scanning for barcode...'), 2000);
+              }
+            }
+          } catch (error) {
+            // Try next reader
           }
         }
-      } catch (error) {
-        // Continue scanning
-      }
+        
+        if (showIDScanner) {
+          setTimeout(scan, 200); // Scan every 200ms for better performance
+        }
+      };
       
-      if (showIDScanner) {
-        setTimeout(scan, 100); // Scan every 100ms
+      // Wait for video to be ready
+      if (video.readyState >= 2) {
+        scan();
+      } else {
+        video.addEventListener('loadeddata', scan, { once: true });
       }
-    };
-    
-    scan();
+    } catch (error) {
+      console.error('Failed to initialize barcode scanning:', error);
+    }
   };
 
   const handleProductSelect = (product: Product | null) => {
@@ -868,9 +907,28 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                           
                           <div className="absolute bottom-1 left-1 right-1 text-center">
                             <div className="bg-black/70 rounded px-2 py-1">
-                              <p className="text-white text-xs">Position ID barcode in frame</p>
+                              <p className="text-white text-xs">{scannerStatus}</p>
                             </div>
                           </div>
+                          
+                          {/* Test Button for Development */}
+                          <button
+                            onClick={() => {
+                              // Test data for development
+                              const testData = {
+                                firstName: 'John',
+                                lastName: 'Doe',
+                                address: '123 Main St',
+                                city: 'Charlotte',
+                                state: 'NC',
+                                zipCode: '28202'
+                              };
+                              handleIDDataScanned(testData);
+                            }}
+                            className="absolute top-1 right-1 px-2 py-1 bg-green-600/80 hover:bg-green-600 text-white text-xs rounded transition-colors"
+                          >
+                            Test
+                          </button>
                         </div>
                       )}
                       <div className="grid grid-cols-2 gap-2">

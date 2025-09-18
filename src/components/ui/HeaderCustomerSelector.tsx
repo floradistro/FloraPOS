@@ -222,40 +222,72 @@ export function HeaderCustomerSelector({
   };
 
   const startInlineScanning = async (video: HTMLVideoElement) => {
-    const { BrowserPDF417Reader } = await import('@zxing/browser');
-    const codeReader = new BrowserPDF417Reader();
-    
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    const scan = async () => {
-      if (!video || !ctx || !showIDScanner) return;
+    try {
+      // Import multiple barcode readers for better detection
+      const { BrowserMultiFormatReader, BrowserPDF417Reader } = await import('@zxing/browser');
       
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
+      // Try multiple readers for better compatibility
+      const readers = [
+        new BrowserPDF417Reader(),
+        new BrowserMultiFormatReader()
+      ];
       
-      try {
-        const result = await codeReader.decodeFromCanvas(canvas);
-        if (result) {
-          const { parseIDBarcode } = await import('../../utils/idParser');
-          const parsedData = parseIDBarcode(result.getText());
-          
-          if (parsedData) {
-            handleIDDataScanned(parsedData);
-            return;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) return;
+      
+      const scan = async () => {
+        if (!video || !ctx || !showIDScanner || video.readyState !== 4) return;
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        if (canvas.width === 0 || canvas.height === 0) {
+          setTimeout(scan, 100);
+          return;
+        }
+        
+        ctx.drawImage(video, 0, 0);
+        
+        // Try each reader
+        for (const reader of readers) {
+          try {
+            const result = await reader.decodeFromCanvas(canvas);
+            if (result) {
+              const barcodeText = result.getText();
+              console.log('Barcode detected:', barcodeText.substring(0, 100) + '...');
+              
+              const { parseIDBarcode } = await import('../../utils/idParser');
+              const parsedData = parseIDBarcode(barcodeText);
+              
+              if (parsedData) {
+                console.log('ID data parsed successfully:', parsedData);
+                handleIDDataScanned(parsedData);
+                return;
+              } else {
+                console.log('Barcode detected but could not parse ID data');
+              }
+            }
+          } catch (error) {
+            // Try next reader
           }
         }
-      } catch (error) {
-        // Continue scanning
-      }
+        
+        if (showIDScanner) {
+          setTimeout(scan, 200); // Scan every 200ms for better performance
+        }
+      };
       
-      if (showIDScanner) {
-        setTimeout(scan, 100); // Scan every 100ms
+      // Wait for video to be ready
+      if (video.readyState >= 2) {
+        scan();
+      } else {
+        video.addEventListener('loadeddata', scan, { once: true });
       }
-    };
-    
-    scan();
+    } catch (error) {
+      console.error('Failed to initialize barcode scanning:', error);
+    }
   };
 
   const selectedCustomerName = selectedCustomer 
