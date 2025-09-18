@@ -193,7 +193,7 @@ export default function MenuDisplayPage() {
           <div key={ruleName} className={`flex items-center gap-1 ${
             orientation === 'vertical' ? 'flex-col text-center' : ''
           }`}>
-            <div className={`text-white font-medium uppercase tracking-wider ${
+            <div className={`text-black font-medium uppercase tracking-wider ${
               orientation === 'vertical' ? 'text-base mb-2' : 'text-sm'
             }`} style={{ fontFamily: 'Tiempo, serif' }}>
               {ruleName}
@@ -204,15 +204,15 @@ export default function MenuDisplayPage() {
               {tiers.map((tier, index) => (
                 <div
                   key={`${ruleName}-${index}`}
-                  className={`relative rounded-lg px-2 py-1 transition-all duration-300 ease-out cursor-pointer border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-neutral-700  hover:scale-105 ${
+                  className={`relative rounded-xl px-3 py-2 transition-all duration-300 ease-out cursor-pointer border border-gray-200 bg-white/90 hover:border-gray-300 hover:bg-white hover:scale-105 shadow-sm hover:shadow-md ${
                     orientation === 'vertical' ? 'text-sm' : 'text-xs'
                   }`}
                 >
                   
-                  <div className="text-white font-medium text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="text-black font-medium text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                     {tier.label}
                   </div>
-                  <div className="text-white font-bold text-center mt-1 relative z-10 " style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="text-black font-bold text-center mt-1 relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                     ${tier.price.toFixed(2)}
                   </div>
                 </div>
@@ -223,8 +223,8 @@ export default function MenuDisplayPage() {
             {ruleIndex < Array.from(tiersByRule.entries()).length - 1 && (
               <div className={`${
                 orientation === 'vertical' 
-                  ? 'w-16 h-px bg-white/20 my-2' 
-                  : 'w-px h-6 bg-white/20 mx-2'
+                  ? 'w-16 h-px bg-gray-300 my-2' 
+                  : 'w-px h-6 bg-gray-300 mx-2'
               }`} />
             )}
           </div>
@@ -265,24 +265,24 @@ export default function MenuDisplayPage() {
     return (
       <div className="flex-1 h-full overflow-y-auto">
         {sectionTitle && (
-          <div className="bg-transparent px-6 py-1 border-b border-white/[0.06] relative">
-            <h2 className="font-bold text-white uppercase tracking-wider  relative z-10 text-xl text-center" style={{ fontFamily: 'Tiempo, serif' }}>
+          <div className="bg-white/95 px-6 py-3 border-b border-gray-200 relative">
+            <h2 className="font-bold text-black uppercase tracking-wider relative z-10 text-xl text-center" style={{ fontFamily: 'Tiempo, serif' }}>
               {sectionTitle}
             </h2>
-            <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-neutral-400/60 to-transparent mt-2 mx-auto"></div>
+            <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-gray-400/60 to-transparent mt-2 mx-auto"></div>
           </div>
         )}
         
         {productsByCategory.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <p className="text-2xl text-white mb-3">
+              <p className="text-2xl text-black mb-3">
                 {sectionTitle 
                   ? `No ${sectionTitle.toLowerCase()} products currently available`
                   : 'No products currently available'
                 }
               </p>
-              <p className="text-lg text-white">Check back soon for updates</p>
+              <p className="text-lg text-gray-600">Check back soon for updates</p>
             </div>
           </div>
         ) : (
@@ -291,30 +291,30 @@ export default function MenuDisplayPage() {
               <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-4' : ''}>
                 {/* Category Header - Only show if not in dual mode or if multiple categories */}
                 {(!isDualMenu || productsByCategory.length > 1) && (
-                  <div className="bg-transparent px-6 py-1 border-b border-white/[0.06] relative mb-4">
-                    <h3 className="font-bold text-white uppercase tracking-wider  relative z-10 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="bg-white/95 px-6 py-3 border-b border-gray-200 relative mb-4 rounded-t-lg">
+                    <h3 className="font-bold text-black uppercase tracking-wider relative z-10 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
                       {category.name}
                     </h3>
-                    <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-neutral-400/60 to-transparent mt-2"></div>
+                    <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-gray-400/60 to-transparent mt-2"></div>
                   </div>
                 )}
                 
                 {/* Products Display */}
                 {isFlowerCategory(category.name) ? (
                     /* Table Layout for Flower Products - Edge to Edge */
-                    <div className="bg-transparent overflow-hidden relative -mx-4">
+                    <div className="bg-white/95 overflow-hidden relative -mx-4 rounded-lg shadow-sm">
                     
                     <div className="overflow-x-auto relative z-10">
                       <table className="w-full border-collapse">
-                        <thead className="bg-neutral-900/40 border-b border-white/[0.06] sticky top-0 z-20 backdrop-blur-sm">
-                          <tr className="border-b border-white/[0.06]">
-                            <th className="text-left text-white font-medium px-3 py-2 text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                        <thead className="bg-gray-50/90 border-b border-gray-200 sticky top-0 z-20 backdrop-blur-sm">
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left text-black font-medium px-3 py-2 text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
                               Product Name
                             </th>
-                            <th className="text-center text-white font-medium px-3 py-2 text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                            <th className="text-center text-black font-medium px-3 py-2 text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
                               Type
                             </th>
-                            <th className="text-center text-white font-medium px-3 py-2 text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                            <th className="text-center text-black font-medium px-3 py-2 text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
                               THCA %
                             </th>
                           </tr>
@@ -328,19 +328,19 @@ export default function MenuDisplayPage() {
                             return (
                               <tr 
                                 key={product.id}
-                                className={`border-b border-white/[0.06] hover:bg-neutral-700 transition-all duration-300 ease-out cursor-pointer ${
+                                className={`border-b border-gray-200 hover:bg-gray-50 transition-all duration-300 ease-out cursor-pointer ${
                                   index % 2 === 0 
-                                    ? 'bg-black' 
-                                    : 'bg-neutral-900'
+                                    ? 'bg-white' 
+                                    : 'bg-gray-50/50'
                                 }`}
                               >
-                                <td className="px-3 py-2 text-white font-medium leading-tight text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                                <td className="px-3 py-2 text-black font-medium leading-tight text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
                                   {product.name}
                                 </td>
-                                <td className="px-3 py-2 text-center text-white text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                                <td className="px-3 py-2 text-center text-gray-700 text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
                                   {strainType}
                                 </td>
-                                <td className="px-3 py-2 text-center text-white font-medium text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                                <td className="px-3 py-2 text-center text-black font-medium text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
                                   {thcaPercent}
                                 </td>
                               </tr>
@@ -361,7 +361,7 @@ export default function MenuDisplayPage() {
                       return (
                         <div 
                           key={product.id} 
-                          className="relative rounded-lg overflow-hidden p-4 transition-all duration-300 ease-out cursor-pointer border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-neutral-700 "
+                          className="relative rounded-xl overflow-hidden p-4 transition-all duration-300 ease-out cursor-pointer border border-gray-200 bg-white/95 hover:border-gray-300 hover:bg-white hover:scale-105 shadow-sm hover:shadow-md"
                         >
                           
                           
@@ -378,7 +378,7 @@ export default function MenuDisplayPage() {
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center  rounded-lg">
-                                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                   </div>
@@ -388,16 +388,16 @@ export default function MenuDisplayPage() {
                           )}
                           
                           {/* Product Name - Center */}
-                          <h4 className="font-semibold text-white leading-tight mb-4 relative z-10 text-xl text-center" style={{ fontFamily: 'Tiempo, serif' }}>
+                          <h4 className="font-semibold text-black leading-tight mb-4 relative z-10 text-xl text-center" style={{ fontFamily: 'Tiempo, serif' }}>
                             {product.name}
                           </h4>
                           
                           {/* Product Details - Bottom Centered */}
                           <div className="space-y-3 relative z-10 text-sm">
                             {product.sku && (
-                              <div className="text-center pt-2 border-t border-neutral-600">
-                                <div className="text-white mb-1" style={{ fontFamily: 'Tiempo, serif' }}>SKU</div>
-                                <div className="text-white font-mono text-xs">{product.sku}</div>
+                              <div className="text-center pt-2 border-t border-gray-200">
+                                <div className="text-gray-600 mb-1" style={{ fontFamily: 'Tiempo, serif' }}>SKU</div>
+                                <div className="text-black font-mono text-xs">{product.sku}</div>
                               </div>
                             )}
                           </div>
@@ -450,30 +450,30 @@ export default function MenuDisplayPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-800 flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center text-black">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
           <p className="text-xl font-medium">Loading Menu...</p>
-          <p className="text-sm text-white mt-2">Preparing display</p>
+          <p className="text-sm text-gray-600 mt-2">Preparing display</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-black text-white overflow-hidden flex flex-col relative border-2 border-white/20">
-      {/* Subtle 3D Wave Background */}
+    <div className="h-screen bg-gray-50 text-black overflow-hidden flex flex-col relative border-2 border-gray-200">
+      {/* Subtle Apple-style Background */}
       <div className="absolute inset-0 opacity-[0.03]">
-        <div className="absolute inset-0 bg-black"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100"></div>
         <svg 
           className="absolute inset-0 w-full h-full object-cover"
           viewBox="0 0 100 100" 
           preserveAspectRatio="none"
-          style={{ filter: 'contrast(1.5) brightness(0.8)' }}
+          style={{ filter: 'contrast(1.2) brightness(1.1)' }}
         >
           <defs>
             <pattern id="wave" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M0,10 Q5,0 10,10 T20,10" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" fill="none"/>
+              <path d="M0,10 Q5,0 10,10 T20,10" stroke="rgba(0,0,0,0.02)" strokeWidth="0.5" fill="none"/>
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#wave)"/>
@@ -482,8 +482,8 @@ export default function MenuDisplayPage() {
       
       {/* Header - Hide in dual menu mode */}
       {!isDualMenu && (
-        <div className={`bg-transparent border-b border-white/[0.06] px-6 flex-shrink-0 relative z-10 ${
-          orientation === 'vertical' ? 'py-2' : 'py-1'
+        <div className={`bg-white/95 border-b border-gray-200 px-6 flex-shrink-0 relative z-10 ${
+          orientation === 'vertical' ? 'py-3' : 'py-2'
         }`}>
         
         <div className={`flex flex-col items-center relative z-10 ${
@@ -491,13 +491,13 @@ export default function MenuDisplayPage() {
         }`}>
           {/* Title - Centered */}
           <div className="text-center">
-            <h1 className={`font-bold text-white  ${
+            <h1 className={`font-bold text-black ${
               orientation === 'vertical' ? 'text-8xl' : 'text-7xl'
             }`} style={{ fontFamily: 'Tiempo, serif' }}>
               {selectedCategoryName ? `${selectedCategoryName} Menu` : 'Flora Menu'}
             </h1>
             {/* Title underline effect */}
-            <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-neutral-400 to-transparent mx-auto mt-3 opacity-60"></div>
+            <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-gray-400 to-transparent mx-auto mt-3 opacity-60"></div>
           </div>
           
           {/* Tiered Pricing in Header - Centered */}
@@ -514,13 +514,13 @@ export default function MenuDisplayPage() {
           /* Dual Menu Layout - Side by Side */
           <div className="flex h-full">
             {/* Left Menu with Header */}
-            <div className="w-1/2 flex flex-col border-2 border-white/20 border-r-1">
+            <div className="w-1/2 flex flex-col border-2 border-gray-200 border-r-1">
               {/* Left Header */}
-              <div className="bg-transparent px-6 py-1 border-b border-white/[0.06] relative">
-                <h1 className="font-bold text-white  text-6xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
+              <div className="bg-white/95 px-6 py-2 border-b border-gray-200 relative">
+                <h1 className="font-bold text-black text-6xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                   {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Left Menu' : 'Left Menu'}
                 </h1>
-                <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-neutral-400 to-transparent mx-auto mt-3 opacity-60"></div>
+                <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-gray-400 to-transparent mx-auto mt-3 opacity-60"></div>
                 
                 {/* Left Menu Pricing */}
                 <div className="w-full flex justify-center mt-1">
@@ -537,13 +537,13 @@ export default function MenuDisplayPage() {
             </div>
             
             {/* Right Menu with Header */}
-            <div className="w-1/2 flex flex-col border-2 border-white/20 border-l-1">
+            <div className="w-1/2 flex flex-col border-2 border-gray-200 border-l-1">
               {/* Right Header */}
-              <div className="bg-transparent px-6 py-1 border-b border-white/[0.06] relative">
-                <h1 className="font-bold text-white  text-6xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
+              <div className="bg-white/95 px-6 py-2 border-b border-gray-200 relative">
+                <h1 className="font-bold text-black text-6xl text-center relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
                   {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Right Menu' : 'Right Menu'}
                 </h1>
-                <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-neutral-400 to-transparent mx-auto mt-3 opacity-60"></div>
+                <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-gray-400 to-transparent mx-auto mt-3 opacity-60"></div>
                 
                 {/* Right Menu Pricing */}
                 <div className="w-full flex justify-center mt-1">
@@ -564,15 +564,15 @@ export default function MenuDisplayPage() {
           <div className="h-full overflow-y-auto">
             {productsByCategory.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <p className="text-2xl text-white mb-3">
-                    {selectedCategoryName 
-                      ? `No ${selectedCategoryName.toLowerCase()} products currently available`
-                      : 'No products currently available'
-                    }
-                  </p>
-                  <p className="text-lg text-white">Check back soon for updates</p>
-                </div>
+              <div className="text-center">
+                <p className="text-2xl text-black mb-3">
+                  {selectedCategoryName 
+                    ? `No ${selectedCategoryName.toLowerCase()} products currently available`
+                    : 'No products currently available'
+                  }
+                </p>
+                <p className="text-lg text-gray-600">Check back soon for updates</p>
+              </div>
               </div>
             ) : (
               <div className={`h-full ${orientation === 'vertical' ? 'space-y-6' : 'space-y-8'}`}>
@@ -580,40 +580,39 @@ export default function MenuDisplayPage() {
                   <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-8' : ''}>
                     {/* Category Header - Only show if not filtered to single category */}
                     {!selectedCategoryName && (
-                      <div className="bg-transparent px-6 py-1 border-b border-white/[0.06] relative">
-                        {/* Header inner glow */}
+                      <div className="bg-white/95 px-6 py-3 border-b border-gray-200 relative rounded-t-lg">
                         
-                        <h2 className={`font-bold text-white uppercase tracking-wider  relative z-10 ${
+                        <h2 className={`font-bold text-black uppercase tracking-wider relative z-10 ${
                           orientation === 'vertical' ? 'text-lg' : 'text-xl'
                         }`} style={{ fontFamily: 'Tiempo, serif' }}>
                           {category.name}
                         </h2>
                         
                         {/* Elegant underline */}
-                        <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-neutral-400/60 to-transparent mt-2"></div>
+                        <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-gray-400/60 to-transparent mt-2"></div>
                       </div>
                     )}
                     
                     {/* Conditional Layout: Table for Flower, Grid for Others */}
                     {isFlowerCategory(category.name) ? (
                         /* Table Layout for Flower Products - Edge to Edge */
-                        <div className="bg-transparent flex-1 overflow-hidden relative -mx-4">
+                        <div className="bg-white/95 flex-1 overflow-hidden relative -mx-4 rounded-lg shadow-sm">
                         
                         <div className="overflow-x-auto h-full relative z-10">
                           <table className="w-full h-full border-collapse">
-                            <thead className="bg-neutral-900/40 border-b border-white/[0.06] sticky top-0 z-20 backdrop-blur-sm">
-                              <tr className="border-b border-white/[0.06]">
-                                <th className={`text-left text-white font-medium px-2 py-1 ${
+                            <thead className="bg-gray-50/90 border-b border-gray-200 sticky top-0 z-20 backdrop-blur-sm">
+                              <tr className="border-b border-gray-200">
+                                <th className={`text-left text-black font-medium px-2 py-1 ${
                                   orientation === 'vertical' ? 'text-sm' : 'text-xs'
                                 }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                   Product Name
                                 </th>
-                                <th className={`text-center text-white font-medium px-2 py-1 ${
+                                <th className={`text-center text-black font-medium px-2 py-1 ${
                                   orientation === 'vertical' ? 'text-sm' : 'text-xs'
                                 }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                   Type
                                 </th>
-                                <th className={`text-center text-white font-medium px-2 py-1 ${
+                                <th className={`text-center text-black font-medium px-2 py-1 ${
                                   orientation === 'vertical' ? 'text-sm' : 'text-xs'
                                 }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                   THCA %
@@ -630,23 +629,23 @@ export default function MenuDisplayPage() {
                                 return (
                                   <tr 
                                     key={product.id}
-                              className={`border-b border-white/[0.06] hover:bg-neutral-700 transition-all duration-300 ease-out cursor-pointer ${
+                              className={`border-b border-gray-200 hover:bg-gray-50 transition-all duration-300 ease-out cursor-pointer ${
                                 index % 2 === 0 
-                                  ? 'bg-black' 
-                                  : 'bg-neutral-900'
+                                  ? 'bg-white' 
+                                  : 'bg-gray-50/50'
                               }`}
                                   >
-                                    <td className={`px-2 py-1 text-white font-medium leading-tight ${
+                                    <td className={`px-2 py-1 text-black font-medium leading-tight ${
                                       orientation === 'vertical' ? 'text-sm' : 'text-xs'
                                     }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                       {product.name}
                                     </td>
-                                    <td className={`px-2 py-1 text-center text-white ${
+                                    <td className={`px-2 py-1 text-center text-gray-700 ${
                                       orientation === 'vertical' ? 'text-xs' : 'text-xs'
                                     }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                       {strainType}
                                     </td>
-                                    <td className={`px-2 py-1 text-center text-white font-medium ${
+                                    <td className={`px-2 py-1 text-center text-black font-medium ${
                                       orientation === 'vertical' ? 'text-xs' : 'text-xs'
                                     }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                       {thcaPercent}
@@ -674,9 +673,9 @@ export default function MenuDisplayPage() {
                           return (
                             <div 
                               key={product.id} 
-                              className={`relative rounded-lg overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
+                              className={`relative rounded-xl overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
                                 orientation === 'vertical' ? 'p-6' : 'p-5'
-                              } border border-white/[0.2] bg-black hover:border-white/[0.4] hover:bg-neutral-900 backdrop-blur-sm`}
+                              } border border-gray-200 bg-white/95 hover:border-gray-300 hover:bg-white hover:scale-105 shadow-sm hover:shadow-md backdrop-blur-sm`}
                             >
                               
                               
@@ -694,8 +693,8 @@ export default function MenuDisplayPage() {
                                         loading="lazy"
                                       />
                                     ) : (
-                                      <div className="w-full h-full flex items-center justify-center  rounded-lg">
-                                        <svg className={`text-white ${
+                                      <div className="w-full h-full flex items-center justify-center rounded-lg">
+                                        <svg className={`text-gray-400 ${
                                           orientation === 'vertical' ? 'w-8 h-8' : 'w-6 h-6'
                                         }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -707,7 +706,7 @@ export default function MenuDisplayPage() {
                               )}
                               
                               {/* Product Name - Center */}
-                              <h3 className={`font-semibold text-white leading-tight mb-4 relative z-10 text-center ${
+                              <h3 className={`font-semibold text-black leading-tight mb-4 relative z-10 text-center ${
                                 orientation === 'vertical' ? 'text-xl' : 'text-lg'
                               }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                 {product.name}
@@ -718,9 +717,9 @@ export default function MenuDisplayPage() {
                                 orientation === 'vertical' ? 'text-sm' : 'text-xs'
                               }`}>
                                 {product.sku && (
-                                  <div className="text-center pt-2 border-t border-neutral-600">
-                                    <div className="text-white mb-1" style={{ fontFamily: 'Tiempo, serif' }}>SKU</div>
-                                    <div className="text-white font-mono text-xs">{product.sku}</div>
+                                  <div className="text-center pt-2 border-t border-gray-200">
+                                    <div className="text-gray-600 mb-1" style={{ fontFamily: 'Tiempo, serif' }}>SKU</div>
+                                    <div className="text-black font-mono text-xs">{product.sku}</div>
                                   </div>
                                 )}
                               </div>

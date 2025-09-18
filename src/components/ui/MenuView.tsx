@@ -162,21 +162,21 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     })).filter(group => group.products.length > 0);
 
     return (
-      <div className="h-full bg-black text-white overflow-hidden flex flex-col border-2 border-white/20">
+      <div className="h-full bg-gray-50 text-black overflow-hidden flex flex-col border-2 border-gray-200">
         {/* Header */}
-        <div className={`bg-transparent border-b border-white/[0.06] px-6 flex-shrink-0 relative z-10 ${
-          previewOrient === 'vertical' ? 'py-2' : 'py-1'
+        <div className={`bg-white/95 border-b border-gray-200 px-6 flex-shrink-0 relative z-10 ${
+          previewOrient === 'vertical' ? 'py-3' : 'py-2'
         }`}>
           <div className={`flex flex-col items-center relative z-10 ${
             previewOrient === 'vertical' ? 'gap-1' : 'gap-0'
           }`}>
             <div className="text-center">
-              <h1 className={`font-bold text-white ${
+              <h1 className={`font-bold text-black ${
                 previewOrient === 'vertical' ? 'text-8xl' : 'text-7xl'
               }`} style={{ fontFamily: 'Tiempo, serif' }}>
                 {categoryFilter ? `${previewCategories.find(c => c.slug === categoryFilter)?.name || categoryFilter} Menu` : 'Flora Menu'}
               </h1>
-              <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-neutral-400 to-transparent mx-auto mt-3 opacity-60"></div>
+              <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-gray-400 to-transparent mx-auto mt-3 opacity-60"></div>
             </div>
           </div>
         </div>
@@ -186,8 +186,8 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           {productsByCategory.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <p className="text-2xl text-white mb-3">No products currently available</p>
-                <p className="text-lg text-white">Check back soon for updates</p>
+                <p className="text-2xl text-black mb-3">No products currently available</p>
+                <p className="text-lg text-gray-600">Check back soon for updates</p>
               </div>
             </div>
           ) : (
@@ -195,33 +195,33 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               {productsByCategory.map(({ category, products: categoryProducts }) => (
                 <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-8' : ''}>
                   {!categoryFilter && (
-                    <div className="bg-transparent px-6 py-1 border-b border-white/[0.06] relative">
-                      <h2 className={`font-bold text-white uppercase tracking-wider relative z-10 ${
+                    <div className="bg-white/95 px-6 py-3 border-b border-gray-200 relative rounded-t-lg">
+                      <h2 className={`font-bold text-black uppercase tracking-wider relative z-10 ${
                         previewOrient === 'vertical' ? 'text-lg' : 'text-xl'
                       }`} style={{ fontFamily: 'Tiempo, serif' }}>
                         {category.name}
                       </h2>
-                      <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-neutral-400/60 to-transparent mt-2"></div>
+                      <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-gray-400/60 to-transparent mt-2"></div>
                     </div>
                   )}
                   
                   {isFlowerCategory(category.name) ? (
-                    <div className="flex-1 overflow-hidden relative -mx-4 rounded-lg border border-white/[0.06] bg-transparent">
+                    <div className="flex-1 overflow-hidden relative -mx-4 rounded-lg border border-gray-200 bg-white/95 shadow-sm">
                       <div className="overflow-x-auto h-full relative z-10">
                         <table className="w-full h-full border-collapse">
-                          <thead className="bg-neutral-900/40 border-b border-white/[0.06] sticky top-0 z-20 backdrop-blur-sm">
-                            <tr className="border-b border-white/[0.06]">
-                              <th className={`text-left text-white font-medium px-2 py-1 ${
+                          <thead className="bg-gray-50/90 border-b border-gray-200 sticky top-0 z-20 backdrop-blur-sm">
+                            <tr className="border-b border-gray-200">
+                              <th className={`text-left text-black font-medium px-2 py-1 ${
                                 previewOrient === 'vertical' ? 'text-sm' : 'text-xs'
                               }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                 Product Name
                               </th>
-                              <th className={`text-center text-white font-medium px-2 py-1 ${
+                              <th className={`text-center text-black font-medium px-2 py-1 ${
                                 previewOrient === 'vertical' ? 'text-sm' : 'text-xs'
                               }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                 Type
                               </th>
-                              <th className={`text-center text-white font-medium px-2 py-1 ${
+                              <th className={`text-center text-black font-medium px-2 py-1 ${
                                 previewOrient === 'vertical' ? 'text-sm' : 'text-xs'
                               }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                 THCA %
@@ -236,21 +236,21 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                               return (
                                 <tr 
                                   key={product.id}
-                                  className={`border-b border-white/[0.06] hover:bg-neutral-700 transition-all duration-300 ease-out cursor-pointer ${
-                                    index % 2 === 0 ? 'bg-black' : 'bg-neutral-900'
+                                  className={`border-b border-gray-200 hover:bg-gray-50 transition-all duration-300 ease-out cursor-pointer ${
+                                    index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
                                   }`}
                                 >
-                                  <td className={`px-2 py-1 text-white font-medium leading-tight ${
+                                  <td className={`px-2 py-1 text-black font-medium leading-tight ${
                                     previewOrient === 'vertical' ? 'text-sm' : 'text-xs'
                                   }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                     {product.name}
                                   </td>
-                                  <td className={`px-2 py-1 text-center text-white ${
+                                  <td className={`px-2 py-1 text-center text-gray-700 ${
                                     previewOrient === 'vertical' ? 'text-xs' : 'text-xs'
                                   }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                     {strainType}
                                   </td>
-                                  <td className={`px-2 py-1 text-center text-white font-medium ${
+                                  <td className={`px-2 py-1 text-center text-black font-medium ${
                                     previewOrient === 'vertical' ? 'text-xs' : 'text-xs'
                                   }`} style={{ fontFamily: 'Tiempo, serif' }}>
                                     {thcaPercent}
@@ -271,9 +271,9 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                       {categoryProducts.slice(0, previewOrient === 'vertical' ? 12 : 20).map(product => (
                         <div 
                           key={product.id} 
-                          className={`relative rounded-lg overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
+                          className={`relative rounded-xl overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
                             previewOrient === 'vertical' ? 'p-6' : 'p-5'
-                          } border border-white/[0.2] bg-black hover:border-white/[0.4] hover:bg-neutral-900 backdrop-blur-sm`}
+                          } border border-gray-200 bg-white/95 hover:border-gray-300 hover:bg-white hover:scale-105 shadow-sm hover:shadow-md backdrop-blur-sm`}
                         >
                           {shouldShowImages(category.name) && (
                             <div className="flex justify-center mb-3 relative z-10">
@@ -289,7 +289,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center rounded-lg">
-                                    <svg className={`text-white ${
+                                    <svg className={`text-gray-400 ${
                                       previewOrient === 'vertical' ? 'w-8 h-8' : 'w-6 h-6'
                                     }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
@@ -300,7 +300,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             </div>
                           )}
                           
-                          <h3 className={`font-semibold text-white leading-tight mb-4 relative z-10 text-center ${
+                          <h3 className={`font-semibold text-black leading-tight mb-4 relative z-10 text-center ${
                             previewOrient === 'vertical' ? 'text-xl' : 'text-lg'
                           }`} style={{ fontFamily: 'Tiempo, serif' }}>
                             {product.name}
@@ -310,9 +310,9 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             previewOrient === 'vertical' ? 'text-sm' : 'text-xs'
                           }`}>
                             {product.sku && (
-                              <div className="text-center pt-2 border-t border-neutral-600">
-                                <div className="text-white mb-1" style={{ fontFamily: 'Tiempo, serif' }}>SKU</div>
-                                <div className="text-white font-mono text-xs">{product.sku}</div>
+                              <div className="text-center pt-2 border-t border-gray-200">
+                                <div className="text-gray-600 mb-1" style={{ fontFamily: 'Tiempo, serif' }}>SKU</div>
+                                <div className="text-black font-mono text-xs">{product.sku}</div>
                               </div>
                             )}
                           </div>
@@ -460,7 +460,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
 
     return (
       <div className="bg-neutral-800/40 rounded-lg p-2 space-y-2 border border-neutral-600/20 mt-3 text-xs">
-        <div className="text-center text-white font-semibold uppercase tracking-wide text-[10px]">
+        <div className="text-center text-black font-semibold uppercase tracking-wide text-[10px]">
           Pricing
         </div>
         {Array.from(tiersByRule.entries()).map(([ruleName, tiers]) => (
@@ -474,7 +474,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                   key={`${ruleName}-${index}`}
                   className="bg-gradient-to-br from-neutral-500 to-neutral-600 border border-neutral-400 rounded px-2 py-1 text-[9px] "
                 >
-                  <div className="text-white font-medium text-center">{tier.label}</div>
+                  <div className="text-black font-medium text-center">{tier.label}</div>
                   <div className="text-green-400 font-bold text-center">${tier.price.toFixed(2)}</div>
                 </div>
               ))}
@@ -786,8 +786,8 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           {productsByCategory.length === 0 ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <p className="text-white" style={{ fontFamily: 'Tiempo, serif' }}>No products available for preview</p>
-                <p className="text-sm text-white mt-2" style={{ fontFamily: 'Tiempo, serif' }}>Add products to see live menu previews</p>
+                <p className="text-black" style={{ fontFamily: 'Tiempo, serif' }}>No products available for preview</p>
+                <p className="text-sm text-gray-600 mt-2" style={{ fontFamily: 'Tiempo, serif' }}>Add products to see live menu previews</p>
               </div>
             </div>
           ) : (
@@ -795,11 +795,11 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               {/* All Categories Preview */}
               {!selectedMenuCategory && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white" style={{ fontFamily: 'Tiempo, serif' }}>All Categories Menu</h3>
+                  <h3 className="text-lg font-semibold text-black" style={{ fontFamily: 'Tiempo, serif' }}>All Categories Menu</h3>
                   <div className="flex gap-6 justify-center">
                     {/* Horizontal Preview */}
                     <div className="relative">
-                      <div className="absolute -top-6 left-0 text-xs text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <div className="absolute -top-6 left-0 text-xs text-black font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                         Horizontal (1920×1080)
                       </div>
                       <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
@@ -824,7 +824,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
 
                     {/* Vertical Preview */}
                     <div className="relative">
-                      <div className="absolute -top-6 left-0 text-xs text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <div className="absolute -top-6 left-0 text-xs text-black font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                         Vertical (1080×1920)
                       </div>
                       <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
@@ -861,17 +861,17 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 return (
                   <div key={category.id} className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-white" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <h3 className="text-lg font-semibold text-black" style={{ fontFamily: 'Tiempo, serif' }}>
                         {category.name} Menu
                       </h3>
-                      <span className="text-xs text-white" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <span className="text-xs text-gray-600" style={{ fontFamily: 'Tiempo, serif' }}>
                         {categoryProducts.length} products
                       </span>
                     </div>
                     <div className="flex gap-6 justify-center">
                       {/* Horizontal Preview */}
                       <div className="relative">
-                        <div className="absolute -top-6 left-0 text-xs text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                        <div className="absolute -top-6 left-0 text-xs text-black font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                           Horizontal
                         </div>
                         <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
@@ -896,7 +896,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
 
                       {/* Vertical Preview */}
                       <div className="relative">
-                        <div className="absolute -top-6 left-0 text-xs text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                        <div className="absolute -top-6 left-0 text-xs text-black font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                           Vertical
                         </div>
                         <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 

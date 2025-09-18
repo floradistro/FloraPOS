@@ -120,8 +120,8 @@ const ProductCard = memo<ProductCardProps>(({
           : isSalesView 
             ? isSelected
               ? 'border-2 border-white/20 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 hover:from-neutral-500/25 hover:to-neutral-600/45'
-              : 'border border-white/[0.2] bg-black hover:bg-neutral-900 hover:border-white/[0.4] backdrop-blur-sm'
-            : 'border border-white/[0.2] bg-black hover:border-white/[0.4] hover:bg-neutral-900 backdrop-blur-sm'
+              : 'border-2 border-white/40 bg-black hover:bg-neutral-900 hover:border-white/60 backdrop-blur-sm'
+            : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40'
       }`}
     >
       {/* Product Image and Name Row */}
@@ -155,7 +155,7 @@ const ProductCard = memo<ProductCardProps>(({
             {product.name}
           </h3>
           {product.categories.length > 0 && (
-            <p className="text-white text-sm mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
+            <p className="text-neutral-300 text-sm mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
               {product.categories[0].name}
             </p>
           )}
@@ -172,7 +172,7 @@ const ProductCard = memo<ProductCardProps>(({
                 e.stopPropagation();
                 onInventoryAdjustment?.(product.id, null, product.blueprintPricing ? -0.1 : -1, 'Manual decrease');
               }}
-              className="absolute left-1 z-10 w-6 h-6 text-white hover:text-red-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
+              className="absolute left-1 z-10 w-6 h-6 text-neutral-300 hover:text-red-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
               title={product.blueprintPricing ? "Decrease by 0.1" : "Decrease by 1"}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,7 +222,7 @@ const ProductCard = memo<ProductCardProps>(({
                 e.stopPropagation();
                 onInventoryAdjustment?.(product.id, null, product.blueprintPricing ? 0.1 : 1, 'Manual increase');
               }}
-              className="absolute right-1 z-10 w-6 h-6 text-white hover:text-green-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
+              className="absolute right-1 z-10 w-6 h-6 text-neutral-300 hover:text-green-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
               title={product.blueprintPricing ? "Increase by 0.1" : "Increase by 1"}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,7 +252,7 @@ const ProductCard = memo<ProductCardProps>(({
                     <div key={variant.id} className="flex items-center justify-between py-2 px-3 bg-transparent border-b border-neutral-600/30 last:border-b-0">
                       {/* Variant Name */}
                       <div className="flex-1 min-w-0 mr-2">
-                        <div className="text-xs font-medium text-white truncate">
+                        <div className="text-xs font-medium text-neutral-200 truncate">
                           {variant.name}
                         </div>
                       </div>
@@ -265,7 +265,7 @@ const ProductCard = memo<ProductCardProps>(({
                             e.stopPropagation();
                             onInventoryAdjustment?.(product.id, variant.id, product.blueprintPricing ? -0.1 : -1, 'Manual decrease');
                           }}
-                          className="absolute left-0.5 z-10 w-5 h-5 text-white hover:text-red-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
+                          className="absolute left-0.5 z-10 w-5 h-5 text-neutral-300 hover:text-red-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
                           title={product.blueprintPricing ? "Decrease by 0.1" : "Decrease by 1"}
                         >
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,7 +309,7 @@ const ProductCard = memo<ProductCardProps>(({
                             e.stopPropagation();
                             onInventoryAdjustment?.(product.id, variant.id, product.blueprintPricing ? 0.1 : 1, 'Manual increase');
                           }}
-                          className="absolute right-0.5 z-10 w-5 h-5 text-white hover:text-green-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
+                          className="absolute right-0.5 z-10 w-5 h-5 text-neutral-300 hover:text-green-400 transition-colors opacity-60 hover:opacity-100 cursor-pointer flex items-center justify-center"
                           title={product.blueprintPricing ? "Increase by 0.1" : "Increase by 1"}
                         >
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -321,7 +321,7 @@ const ProductCard = memo<ProductCardProps>(({
                   );
                 })}
                 {product.variants.length > 4 && (
-                  <div className="text-xs text-white text-center py-1 border-t border-dashed border-neutral-600/20">
+                  <div className="text-xs text-neutral-300 text-center py-1 border-t border-dashed border-neutral-600/20">
                     +{product.variants.length - 4} more variants
                   </div>
                 )}
@@ -354,13 +354,13 @@ const ProductCard = memo<ProductCardProps>(({
                         isVariantSelected
                           ? 'bg-transparent border border-neutral-400 text-white'
                           : variantInStock
-                          ? 'bg-transparent border border-neutral-600 text-white hover:border-neutral-500 hover:text-white hover:bg-neutral-600/10'
-                          : 'bg-transparent border border-neutral-600/40 text-white cursor-not-allowed opacity-50'
+                          ? 'bg-transparent border border-neutral-600 text-neutral-200 hover:text-white hover:border-neutral-500 hover:bg-neutral-600/10'
+                          : 'bg-transparent border border-neutral-600/40 text-neutral-400 cursor-not-allowed opacity-50'
                       }`}
                     >
                       <div className={`truncate font-medium ${isSalesView ? 'text-sm' : ''}`}>{variant.name}</div>
                       <div className="mt-1">
-                        <span className={`${isSalesView ? 'text-sm' : 'text-xs'} ${variantInStock ? 'text-white' : 'text-red-400'}`}>
+                        <span className={`${isSalesView ? 'text-sm' : 'text-xs'} ${variantInStock ? 'text-neutral-300' : 'text-red-400'}`}>
                           {variantInStock ? `${variantStock} in stock` : 'Out of stock'}
                         </span>
                       </div>
@@ -368,7 +368,7 @@ const ProductCard = memo<ProductCardProps>(({
                   );
                 })}
                 {product.variants.length > 6 && (
-                  <div className="text-xs text-white text-center py-2 col-span-2 border border-dashed border-neutral-600 rounded">
+                  <div className="text-xs text-neutral-300 text-center py-2 col-span-2 border border-dashed border-neutral-600 rounded">
                     +{product.variants.length - 6} more variants
                   </div>
                 )}
@@ -411,7 +411,7 @@ const ProductCard = memo<ProductCardProps>(({
       <div className="text-center mb-2 h-4 flex items-center justify-center">
         {isAuditMode ? (
           /* Audit Mode - Show current stock only when field is focused */
-          <span className={`text-xs text-white transition-opacity duration-200 ${
+          <span className={`text-xs text-neutral-300 transition-opacity duration-200 ${
             focusedStockFields.has(`${product.id}`) || (product.has_variants && selectedVariants[product.id] && focusedStockFields.has(`${product.id}-${selectedVariants[product.id]}`))
               ? 'opacity-100' 
               : 'opacity-0'
@@ -422,7 +422,7 @@ const ProductCard = memo<ProductCardProps>(({
           </span>
         ) : (
           /* Normal Mode - Display Only */
-          <span className="text-xs text-white">
+          <span className="text-xs text-neutral-300">
             {product.has_variants && !selectedVariants[product.id] 
               ? `${stockDisplay} total stock` 
               : `${stockDisplay} in stock`}
@@ -432,10 +432,10 @@ const ProductCard = memo<ProductCardProps>(({
 
       {/* Selected Price - Bottom Left - Only show in normal mode */}
       {!isAuditMode && (
-        <div className="absolute bottom-2 left-2 text-xs text-white">
+        <div className="absolute bottom-2 left-2 text-xs text-neutral-200">
           {product.has_variants && selectedVariants[product.id] ? (
             product.selected_price ? formatPrice(product.selected_price) : (
-              <span className="text-white">Select quantity</span>
+              <span className="text-neutral-300">Select quantity</span>
             )
           ) : product.selected_price ? (
             formatPrice(product.selected_price)
@@ -456,7 +456,7 @@ const ProductCard = memo<ProductCardProps>(({
               onAddToCartWithVariant(product);
             }}
             disabled={!isInStock}
-            className="absolute bottom-2 right-2 text-white hover:text-white transition-colors disabled:opacity-50"
+            className="absolute bottom-2 right-2 text-neutral-200 hover:text-white transition-colors disabled:opacity-50"
             title={isInStock ? 'Add to Cart' : 'Out of Stock'}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
