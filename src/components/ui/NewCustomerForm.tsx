@@ -205,15 +205,15 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={handleClose}>
       <div 
-        className="bg-neutral-900/80 border border-neutral-700/50 rounded-lg backdrop-blur-sm w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4"
+        className="bg-neutral-800 border border-white/[0.04] rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-neutral-700/50 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-neutral-200">Add New Customer</h2>
+        <div className="px-8 py-6 border-b border-neutral-700 flex items-center justify-between">
+          <h2 className="text-2xl font-dongraffiti text-white">Add New Customer</h2>
           <button
             onClick={handleClose}
-            className="text-neutral-400 hover:text-neutral-200 transition-colors p-1 hover:bg-neutral-600/10 rounded"
+            className="text-neutral-400 hover:text-neutral-300 transition-colors p-1 hover:bg-neutral-700 rounded"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -222,8 +222,7 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
         </div>
 
         {/* Form */}
-        <div className="text-neutral-200">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-8 space-y-6">
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-sm">
               {error}
@@ -232,30 +231,33 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
 
           {/* Personal Information */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wider">Personal Information</h3>
+            <h3 className="text-lg font-medium text-white mb-4">Personal Information</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">
+                <label className="block text-sm font-medium text-neutral-300 mb-2">
                   First Name <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.firstName}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter first name"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Last Name</label>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">Last Name</label>
                 <input
                   type="text"
                   value={formData.lastName}
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter last name"
                 />
               </div>
@@ -263,26 +265,28 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">
+                <label className="block text-sm font-medium text-neutral-300 mb-2">
                   Email <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter email address"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Phone</label>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">Phone</label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter phone number"
                 />
               </div>
@@ -291,7 +295,7 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
 
           {/* Billing Address */}
           <div className="space-y-4">
-            <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wider">Billing Address</h3>
+            <h3 className="text-lg font-medium text-white mb-4">Billing Address</h3>
             
             <div>
               <label className="block text-sm font-medium text-neutral-400 mb-2">Address Line 1</label>
@@ -317,34 +321,37 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">City</label>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">City</label>
                 <input
                   type="text"
                   value={formData.address.city}
                   onChange={(e) => handleAddressChange('address', 'city', e.target.value)}
-                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter city"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">State</label>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">State</label>
                 <input
                   type="text"
                   value={formData.address.state}
                   onChange={(e) => handleAddressChange('address', 'state', e.target.value)}
-                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="State/Province"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">ZIP Code</label>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">ZIP Code</label>
                 <input
                   type="text"
                   value={formData.address.postcode}
                   onChange={(e) => handleAddressChange('address', 'postcode', e.target.value)}
-                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="ZIP/Postal Code"
                 />
               </div>
@@ -355,7 +362,7 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
               <select
                 value={formData.address.country}
                 onChange={(e) => handleAddressChange('address', 'country', e.target.value)}
-                className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="US">United States</option>
                 <option value="CA">Canada</option>
@@ -378,7 +385,7 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
               id="useShippingAsBilling"
               checked={useShippingAsBilling}
               onChange={(e) => setUseShippingAsBilling(e.target.checked)}
-              className="w-4 h-4 text-neutral-400 bg-transparent border-neutral-500/30 rounded focus:border-neutral-400/50 focus:outline-none transition-all duration-300"
+              className="w-4 h-4 text-blue-600 bg-neutral-700 border-neutral-600 rounded focus:ring-blue-500 focus:ring-2"
             />
             <label htmlFor="useShippingAsBilling" className="text-sm font-medium text-neutral-300">
               Use billing address for shipping
@@ -388,95 +395,102 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
           {/* Shipping Address (if different) */}
           {!useShippingAsBilling && (
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wider">Shipping Address</h3>
+              <h3 className="text-lg font-medium text-white mb-4">Shipping Address</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-400 mb-2">First Name</label>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">First Name</label>
                   <input
                     type="text"
                     value={formData.shipping.first_name}
                     onChange={(e) => handleAddressChange('shipping', 'first_name', e.target.value)}
-                    className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter first name"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-400 mb-2">Last Name</label>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">Last Name</label>
                   <input
                     type="text"
                     value={formData.shipping.last_name}
                     onChange={(e) => handleAddressChange('shipping', 'last_name', e.target.value)}
-                    className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter last name"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Address Line 1</label>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">Address Line 1</label>
                 <input
                   type="text"
                   value={formData.shipping.address_1}
                   onChange={(e) => handleAddressChange('shipping', 'address_1', e.target.value)}
-                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter street address"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Address Line 2</label>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">Address Line 2</label>
                 <input
                   type="text"
                   value={formData.shipping.address_2}
                   onChange={(e) => handleAddressChange('shipping', 'address_2', e.target.value)}
-                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Apartment, suite, etc. (optional)"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-400 mb-2">City</label>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">City</label>
                   <input
                     type="text"
                     value={formData.shipping.city}
                     onChange={(e) => handleAddressChange('shipping', 'city', e.target.value)}
-                    className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter city"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-400 mb-2">State</label>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">State</label>
                   <input
                     type="text"
                     value={formData.shipping.state}
                     onChange={(e) => handleAddressChange('shipping', 'state', e.target.value)}
-                    className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="State/Province"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-neutral-400 mb-2">ZIP Code</label>
+                  <label className="block text-sm font-medium text-neutral-300 mb-2">ZIP Code</label>
                   <input
                     type="text"
                     value={formData.shipping.postcode}
                     onChange={(e) => handleAddressChange('shipping', 'postcode', e.target.value)}
-                    className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="ZIP/Postal Code"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Country</label>
+                <label className="block text-sm font-medium text-neutral-300 mb-2">Country</label>
                 <select
                   value={formData.shipping.country}
                   onChange={(e) => handleAddressChange('shipping', 'country', e.target.value)}
-                  className="w-full px-3 py-2 bg-transparent border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-200 focus:outline-none focus:border-neutral-400/50 transition-all duration-300"
+                  className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="US">United States</option>
                   <option value="CA">Canada</option>
@@ -494,19 +508,19 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
           )}
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-neutral-700/50">
+          <div className="flex items-center justify-end space-x-3 pt-6 border-t border-neutral-700">
             <button
               type="button"
               onClick={handleClose}
               disabled={loading}
-              className="px-3 py-2 text-sm bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 text-neutral-300 hover:text-neutral-200 rounded-lg transition-all duration-300 ease-out disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-neutral-300 hover:text-white rounded-md transition-colors duration-200 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-sm bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 text-neutral-200 hover:text-white rounded-lg transition-all duration-300 ease-out flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-2 text-sm bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-neutral-800 flex items-center gap-2"
             >
               {loading && (
                 <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -517,7 +531,6 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
             </button>
           </div>
         </form>
-        </div>
       </div>
     </div>
   );
