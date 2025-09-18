@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Type definitions for field update results
+interface FieldResult {
+  field: string;
+  value?: string;
+  prepared?: boolean;
+  skipped?: boolean;
+  reason?: string;
+  success?: boolean;
+  error?: string;
+}
+
 const FLORA_API_BASE = 'https://api.floradistro.com';
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
@@ -172,7 +183,7 @@ export async function POST(request: NextRequest) {
     for (const [productId, fieldValues] of Object.entries(PRODUCTS_DATA)) {
       console.log(`\n🔄 Updating product ID: ${productId}`);
       
-      const productResults = [];
+      const productResults: FieldResult[] = [];
       let productUpdated = 0;
       
       // Prepare all blueprint fields for this product
