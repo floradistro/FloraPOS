@@ -179,9 +179,6 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   });
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [showIDScanner, setShowIDScanner] = useState(false);
-  const [scannerStream, setScannerStream] = useState<MediaStream | null>(null);
-  const [scannerStatus, setScannerStatus] = useState<string>('Ready to scan');
-  const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualBarcodeText, setManualBarcodeText] = useState('');
   
   const inputRef = useRef<HTMLInputElement>(null);
@@ -429,36 +426,16 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   };
 
   const handleCancelNewCustomer = () => {
-    // Stop camera if active
-    if (scannerStream) {
-      scannerStream.getTracks().forEach(track => track.stop());
-      setScannerStream(null);
-    }
     setShowIDScanner(false);
+    setManualBarcodeText('');
     setNewCustomerData({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', state: '', zipCode: '' });
     setShowNewCustomerForm(false);
   };
 
-  const handleIDScanClick = async () => {
+  const handleIDScanClick = () => {
+    setShowIDScanner(!showIDScanner);
     if (showIDScanner) {
-      // Stop scanning
-      if (scannerStream) {
-        scannerStream.getTracks().forEach(track => track.stop());
-        setScannerStream(null);
-      }
-      setShowIDScanner(false);
-    } else {
-      // Start scanning
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
-        });
-        setScannerStream(stream);
-        setShowIDScanner(true);
-      } catch (error) {
-        console.error('Camera access denied:', error);
-        alert('Camera access is required to scan ID. Please allow camera access and try again.');
-      }
+      setManualBarcodeText('');
     }
   };
 
@@ -474,116 +451,10 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       zipCode: data.zipCode
     });
     
-    // Stop camera
-    if (scannerStream) {
-      scannerStream.getTracks().forEach(track => track.stop());
-      setScannerStream(null);
-    }
     setShowIDScanner(false);
+    setManualBarcodeText('');
   };
 
-  const startInlineScanning = async (video: HTMLVideoElement) => {
-    try {
-      setScannerStatus('Initializing...');
-      
-      // Use core ZXing library with multiple format support
-      const { MultiFormatReader, BarcodeFormat, HTMLCanvasElementLuminanceSource, HybridBinarizer, BinaryBitmap } = await import('@zxing/library');
-      
-      const reader = new MultiFormatReader();
-      
-      // Enable multiple barcode formats for US IDs
-      const hints = new Map();
-      hints.set(2, [
-        BarcodeFormat.PDF_417,
-        BarcodeFormat.CODE_128,
-        BarcodeFormat.CODE_39,
-        BarcodeFormat.CODABAR,
-        BarcodeFormat.DATA_MATRIX
-      ]);
-      reader.setHints(hints);
-      
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) {
-        setScannerStatus('Canvas error');
-        return;
-      }
-      
-      let isScanning = true;
-      let scanAttempts = 0;
-      
-      const scan = async () => {
-        if (!video || !showIDScanner || !isScanning) return;
-        
-        if (video.readyState < 2) {
-          setTimeout(scan, 200);
-          return;
-        }
-        
-        scanAttempts++;
-        setScannerStatus(`Scanning... (${scanAttempts})`);
-        
-        try {
-          // Set canvas to video size
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 480;
-          
-          if (canvas.width > 0 && canvas.height > 0) {
-            // Draw current video frame
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Create luminance source from canvas
-            const luminanceSource = new HTMLCanvasElementLuminanceSource(canvas);
-            const binaryBitmap = new BinaryBitmap(new HybridBinarizer(luminanceSource));
-            
-            try {
-              const result = reader.decode(binaryBitmap);
-              const barcodeText = result.getText();
-              
-              console.log('🎯 BARCODE DETECTED!');
-              console.log('Format:', result.getBarcodeFormat());
-              console.log('Text length:', barcodeText.length);
-              console.log('Raw data:', barcodeText);
-              
-              setScannerStatus('Barcode found! Processing...');
-              isScanning = false;
-              
-              const { parseIDBarcode } = await import('../../utils/idParser');
-              const parsedData = parseIDBarcode(barcodeText);
-              
-              if (parsedData) {
-                console.log('✅ Successfully parsed ID data:', parsedData);
-                setScannerStatus('Success! Data extracted');
-                handleIDDataScanned(parsedData);
-                return;
-              } else {
-                console.log('❌ Failed to parse ID data from barcode');
-                setScannerStatus('Could not parse ID - try different angle');
-                isScanning = true;
-              }
-            } catch (decodeError) {
-              // No barcode in this frame, continue
-            }
-          }
-        } catch (error) {
-          console.error('Scan error:', error);
-        }
-        
-        // Continue scanning
-        if (isScanning && showIDScanner) {
-          setTimeout(scan, 500); // Scan every 500ms
-        }
-      };
-      
-      setScannerStatus('Ready - position ID barcode in camera');
-      setTimeout(scan, 1000); // Start after 1 second delay
-      
-    } catch (error) {
-      console.error('❌ Failed to initialize scanner:', error);
-      setScannerStatus('Scanner initialization failed');
-    }
-  };
 
   const handleProductSelect = (product: Product | null) => {
     onProductSelect?.(product);
@@ -909,105 +780,65 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h4M4 4h5l2 3h3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h3l2-3z" />
                           )}
                         </svg>
-                        {showIDScanner ? 'Stop Scanning' : 'Scan State ID'}
+                        {showIDScanner ? 'Close ID Entry' : 'Fill from ID'}
                       </button>
 
-                      {/* Manual Entry or Camera Scanner */}
+                      {/* ID Data Entry Options */}
                       {showIDScanner && (
-                        <div className="space-y-2">
-                          {/* Toggle between camera and manual entry */}
+                        <div className="space-y-2 p-3 bg-neutral-700/30 rounded border border-neutral-600">
+                          <div className="text-xs text-neutral-300 mb-2">Fill from ID:</div>
+                          
                           <div className="flex gap-2">
                             <button
-                              onClick={() => setShowManualEntry(!showManualEntry)}
-                              className="flex-1 px-2 py-1 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-neutral-300 hover:text-white rounded text-xs transition-colors"
-                            >
-                              {showManualEntry ? 'Use Camera' : 'Manual Entry'}
-                            </button>
-                            <button
                               onClick={() => {
-                                // Quick test data
+                                // Sample driver license data
                                 const testData = {
                                   firstName: 'John',
                                   lastName: 'Doe',
-                                  address: '123 Main St',
+                                  address: '123 Main Street',
                                   city: 'Charlotte',
                                   state: 'NC',
                                   zipCode: '28202'
                                 };
                                 handleIDDataScanned(testData);
                               }}
-                              className="px-3 py-1 bg-green-600/80 hover:bg-green-600 text-white text-xs rounded transition-colors"
+                              className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                             >
-                              Test Fill
+                              Use Sample Data
                             </button>
                           </div>
                           
-                          {showManualEntry ? (
-                            /* Manual barcode text entry */
-                            <div className="space-y-2">
-                              <textarea
-                                placeholder="Paste barcode text here..."
-                                value={manualBarcodeText}
-                                onChange={(e) => setManualBarcodeText(e.target.value)}
-                                className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs h-20 resize-none"
-                                style={{ fontFamily: 'monospace' }}
-                              />
-                              <button
-                                onClick={async () => {
-                                  if (manualBarcodeText.trim()) {
+                          <div className="space-y-2">
+                            <textarea
+                              placeholder="Or paste driver license barcode text here..."
+                              value={manualBarcodeText}
+                              onChange={(e) => setManualBarcodeText(e.target.value)}
+                              className="w-full px-2 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs h-16 resize-none"
+                              style={{ fontFamily: 'monospace' }}
+                            />
+                            <button
+                              onClick={async () => {
+                                if (manualBarcodeText.trim()) {
+                                  try {
                                     const { parseIDBarcode } = await import('../../utils/idParser');
                                     const parsedData = parseIDBarcode(manualBarcodeText);
                                     if (parsedData) {
                                       handleIDDataScanned(parsedData);
+                                      setManualBarcodeText('');
                                     } else {
                                       alert('Could not parse ID data from text');
                                     }
+                                  } catch (error) {
+                                    alert('Error parsing barcode data');
                                   }
-                                }}
-                                className="w-full px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
-                              >
-                                Parse Text
-                              </button>
-                            </div>
-                          ) : (
-                            scannerStream ? (
-                              <div className="relative bg-black rounded border border-neutral-600">
-                                <video
-                                  ref={(video) => {
-                                    if (video && scannerStream) {
-                                      video.srcObject = scannerStream;
-                                      video.play();
-                                      
-                                      video.onloadedmetadata = () => {
-                                        startInlineScanning(video);
-                                      };
-                                    }
-                                  }}
-                                  className="w-full h-32 object-cover rounded"
-                                  autoPlay
-                                  playsInline
-                                  muted
-                                />
-                                
-                                <div className="absolute inset-2 border-2 border-blue-400 rounded pointer-events-none">
-                                  <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-blue-300"></div>
-                                  <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-blue-300"></div>
-                                  <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-blue-300"></div>
-                                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-blue-300"></div>
-                                </div>
-                                
-                                <div className="absolute bottom-1 left-1 right-1 text-center">
-                                  <div className="bg-black/70 rounded px-2 py-1">
-                                    <p className="text-white text-xs">{scannerStatus}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="text-center py-4 text-neutral-400 text-xs">
-                                Camera not available
-                              </div>
-                            )
-                          )}
+                                }
+                              }}
+                              disabled={!manualBarcodeText.trim()}
+                              className="w-full px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-xs rounded transition-colors"
+                            >
+                              Parse Barcode Text
+                            </button>
+                          </div>
                         </div>
                       )}
                       <div className="grid grid-cols-2 gap-2">
