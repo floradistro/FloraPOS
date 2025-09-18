@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { WordPressUser } from '../../services/users-service';
 import { usersService } from '../../services/users-service';
+import { NewCustomerForm } from './NewCustomerForm';
 
 interface CustomerSelectorPanelProps {
   selectedCustomer?: WordPressUser | null;
@@ -211,6 +212,12 @@ export function CustomerSelectorPanel({ selectedCustomer, onCustomerSelect }: Cu
         </div>
       </div>
 
+      {/* New Customer Form Modal */}
+      <NewCustomerForm
+        isOpen={showNewCustomerForm}
+        onClose={() => setShowNewCustomerForm(false)}
+        onCustomerCreated={handleCustomerCreated}
+      />
     </div>
   );
 }

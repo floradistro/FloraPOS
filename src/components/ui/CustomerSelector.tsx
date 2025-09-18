@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useUserPointsBalance } from '../../hooks/useRewards';
+import { NewCustomerForm } from './NewCustomerForm';
 
 interface CustomerSelectorProps {
   selectedCustomerId?: number | null;
@@ -252,6 +253,12 @@ export function CustomerSelector({
         </div>
       )}
 
+      {/* New Customer Form Modal */}
+      <NewCustomerForm
+        isOpen={showNewCustomerForm}
+        onClose={() => setShowNewCustomerForm(false)}
+        onCustomerCreated={handleCustomerCreated}
+      />
     </div>
   );
 }

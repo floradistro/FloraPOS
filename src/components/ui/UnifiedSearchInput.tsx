@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { useUserPointsBalance } from '../../hooks/useRewards';
 import { useDebounce } from '../../hooks/useDebounce';
-import { ParsedIDData } from '../../utils/idParser';
+import { IDScanner, ScannedIDData } from './IDScanner';
 
 export interface Category {
   id: number;
@@ -179,9 +179,6 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   });
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   const [showIDScanner, setShowIDScanner] = useState(false);
-  const [manualBarcodeText, setManualBarcodeText] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
-  const [scannerError, setScannerError] = useState<string | null>(null);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -270,14 +267,14 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   useEffect(() => {
     if (isOpen && inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
-      const minWidth = showNewCustomerForm ? (showIDScanner ? 550 : 500) : 400; // Wider when scanner is active
+      const minWidth = showNewCustomerForm ? 500 : 400; // Wider when form is shown
       setDropdownPosition({
         top: rect.bottom + 8,
         left: rect.left,
         width: Math.max(rect.width, minWidth)
       });
     }
-  }, [isOpen, showNewCustomerForm, showIDScanner]);
+  }, [isOpen, showNewCustomerForm]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -364,6 +361,28 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     setShowNewCustomerForm(true);
   };
 
+  const handleIDScanned = (scannedData: ScannedIDData) => {
+    // Populate new customer form with scanned data
+    setNewCustomerData({
+      firstName: scannedData.firstName || '',
+      lastName: scannedData.lastName || '',
+      email: '',
+      phone: '',
+      address: scannedData.address || '',
+      city: scannedData.city || '',
+      state: scannedData.state || '',
+      zipCode: scannedData.zipCode || ''
+    });
+    
+    setShowIDScanner(false);
+    setShowNewCustomerForm(true);
+  };
+
+  const handleIDScanError = (errorMessage: string) => {
+    console.error('ID Scan Error:', errorMessage);
+    setShowIDScanner(false);
+  };
+
   const handleCreateCustomer = async () => {
     if (!newCustomerData.firstName.trim() || !newCustomerData.email.trim()) {
       return;
@@ -428,84 +447,9 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   };
 
   const handleCancelNewCustomer = () => {
-    setShowIDScanner(false);
-    setManualBarcodeText('');
     setNewCustomerData({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', state: '', zipCode: '' });
     setShowNewCustomerForm(false);
   };
-
-  const startCameraScanning = async () => {
-    setIsScanning(true);
-    setScannerError(null);
-    
-    try {
-      const { Html5QrcodeScanner } = await import('html5-qrcode');
-      
-      const scanner = new Html5QrcodeScanner(
-        "qr-reader",
-        { 
-          fps: 10,
-          qrbox: { width: 300, height: 150 },
-          formatsToSupport: [12, 13, 14, 15, 16] // PDF417 and other formats
-        },
-        false
-      );
-      
-      scanner.render(
-        (decodedText: string) => {
-          console.log('Barcode scanned:', decodedText);
-          scanner.clear();
-          setIsScanning(false);
-          
-          // Parse the barcode data
-          import('../../utils/idParser').then(({ parseIDBarcode }) => {
-            const parsedData = parseIDBarcode(decodedText);
-            if (parsedData) {
-              handleIDDataScanned(parsedData);
-            } else {
-              setScannerError('Could not parse ID data from barcode');
-            }
-          });
-        },
-        (error: string) => {
-          // Ignore scanning errors - they're normal
-        }
-      );
-      
-    } catch (error) {
-      console.error('Failed to start scanner:', error);
-      setScannerError('Failed to start camera scanner');
-      setIsScanning(false);
-    }
-  };
-
-  const handleIDScanClick = () => {
-    if (showIDScanner) {
-      setShowIDScanner(false);
-      setManualBarcodeText('');
-      setScannerError(null);
-      setIsScanning(false);
-    } else {
-      setShowIDScanner(true);
-    }
-  };
-
-  const handleIDDataScanned = (data: ParsedIDData) => {
-    setNewCustomerData({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email || '',
-      phone: data.phone || '',
-      address: data.address,
-      city: data.city,
-      state: data.state,
-      zipCode: data.zipCode
-    });
-    
-    setShowIDScanner(false);
-    setManualBarcodeText('');
-  };
-
 
   const handleProductSelect = (product: Product | null) => {
     onProductSelect?.(product);
@@ -810,108 +754,11 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 </h3>
               </div>
               
-              <div className={`py-1 ${showNewCustomerForm ? (showIDScanner ? 'max-h-[600px]' : 'max-h-[500px]') : 'max-h-48'} overflow-y-auto`}>
+              <div className={`py-1 ${showNewCustomerForm ? 'max-h-[500px]' : 'max-h-48'} overflow-y-auto`}>
                 {/* New Customer Form or Button */}
                 {showNewCustomerForm ? (
                   <div className="px-4 py-3 border-b border-neutral-500/20 mb-1">
                     <div className="space-y-3">
-                      {/* ID Scan Toggle */}
-                      <button
-                        onClick={handleIDScanClick}
-                        className={`w-full px-3 py-2 border rounded text-xs transition-colors flex items-center justify-center gap-2 ${
-                          showIDScanner 
-                            ? 'bg-red-600/20 border-red-500/30 text-red-300 hover:bg-red-600/30' 
-                            : 'bg-blue-600/20 hover:bg-blue-600/30 border-blue-500/30 hover:border-blue-400/50 text-blue-300 hover:text-blue-200'
-                        }`}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          {showIDScanner ? (
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          ) : (
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h4M4 4h5l2 3h3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h3l2-3z" />
-                          )}
-                        </svg>
-                        {showIDScanner ? 'Close ID Entry' : 'Fill from ID'}
-                      </button>
-
-                      {/* ID Scanner */}
-                      {showIDScanner && (
-                        <div className="space-y-3 p-3 bg-neutral-700/30 rounded border border-neutral-600">
-                          <div className="text-xs text-neutral-300 mb-2">Scan Driver License:</div>
-                          
-                          {scannerError && (
-                            <div className="text-xs text-red-400 bg-red-500/10 p-2 rounded">
-                              {scannerError}
-                            </div>
-                          )}
-                          
-                          {!isScanning ? (
-                            <div className="space-y-2">
-                              <button
-                                onClick={startCameraScanning}
-                                className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors flex items-center justify-center gap-2"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                Start Camera Scanner
-                              </button>
-                              
-                              <div className="text-xs text-neutral-400 text-center">
-                                Or paste barcode text below:
-                              </div>
-                              
-                              <textarea
-                                placeholder="Paste driver license barcode data here..."
-                                value={manualBarcodeText}
-                                onChange={(e) => setManualBarcodeText(e.target.value)}
-                                className="w-full px-2 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs h-20 resize-none"
-                                style={{ fontFamily: 'monospace' }}
-                              />
-                              
-                              {manualBarcodeText.trim() && (
-                                <button
-                                  onClick={async () => {
-                                    try {
-                                      const { parseIDBarcode } = await import('../../utils/idParser');
-                                      const parsedData = parseIDBarcode(manualBarcodeText);
-                                      if (parsedData) {
-                                        handleIDDataScanned(parsedData);
-                                      } else {
-                                        setScannerError('Could not parse ID data from text');
-                                      }
-                                    } catch (error) {
-                                      setScannerError('Error parsing barcode data');
-                                    }
-                                  }}
-                                  className="w-full px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
-                                >
-                                  Parse Barcode Data
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="space-y-2">
-                              <div id="qr-reader" className="w-full"></div>
-                              <button
-                                onClick={() => {
-                                  setIsScanning(false);
-                                  setScannerError(null);
-                                  // Clear the scanner element
-                                  const element = document.getElementById('qr-reader');
-                                  if (element) {
-                                    element.innerHTML = '';
-                                  }
-                                }}
-                                className="w-full px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
-                              >
-                                Stop Scanner
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
                       <div className="grid grid-cols-2 gap-2">
                         <input
                           type="text"
@@ -1008,25 +855,48 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                     </div>
                   </div>
                 ) : (
-                  <button
-                    onClick={handleNewCustomerClick}
-                    className="w-full px-4 py-2.5 text-left text-sm transition-all flex items-center justify-between group text-neutral-300 hover:bg-white/[0.05] hover:text-neutral-200 border-b border-neutral-500/20 mb-1"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-neutral-700/50 rounded-full flex items-center justify-center group-hover:bg-neutral-600/50 transition-colors">
-                        <svg className="w-4 h-4 text-neutral-400 group-hover:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
+                  <>
+                    <button
+                      onClick={handleNewCustomerClick}
+                      className="w-full px-4 py-2.5 text-left text-sm transition-all flex items-center justify-between group text-neutral-300 hover:bg-white/[0.05] hover:text-neutral-200 border-b border-neutral-500/20"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-neutral-700/50 rounded-full flex items-center justify-center group-hover:bg-neutral-600/50 transition-colors">
+                          <svg className="w-4 h-4 text-neutral-400 group-hover:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-medium">New Customer</div>
+                          <div className="text-xs text-neutral-500 group-hover:text-neutral-400">Add a new customer manually</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-medium">New Customer</div>
-                        <div className="text-xs text-neutral-500 group-hover:text-neutral-400">Add a new customer</div>
+                      <svg className="w-4 h-4 text-neutral-500 group-hover:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    
+                    <button
+                      onClick={() => setShowIDScanner(true)}
+                      className="w-full px-4 py-2.5 text-left text-sm transition-all flex items-center justify-between group text-neutral-300 hover:bg-white/[0.05] hover:text-neutral-200 border-b border-neutral-500/20 mb-1"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-700/50 rounded-full flex items-center justify-center group-hover:bg-blue-600/50 transition-colors">
+                          <svg className="w-4 h-4 text-blue-400 group-hover:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-medium text-blue-400 group-hover:text-blue-300">Scan Driver's License</div>
+                          <div className="text-xs text-neutral-500 group-hover:text-neutral-400">Quick setup from ID scan</div>
+                        </div>
                       </div>
-                    </div>
-                    <svg className="w-4 h-4 text-neutral-500 group-hover:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                      <svg className="w-4 h-4 text-neutral-500 group-hover:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
                 )}
 
                 {/* Clear Customer Selection */}
@@ -1580,6 +1450,14 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         </div>,
         document.body
       )}
+      
+      {/* ID Scanner Modal */}
+      <IDScanner
+        isOpen={showIDScanner}
+        onClose={() => setShowIDScanner(false)}
+        onDataScanned={handleIDScanned}
+        onError={handleIDScanError}
+      />
     </>
   );
 });

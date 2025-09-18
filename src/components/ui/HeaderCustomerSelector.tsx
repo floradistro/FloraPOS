@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { useUserPointsBalance } from '../../hooks/useRewards';
-import { ParsedIDData } from '../../utils/idParser';
 
 interface HeaderCustomerSelectorProps {
   selectedCustomer?: WordPressUser | null;
@@ -54,8 +53,6 @@ export function HeaderCustomerSelector({
     zipCode: ''
   });
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
-  const [showIDScanner, setShowIDScanner] = useState(false);
-  const [manualBarcodeText, setManualBarcodeText] = useState('');
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -68,14 +65,14 @@ export function HeaderCustomerSelector({
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const dropdownWidth = showNewCustomerForm ? (showIDScanner ? 420 : 380) : 280; // Wider when scanner is active
+      const dropdownWidth = showNewCustomerForm ? 380 : 280; // Wider when form is shown
       setDropdownPosition({
         top: rect.bottom + 8,
         left: rect.left - 60, // Offset to make dropdown wider than button
         width: dropdownWidth
       });
     }
-  }, [isOpen, showNewCustomerForm, showIDScanner]);
+  }, [isOpen, showNewCustomerForm]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -178,29 +175,6 @@ export function HeaderCustomerSelector({
     setShowNewCustomerForm(false);
   };
 
-  const handleIDScanClick = () => {
-    setShowIDScanner(!showIDScanner);
-    if (showIDScanner) {
-      setManualBarcodeText('');
-    }
-  };
-
-  const handleIDDataScanned = (data: ParsedIDData) => {
-    setNewCustomerData({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email || '',
-      phone: data.phone || '',
-      address: data.address,
-      city: data.city,
-      state: data.state,
-      zipCode: data.zipCode
-    });
-    
-    setShowIDScanner(false);
-    setManualBarcodeText('');
-  };
-
   const selectedCustomerName = selectedCustomer 
     ? (selectedCustomer.display_name || selectedCustomer.name || selectedCustomer.username)
     : 'Select Customer';
@@ -300,83 +274,6 @@ export function HeaderCustomerSelector({
             {showNewCustomerForm ? (
               <div className="px-4 py-3 border-b border-white/[0.08]">
                 <div className="space-y-3">
-                  {/* ID Scan Toggle */}
-                  <button
-                    onClick={handleIDScanClick}
-                    className={`w-full px-3 py-2 border rounded text-xs transition-colors flex items-center justify-center gap-2 ${
-                      showIDScanner 
-                        ? 'bg-red-600/20 border-red-500/30 text-red-300 hover:bg-red-600/30' 
-                        : 'bg-blue-600/20 hover:bg-blue-600/30 border-blue-500/30 hover:border-blue-400/50 text-blue-300 hover:text-blue-200'
-                    }`}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {showIDScanner ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h4M4 4h5l2 3h3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2h3l2-3z" />
-                      )}
-                    </svg>
-                    {showIDScanner ? 'Close ID Entry' : 'Fill from ID'}
-                  </button>
-
-                  {/* ID Data Entry Options */}
-                  {showIDScanner && (
-                    <div className="space-y-2 p-3 bg-neutral-700/30 rounded border border-neutral-600">
-                      <div className="text-xs text-neutral-300 mb-2">Fill from ID:</div>
-                      
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            // Sample driver license data
-                            const testData = {
-                              firstName: 'John',
-                              lastName: 'Doe',
-                              address: '123 Main Street',
-                              city: 'Charlotte',
-                              state: 'NC',
-                              zipCode: '28202'
-                            };
-                            handleIDDataScanned(testData);
-                          }}
-                          className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
-                        >
-                          Use Sample Data
-                        </button>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <textarea
-                          placeholder="Or paste driver license barcode text here..."
-                          value={manualBarcodeText}
-                          onChange={(e) => setManualBarcodeText(e.target.value)}
-                          className="w-full px-2 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs h-16 resize-none"
-                          style={{ fontFamily: 'monospace' }}
-                        />
-                        <button
-                          onClick={async () => {
-                            if (manualBarcodeText.trim()) {
-                              try {
-                                const { parseIDBarcode } = await import('../../utils/idParser');
-                                const parsedData = parseIDBarcode(manualBarcodeText);
-                                if (parsedData) {
-                                  handleIDDataScanned(parsedData);
-                                  setManualBarcodeText('');
-                                } else {
-                                  alert('Could not parse ID data from text');
-                                }
-                              } catch (error) {
-                                alert('Error parsing barcode data');
-                              }
-                            }
-                          }}
-                          disabled={!manualBarcodeText.trim()}
-                          className="w-full px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-xs rounded transition-colors"
-                        >
-                          Parse Barcode Text
-                        </button>
-                      </div>
-                    </div>
-                  )}
                   <div className="grid grid-cols-2 gap-2">
                     <input
                       type="text"
