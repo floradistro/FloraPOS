@@ -22,30 +22,73 @@ export interface ParsedIDData {
  */
 export function parseAAMVAData(barcodeData: string): ParsedIDData | null {
   try {
-    // AAMVA barcodes typically start with @\n\x1e or similar control characters
-    const lines = barcodeData.split('\n');
+    console.log('Parsing AAMVA data, length:', barcodeData.length);
+    console.log('First 200 chars:', barcodeData.substring(0, 200));
+    
+    // Remove any header info and split by record separator or newlines
+    let cleanData = barcodeData;
+    
+    // Remove common headers and control characters
+    cleanData = cleanData.replace(/^@[\s\S]*?\x1e/g, ''); // Remove header up to record separator
+    cleanData = cleanData.replace(/^\d{6}\d{2}[A-Z]{2}/g, ''); // Remove AAMVA version header
+    
+    // Split by various delimiters used in AAMVA
+    const lines = cleanData.split(/[\n\r\x1e\x1f\x1d]+/).filter(line => line.length > 0);
+    
     const data: Partial<ParsedIDData> = {};
     
-    // Common AAMVA field mappings
+    // Comprehensive AAMVA field mappings for all US states
     const fieldMappings: Record<string, keyof ParsedIDData> = {
+      // Name fields
       'DAC': 'firstName',     // First Name
-      'DCS': 'lastName',      // Last Name  
-      'DAG': 'address',       // Street Address
+      'DCS': 'lastName',      // Last Name (Family Name)
+      'DCT': 'firstName',     // First Name (alternate)
+      'DDF': 'lastName',      // Last Name (alternate)
+      
+      // Address fields  
+      'DAG': 'address',       // Street Address 1
+      'DAH': 'address',       // Street Address 2 (if DAG not found)
       'DAI': 'city',          // City
       'DAJ': 'state',         // State
       'DAK': 'zipCode',       // ZIP Code
+      'DCG': 'zipCode',       // ZIP Code (alternate)
+      
+      // Other useful fields
       'DBB': 'dateOfBirth',   // Date of Birth (MMDDYYYY)
       'DAQ': 'licenseNumber', // License Number
+      'DAA': 'licenseNumber', // License Number (alternate)
     };
+
+    console.log('Scanning', lines.length, 'lines for AAMVA codes');
 
     // Parse each line looking for AAMVA field codes
     for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.length < 4) continue;
+      
       for (const [code, field] of Object.entries(fieldMappings)) {
-        if (line.startsWith(code)) {
-          const value = line.substring(3).trim(); // Remove 3-char code
-          if (value) {
+        if (trimmedLine.startsWith(code)) {
+          const value = trimmedLine.substring(3).trim(); // Remove 3-char code
+          if (value && value.length > 0) {
+            console.log(`Found ${code} -> ${field}: ${value}`);
             data[field] = value;
           }
+        }
+      }
+    }
+
+    // Also try parsing without field codes for some non-standard formats
+    if (!data.firstName || !data.lastName) {
+      console.log('Trying fallback parsing...');
+      for (const line of lines) {
+        const trimmedLine = line.trim().toUpperCase();
+        
+        // Look for name patterns like "LAST,FIRST" or "LAST, FIRST MIDDLE"
+        const nameMatch = trimmedLine.match(/^([A-Z\s\-']+),\s*([A-Z\s\-']+)/);
+        if (nameMatch && !data.lastName) {
+          data.lastName = nameMatch[1].trim();
+          data.firstName = nameMatch[2].split(' ')[0].trim(); // Take first name only
+          console.log('Found name pattern:', data.firstName, data.lastName);
         }
       }
     }
@@ -55,6 +98,8 @@ export function parseAAMVAData(barcodeData: string): ParsedIDData | null {
       const dob = data.dateOfBirth;
       data.dateOfBirth = `${dob.substring(0,2)}/${dob.substring(2,4)}/${dob.substring(4,8)}`;
     }
+
+    console.log('Final parsed data:', data);
 
     // Ensure we have minimum required fields
     if (data.firstName && data.lastName) {
@@ -72,6 +117,7 @@ export function parseAAMVAData(barcodeData: string): ParsedIDData | null {
       };
     }
 
+    console.log('Could not find required name fields');
     return null;
   } catch (error) {
     console.error('Error parsing AAMVA data:', error);

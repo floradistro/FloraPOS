@@ -476,76 +476,93 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
 
   const startInlineScanning = async (video: HTMLVideoElement) => {
     try {
-      // Import multiple barcode readers for better detection
-      const { BrowserMultiFormatReader, BrowserPDF417Reader } = await import('@zxing/browser');
-      
-      // Try multiple readers for better compatibility
-      const readers = [
-        new BrowserPDF417Reader(),
-        new BrowserMultiFormatReader()
-      ];
+      setScannerStatus('Initializing scanner...');
       
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
-      if (!ctx) return;
+      if (!ctx) {
+        setScannerStatus('Canvas not supported');
+        return;
+      }
+
+      let scanCount = 0;
+      let isScanning = true;
       
       const scan = async () => {
-        if (!video || !ctx || !showIDScanner || video.readyState !== 4) return;
+        if (!video || !ctx || !showIDScanner || !isScanning) return;
         
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        if (canvas.width === 0 || canvas.height === 0) {
+        if (video.readyState < 2) {
           setScannerStatus('Camera loading...');
           setTimeout(scan, 100);
           return;
         }
         
-        setScannerStatus('Scanning for barcode...');
-        ctx.drawImage(video, 0, 0);
+        scanCount++;
         
-        // Try each reader
-        for (const reader of readers) {
-          try {
-            const result = await reader.decodeFromCanvas(canvas);
-            if (result) {
-              const barcodeText = result.getText();
-              console.log('Barcode detected:', barcodeText.substring(0, 100) + '...');
-              setScannerStatus('Barcode found! Parsing...');
-              
-              const { parseIDBarcode } = await import('../../utils/idParser');
-              const parsedData = parseIDBarcode(barcodeText);
-              
-              if (parsedData) {
-                console.log('ID data parsed successfully:', parsedData);
-                setScannerStatus('ID data extracted!');
-                handleIDDataScanned(parsedData);
-                return;
-              } else {
-                console.log('Barcode detected but could not parse ID data');
-                setScannerStatus('Invalid ID format. Try repositioning...');
-                setTimeout(() => setScannerStatus('Scanning for barcode...'), 2000);
-              }
-            }
-          } catch (error) {
-            // Try next reader
-          }
+        // Set canvas to match video
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        
+        if (canvas.width === 0 || canvas.height === 0) {
+          setTimeout(scan, 100);
+          return;
         }
         
-        if (showIDScanner) {
-          setTimeout(scan, 200); // Scan every 200ms for better performance
+        // Draw current frame
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        setScannerStatus(`Scanning for ID barcode... (${scanCount})`);
+        
+        try {
+          // Try ZXing PDF417 reader first
+          const { BrowserPDF417Reader } = await import('@zxing/browser');
+          const pdf417Reader = new BrowserPDF417Reader();
+          
+          const result = await pdf417Reader.decodeFromCanvas(canvas);
+          if (result) {
+            const barcodeText = result.getText();
+            console.log('✅ Barcode detected! Length:', barcodeText.length);
+            console.log('Raw barcode data:', barcodeText);
+            
+            setScannerStatus('Barcode found! Parsing ID data...');
+            
+            const { parseIDBarcode } = await import('../../utils/idParser');
+            const parsedData = parseIDBarcode(barcodeText);
+            
+            if (parsedData) {
+              console.log('✅ ID data successfully parsed:', parsedData);
+              setScannerStatus('Success! ID data extracted');
+              isScanning = false;
+              handleIDDataScanned(parsedData);
+              return;
+            } else {
+              console.log('❌ Could not parse ID data from barcode');
+              setScannerStatus('Invalid ID format - try repositioning');
+            }
+          }
+        } catch (error) {
+          // Continue scanning - most frames won't have barcodes
+        }
+        
+        // Continue rapid scanning
+        if (showIDScanner && isScanning) {
+          requestAnimationFrame(scan); // Use requestAnimationFrame for smoother scanning
         }
       };
       
-      // Wait for video to be ready
+      setScannerStatus('Ready - hold ID barcode steady in frame');
+      
+      // Start scanning when video is ready
       if (video.readyState >= 2) {
         scan();
       } else {
-        video.addEventListener('loadeddata', scan, { once: true });
+        video.addEventListener('canplay', scan, { once: true });
       }
+      
     } catch (error) {
-      console.error('Failed to initialize barcode scanning:', error);
+      console.error('❌ Scanner initialization failed:', error);
+      setScannerStatus('Scanner failed to initialize');
     }
   };
 
