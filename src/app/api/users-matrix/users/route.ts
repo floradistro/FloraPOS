@@ -69,10 +69,12 @@ export async function POST(request: NextRequest) {
 
     const customerData = {
       email: body.email,
-      first_name: body.name?.split(' ')[0] || '',
-      last_name: body.name?.split(' ').slice(1).join(' ') || '',
+      first_name: body.first_name || body.name?.split(' ')[0] || '',
+      last_name: body.last_name || body.name?.split(' ').slice(1).join(' ') || '',
       username: body.username,
       password: body.password,
+      billing: body.billing || {},
+      shipping: body.shipping || {}
     };
 
     const response = await fetch(`${url}?${params.toString()}`, {
