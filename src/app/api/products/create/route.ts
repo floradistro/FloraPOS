@@ -1,0 +1,100 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+const FLORA_API_BASE = 'https://api.floradistro.com/wp-json';
+const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
+const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
+
+export async function POST(request: NextRequest) {
+  try {
+    const products = await request.json();
+    
+    if (!Array.isArray(products)) {
+      return NextResponse.json(
+        { error: 'Request body must be an array of products' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`🔄 Creating ${products.length} products in WooCommerce...`);
+    
+    const results = [];
+    
+    for (const productData of products) {
+      try {
+        // Build the API URL for product creation
+        const apiUrl = new URL(`${FLORA_API_BASE}/wc/v3/products`);
+        apiUrl.searchParams.append('consumer_key', CONSUMER_KEY);
+        apiUrl.searchParams.append('consumer_secret', CONSUMER_SECRET);
+        
+        console.log(`🔄 Creating product: ${productData.name}`);
+        
+        // Make the request to create the product
+        const response = await fetch(apiUrl.toString(), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(productData),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Failed to create product ${productData.name}:`, response.status, errorText);
+          results.push({
+            product: productData.name,
+            success: false,
+            error: `HTTP ${response.status}: ${errorText}`,
+          });
+          continue;
+        }
+        
+        const createdProduct = await response.json();
+        console.log(`✅ Successfully created product: ${productData.name} (ID: ${createdProduct.id})`);
+        
+        results.push({
+          product: productData.name,
+          success: true,
+          data: createdProduct,
+          id: createdProduct.id,
+        });
+        
+        // Small delay between requests to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+      } catch (error) {
+        console.error(`❌ Error creating product ${productData.name}:`, error);
+        results.push({
+          product: productData.name,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+    
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.length - successCount;
+    
+    console.log(`📊 Product creation summary: ${successCount} successful, ${failureCount} failed`);
+    
+    return NextResponse.json({
+      success: successCount > 0,
+      message: `Created ${successCount} products successfully${failureCount > 0 ? `, ${failureCount} failed` : ''}`,
+      results,
+      summary: {
+        total: results.length,
+        successful: successCount,
+        failed: failureCount,
+      },
+    });
+    
+  } catch (error) {
+    console.error('Product creation API error:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create products' 
+      },
+      { status: 500 }
+    );
+  }
+}
