@@ -204,17 +204,23 @@ export default function MenuDisplayPage() {
               {tiers.map((tier, index) => (
                 <div
                   key={`${ruleName}-${index}`}
-                  className={`relative rounded-2xl px-4 py-3 transition-all duration-300 ease-out cursor-pointer border border-slate-200/60 bg-white/90 backdrop-blur-sm hover:border-slate-300/80 hover:bg-white/95 hover:scale-105 shadow-lg hover:shadow-xl ${
+                  className={`relative rounded-2xl px-4 py-3 transition-all duration-500 ease-out cursor-pointer border border-slate-200/60 bg-gradient-to-br from-gray-300/95 via-gray-300/90 to-gray-300/85 backdrop-blur-md hover:border-slate-300/80 hover:from-gray-300/98 hover:via-gray-300/95 hover:to-gray-300/92 hover:scale-105 shadow-lg hover:shadow-2xl group ${
                     orientation === 'vertical' ? 'text-sm' : 'text-xs'
                   }`}
+                  style={{
+                    boxShadow: '0 8px 25px rgba(0,0,0,0.1), inset 0 1px 0 rgba(156,163,175,0.2)'
+                  }}
                 >
                   
-                  <div className="text-slate-700 font-semibold text-center relative z-10 tracking-wide" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="text-slate-700 font-semibold text-center relative z-10 tracking-wide group-hover:text-slate-800 transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif' }}>
                     {tier.label}
                   </div>
-                  <div className="text-slate-800 font-bold text-center mt-1 relative z-10" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="text-slate-800 font-bold text-center mt-1 relative z-10 group-hover:text-slate-900 transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif' }}>
                     ${tier.price.toFixed(2)}
                   </div>
+                  
+                  {/* Subtle inner glow effect */}
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 bg-gradient-to-r from-gray-300/10 via-transparent to-gray-300/10 transition-opacity duration-300"></div>
                 </div>
               ))}
             </div>
@@ -265,8 +271,8 @@ export default function MenuDisplayPage() {
     return (
       <div className="flex-1 h-full overflow-y-auto">
         {sectionTitle && (
-          <div className="bg-white/90 backdrop-blur-md px-8 py-4 border-b border-slate-200/60 relative shadow-sm">
-            <h2 className="font-medium text-slate-800 uppercase tracking-widest relative z-10 text-xl text-center" style={{ fontFamily: 'Tiempo, serif', letterSpacing: '0.15em' }}>
+          <div className="bg-gray-300/90 backdrop-blur-md px-8 py-4 border-b border-slate-200/60 relative shadow-sm">
+            <h2 className="text-slate-800 uppercase tracking-widest relative z-10 text-xl text-center" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, letterSpacing: '0.15em' }}>
               {sectionTitle}
             </h2>
             <div className="w-28 h-px bg-gradient-to-r from-transparent via-slate-400/70 to-transparent mt-3 mx-auto"></div>
@@ -291,8 +297,8 @@ export default function MenuDisplayPage() {
               <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-4' : ''}>
                 {/* Category Header - Only show if not in dual mode or if multiple categories */}
                 {(!isDualMenu || productsByCategory.length > 1) && (
-                  <div className="bg-white/90 backdrop-blur-md px-8 py-4 border-b border-slate-200/60 relative mb-4 rounded-t-xl shadow-sm">
-                    <h3 className="font-medium text-slate-800 uppercase tracking-widest relative z-10 text-lg" style={{ fontFamily: 'Tiempo, serif', letterSpacing: '0.15em' }}>
+                  <div className="bg-gray-300/90 backdrop-blur-md px-8 py-4 border-b border-slate-200/60 relative mb-4 rounded-t-xl shadow-sm">
+                    <h3 className="text-slate-800 uppercase tracking-widest relative z-10 text-lg" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, letterSpacing: '0.15em' }}>
                       {category.name}
                     </h3>
                     <div className="w-28 h-px bg-gradient-to-r from-transparent via-slate-400/70 to-transparent mt-3"></div>
@@ -302,7 +308,7 @@ export default function MenuDisplayPage() {
                 {/* Products Display */}
                 {isFlowerCategory(category.name) ? (
                     /* Table Layout for Flower Products - Edge to Edge */
-                    <div className="bg-white/95 backdrop-blur-sm overflow-hidden relative -mx-4 rounded-xl shadow-lg border border-slate-200/40">
+                    <div className="bg-gray-300/95 backdrop-blur-sm overflow-hidden relative -mx-4 rounded-xl shadow-lg border border-slate-200/40">
                     
                     <div className="overflow-x-auto relative z-10">
                       <table className="w-full border-collapse">
@@ -330,7 +336,7 @@ export default function MenuDisplayPage() {
                                 key={product.id}
                                 className={`border-b border-slate-200/40 hover:bg-slate-50/80 transition-all duration-300 ease-out cursor-pointer ${
                                   index % 2 === 0 
-                                    ? 'bg-white/60' 
+                                    ? 'bg-gray-300/60' 
                                     : 'bg-slate-50/40'
                                 }`}
                               >
@@ -361,7 +367,7 @@ export default function MenuDisplayPage() {
                       return (
                         <div 
                           key={product.id} 
-                          className="relative rounded-2xl overflow-hidden p-5 transition-all duration-300 ease-out cursor-pointer border border-slate-200/50 bg-white/90 backdrop-blur-md hover:border-slate-300/70 hover:bg-white/95 hover:scale-105 shadow-lg hover:shadow-xl"
+                          className="relative rounded-2xl overflow-hidden p-5 transition-all duration-300 ease-out cursor-pointer border border-slate-200/50 bg-gray-300/90 backdrop-blur-md hover:border-slate-300/70 hover:bg-gray-300/95 hover:scale-105 shadow-lg hover:shadow-xl"
                         >
                           
                           
@@ -453,7 +459,7 @@ export default function MenuDisplayPage() {
       <div className="min-h-screen bg-gradient-to-br from-stone-50 via-stone-100 to-stone-200 flex items-center justify-center">
         <div className="text-center text-slate-800">
           <div className="animate-spin rounded-full h-14 w-14 border-b-3 border-slate-600 mx-auto mb-6"></div>
-          <p className="text-2xl font-medium tracking-wide" style={{ fontFamily: 'Tiempo, serif' }}>Loading Menu...</p>
+          <p className="text-2xl tracking-wide" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200 }}>Loading Menu...</p>
           <p className="text-sm text-slate-500 mt-3 font-medium">Preparing premium display</p>
         </div>
       </div>
@@ -462,50 +468,66 @@ export default function MenuDisplayPage() {
 
   return (
     <div className="h-screen bg-gradient-to-br from-stone-50 via-stone-100 to-stone-200 text-slate-900 overflow-hidden flex flex-col relative">
-      {/* Premium Elegant Background */}
-      <div className="absolute inset-0 opacity-[0.15]">
-        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-stone-50/30 to-stone-100/40"></div>
+      {/* Multi-layered Premium Background */}
+      <div className="absolute inset-0">
+        {/* Base gradient layer */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-300/30 via-stone-50/40 to-stone-200/50"></div>
+        
+        {/* Radial gradient overlay for depth */}
+        <div className="absolute inset-0 bg-gradient-radial from-gray-300/10 via-transparent to-stone-300/20"></div>
+        
+        {/* Animated subtle gradient */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-gray-300/5 to-stone-100/10 animate-pulse" style={{ animationDuration: '8s' }}></div>
+        
+        {/* Premium texture pattern */}
         <svg 
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover opacity-20"
           viewBox="0 0 200 200" 
           preserveAspectRatio="none"
-          style={{ filter: 'contrast(1.05) brightness(1.02)' }}
         >
           <defs>
-            <pattern id="premium-texture" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-              <rect width="60" height="60" fill="rgba(255,255,255,0.02)"/>
-              <circle cx="15" cy="20" r="0.5" fill="rgba(148,163,184,0.08)" opacity="0.6"/>
-              <circle cx="45" cy="12" r="0.3" fill="rgba(148,163,184,0.06)" opacity="0.4"/>
-              <circle cx="30" cy="45" r="0.4" fill="rgba(148,163,184,0.07)" opacity="0.5"/>
-              <circle cx="50" cy="35" r="0.25" fill="rgba(148,163,184,0.05)" opacity="0.3"/>
-              <circle cx="20" cy="50" r="0.35" fill="rgba(148,163,184,0.06)" opacity="0.4"/>
+            <pattern id="elegant-texture" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+              <rect width="80" height="80" fill="rgba(156,163,175,0.03)"/>
+              <circle cx="20" cy="25" r="0.4" fill="rgba(156,163,175,0.06)" opacity="0.7"/>
+              <circle cx="60" cy="15" r="0.25" fill="rgba(156,163,175,0.04)" opacity="0.5"/>
+              <circle cx="40" cy="55" r="0.35" fill="rgba(156,163,175,0.05)" opacity="0.6"/>
+              <circle cx="70" cy="45" r="0.2" fill="rgba(156,163,175,0.03)" opacity="0.4"/>
+              <circle cx="25" cy="65" r="0.3" fill="rgba(156,163,175,0.04)" opacity="0.5"/>
+              {/* Subtle lines for texture */}
+              <line x1="0" y1="40" x2="80" y2="40" stroke="rgba(156,163,175,0.02)" strokeWidth="0.5" opacity="0.3"/>
+              <line x1="40" y1="0" x2="40" y2="80" stroke="rgba(156,163,175,0.02)" strokeWidth="0.5" opacity="0.3"/>
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#premium-texture)"/>
+          <rect width="100%" height="100%" fill="url(#elegant-texture)"/>
         </svg>
       </div>
       
-      {/* Subtle Premium Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/5 pointer-events-none"></div>
+      {/* Sophisticated overlay gradients */}
+      <div className="absolute inset-0 bg-gradient-to-t from-stone-100/10 via-transparent to-gray-300/15 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-stone-50/5 via-transparent to-stone-100/10 pointer-events-none"></div>
       
       {/* Header - Hide in dual menu mode */}
       {!isDualMenu && (
-        <div className={`bg-white/85 backdrop-blur-md border-b border-slate-200/60 px-8 flex-shrink-0 relative z-10 shadow-sm ${
+        <div className={`bg-gradient-to-r from-gray-300/90 via-gray-300/85 to-gray-300/90 backdrop-blur-md border-b border-slate-200/60 px-8 flex-shrink-0 relative z-10 shadow-lg ${
           orientation === 'vertical' ? 'py-4' : 'py-3'
-        }`}>
+        }`} style={{
+          boxShadow: '0 4px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
+        }}>
         
         <div className={`flex flex-col items-center relative z-10 ${
           orientation === 'vertical' ? 'gap-1' : 'gap-0'
         }`}>
           {/* Title - Centered */}
           <div className="text-center">
-            <h1 className={`font-light text-slate-800 tracking-wide ${
+            <h1 className={`text-slate-800 tracking-wide ${
               orientation === 'vertical' ? 'text-8xl' : 'text-7xl'
-            }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+            }`} style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
               {selectedCategoryName ? `${selectedCategoryName} Menu` : 'Flora Menu'}
             </h1>
             {/* Premium title underline effect */}
             <div className="w-40 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-4 opacity-80"></div>
+            {/* Elegant shimmer effect */}
+            <div className="w-24 h-px bg-gradient-to-r from-transparent via-gray-300/60 to-transparent mx-auto mt-1 opacity-40 animate-pulse" style={{ animationDuration: '3s' }}></div>
           </div>
           
           {/* Tiered Pricing in Header - Centered */}
@@ -522,10 +544,12 @@ export default function MenuDisplayPage() {
           /* Dual Menu Layout - Side by Side */
           <div className="flex h-full">
             {/* Left Menu with Header */}
-            <div className="w-1/2 flex flex-col border border-slate-200/40 border-r-1 shadow-lg">
+            <div className="w-1/2 flex flex-col border border-slate-200/40 border-r-1 shadow-xl rounded-l-xl overflow-hidden">
               {/* Left Header */}
-              <div className="bg-white/90 backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-sm">
-                <h1 className="font-light text-slate-800 text-6xl text-center relative z-10 tracking-wide" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+              <div className="bg-gradient-to-r from-gray-300/95 via-gray-300/90 to-gray-300/95 backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={{
+                boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
+              }}>
+                <h1 className="text-slate-800 text-6xl text-center relative z-10 tracking-wide" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                   {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Left Menu' : 'Left Menu'}
                 </h1>
                 <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
@@ -545,10 +569,12 @@ export default function MenuDisplayPage() {
             </div>
             
             {/* Right Menu with Header */}
-            <div className="w-1/2 flex flex-col border border-slate-200/40 border-l-1 shadow-lg">
+            <div className="w-1/2 flex flex-col border border-slate-200/40 border-l-1 shadow-xl rounded-r-xl overflow-hidden">
               {/* Right Header */}
-              <div className="bg-white/90 backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-sm">
-                <h1 className="font-light text-slate-800 text-6xl text-center relative z-10 tracking-wide" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+              <div className="bg-gradient-to-r from-gray-300/95 via-gray-300/90 to-gray-300/95 backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={{
+                boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
+              }}>
+                <h1 className="text-slate-800 text-6xl text-center relative z-10 tracking-wide" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                   {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Right Menu' : 'Right Menu'}
                 </h1>
                 <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
@@ -588,7 +614,9 @@ export default function MenuDisplayPage() {
                   <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-8' : ''}>
                     {/* Category Header - Only show if not filtered to single category */}
                     {!selectedCategoryName && (
-                      <div className="bg-white/90 backdrop-blur-md px-8 py-4 border-b border-slate-200/60 relative rounded-t-xl shadow-sm">
+                      <div className="bg-gradient-to-r from-gray-300/95 via-gray-300/90 to-gray-300/95 backdrop-blur-md px-8 py-4 border-b border-slate-200/60 relative rounded-t-xl shadow-lg" style={{
+                        boxShadow: '0 6px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.3)'
+                      }}>
                         
                         <h2 className={`font-medium text-slate-800 uppercase tracking-widest relative z-10 ${
                           orientation === 'vertical' ? 'text-lg' : 'text-xl'
@@ -604,11 +632,15 @@ export default function MenuDisplayPage() {
                     {/* Conditional Layout: Table for Flower, Grid for Others */}
                     {isFlowerCategory(category.name) ? (
                         /* Table Layout for Flower Products - Edge to Edge */
-                        <div className="bg-white/95 backdrop-blur-sm flex-1 overflow-hidden relative -mx-4 rounded-xl shadow-lg border border-slate-200/40">
+                        <div className="bg-gradient-to-br from-gray-300/98 via-gray-300/95 to-gray-300/92 backdrop-blur-md flex-1 overflow-hidden relative -mx-4 rounded-xl shadow-xl border border-slate-200/40" style={{
+                          boxShadow: '0 12px 35px rgba(0,0,0,0.12), inset 0 1px 0 rgba(156,163,175,0.3)'
+                        }}>
                         
                         <div className="overflow-x-auto h-full relative z-10">
                           <table className="w-full h-full border-collapse">
-                            <thead className="bg-slate-50/95 border-b border-slate-300/60 sticky top-0 z-20 backdrop-blur-md">
+                            <thead className="bg-gradient-to-r from-slate-50/98 via-slate-50/95 to-slate-50/98 border-b border-slate-300/60 sticky top-0 z-20 backdrop-blur-md" style={{
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                            }}>
                               <tr className="border-b border-slate-300/60">
                                 <th className={`text-left text-slate-800 font-semibold px-3 py-2 tracking-wide ${
                                   orientation === 'vertical' ? 'text-sm' : 'text-xs'
@@ -637,10 +669,10 @@ export default function MenuDisplayPage() {
                                 return (
                                   <tr 
                                     key={product.id}
-                              className={`border-b border-slate-200/40 hover:bg-slate-50/80 transition-all duration-300 ease-out cursor-pointer ${
+                              className={`border-b border-slate-200/40 hover:bg-gradient-to-r hover:from-slate-50/90 hover:via-slate-50/80 hover:to-slate-50/90 transition-all duration-500 ease-out cursor-pointer group ${
                                 index % 2 === 0 
-                                  ? 'bg-white/60' 
-                                  : 'bg-slate-50/40'
+                                  ? 'bg-gradient-to-r from-gray-300/70 via-gray-300/60 to-gray-300/70' 
+                                  : 'bg-gradient-to-r from-slate-50/50 via-slate-50/40 to-slate-50/50'
                               }`}
                                   >
                                     <td className={`px-3 py-2 text-slate-900 font-semibold leading-relaxed ${
@@ -681,9 +713,12 @@ export default function MenuDisplayPage() {
                           return (
                             <div 
                               key={product.id} 
-                              className={`relative rounded-2xl overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
+                              className={`relative rounded-2xl overflow-hidden transition-all duration-500 ease-out cursor-pointer group ${
                                 orientation === 'vertical' ? 'p-7' : 'p-6'
-                              } border border-slate-200/50 bg-white/90 backdrop-blur-md hover:border-slate-300/70 hover:bg-white/95 hover:scale-105 shadow-lg hover:shadow-xl`}
+                              } border border-slate-200/50 bg-gradient-to-br from-gray-300/95 via-gray-300/90 to-gray-300/85 backdrop-blur-md hover:border-slate-300/70 hover:from-gray-300/98 hover:via-gray-300/95 hover:to-gray-300/92 hover:scale-105 shadow-lg hover:shadow-2xl`}
+                              style={{
+                                boxShadow: '0 10px 30px rgba(0,0,0,0.1), inset 0 1px 0 rgba(156,163,175,0.2)'
+                              }}
                             >
                               
                               
@@ -714,11 +749,14 @@ export default function MenuDisplayPage() {
                               )}
                               
                               {/* Product Name - Center */}
-                              <h3 className={`font-medium text-slate-900 leading-relaxed mb-5 relative z-10 text-center tracking-wide ${
+                              <h3 className={`font-medium text-slate-900 leading-relaxed mb-5 relative z-10 text-center tracking-wide group-hover:text-slate-800 transition-colors duration-300 ${
                                 orientation === 'vertical' ? 'text-xl' : 'text-lg'
                               }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                                 {product.name}
                               </h3>
+                              
+                              {/* Elegant hover glow effect */}
+                              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 bg-gradient-to-r from-gray-300/5 via-gray-300/10 to-gray-300/5 transition-opacity duration-500"></div>
                               
                               {/* Product Details - Bottom Centered */}
                               <div className={`space-y-3 relative z-10 ${
