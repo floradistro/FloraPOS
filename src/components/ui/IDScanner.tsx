@@ -83,6 +83,19 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
+        
+        // Wait for video metadata to load
+        await new Promise((resolve) => {
+          const checkVideoReady = () => {
+            if (videoRef.current && videoRef.current.videoWidth > 0 && videoRef.current.videoHeight > 0) {
+              console.log('📹 Video ready:', videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
+              resolve(undefined);
+            } else {
+              setTimeout(checkVideoReady, 100);
+            }
+          };
+          checkVideoReady();
+        });
       }
       
       // Start continuous scanning for government ID barcodes
@@ -115,52 +128,69 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
 
   // Continuous scanning for government ID barcodes
   const startContinuousScanning = () => {
-    if (!videoRef.current || !codeReader.current || !pdf417Reader.current) return;
+    if (!videoRef.current || !codeReader.current) return;
+    
+    console.log('🔍 Starting continuous barcode scanning...');
     
     const scanFrame = async () => {
       if (!videoRef.current || !isCameraActive) return;
       
       try {
-        // Try PDF417 first (most common on driver's licenses)
-        try {
-          const result = await pdf417Reader.current!.decodeFromVideoElement(videoRef.current);
-          if (result && result.text) {
-            console.log('🎯 PDF417 barcode detected:', result.text);
-            handleBarcodeDetected(result.text);
-            return;
-          }
-        } catch (pdf417Error) {
-          // PDF417 failed, try multi-format reader
+        // Ensure video is ready
+        if (videoRef.current.readyState < 2) {
+          console.log('⏳ Video not ready yet, waiting...');
+          return;
         }
         
-        // Try multi-format reader for other barcode types
+        // Create a canvas to capture the current video frame
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        if (!context || !videoRef.current.videoWidth || !videoRef.current.videoHeight) {
+          console.log('⚠️ Video dimensions not ready:', videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
+          return;
+        }
+        
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0);
+        
+        console.log('📸 Scanning frame:', canvas.width, 'x', canvas.height);
+        
+        // Try PDF417 first (most common on driver's licenses)
         try {
-          // Create a canvas to capture the current video frame
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          if (context && videoRef.current) {
-            canvas.width = videoRef.current.videoWidth;
-            canvas.height = videoRef.current.videoHeight;
-            context.drawImage(videoRef.current, 0, 0);
-            
-            const result = await codeReader.current!.decodeFromCanvas(canvas);
+          if (pdf417Reader.current) {
+            const result = await pdf417Reader.current.decodeFromCanvas(canvas);
             if (result && result.text) {
-              console.log('🎯 Barcode detected:', result.text, 'Format:', result.format);
+              console.log('🎯 PDF417 barcode detected:', result.text);
               handleBarcodeDetected(result.text);
               return;
             }
           }
+        } catch (pdf417Error) {
+          console.log('📋 PDF417 scan attempt (no barcode found)');
+        }
+        
+        // Try multi-format reader for other barcode types
+        try {
+          const result = await codeReader.current!.decodeFromCanvas(canvas);
+          if (result && result.text) {
+            console.log('🎯 Barcode detected:', result.text, 'Format:', result.format);
+            handleBarcodeDetected(result.text);
+            return;
+          }
         } catch (multiError) {
-          // No barcode found, continue scanning
+          console.log('🔍 Multi-format scan attempt (no barcode found)');
         }
         
       } catch (error) {
-        // Scanning error, continue
+        console.error('❌ Scanning error:', error);
       }
     };
     
-    // Scan every 500ms for better performance
-    scanningInterval.current = setInterval(scanFrame, 500);
+    // Scan every 1000ms for better stability
+    scanningInterval.current = setInterval(scanFrame, 1000);
+    console.log('✅ Continuous scanning started');
   };
   
   // Handle detected barcode
@@ -444,17 +474,59 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
                     )}
                   </>
                 ) : (
-                  <button
-                    onClick={stopCamera}
-                    className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-colors flex items-center justify-center gap-2"
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9l6 6m0-6l-6 6" />
-                    </svg>
-                    Stop Camera
-                  </button>
+                  <>
+                    <button
+                      onClick={stopCamera}
+                      className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-colors flex items-center justify-center gap-2"
+                      style={{ fontFamily: 'Tiempos, serif' }}
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9l6 6m0-6l-6 6" />
+                      </svg>
+                      Stop Camera
+                    </button>
+                    
+                    <button
+                      onClick={async () => {
+                        if (!videoRef.current || !codeReader.current) return;
+                        
+                        try {
+                          const canvas = document.createElement('canvas');
+                          const context = canvas.getContext('2d');
+                          
+                          if (context && videoRef.current.videoWidth && videoRef.current.videoHeight) {
+                            canvas.width = videoRef.current.videoWidth;
+                            canvas.height = videoRef.current.videoHeight;
+                            context.drawImage(videoRef.current, 0, 0);
+                            
+                            console.log('🔍 Manual scan attempt...');
+                            
+                            try {
+                              const result = await codeReader.current.decodeFromCanvas(canvas);
+                              if (result && result.text) {
+                                console.log('✅ Manual scan success:', result.text);
+                                handleBarcodeDetected(result.text);
+                              } else {
+                                console.log('❌ No barcode found in manual scan');
+                              }
+                            } catch (err) {
+                              console.log('❌ Manual scan failed:', err);
+                            }
+                          }
+                        } catch (err) {
+                          console.error('Manual scan error:', err);
+                        }
+                      }}
+                      className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
+                      style={{ fontFamily: 'Tiempos, serif' }}
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      Scan Now
+                    </button>
+                  </>
                 )}
               </div>
             </div>
