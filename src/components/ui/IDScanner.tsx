@@ -60,6 +60,7 @@ export function IDScanner({ isOpen, onClose, onDataScanned, onError }: IDScanner
   const [scanMode, setScanMode] = useState<'barcode' | 'photo'>('barcode');
   const [progress, setProgress] = useState('');
   const [debugMode, setDebugMode] = useState(false);
+  const [scanAttempts, setScanAttempts] = useState(0);
   const [cameraReady, setCameraReady] = useState(false);
   const codeReader = useRef<BrowserMultiFormatReader | null>(null);
   const pdf417Reader = useRef<any>(null);
@@ -309,7 +310,7 @@ export function IDScanner({ isOpen, onClose, onDataScanned, onError }: IDScanner
     }
   };
 
-  // Scan barcode from camera
+  // Scan barcode from camera with aggressive processing
   const scanBarcode = useCallback(async () => {
     if (!webcamRef.current || (!codeReader.current && !pdf417Reader.current) || !cameraReady) return;
     
@@ -317,87 +318,205 @@ export function IDScanner({ isOpen, onClose, onDataScanned, onError }: IDScanner
       const imageSrc = webcamRef.current.getScreenshot();
       if (!imageSrc) return;
       
-      setProgress('Scanning for barcode...');
+      // Increment scan attempts
+      setScanAttempts(prev => prev + 1);
       
-      // Convert base64 to image element with better processing
+      // Convert base64 to image element
       const img = new Image();
       img.onload = async () => {
         try {
-          // Create canvas for image processing
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          if (!ctx) return;
+          // Create multiple canvases for different processing techniques
+          const originalCanvas = document.createElement('canvas');
+          const originalCtx = originalCanvas.getContext('2d');
+          if (!originalCtx) return;
           
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
+          originalCanvas.width = img.width;
+          originalCanvas.height = img.height;
+          originalCtx.drawImage(img, 0, 0);
           
-          // Try scanning with different approaches
-          let barcodeFound = false;
+          // Create processed versions
+          const processedImages = await createProcessedImages(img, originalCanvas, originalCtx);
           
-          // Try each scanning method individually with proper error handling
-          const scanMethods = [
-            { name: 'MultiFormat-Image', fn: () => codeReader.current?.decodeFromImageElement(img) },
-            { name: 'MultiFormat-Canvas', fn: () => codeReader.current?.decodeFromCanvas(canvas) },
-            { name: 'PDF417-Image', fn: () => pdf417Reader.current?.decodeFromImageElement(img) },
-            { name: 'PDF417-Canvas', fn: () => pdf417Reader.current?.decodeFromCanvas(canvas) },
-            { name: 'MultiFormat-Enhanced', fn: () => codeReader.current ? enhanceAndScan(canvas, ctx, codeReader.current) : null },
-            { name: 'PDF417-Enhanced', fn: () => pdf417Reader.current ? enhanceAndScan(canvas, ctx, pdf417Reader.current) : null }
-          ];
+          // Try all scanning methods on all processed images
+          const scanTasks = [];
           
-          for (const method of scanMethods) {
-            const scanFunction = method.fn();
-            if (!scanFunction) continue; // Skip if reader not available
+          for (const { name: imageName, canvas, img: processedImg } of processedImages) {
+            // MultiFormat reader attempts
+            if (codeReader.current) {
+              scanTasks.push(
+                tryScanning(`MultiFormat-${imageName}`, () => codeReader.current!.decodeFromImageElement(processedImg))
+              );
+              // Canvas decoding - use ImageData instead of canvas directly
+              const imageData = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height);
+              if (imageData) {
+                scanTasks.push(
+                  tryScanning(`MultiFormat-Canvas-${imageName}`, () => codeReader.current!.decodeFromImageElement(processedImg))
+                );
+              }
+            }
             
-            try {
-              if (debugMode) {
-                console.log(`Trying ${method.name}...`);
-              }
-              
-              const result = await scanFunction;
-              if (result) {
-                const barcodeText = result.getText();
-                console.log(`${method.name} succeeded! Raw barcode text:`, barcodeText.substring(0, 200));
-                
-                const parsedData = parseAAMVABarcode(barcodeText);
-                if (parsedData) {
-                  setScanning(false);
-                  setProgress('ID successfully scanned!');
-                  onDataScanned(parsedData);
-                  return;
-                } else {
-                  console.log('Failed to parse barcode data from', method.name);
-                  setProgress('Barcode detected but could not parse. Try repositioning...');
-                  barcodeFound = true;
-                }
-              }
-            } catch (error) {
-              if (debugMode && !(error instanceof NotFoundException)) {
-                console.log(`${method.name} failed:`, error.message);
-              }
-              // Continue to next method
+            // PDF417 reader attempts
+            if (pdf417Reader.current) {
+              scanTasks.push(
+                tryScanning(`PDF417-${imageName}`, () => pdf417Reader.current!.decodeFromImageElement(processedImg))
+              );
+              // PDF417 Canvas decoding - use image element instead
+              scanTasks.push(
+                tryScanning(`PDF417-Canvas-${imageName}`, () => pdf417Reader.current!.decodeFromImageElement(processedImg))
+              );
             }
           }
           
-          if (barcodeFound) {
-            setProgress('Barcode detected but could not parse. Try repositioning...');
-          } else {
-            setProgress('No barcode detected. Keep scanning...');
+          // Run all scans in parallel for speed
+          const results = await Promise.allSettled(scanTasks);
+          
+          // Check for successful scans
+          for (const result of results) {
+            if (result.status === 'fulfilled' && result.value) {
+              const { method, barcodeText } = result.value;
+              console.log(`${method} succeeded! Raw barcode text:`, barcodeText.substring(0, 200));
+              
+              const parsedData = parseAAMVABarcode(barcodeText);
+              if (parsedData) {
+                setScanning(false);
+                setProgress('ID successfully scanned!');
+                onDataScanned(parsedData);
+                return;
+              }
+            }
           }
+          
+          // No successful scan
+          if (debugMode) {
+            const successCount = results.filter(r => r.status === 'fulfilled' && r.value).length;
+            console.log(`Tried ${scanTasks.length} scan methods, ${successCount} detected barcodes but none parsed successfully`);
+          }
+          
         } catch (error) {
-          if (!(error instanceof NotFoundException)) {
-            console.error('Barcode scan error:', error);
+          if (debugMode) {
+            console.error('Scanning error:', error);
           }
-          setProgress('No barcode detected. Keep scanning...');
         }
       };
       img.crossOrigin = 'anonymous';
       img.src = imageSrc;
     } catch (error) {
       console.error('Camera capture error:', error);
-      setProgress('Camera error. Please try again...');
     }
-  }, [cameraReady, onDataScanned]);
+  }, [cameraReady, onDataScanned, debugMode]);
+
+  // Helper function to try a scanning method
+  const tryScanning = async (method: string, scanFn: () => Promise<any>) => {
+    try {
+      const result = await scanFn();
+      if (result) {
+        return { method, barcodeText: result.getText() };
+      }
+    } catch (error) {
+      if (debugMode && !(error instanceof NotFoundException)) {
+        console.log(`${method} failed:`, error instanceof Error ? error.message : String(error));
+      }
+    }
+    return null;
+  };
+
+  // Create multiple processed versions of the image for better detection
+  const createProcessedImages = async (originalImg: HTMLImageElement, originalCanvas: HTMLCanvasElement, originalCtx: CanvasRenderingContext2D) => {
+    const processedImages = [];
+    
+    // 1. Original image
+    processedImages.push({
+      name: 'Original',
+      canvas: originalCanvas,
+      img: originalImg
+    });
+    
+    // 2. High contrast version
+    const contrastCanvas = document.createElement('canvas');
+    const contrastCtx = contrastCanvas.getContext('2d');
+    if (contrastCtx) {
+      contrastCanvas.width = originalCanvas.width;
+      contrastCanvas.height = originalCanvas.height;
+      contrastCtx.drawImage(originalCanvas, 0, 0);
+      
+      const imageData = contrastCtx.getImageData(0, 0, contrastCanvas.width, contrastCanvas.height);
+      const data = imageData.data;
+      
+      // Increase contrast dramatically
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = Math.min(255, Math.max(0, (data[i] - 128) * 2.5 + 128));     // Red
+        data[i + 1] = Math.min(255, Math.max(0, (data[i + 1] - 128) * 2.5 + 128)); // Green
+        data[i + 2] = Math.min(255, Math.max(0, (data[i + 2] - 128) * 2.5 + 128)); // Blue
+      }
+      
+      contrastCtx.putImageData(imageData, 0, 0);
+      
+      const contrastImg = new Image();
+      contrastImg.src = contrastCanvas.toDataURL();
+      
+      processedImages.push({
+        name: 'HighContrast',
+        canvas: contrastCanvas,
+        img: contrastImg
+      });
+    }
+    
+    // 3. Sharpened version
+    const sharpenCanvas = document.createElement('canvas');
+    const sharpenCtx = sharpenCanvas.getContext('2d');
+    if (sharpenCtx) {
+      sharpenCanvas.width = originalCanvas.width;
+      sharpenCanvas.height = originalCanvas.height;
+      sharpenCtx.drawImage(originalCanvas, 0, 0);
+      
+      // Apply sharpening filter
+      sharpenCtx.filter = 'contrast(150%) brightness(110%) saturate(0%)';
+      sharpenCtx.drawImage(originalCanvas, 0, 0);
+      
+      const sharpenImg = new Image();
+      sharpenImg.src = sharpenCanvas.toDataURL();
+      
+      processedImages.push({
+        name: 'Sharpened',
+        canvas: sharpenCanvas,
+        img: sharpenImg
+      });
+    }
+    
+    // 4. Grayscale + High Contrast
+    const grayCanvas = document.createElement('canvas');
+    const grayCtx = grayCanvas.getContext('2d');
+    if (grayCtx) {
+      grayCanvas.width = originalCanvas.width;
+      grayCanvas.height = originalCanvas.height;
+      grayCtx.drawImage(originalCanvas, 0, 0);
+      
+      const imageData = grayCtx.getImageData(0, 0, grayCanvas.width, grayCanvas.height);
+      const data = imageData.data;
+      
+      // Convert to grayscale and increase contrast
+      for (let i = 0; i < data.length; i += 4) {
+        const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        const contrast = Math.min(255, Math.max(0, (gray - 128) * 3 + 128));
+        data[i] = contrast;     // Red
+        data[i + 1] = contrast; // Green
+        data[i + 2] = contrast; // Blue
+      }
+      
+      grayCtx.putImageData(imageData, 0, 0);
+      
+      const grayImg = new Image();
+      grayImg.src = grayCanvas.toDataURL();
+      
+      processedImages.push({
+        name: 'GrayHighContrast',
+        canvas: grayCanvas,
+        img: grayImg
+      });
+    }
+    
+    return processedImages;
+  };
 
   // Enhance image and scan
   const enhanceAndScan = async (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, reader: any) => {
@@ -414,7 +533,13 @@ export function IDScanner({ isOpen, onClose, onDataScanned, onError }: IDScanner
     }
     
     ctx.putImageData(imageData, 0, 0);
-    return reader.decodeFromCanvas(canvas);
+    
+    // Create a temporary image element from the canvas
+    const tempImg = new Image();
+    tempImg.src = canvas.toDataURL();
+    await new Promise(resolve => tempImg.onload = resolve);
+    
+    return reader.decodeFromImageElement(tempImg);
   };
 
   // Scan photo with OCR
@@ -446,6 +571,7 @@ export function IDScanner({ isOpen, onClose, onDataScanned, onError }: IDScanner
   const startScanning = () => {
     setScanning(true);
     setProgress('Scanning for barcode...');
+    setScanAttempts(0);
     
     if (scanMode === 'barcode') {
       // Very aggressive scanning - every 200ms
@@ -590,12 +716,10 @@ export function IDScanner({ isOpen, onClose, onDataScanned, onError }: IDScanner
               screenshotFormat="image/jpeg"
               screenshotQuality={1.0}
               videoConstraints={{
-                width: { ideal: 1920 },
-                height: { ideal: 1080 },
+                width: { ideal: 1920, min: 1280 },
+                height: { ideal: 1080, min: 720 },
                 facingMode: 'environment',
-                focusMode: 'continuous',
-                exposureMode: 'continuous',
-                whiteBalanceMode: 'continuous'
+                frameRate: { ideal: 30, min: 15 }
               }}
               className="w-full h-full object-cover"
               onUserMedia={() => {
@@ -608,19 +732,40 @@ export function IDScanner({ isOpen, onClose, onDataScanned, onError }: IDScanner
               }}
             />
             
-            {/* Scanning overlay */}
+            {/* Scanning overlay with animated scanner line */}
             {scanning && (
-              <div className="absolute inset-0 bg-blue-600/20 flex items-center justify-center">
-                <div className="bg-black/80 px-4 py-2 rounded-lg">
+              <div className="absolute inset-0 flex items-center justify-center">
+                {/* Animated scanning line */}
+                <div className="absolute inset-4 border-2 border-blue-500/50 rounded-lg overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-pulse"></div>
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-400/80 animate-bounce" style={{
+                    animation: 'scanning 2s linear infinite'
+                  }}></div>
+                </div>
+                
+                {/* Status indicator */}
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/80 px-4 py-2 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <svg className="w-5 h-5 text-blue-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <span className="text-white text-sm">Scanning...</span>
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span className="text-white text-sm font-medium">
+                      Scanning... (Attempt {scanAttempts})
+                    </span>
                   </div>
                 </div>
               </div>
             )}
+            
+            <style jsx>{`
+              @keyframes scanning {
+                0% { top: 0; }
+                50% { top: calc(100% - 2px); }
+                100% { top: 0; }
+              }
+            `}</style>
             
             {/* Guide overlay */}
             {!scanning && cameraReady && (

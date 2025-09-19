@@ -288,7 +288,6 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
                   value={formData.firstName}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
                   style={{ fontFamily: 'Tiempos, serif' }}
-                  style={{ fontFamily: 'Tiempos, serif' }}
                   className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter first name"
                   required
