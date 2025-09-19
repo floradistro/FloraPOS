@@ -2,8 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { parse } from '@digitalbazaar/aamva-parse';
-import { BrowserMultiFormatReader, BrowserPDF417Reader } from '@zxing/library';
-import jsQR from 'jsqr';
 
 export interface IDScanResult {
   firstName?: string;
@@ -24,280 +22,226 @@ interface IDScannerProps {
   isScanning?: boolean;
 }
 
-export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScannerProps) {
+export function IDScanner({ onScanResult, onCancel }: IDScannerProps) {
   const [scanText, setScanText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCameraMode, setIsCameraMode] = useState(true);
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [scanStatus, setScanStatus] = useState<string>('Ready');
   
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const scannerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const codeReader = useRef<BrowserMultiFormatReader | null>(null);
-  const pdf417Reader = useRef<BrowserPDF417Reader | null>(null);
-  const scanningInterval = useRef<NodeJS.Timeout | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const scanInterval = useRef<NodeJS.Timeout | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  // Initialize camera scanner optimized for government IDs
-  const initializeCamera = async () => {
-    if (!videoRef.current || codeReader.current) return;
-    
+  // Initialize camera
+  const startCamera = async () => {
     try {
       setIsProcessing(true);
+      setScanStatus('Starting camera...');
       setError(null);
       
-      console.log('🆔 Starting government ID scanner...');
-      
-      // Initialize both readers for maximum compatibility
-      codeReader.current = new BrowserMultiFormatReader();
-      pdf417Reader.current = new BrowserPDF417Reader();
-      
-      // Get available cameras and prefer back camera
-      const videoInputDevices = await codeReader.current.getVideoInputDevices();
-      console.log('📷 Available cameras:', videoInputDevices.length);
-      
-      let selectedDeviceId = videoInputDevices[0]?.deviceId;
-      
-      // Look for back/rear camera
-      const backCamera = videoInputDevices.find(device => 
-        device.label.toLowerCase().includes('back') ||
-        device.label.toLowerCase().includes('rear') ||
-        device.label.toLowerCase().includes('environment')
-      );
-      
-      if (backCamera) {
-        selectedDeviceId = backCamera.deviceId;
-        console.log('📱 Using back camera:', backCamera.label);
+      // Stop any existing stream
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
       }
       
-      // Start video stream
+      // Get camera stream with high quality settings
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
-          width: { ideal: 1280, min: 640 },
-          height: { ideal: 720, min: 480 },
-          facingMode: { ideal: 'environment' }
+          width: { ideal: 1920, min: 1280 },
+          height: { ideal: 1080, min: 720 },
+          facingMode: 'environment'
         }
       });
+      
+      streamRef.current = stream;
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
         
-        // Wait for video metadata to load
+        // Wait for video to be ready
         await new Promise((resolve) => {
-          const checkVideoReady = () => {
-            if (videoRef.current && videoRef.current.videoWidth > 0 && videoRef.current.videoHeight > 0) {
-              console.log('📹 Video ready:', videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
+          const checkReady = () => {
+            if (videoRef.current && videoRef.current.videoWidth > 0) {
               resolve(undefined);
             } else {
-              setTimeout(checkVideoReady, 100);
+              setTimeout(checkReady, 100);
             }
           };
-          checkVideoReady();
+          checkReady();
         });
+        
+        setIsCameraActive(true);
+        setScanStatus('Camera ready - scanning...');
+        startScanning();
       }
-      
-      // Start continuous scanning for government ID barcodes
-      startContinuousScanning();
-      
-      setIsCameraActive(true);
-      setIsProcessing(false);
-      setCameraPermission('granted');
-      
-      console.log('🎯 Government ID scanner ready!');
-      
     } catch (err) {
-      console.error('💥 ID scanner failed:', err);
-      
-      const error = err as Error;
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        setCameraPermission('denied');
-        setError('Camera access denied. Please enable camera permissions for ID scanning.');
-      } else if (error.name === 'NotFoundError') {
-        setError('No camera found. Please ensure your device has a camera.');
-      } else {
-        setError(`ID scanner initialization failed: ${error.message}`);
-      }
-      
+      console.error('Camera error:', err);
+      setError(`Camera failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setScanStatus('Camera error');
+    } finally {
       setIsProcessing(false);
-      setIsCameraActive(false);
-      cleanup();
     }
   };
 
-  // Enhanced scanning for government ID barcodes
-  const startContinuousScanning = () => {
-    if (!videoRef.current) return;
+  // Start barcode scanning
+  const startScanning = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
     
-    console.log('🔍 Starting enhanced barcode scanning...');
-    
-    const scanFrame = async () => {
-      if (!videoRef.current || !isCameraActive) return;
+    // Use native BarcodeDetector if available (Chrome/Edge)
+    if ('BarcodeDetector' in window) {
+      console.log('Using native BarcodeDetector API');
+      startNativeScanning();
+    } else {
+      console.log('Using ZXing library fallback');
+      startZXingScanning();
+    }
+  };
+
+  // Native browser barcode detection
+  const startNativeScanning = async () => {
+    try {
+      // @ts-ignore - BarcodeDetector is experimental
+      const barcodeDetector = new BarcodeDetector({
+        formats: ['pdf417', 'code_128', 'code_39', 'qr_code']
+      });
       
-      try {
-        // Ensure video is ready
-        if (videoRef.current.readyState < 2 || !videoRef.current.videoWidth || !videoRef.current.videoHeight) {
-          console.log('⏳ Video not ready:', videoRef.current.readyState, videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
-          return;
-        }
+      const scanFrame = async () => {
+        if (!videoRef.current || !isCameraActive) return;
         
-        // Create a canvas to capture the current video frame
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        
-        if (!context) return;
-        
-        canvas.width = videoRef.current.videoWidth;
-        canvas.height = videoRef.current.videoHeight;
-        context.drawImage(videoRef.current, 0, 0);
-        
-        console.log('📸 Scanning frame:', canvas.width, 'x', canvas.height);
-        
-        // Get image data for analysis
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        
-        // Method 1: Try jsQR (works for some barcode types)
         try {
-          const qrResult = jsQR(imageData.data, imageData.width, imageData.height);
-          if (qrResult && qrResult.data) {
-            console.log('🎯 jsQR detected:', qrResult.data);
-            handleBarcodeDetected(qrResult.data);
+          // @ts-ignore
+          const barcodes = await barcodeDetector.detect(videoRef.current);
+          
+          if (barcodes.length > 0) {
+            const barcode = barcodes[0];
+            console.log('Native detector found:', barcode.format, barcode.rawValue);
+            setScanStatus(`Detected ${barcode.format}!`);
+            handleBarcodeDetected(barcode.rawValue);
             return;
           }
-        } catch (qrError) {
-          console.log('📱 jsQR scan attempt (no barcode)');
+          
+          setScanStatus('Scanning for barcodes...');
+        } catch (e) {
+          console.log('Native scan frame error:', e);
         }
-        
-        // Method 2: Try ZXing PDF417 Reader
-        try {
-          if (pdf417Reader.current) {
-            const result = await pdf417Reader.current.decodeFromCanvas(canvas);
-            if (result && result.text) {
-              console.log('🎯 PDF417 detected:', result.text);
-              handleBarcodeDetected(result.text);
-              return;
-            }
-          }
-        } catch (pdf417Error) {
-          console.log('📋 PDF417 scan attempt (no barcode)');
-        }
-        
-        // Method 3: Try ZXing Multi-format Reader
-        try {
-          if (codeReader.current) {
-            const result = await codeReader.current.decodeFromCanvas(canvas);
-            if (result && result.text) {
-              console.log('🎯 Multi-format detected:', result.text, 'Format:', result.format);
-              handleBarcodeDetected(result.text);
-              return;
-            }
-          }
-        } catch (multiError) {
-          console.log('🔍 Multi-format scan attempt (no barcode)');
-        }
-        
-        // Method 4: Try enhanced image processing
-        try {
-          // Enhance contrast for better barcode detection
-          const enhancedCanvas = document.createElement('canvas');
-          const enhancedContext = enhancedCanvas.getContext('2d');
-          if (enhancedContext) {
-            enhancedCanvas.width = canvas.width;
-            enhancedCanvas.height = canvas.height;
-            enhancedContext.filter = 'contrast(200%) brightness(150%)';
-            enhancedContext.drawImage(canvas, 0, 0);
-            
-            if (codeReader.current) {
-              const result = await codeReader.current.decodeFromCanvas(enhancedCanvas);
-              if (result && result.text) {
-                console.log('🎯 Enhanced scan detected:', result.text);
-                handleBarcodeDetected(result.text);
-                return;
-              }
-            }
-          }
-        } catch (enhancedError) {
-          console.log('🔧 Enhanced scan attempt (no barcode)');
-        }
-        
-      } catch (error) {
-        console.error('❌ Scanning error:', error);
-      }
-    };
-    
-    // Scan every 1500ms for better performance
-    scanningInterval.current = setInterval(scanFrame, 1500);
-    console.log('✅ Enhanced scanning started');
+      };
+      
+      scanInterval.current = setInterval(scanFrame, 200);
+    } catch (e) {
+      console.error('Native detector failed:', e);
+      startZXingScanning();
+    }
   };
-  
+
+  // ZXing library scanning
+  const startZXingScanning = async () => {
+    try {
+      const { BrowserPDF417Reader, BrowserMultiFormatReader } = await import('@zxing/library');
+      
+      const pdf417Reader = new BrowserPDF417Reader();
+      const multiReader = new BrowserMultiFormatReader();
+      
+      const scanFrame = async () => {
+        if (!videoRef.current || !canvasRef.current || !isCameraActive) return;
+        
+        try {
+          // Capture current frame
+          const canvas = canvasRef.current;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          
+          canvas.width = videoRef.current.videoWidth;
+          canvas.height = videoRef.current.videoHeight;
+          ctx.drawImage(videoRef.current, 0, 0);
+          
+          // Try PDF417 first (most government IDs)
+          try {
+            const result = await pdf417Reader.decodeFromCanvas(canvas);
+            if (result && result.text) {
+              console.log('ZXing PDF417 detected:', result.text.substring(0, 50));
+              setScanStatus('PDF417 detected!');
+              handleBarcodeDetected(result.text);
+              return;
+            }
+          } catch (e) {
+            // Continue to next method
+          }
+          
+          // Try multi-format reader
+          try {
+            const result = await multiReader.decodeFromCanvas(canvas);
+            if (result && result.text) {
+              console.log('ZXing multi-format detected:', result.format, result.text.substring(0, 50));
+              setScanStatus(`${result.format} detected!`);
+              handleBarcodeDetected(result.text);
+              return;
+            }
+          } catch (e) {
+            // Continue scanning
+          }
+          
+          setScanStatus('Scanning...');
+        } catch (e) {
+          console.log('ZXing scan error:', e);
+        }
+      };
+      
+      scanInterval.current = setInterval(scanFrame, 300);
+    } catch (e) {
+      console.error('ZXing import failed:', e);
+      setError('Barcode scanning library failed to load');
+    }
+  };
+
   // Handle detected barcode
   const handleBarcodeDetected = (barcodeText: string) => {
-    console.log('🆔 Government ID barcode detected:', barcodeText);
+    console.log('Barcode detected:', barcodeText);
     stopCamera();
     setScanText(barcodeText);
-    setTimeout(() => handleScan(barcodeText), 100);
+    handleScan(barcodeText);
   };
-  
-  // Cleanup function
-  const cleanup = () => {
-    if (scanningInterval.current) {
-      clearInterval(scanningInterval.current);
-      scanningInterval.current = null;
+
+  // Stop camera and scanning
+  const stopCamera = () => {
+    if (scanInterval.current) {
+      clearInterval(scanInterval.current);
+      scanInterval.current = null;
     }
     
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
     
-    if (codeReader.current) {
-      try {
-        codeReader.current.reset();
-      } catch (e) {
-        console.warn('Error resetting code reader:', e);
-      }
-      codeReader.current = null;
-    }
-    
-    pdf417Reader.current = null;
-  };
-
-  // Stop camera scanner
-  const stopCamera = async () => {
-    console.log('⏹️ Stopping ID scanner...');
-    cleanup();
     setIsCameraActive(false);
-    setIsProcessing(false);
-    console.log('✅ ID scanner stopped');
+    setScanStatus('Stopped');
   };
 
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      cleanup();
-    };
-  }, []);
-
+  // Process scanned data
   const handleScan = async (barcodeData?: string) => {
     const dataToProcess = barcodeData || scanText.trim();
     
     if (!dataToProcess) {
-      setError('Please scan a barcode or paste the scanned ID data');
+      setError('Please scan a barcode or enter the data manually');
       return;
     }
 
     setIsProcessing(true);
     setError(null);
+    setScanStatus('Processing...');
 
     try {
-      // Parse the AAMVA data
+      // Parse AAMVA data
       const parsedData = parse({ text: dataToProcess });
       
-      // Map AAMVA fields to our customer data structure
       const result: IDScanResult = {
         firstName: parsedData.firstName || parsedData.first_name,
         lastName: parsedData.lastName || parsedData.last_name || parsedData.family_name,
@@ -311,42 +255,28 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
         issuerState: parsedData.issuerState || parsedData.issuer_state
       };
 
-      // Validate that we got at least some essential data
       if (!result.firstName && !result.lastName && !result.licenseNumber) {
         throw new Error('Unable to extract customer information from ID data');
       }
 
       onScanResult(result);
     } catch (err) {
-      console.error('ID scanning error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to parse ID data. Please check the format.');
+      console.error('ID parsing error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to parse ID data');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
-    // Allow the paste to happen naturally, then process
-    setTimeout(() => {
-      const pastedText = e.clipboardData.getData('text');
-      if (pastedText && pastedText.length > 50) {
-        // Automatically attempt to scan if substantial data is pasted
-        handleScan();
-      }
-    }, 100);
-  };
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
   return (
     <div className="space-y-4">
-      <style jsx>{`
-        .id-scanner-video {
-          width: 100%;
-          height: 264px;
-          object-fit: cover;
-          border-radius: 8px;
-          background: #1f2937;
-        }
-      `}</style>
       <div className="flex items-center gap-3 mb-4">
         <div className="w-8 h-8 bg-blue-600/20 rounded-full flex items-center justify-center">
           <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -358,7 +288,7 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
             Scan Government ID
           </h3>
           <p className="text-xs text-neutral-400">
-            Optimized for driver's licenses and state IDs
+            Native browser detection + ZXing fallback
           </p>
         </div>
       </div>
@@ -370,16 +300,10 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
             setIsCameraMode(true);
             if (isCameraActive) stopCamera();
           }}
-          className={`flex-1 px-3 py-2 rounded text-xs transition-colors flex items-center justify-center gap-2 ${
-            isCameraMode 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
+          className={`flex-1 px-3 py-2 rounded text-xs transition-colors ${
+            isCameraMode ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
           }`}
-          style={{ fontFamily: 'Tiempos, serif' }}
         >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
           Camera Scan
         </button>
         <button
@@ -387,310 +311,119 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
             setIsCameraMode(false);
             stopCamera();
           }}
-          className={`flex-1 px-3 py-2 rounded text-xs transition-colors flex items-center justify-center gap-2 ${
-            !isCameraMode 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
+          className={`flex-1 px-3 py-2 rounded text-xs transition-colors ${
+            !isCameraMode ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
           }`}
-          style={{ fontFamily: 'Tiempos, serif' }}
         >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-          </svg>
           Manual Input
         </button>
       </div>
 
-      <div className="space-y-3">
-        {isCameraMode ? (
-          <>
-            {/* Camera Scanner */}
-            <div className="space-y-3">
-              <div className="relative">
-                <div
-                  ref={scannerRef}
-                  className="w-full h-64 bg-neutral-800 rounded-lg overflow-hidden relative"
+      {isCameraMode ? (
+        <div className="space-y-3">
+          {/* Video Container */}
+          <div className="relative bg-neutral-800 rounded-lg overflow-hidden" style={{ minHeight: '300px' }}>
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              playsInline
+              muted
+              style={{ display: isCameraActive ? 'block' : 'none' }}
+            />
+            
+            {!isCameraActive && !isProcessing && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <button
+                  onClick={startCamera}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg"
                 >
-                  {/* Video element for government ID scanning */}
-                  <video
-                    ref={videoRef}
-                    className="id-scanner-video"
-                    style={{ 
-                      display: isCameraActive ? 'block' : 'none'
-                    }}
-                    playsInline
-                    muted
-                  />
-                  
-                  {!isCameraActive && !isProcessing && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                        <p className="text-neutral-400 text-sm" style={{ fontFamily: 'Tiempos, serif' }}>
-                          Click "Start Camera" to scan government ID
-                        </p>
-                        <p className="text-neutral-500 text-xs mt-2" style={{ fontFamily: 'Tiempos, serif' }}>
-                          Supports PDF417, Code 128, and all ID formats
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {isProcessing && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-neutral-900/50 z-10">
-                      <div className="text-center">
-                        <svg className="w-8 h-8 animate-spin text-blue-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        <p className="text-neutral-300 text-sm">Initializing government ID scanner...</p>
-                      </div>
-                    </div>
-                  )}
+                  Start Camera
+                </button>
+              </div>
+            )}
+            
+            {isProcessing && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <div className="text-center text-white">
+                  <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <p>{scanStatus}</p>
                 </div>
-                
-                {/* Scanning instructions overlay */}
-                {isCameraActive && (
-                  <div className="absolute bottom-2 left-2 right-2 pointer-events-none">
-                    <div className="bg-black/70 rounded px-3 py-2 text-center">
-                      <p className="text-white text-xs font-medium">
-                        🆔 Position state ID or driver's license barcode in view
-                      </p>
-                      <p className="text-neutral-300 text-xs mt-1">
-                        Advanced scanner detects PDF417 and all government ID formats
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
-              
-              {/* Camera Controls */}
-              <div className="flex gap-2">
-                {!isCameraActive ? (
-                  <>
-                    <button
-                      onClick={initializeCamera}
-                      disabled={isProcessing}
-                      className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-neutral-600 text-white rounded text-xs transition-colors flex items-center justify-center gap-2"
-                      style={{ fontFamily: 'Tiempos, serif' }}
-                    >
-                      {isProcessing ? (
-                        <>
-                          <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          Initializing...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                          Start Camera
-                        </>
-                      )}
-                    </button>
-                    
-                    {/* Retry button if there was an error */}
-                    {error && !isProcessing && (
-                      <button
-                        onClick={() => {
-                          setError(null);
-                          setCameraPermission('prompt');
-                          initializeCamera();
-                        }}
-                        className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
-                        style={{ fontFamily: 'Tiempos, serif' }}
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Retry
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={stopCamera}
-                      className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs transition-colors flex items-center justify-center gap-2"
-                      style={{ fontFamily: 'Tiempos, serif' }}
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9l6 6m0-6l-6 6" />
-                      </svg>
-                      Stop Camera
-                    </button>
-                    
-                    <button
-                      onClick={async () => {
-                        if (!videoRef.current) return;
-                        
-                        console.log('🔍 Manual scan initiated...');
-                        
-                        try {
-                          const canvas = document.createElement('canvas');
-                          const context = canvas.getContext('2d');
-                          
-                          if (context && videoRef.current.videoWidth && videoRef.current.videoHeight) {
-                            canvas.width = videoRef.current.videoWidth;
-                            canvas.height = videoRef.current.videoHeight;
-                            context.drawImage(videoRef.current, 0, 0);
-                            
-                            console.log('📸 Manual scan frame:', canvas.width, 'x', canvas.height);
-                            
-                            // Get image data
-                            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                            
-                            // Try all methods sequentially
-                            let detected = false;
-                            
-                            // Method 1: jsQR
-                            try {
-                              const qrResult = jsQR(imageData.data, imageData.width, imageData.height);
-                              if (qrResult && qrResult.data) {
-                                console.log('✅ Manual jsQR success:', qrResult.data);
-                                handleBarcodeDetected(qrResult.data);
-                                detected = true;
-                              }
-                            } catch (e) { console.log('jsQR failed'); }
-                            
-                            if (!detected && pdf417Reader.current) {
-                              // Method 2: PDF417
-                              try {
-                                const result = await pdf417Reader.current.decodeFromCanvas(canvas);
-                                if (result && result.text) {
-                                  console.log('✅ Manual PDF417 success:', result.text);
-                                  handleBarcodeDetected(result.text);
-                                  detected = true;
-                                }
-                              } catch (e) { console.log('PDF417 failed'); }
-                            }
-                            
-                            if (!detected && codeReader.current) {
-                              // Method 3: Multi-format
-                              try {
-                                const result = await codeReader.current.decodeFromCanvas(canvas);
-                                if (result && result.text) {
-                                  console.log('✅ Manual multi-format success:', result.text);
-                                  handleBarcodeDetected(result.text);
-                                  detected = true;
-                                }
-                              } catch (e) { console.log('Multi-format failed'); }
-                            }
-                            
-                            if (!detected) {
-                              console.log('❌ No barcode detected with any method');
-                              setError('No barcode detected. Try adjusting position and lighting.');
-                            }
-                          }
-                        } catch (err) {
-                          console.error('Manual scan error:', err);
-                        }
-                      }}
-                      className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
-                      style={{ fontFamily: 'Tiempos, serif' }}
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      Scan Now
-                    </button>
-                  </>
-                )}
+            )}
+            
+            {isCameraActive && (
+              <div className="absolute bottom-4 left-4 right-4">
+                <div className="bg-black/70 rounded px-3 py-2 text-center">
+                  <p className="text-white text-sm font-medium">Status: {scanStatus}</p>
+                  <p className="text-neutral-300 text-xs">
+                    Position barcode in center of camera view
+                  </p>
+                </div>
               </div>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Manual Input */}
-            <div>
-              <label className="block text-xs font-medium text-neutral-300 mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
-                Scanned ID Data
-              </label>
-              <textarea
-                ref={textareaRef}
-                value={scanText}
-                onChange={(e) => setScanText(e.target.value)}
-                onPaste={handlePaste}
-                placeholder="Paste the scanned driver's license data here..."
-                rows={6}
-                className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 font-mono"
-                style={{ fontSize: '11px', lineHeight: '1.3' }}
-              />
-            </div>
-          </>
-        )}
-
-        {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs">
-            {error}
+            )}
           </div>
-        )}
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              stopCamera();
-              onCancel();
-            }}
-            disabled={isProcessing}
-            className="flex-1 px-3 py-2 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-neutral-300 hover:text-white rounded text-xs transition-colors disabled:opacity-50"
-            style={{ fontFamily: 'Tiempos, serif' }}
-          >
-            Cancel
-          </button>
           
-          {/* Only show manual scan button in manual mode */}
-          {!isCameraMode && (
+          {/* Hidden canvas for processing */}
+          <canvas ref={canvasRef} style={{ display: 'none' }} />
+          
+          {/* Camera Controls */}
+          {isCameraActive && (
             <button
-              onClick={() => handleScan()}
-              disabled={isProcessing || !scanText.trim()}
-              className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white rounded text-xs transition-colors flex items-center justify-center gap-2"
-              style={{ fontFamily: 'Tiempos, serif' }}
+              onClick={stopCamera}
+              className="w-full px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
             >
-              {isProcessing ? (
-                <>
-                  <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Process Data
-                </>
-              )}
+              Stop Camera
             </button>
           )}
         </div>
-
-        <div className="text-xs text-neutral-500 space-y-1">
-          {isCameraMode ? (
-            <>
-              <p>• Professional government ID scanner with PDF417 support</p>
-              <p>• Optimized for state driver's licenses and ID cards</p>
-              <p>• Supports all standard government barcode formats</p>
-              <p>• Automatically extracts and processes customer data</p>
-              {cameraPermission === 'denied' && (
-                <p className="text-red-400">• Camera access denied - please enable camera permissions</p>
-              )}
-            </>
-          ) : (
-            <>
-              <p>• Use your ID scanner to scan a driver's license</p>
-              <p>• Paste the resulting data in the text area above</p>
-              <p>• Customer information will be automatically extracted</p>
-            </>
-          )}
+      ) : (
+        <div>
+          <label className="block text-xs font-medium text-neutral-300 mb-2">
+            Scanned ID Data
+          </label>
+          <textarea
+            value={scanText}
+            onChange={(e) => setScanText(e.target.value)}
+            placeholder="Paste or enter the barcode data here..."
+            rows={6}
+            className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+          />
         </div>
+      )}
+
+      {error && (
+        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs">
+          {error}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => {
+            stopCamera();
+            onCancel();
+          }}
+          className="flex-1 px-3 py-2 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 rounded text-xs"
+        >
+          Cancel
+        </button>
+        
+        {!isCameraMode && (
+          <button
+            onClick={() => handleScan()}
+            disabled={isProcessing || !scanText.trim()}
+            className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white rounded text-xs"
+          >
+            {isProcessing ? 'Processing...' : 'Process Data'}
+          </button>
+        )}
+      </div>
+
+      <div className="text-xs text-neutral-500">
+        <p className="font-medium mb-1">Detection Methods:</p>
+        <p>• Native browser BarcodeDetector (Chrome/Edge)</p>
+        <p>• ZXing library fallback (all browsers)</p>
+        <p>• Supports PDF417, Code128, QR codes</p>
       </div>
     </div>
   );
