@@ -1,0 +1,1 @@
+var f=(o=>(o.Auto="auto",o.Off="off",o.On="on",o))(f||{});export{f as a};

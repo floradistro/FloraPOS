@@ -1,0 +1,1 @@
+function u(r,e,n){return r<e?e:r>n?n:r}export{u as a};

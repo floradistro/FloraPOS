@@ -1,0 +1,1 @@
+export{a as wait}from'../../chunks/chunk-UZWBB65W.js';

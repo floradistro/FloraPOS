@@ -1,0 +1,1 @@
+export{a as DataCaptureVersion}from'./chunks/chunk-VBNI76IP.js';

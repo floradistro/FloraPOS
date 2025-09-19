@@ -1,0 +1,1 @@
+export{a as OpenSourceSoftwareLicenseInfo}from'../chunks/chunk-JS3T7K2Z.js';

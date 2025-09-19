@@ -1,0 +1,23 @@
+/// <reference types="emscripten" />
+export { J as DataCaptureOverlay, N as DataCaptureView, M as DataCaptureViewConnectOptions, L as DataCaptureViewJSON, K as DataCaptureViewListener } from './Camera-C_4xOv5n.js';
+import './Common.js';
+import './DataCaptureViewPlusRelated.js';
+import './NotificationPresenter/NotificationPresenter.js';
+import './ViewControls.js';
+import './private/CustomLocationsView.js';
+import './private/Serializable.js';
+import './private/nativeHandle.js';
+import './private/AnchorPositions.js';
+import './private/FrameReaders/WatermarkStack.js';
+import './tsHelper.js';
+import './ScanditIcon.js';
+import './private/utils/ScanditHTMLElement.js';
+import './DataCaptureContextSettings.js';
+import './license/OpenSourceSoftwareLicenseInfo.js';
+import './private/HtmlElementState.js';
+import './worker/OverrideState.js';
+import './logger.js';
+import './LoadingStatus.js';
+import './NotificationPresenter/NotificationConfiguration.js';
+import './NotificationPresenter/NotificationStyle.js';
+import './private/View.js';

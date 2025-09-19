@@ -1,0 +1,1 @@
+var t=class{constructor(){this._listeners=new Set;}get listeners(){return [...this._listeners]}addListener(e){this._listeners.add(e);}removeListener(e){this._listeners.delete(e);}};export{t as a};

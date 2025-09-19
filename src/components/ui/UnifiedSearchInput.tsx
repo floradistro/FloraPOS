@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { useUserPointsBalance } from '../../hooks/useRewards';
 import { useDebounce } from '../../hooks/useDebounce';
-import { IDScanner, IDScanResult } from './IDScanner';
+import { ScanditIDScanner, IDScanResult } from './ScanditIDScanner';
 
 export interface Category {
   id: number;
@@ -780,7 +780,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 {/* ID Scanner */}
                 {showIDScanner ? (
                   <div className="px-4 py-3 border-b border-neutral-500/20 mb-1">
-                    <IDScanner
+                    <ScanditIDScanner
                       onScanResult={handleIDScanResult}
                       onCancel={handleCancelIDScanner}
                     />

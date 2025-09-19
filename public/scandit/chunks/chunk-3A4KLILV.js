@@ -1,0 +1,1 @@
+function n(t){if("customElements"in globalThis)for(let[e,o]of Object.entries(t))customElements.get(e)||customElements.define(e,o);}export{n as a};

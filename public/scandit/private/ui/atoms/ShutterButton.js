@@ -1,0 +1,22 @@
+import {a as a$2}from'../../../chunks/chunk-3A4KLILV.js';import {a}from'../../../chunks/chunk-MU6SADSF.js';import {a as a$1}from'../../../chunks/chunk-EV4OEANA.js';import {a as a$4}from'../../../chunks/chunk-LSZZVJ6B.js';import {a as a$3}from'../../../chunks/chunk-XR65N6EG.js';var c="play",p="pause",b=a`
+  <svg viewBox="0 0 100 100">
+    <defs>
+      <mask id="${c}">
+        <rect width="100" height="100" fill="white" />
+        <path
+          d="M40 59.4416V40.5584C40 39.8297 40.7543 39.3457 41.4167 39.6493L62.0166 49.0909C62.7944 49.4474 62.7944 50.5526 62.0166 50.9091L41.4167 60.3507C40.7543 60.6543 40 60.1703 40 59.4416Z"
+          fill="black"
+        />
+      </mask>
+      <mask id="${p}">
+        <rect width="100" height="100" fill="white" />
+        <rect x="40" y="38" width="8" height="24" rx="2" fill="black" />
+        <rect x="52" y="38" width="8" height="24" rx="2" fill="black" />
+      </mask>
+    </defs>
+    <g class="">
+      <circle id="main-circle" class="center" cx="50" cy="50" r="40" fill="white" mask="url(#${c})" />
+      <circle class="border" cx="50" cy="50" r="48" fill="none" stroke-width="3" stroke="white" />
+    </g>
+  </svg>
+`;function f(){return a$4`:host{--button-width:0px;display:inline-block;touch-action:manipulation}:host([hidden]){display:none}button{background:none;border:none;border-radius:100%;line-height:0;margin:0;padding:0;touch-action:manipulation}button.pulse{animation:pulsate 2s infinite;animation-delay:.3s;border-radius:100%;box-shadow:0 0 0 0 #ffffff80}svg{position:relative;width:100%}@keyframes pulsate{0%{transform:scale(1)}5%{box-shadow:0 0 0 0 #ffffff80;transform:scale(.9)}20%{transform:scale(1)}to{box-shadow:0 0 0 calc(var(--button-width)/2) #fff0}}`}function g(){return a$4`.rotating .border{stroke-dasharray:302 301;animation-direction:normal;animation-duration:4s;animation-fill-mode:forwards;animation-iteration-count:infinite;animation-name:rotating-stroke;animation-timing-function:linear;transform-origin:center}@keyframes rotating-stroke{0%{stroke-dasharray:302 301;transform:rotate(0)}50%{stroke-dasharray:1 301}51%{stroke-dasharray:0 291 10}to{stroke-dasharray:0 1 301;transform:rotate(-2turn)}}`}var d={default:"default",play:"play",pause:"pause"},i=class i extends a$1{constructor(){super();this._mainSVGCircle=null;this.shadowRoot||this.attachShadow({mode:"open"});}static get observedAttributes(){return ["variant","pulse","rotating"]}set variant(t){this.checkVariant(t)&&this.setAttribute("variant",t);}get variant(){var t;return (t=this.getAttribute("variant"))!=null?t:"default"}set pulse(t){t?this.setAttribute("pulse",""):this.removeAttribute("pulse");}get pulse(){return this.hasAttribute("pulse")}set rotating(t){t?this.setAttribute("rotating",""):this.removeAttribute("rotating");}get rotating(){return this.hasAttribute("rotating")}static register(){a$2({[i.tag]:i});}static create(){return document.createElement(i.tag)}attributeChangedCallback(t){var e,n,s;if(t==="variant"){if(!this.checkVariant(this.getAttribute("variant"))){this.variant="default";return}this._button&&(this.refreshButtonWidth(),this._button.classList.add(this.variant),(e=this._mainSVGCircle)==null||e.setAttribute("mask",`url(#${this.variant})`));}t==="pulse"&&(this.refreshButtonWidth(),(n=this._button)==null||n.classList.toggle("pulse",this.pulse)),t==="rotating"&&((s=this._button)==null||s.classList.toggle("rotating",this.rotating));}checkVariant(t){return this.isValidState(t)?true:(a$3.warn(`Invalid variant: "${t}". Must be one of ${Object.values(d).toString()}`),false)}refreshButtonWidth(){var e;let{width:t}=this.getBoundingClientRect();(e=this._button)==null||e.style.setProperty("--button-width",`${t}px`);}connectedCallback(){var t;this.hasAttribute("variant")||(this.variant="default"),this._button||(this._button=document.createElement("button"),this._button.innerHTML=b,this._button.classList.add(this.variant),this._button.classList.toggle("pulse",this.pulse),this._button.classList.toggle("rotating",this.rotating),this.shadowRoot.append(this._button),this.appendStyle(),this._mainSVGCircle=this._button.querySelector("#main-circle"),(t=this._mainSVGCircle)==null||t.setAttribute("mask",`url(#${this.variant})`),this.refreshButtonWidth());}isValidState(t){return t==null?false:Object.values(d).includes(t)}appendStyle(){var t;this.shadowRoot.append(f().cloneNode(true)),(t=this.shadowRoot.querySelector("svg"))==null||t.prepend(g().cloneNode(true));}};i.tag="scandit-shutter-button";var r=i;r.register();export{r as ShutterButton,d as VARIANTS};

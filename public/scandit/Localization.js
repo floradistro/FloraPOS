@@ -1,0 +1,1 @@
+export{a as Localization}from'./chunks/chunk-GHTCNOQN.js';

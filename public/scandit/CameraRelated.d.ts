@@ -1,0 +1,23 @@
+/// <reference types="emscripten" />
+export { C as CameraPosition, n as CameraSettings, k as CameraSettingsFromJSON, l as CameraSettingsJSON, j as CameraSettingsJSONBase, F as FocusGestureStrategy, a as FrameSource, d as FrameSourceJSON, c as FrameSourceListener, b as FrameSourceState, T as TorchState, V as VideoResolution, m as isCameraFrameSource } from './Camera-C_4xOv5n.js';
+import './private/Serializable.js';
+import './Common.js';
+import './private/FrameReaders/WatermarkStack.js';
+import './tsHelper.js';
+import './ScanditIcon.js';
+import './private/utils/ScanditHTMLElement.js';
+import './DataCaptureContextSettings.js';
+import './DataCaptureViewPlusRelated.js';
+import './NotificationPresenter/NotificationPresenter.js';
+import './NotificationPresenter/NotificationConfiguration.js';
+import './NotificationPresenter/NotificationStyle.js';
+import './ViewControls.js';
+import './private/CustomLocationsView.js';
+import './private/View.js';
+import './private/AnchorPositions.js';
+import './private/nativeHandle.js';
+import './license/OpenSourceSoftwareLicenseInfo.js';
+import './private/HtmlElementState.js';
+import './worker/OverrideState.js';
+import './logger.js';
+import './LoadingStatus.js';

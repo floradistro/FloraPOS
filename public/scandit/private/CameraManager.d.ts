@@ -1,0 +1,23 @@
+/// <reference types="emscripten" />
+export { bD as CameraManager, bB as CameraManagerEvent, bC as CameraManagerEventParameters, bx as CameraResolutionConstraint, by as ExtendedMediaTrackCapabilities, bz as ExtendedMediaTrackConstraintSet, bo as FrameCapture, bA as GUI, bw as MeteringMode } from '../Camera-C_4xOv5n.js';
+import '../Common.js';
+import './Serializable.js';
+import './FrameReaders/WatermarkStack.js';
+import '../tsHelper.js';
+import '../ScanditIcon.js';
+import './utils/ScanditHTMLElement.js';
+import '../DataCaptureContextSettings.js';
+import '../DataCaptureViewPlusRelated.js';
+import '../NotificationPresenter/NotificationPresenter.js';
+import '../NotificationPresenter/NotificationConfiguration.js';
+import '../NotificationPresenter/NotificationStyle.js';
+import '../ViewControls.js';
+import './CustomLocationsView.js';
+import './View.js';
+import './AnchorPositions.js';
+import './nativeHandle.js';
+import '../license/OpenSourceSoftwareLicenseInfo.js';
+import './HtmlElementState.js';
+import '../worker/OverrideState.js';
+import '../logger.js';
+import '../LoadingStatus.js';

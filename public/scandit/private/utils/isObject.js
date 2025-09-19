@@ -1,0 +1,1 @@
+export{a as isObject}from'../../chunks/chunk-FGO2SSRS.js';

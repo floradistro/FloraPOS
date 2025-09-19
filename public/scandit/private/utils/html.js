@@ -1,0 +1,1 @@
+export{a as html}from'../../chunks/chunk-MU6SADSF.js';

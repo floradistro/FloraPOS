@@ -1,0 +1,1 @@
+var t=(e=>(e.Rounded="rounded",e.Square="square",e))(t||{}),o=(e=>(e.Light="light",e.Bold="bold",e))(o||{}),r=class n{constructor(i){this._isLooping=false;this._isLooping=i;}get isLooping(){return this._isLooping}static fromJSON(i){return i===null?null:new n(i.looping)}toJSONObject(){return {looping:this.isLooping}}};export{t as a,o as b,r as c};

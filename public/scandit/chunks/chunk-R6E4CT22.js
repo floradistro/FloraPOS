@@ -1,0 +1,1 @@
+function r(t,n=300){let e=null;return function(...u){e!=null&&clearTimeout(e),e=setTimeout(()=>{t.apply(this,u),e=null;},n);}}export{r as a};

@@ -1,0 +1,1 @@
+export{a as fromEntries}from'../../chunks/chunk-RG272MAJ.js';

@@ -1,0 +1,1 @@
+export{a as CoreModuleLicenseTextProvider}from'../chunks/chunk-34HLD6AY.js';

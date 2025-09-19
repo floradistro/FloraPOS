@@ -1,0 +1,23 @@
+/// <reference types="emscripten" />
+export { bf as CreateContextParameters, X as DataCaptureEngine, be as LoadLibraryParameters, bi as ProcessFrameParameters, bj as ReportCameraPropertiesParameters, bh as SetFrameSourceParameters, bg as UpdateContextParameters, bk as WorkerFunctions } from '../Camera-C_4xOv5n.js';
+import './OverrideState.js';
+import '../LoadingStatus.js';
+import '../Common.js';
+import '../ScanditIcon.js';
+import '../private/Serializable.js';
+import '../private/FrameReaders/WatermarkStack.js';
+import '../tsHelper.js';
+import '../private/utils/ScanditHTMLElement.js';
+import '../DataCaptureContextSettings.js';
+import '../DataCaptureViewPlusRelated.js';
+import '../NotificationPresenter/NotificationPresenter.js';
+import '../NotificationPresenter/NotificationConfiguration.js';
+import '../NotificationPresenter/NotificationStyle.js';
+import '../ViewControls.js';
+import '../private/CustomLocationsView.js';
+import '../private/View.js';
+import '../private/AnchorPositions.js';
+import '../private/nativeHandle.js';
+import '../license/OpenSourceSoftwareLicenseInfo.js';
+import '../private/HtmlElementState.js';
+import '../logger.js';

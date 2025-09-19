@@ -1,0 +1,1 @@
+export{a as DataCaptureView}from'./chunks/chunk-BPNTTDTU.js';

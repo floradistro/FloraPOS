@@ -1,0 +1,1 @@
+var i=(e=>(e.Minimal="minimal",e.Extended="extended",e))(i||{}),t=class{constructor(){this.type="tapToFocus";}toJSONObject(){return {type:this.type}}},r=class{constructor(){this.type="swipeToZoom";}toJSONObject(){return {type:this.type}}};export{i as a,t as b,r as c};

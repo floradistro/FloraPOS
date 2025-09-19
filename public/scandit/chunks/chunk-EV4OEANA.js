@@ -1,0 +1,1 @@
+var e="HTMLElement"in globalThis?globalThis.HTMLElement:class{constructor(){}},s=class extends e{};export{s as a};

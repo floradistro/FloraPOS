@@ -1,0 +1,1 @@
+export{b as OrientationObserver,a as orientationChangeEvent}from'../chunks/chunk-5S537AFM.js';

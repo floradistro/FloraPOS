@@ -1,0 +1,23 @@
+/// <reference types="emscripten" />
+export { bm as ColorType, bp as FrameReader } from '../../Camera-C_4xOv5n.js';
+import '../Serializable.js';
+import '../../Common.js';
+import './WatermarkStack.js';
+import '../../tsHelper.js';
+import '../../ScanditIcon.js';
+import '../utils/ScanditHTMLElement.js';
+import '../../DataCaptureContextSettings.js';
+import '../../DataCaptureViewPlusRelated.js';
+import '../../NotificationPresenter/NotificationPresenter.js';
+import '../../NotificationPresenter/NotificationConfiguration.js';
+import '../../NotificationPresenter/NotificationStyle.js';
+import '../../ViewControls.js';
+import '../CustomLocationsView.js';
+import '../View.js';
+import '../AnchorPositions.js';
+import '../nativeHandle.js';
+import '../../license/OpenSourceSoftwareLicenseInfo.js';
+import '../HtmlElementState.js';
+import '../../worker/OverrideState.js';
+import '../../logger.js';
+import '../../LoadingStatus.js';

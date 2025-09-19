@@ -7,6 +7,7 @@ const nextConfig = {
     WP_PASSWORD: process.env.WP_PASSWORD || '',
     FLORA_CONSUMER_KEY: process.env.FLORA_CONSUMER_KEY || 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5',
     FLORA_CONSUMER_SECRET: process.env.FLORA_CONSUMER_SECRET || 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678',
+    NEXT_PUBLIC_SCANDIT_LICENSE_KEY: process.env.NEXT_PUBLIC_SCANDIT_LICENSE_KEY || 'AgeGYiLhBGJdQp37D/G+XhtFawpGLLav3AK8r0IwAoMMApXCsk1i2Qx+rWZuQay0bngpEUlHu/iGVrLnuAlDUgwF/1vAeDqQcl700cwV/q+LOctTCCV41gMXguzHSYWCtgFkm/QBeLVvWMZhEWF22YRlVGCDadZjlEBbyPRS5usfZ6nhmX/EACpsY13aSkKgA2GRdvURjOTmctxY3nnHdHZT52XMUY+omUgACTZsdJuAVpqwnhdn7flykzW8cwewp1G1mQZpLosyeSmD/mhZrcpShQeieYoqbEQWIklHV90Nei7i53yeMKZv3fL+TRFJwlPjeCxX6iT6btwp7mlxFOB/IWs8fC1lBm6WGKZ9zbAiXKHXyTDizt5b1bSeYkSyIRRik09VrJ+7YxLpRC03JL9ktcmkQWhbvF4lZFk9YUJsdVihSWP+SeUWPppgXilpu1zUrwBXnMP3EmLsPgPzoTgO1i9TeN4v+lkXLqhoKZlxEvZUNBkjflx09uRzYJF3WEMrhOp0RxKtbsvMIQnclmBCKtQS3PWrd4TzL/oAQ0L0jFGSg4dVVCXQD9lJT/3qurovGYztTyJLCdfLNdN59VjuT4GNSd09HaRJqcLKyvqWLO2JJE7ct+ThEEoZ6joCLlnQYfdsk3exfrUCntGJQbg+GSVJKeX0Q3ChUFVRpDCj5vBhMqlg8tuHl5tG2puxYoZl5gdV4M8CUTL/xdW5yq477rdlORCKs4atbIRut+KXnUymRJkGfWRsbv007NVRaBjIHc/MOPxmyVjodpKKGxh4dSlquVcvSHVAHTOfkwO4lFuJE6sFYiFaVNHlncWb84SQcFAYpPZSkS7ccYM/L7HqyiFp47W6LQ78gnbmtZ925X29Zncp/WuXPsBR+J2MVRGOb964LdDHCxkuzgg1DS5g9Jg9YFq6sk+A1gc0hUxl3mGp6aJ3Pz4bDv372528FCJzTdIEWHSagtusHfEGi3RgiXQAOGGvSGqyr63OEcG6zUdloljBZ8jnJIsVvwTnu8finGuOEc9okPwIaUz5nKepYw0sbnT/8OJ4boS8YFqMfH47lnJ4MLXiJ8uUS1ITfJwWYAOnP7jzpTq/qvVaqQ5l5I5Y0owY41nvrN7xuNpQj+JtSaR8Rxdvy7WncBjGMKI9zUEfZr4y27MfEz39bYCI8WBJP0pnEHvLnlNpX1aoljS8GY/7C9ic+vi7AZHYwrI=',
   },
   // DEVELOPMENT MODE - Disable caching for better dev experience
   ...(process.env.NODE_ENV === 'development' && {
@@ -57,6 +58,25 @@ const nextConfig = {
   
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
+    // Handle Scandit modules - exclude from server-side rendering
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        '@scandit/web-datacapture-core': 'commonjs @scandit/web-datacapture-core',
+        '@scandit/web-datacapture-id': 'commonjs @scandit/web-datacapture-id',
+        '@scandit/web-datacapture-barcode': 'commonjs @scandit/web-datacapture-barcode'
+      });
+    }
+    
+    // Exclude Scandit from webpack bundling issues
+    config.resolve = config.resolve || {};
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+      crypto: false,
+    };
+
     if (!dev) {
       // Production optimizations
       config.optimization = {
@@ -89,6 +109,13 @@ const nextConfig = {
               name: 'zustand', 
               chunks: 'all',
               priority: 10,
+            },
+            // Separate chunk for Scandit (client-side only)
+            scandit: {
+              test: /[\\/]node_modules[\\/]@scandit[\\/]/,
+              name: 'scandit',
+              chunks: 'all',
+              priority: 15,
             }
           },
         },
@@ -150,6 +177,19 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable', // 1 year for static assets
+          },
+        ],
+      },
+      {
+        source: '/scandit/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600', // 1 hour for Scandit assets
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
           },
         ],
       },

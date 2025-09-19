@@ -1,0 +1,1 @@
+function o(n){return typeof n=="object"&&n!=null&&n.document==null&&"addEventListener"in n&&typeof n.importScripts=="function"}export{o as a};

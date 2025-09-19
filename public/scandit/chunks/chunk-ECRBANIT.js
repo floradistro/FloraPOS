@@ -1,0 +1,1 @@
+import {a}from'./chunk-KK47T3R2.js';var t=new a(globalThis,{get:()=>globalThis.Module,set:e=>{globalThis.Module=e;}});function l(e){}export{t as a,l as b};

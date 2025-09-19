@@ -1,0 +1,1 @@
+var o=class n{static fromJSON(e){let t=new n;return t._code=e.code,t._message=e.message,t._isValid=e.isValid,t}get message(){return this._message}get code(){return this._code}get isValid(){return this._isValid}},r=(a=>(a.None="None",a.X="X",a.Y="Y",a))(r||{});export{o as a,r as b};

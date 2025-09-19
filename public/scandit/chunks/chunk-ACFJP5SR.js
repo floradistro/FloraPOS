@@ -1,0 +1,1 @@
+function l(){if(typeof globalThis=="object")return  false;let e=(()=>{if(typeof self<"u")return self;if(typeof window<"u")return window;if(typeof global<"u")return global;if(typeof globalThis<"u")return globalThis;throw new Error("No global object found")})();return Object.defineProperty(e,"globalThis",{value:e,writable:true,configurable:true}),true}export{l as a};

@@ -1,0 +1,1 @@
+import {a}from'./chunk-GGMX65YP.js';var r=class{constructor(t){this._hintPresenter=t;}async showNotification(t){let e=a(t);return t.icon?this._hintPresenter.showToastWithCustomIcon(e,t.icon):this._hintPresenter.showToast(e)}async hideNotification(t){return this._hintPresenter.hideToast(a(t))}};export{r as a};

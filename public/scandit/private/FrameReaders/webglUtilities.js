@@ -1,0 +1,1 @@
+export{a as createProgram,b as createShader}from'../../chunks/chunk-SK6L34IF.js';

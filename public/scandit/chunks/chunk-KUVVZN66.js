@@ -1,0 +1,1 @@
+var t=class{constructor(o,i,r,e,l,n){this._message=o,this._tag=i,this._style=r,this._icon=e,this._textColor=l,this._backgroundColor=n;}get tag(){return this._tag}get message(){return this._message}get style(){return this._style||null}get icon(){return this._icon||null}get textColor(){return this._textColor}get backgroundColor(){return this._backgroundColor}};export{t as a};

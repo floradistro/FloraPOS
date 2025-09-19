@@ -1,0 +1,1 @@
+import {a}from'./chunk-FGO2SSRS.js';function f(n){if(typeof n=="string")return n;if(a(n)){if(typeof n.message=="string")return n.message}else if(typeof(n==null?void 0:n.toString)=="function")return n.toString();return "unknown error"}export{f as a};

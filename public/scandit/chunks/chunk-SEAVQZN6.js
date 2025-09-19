@@ -1,0 +1,1 @@
+var n=class{constructor(i){if(typeof i!="function")throw new TypeError("FinalizationRegistry callback must be a function")}register(i,t,r){}unregister(i){return  false}};function o(e){typeof e.FinalizationRegistry>"u"&&(e.FinalizationRegistry=n);}export{o as a};

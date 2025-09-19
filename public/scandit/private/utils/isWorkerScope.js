@@ -1,0 +1,1 @@
+export{a as isWorkerScope}from'../../chunks/chunk-QCRFVRSS.js';

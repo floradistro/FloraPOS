@@ -1,0 +1,24 @@
+/// <reference types="emscripten" />
+export { WorkerMain } from './WorkerMain.js';
+export { as as AddNativeOverlayAction, _ as AnyDataCaptureActionMessage, $ as AugmentedWorker, aW as CaptureModeDeserializerInstance, ab as CreateContextDataCaptureAction, bf as CreateContextParameters, a2 as DataCaptureActionMessageKey, a1 as DataCaptureCallbackMessage, au as DataCaptureCallbackMessageKeys, aO as DataCaptureContext, aV as DataCaptureContextDeserializer, aU as DataCaptureContextDeserializerResult, X as DataCaptureEngine, aP as DataCaptureImageBufferFrameSource, D as DataCaptureLoader, S as DataCaptureLoaderOptions, aS as DataCaptureView, aM as DataCaptureWorker, af as DeleteFrameDataDataCaptureAction, aB as DidTapTrackedBarcode, aj as DisposeDataCaptureAction, aN as EmscriptenClassHandle, a3 as EngineWorkerResponse, an as ExtractCentaurusLicenseDataCaptureAction, a4 as ExtractCentaurusLicenseResponse, ak as FlushAnalyticsDataCaptureAction, Z as GenericHint, aQ as GestureListener, aR as GestureRecognizer, ar as GetOpenSourceSoftwareLicenseInfoAction, a8 as GetOpenSourceSoftwareLicenseInfoResponse, a7 as GetViewfinderInfo, aq as GetViewfinderInfoAction, b8 as GuidanceHint, b6 as GuidanceHintAnchor, b7 as GuidanceHintStyle, aI as HideGuidanceMessage, az as HideHintWorkerMessage, aG as HideToastMessage, b4 as HintAnchor, b2 as HintCornerStyle, a_ as HintFont, b1 as HintHeight, b3 as HintIcon, bc as HintPresenterV2, ap as HintPresenterV2updateAction, b5 as HintStyle, a$ as HintTextAlignment, b0 as HintWidth, ah as IsFeatureSupportedAction, ay as IsFeatureSupportedMessage, a6 as IsFeatureSupportedResponse, aT as JSONParseable, bb as LicensedFeature, aa as LoadLibraryDataCaptureAction, be as LoadLibraryParameters, Y as Module, a0 as ModuleHandler, aX as ModuleMirrorAxis, aD as OnFrameProcessingFinishedMessage, aC as OnFrameProcessingStartedMessage, aE as OnFrameSkippedMessage, ao as OnTapAction, aL as PayloadForCommand, W as PerformanceMetrics, aA as PerformanceMetricsReportMessage, bd as PlatformHintPresenter, ad as ProcessFrameDataCaptureAction, bi as ProcessFrameParameters, at as RemoveNativeOverlayAction, al as ReportCameraPropertiesDataCaptureAction, bj as ReportCameraPropertiesParameters, ae as RequestFrameDataDataCaptureAction, a5 as RequestFrameDataResponse, ac as SetFrameSourceDataCaptureAction, bh as SetFrameSourceParameters, am as SetLogLevelDataCaptureAction, aH as ShowGuidanceMessage, aw as ShowHintWorkerMessage, aF as ShowToastMessage, aJ as StartUpdateTimerMessage, aK as StopUpdateTimerMessage, av as SuccessFeedbackWorkerMessage, ba as ToastHint, b9 as ToastHintStyle, ai as UpdateContextDataCaptureAction, bg as UpdateContextParameters, ax as UpdateHintWorkerMessage, aY as Vector, ag as VisibilityChangeAction, aZ as WasmFrameData, bk as WorkerFunctions, a9 as WorkerResponse } from '../Camera-C_4xOv5n.js';
+import '../private/Serializable.js';
+import '../Common.js';
+import '../private/FrameReaders/WatermarkStack.js';
+import '../tsHelper.js';
+import '../ScanditIcon.js';
+import '../private/utils/ScanditHTMLElement.js';
+import '../DataCaptureContextSettings.js';
+import '../DataCaptureViewPlusRelated.js';
+import '../NotificationPresenter/NotificationPresenter.js';
+import '../NotificationPresenter/NotificationConfiguration.js';
+import '../NotificationPresenter/NotificationStyle.js';
+import '../ViewControls.js';
+import '../private/CustomLocationsView.js';
+import '../private/View.js';
+import '../private/AnchorPositions.js';
+import '../private/nativeHandle.js';
+import '../license/OpenSourceSoftwareLicenseInfo.js';
+import '../private/HtmlElementState.js';
+import './OverrideState.js';
+import '../logger.js';
+import '../LoadingStatus.js';

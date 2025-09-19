@@ -1,0 +1,1 @@
+function o(n,...r){let e=document.createElement("style");return e.innerHTML=n.reduce((c,l,s)=>{var t;let m=(t=r[s])!=null?t:"";return c+l+String(m)},""),e}export{o as a};

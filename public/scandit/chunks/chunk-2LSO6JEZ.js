@@ -1,0 +1,1 @@
+function t(r,e=100){return r?o(r,e).toLowerCase().replace(/[^a-z0-9]/g,"_").replace(/_+/g,"_").replace(/^_|_$/g,""):""}function o(r,e=100){return typeof r=="string"?r.slice(0,e):""}function s(r,e="id"){let i=r.map(n=>t(n)).filter(n=>!!n);return [t(e),...i].join("-")}export{s as a};

@@ -1,0 +1,1 @@
+export{a as folderImage}from'../chunks/chunk-BDLLVGRH.js';
