@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { WordPressUser } from '../../services/users-service';
-import { IDScanner, ScannedIDData } from './IDScanner';
 
 interface NewCustomerFormProps {
   isOpen: boolean;
@@ -64,7 +63,6 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [useShippingAsBilling, setUseShippingAsBilling] = useState(true);
-  const [showIDScanner, setShowIDScanner] = useState(false);
 
   const handleInputChange = (field: keyof CustomerFormData, value: string) => {
     setFormData(prev => ({
@@ -83,30 +81,6 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
       }
     }));
     setError(null);
-  };
-
-  const handleIDScanned = (scannedData: ScannedIDData) => {
-    // Populate form with scanned data
-    setFormData(prev => ({
-      ...prev,
-      firstName: scannedData.firstName || prev.firstName,
-      lastName: scannedData.lastName || prev.lastName,
-      address: {
-        ...prev.address,
-        address_1: scannedData.address || prev.address.address_1,
-        city: scannedData.city || prev.address.city,
-        state: scannedData.state || prev.address.state,
-        postcode: scannedData.zipCode || prev.address.postcode
-      }
-    }));
-    
-    setShowIDScanner(false);
-    setError(null);
-  };
-
-  const handleIDScanError = (errorMessage: string) => {
-    setError(`ID Scan Error: ${errorMessage}`);
-    setShowIDScanner(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -235,37 +209,15 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-8 py-4 border-b border-neutral-700 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-medium text-white" style={{ fontFamily: 'Tiempos, serif' }}>
-              Add New Customer
-            </h2>
-            <p className="text-sm text-neutral-400 mt-1">
-              Enter customer details or scan their driver's license
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowIDScanner(true)}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white rounded-lg transition-colors text-sm font-medium"
-              title="Scan Driver's License"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Scan ID
-            </button>
-            <button
-              onClick={handleClose}
-              className="text-neutral-400 hover:text-neutral-300 transition-colors p-2 hover:bg-neutral-700 rounded-md"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+        <div className="px-8 py-4 border-b border-neutral-700 flex items-center justify-end">
+          <button
+            onClick={handleClose}
+            className="text-neutral-400 hover:text-neutral-300 transition-colors p-2 hover:bg-neutral-700 rounded-md"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Form */}
@@ -287,6 +239,7 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
                   type="text"
                   value={formData.firstName}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
+                  style={{ fontFamily: 'Tiempos, serif' }}
                   style={{ fontFamily: 'Tiempos, serif' }}
                   className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter first name"
@@ -572,14 +525,6 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
           </div>
         </form>
       </div>
-      
-      {/* ID Scanner Modal */}
-      <IDScanner
-        isOpen={showIDScanner}
-        onClose={() => setShowIDScanner(false)}
-        onDataScanned={handleIDScanned}
-        onError={handleIDScanError}
-      />
     </div>
   );
 }

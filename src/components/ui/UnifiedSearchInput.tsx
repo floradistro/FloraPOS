@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { useUserPointsBalance } from '../../hooks/useRewards';
 import { useDebounce } from '../../hooks/useDebounce';
-import { IDScanner, ScannedIDData } from './IDScanner';
+import { IDScanner, IDScanResult } from './IDScanner';
 
 export interface Category {
   id: number;
@@ -167,6 +167,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const [editingRestockProduct, setEditingRestockProduct] = useState<string | null>(null);
   const [editRestockValue, setEditRestockValue] = useState<string>('');
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [showIDScanner, setShowIDScanner] = useState(false);
   const [newCustomerData, setNewCustomerData] = useState({
     firstName: '',
     lastName: '',
@@ -178,7 +179,6 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     zipCode: ''
   });
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
-  const [showIDScanner, setShowIDScanner] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -267,14 +267,14 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   useEffect(() => {
     if (isOpen && inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
-      const minWidth = showNewCustomerForm ? 500 : 400; // Wider when form is shown
+      const minWidth = (showNewCustomerForm || showIDScanner) ? 500 : 400; // Wider when form or scanner is shown
       setDropdownPosition({
         top: rect.bottom + 8,
         left: rect.left,
         width: Math.max(rect.width, minWidth)
       });
     }
-  }, [isOpen, showNewCustomerForm]);
+  }, [isOpen, showNewCustomerForm, showIDScanner]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -359,27 +359,34 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
 
   const handleNewCustomerClick = () => {
     setShowNewCustomerForm(true);
+    setShowIDScanner(false);
   };
 
-  const handleIDScanned = (scannedData: ScannedIDData) => {
-    // Populate new customer form with scanned data
-    setNewCustomerData({
-      firstName: scannedData.firstName || '',
-      lastName: scannedData.lastName || '',
-      email: '',
-      phone: '',
-      address: scannedData.address || '',
-      city: scannedData.city || '',
-      state: scannedData.state || '',
-      zipCode: scannedData.zipCode || ''
-    });
+  const handleIDScannerClick = () => {
+    setShowIDScanner(true);
+    setShowNewCustomerForm(false);
+  };
+
+  const handleIDScanResult = (result: IDScanResult) => {
+    // Auto-fill the form with scanned data
+    setNewCustomerData(prev => ({
+      ...prev,
+      firstName: result.firstName || prev.firstName,
+      lastName: result.lastName || prev.lastName,
+      email: prev.email, // Keep existing email if any
+      phone: prev.phone, // Keep existing phone if any
+      address: result.address || prev.address,
+      city: result.city || prev.city,
+      state: result.state || prev.state,
+      zipCode: result.zipCode || prev.zipCode
+    }));
     
+    // Switch to the form view with pre-filled data
     setShowIDScanner(false);
     setShowNewCustomerForm(true);
   };
 
-  const handleIDScanError = (errorMessage: string) => {
-    console.error('ID Scan Error:', errorMessage);
+  const handleCancelIDScanner = () => {
     setShowIDScanner(false);
   };
 
@@ -449,6 +456,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const handleCancelNewCustomer = () => {
     setNewCustomerData({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', state: '', zipCode: '' });
     setShowNewCustomerForm(false);
+    setShowIDScanner(false);
   };
 
   const handleProductSelect = (product: Product | null) => {
@@ -557,11 +565,11 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 ? "Search customers..." 
                 : (isProductMode || productOnlyMode) 
                   ? "Search products..." 
-                  : (showFilters ? displayText : placeholder)
+                  : placeholder
           }
           style={{ 
             fontFamily: 'Tiempos, serif',
-            ...(showFilters || showProductSelection) ? { textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' } : {}
+            ...(showProductSelection) ? { textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' } : {}
           }}
           value={showProductSelection ? selectedProduct.name : internalValue}
           readOnly={showProductSelection || false}
@@ -592,26 +600,40 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 ? 'border-2 border-blue-500/30 bg-blue-500/10 shadow-lg shadow-blue-500/20' 
                 : 'border border-neutral-500/30 hover:border-neutral-400/50 focus:border-neutral-300'
           } ${
-            selectedCustomer && selectedCustomer.id > 0 && !internalValue && !isCustomerMode 
-              ? 'px-3 pr-8' 
+            selectedCustomer && selectedCustomer.id >= 0 && !isCustomerMode
+              ? 'px-3 pr-36' 
               : isAuditMode && pendingAdjustments && pendingAdjustments.size > 0
                 ? 'px-3 pr-24'
                 : 'px-3'
           }`}
         />
         
-        {/* Customer points indicator when selected */}
-        {selectedCustomer && selectedCustomer.id > 0 && !internalValue && !isCustomerMode && (
-          <div className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none">
-            <CustomerPoints customerId={selectedCustomer.id} />
+        {/* Selected customer display on the right side */}
+        {selectedCustomer && selectedCustomer.id >= 0 && !isCustomerMode && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+            <div className="flex items-center gap-1 bg-blue-600/20 border border-blue-500/30 rounded px-2 py-0.5 text-xs">
+              <span className="text-blue-200 font-medium" style={{ fontFamily: 'Tiempos, serif' }}>
+                {selectedCustomer.id === 0 ? 'Guest' : (selectedCustomer.display_name || selectedCustomer.name || selectedCustomer.username)}
+              </span>
+              {selectedCustomer.id > 0 && <CustomerPoints customerId={selectedCustomer.id} />}
+              <button
+                onClick={() => {
+                  handleCustomerSelect(null);
+                  inputRef.current?.focus();
+                }}
+                className="text-blue-300 hover:text-blue-100 transition-colors ml-1 pointer-events-auto"
+                title="Clear customer"
+              >
+                <span className="text-xs">✕</span>
+              </button>
+            </div>
           </div>
         )}
         
-        {/* Clear filters button - normal mode */}
-        {!isCustomerMode && !isProductMode && (selectedCustomer || selectedProduct || selectedCategory) && !internalValue && (
+        {/* Clear filters button - normal mode (only for product/category when no customer selected) */}
+        {!isCustomerMode && !isProductMode && !selectedCustomer && (selectedProduct || selectedCategory) && !internalValue && (
           <button
             onClick={() => {
-              handleCustomerSelect(null);
               handleProductSelect(null);
               handleCategorySelect(null);
               inputRef.current?.focus();
@@ -754,9 +776,16 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 </h3>
               </div>
               
-              <div className={`py-1 ${showNewCustomerForm ? 'max-h-[500px]' : 'max-h-48'} overflow-y-auto`}>
-                {/* New Customer Form or Button */}
-                {showNewCustomerForm ? (
+              <div className={`py-1 ${(showNewCustomerForm || showIDScanner) ? 'max-h-[500px]' : 'max-h-48'} overflow-y-auto`}>
+                {/* ID Scanner */}
+                {showIDScanner ? (
+                  <div className="px-4 py-3 border-b border-neutral-500/20 mb-1">
+                    <IDScanner
+                      onScanResult={handleIDScanResult}
+                      onCancel={handleCancelIDScanner}
+                    />
+                  </div>
+                ) : showNewCustomerForm ? (
                   <div className="px-4 py-3 border-b border-neutral-500/20 mb-1">
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-2">
@@ -856,6 +885,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                   </div>
                 ) : (
                   <>
+                    {/* New Customer Button */}
                     <button
                       onClick={handleNewCustomerClick}
                       className="w-full px-4 py-2.5 text-left text-sm transition-all flex items-center justify-between group text-neutral-300 hover:bg-white/[0.05] hover:text-neutral-200 border-b border-neutral-500/20"
@@ -875,21 +905,21 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
-                    
+
+                    {/* ID Scanner Button */}
                     <button
-                      onClick={() => setShowIDScanner(true)}
+                      onClick={handleIDScannerClick}
                       className="w-full px-4 py-2.5 text-left text-sm transition-all flex items-center justify-between group text-neutral-300 hover:bg-white/[0.05] hover:text-neutral-200 border-b border-neutral-500/20 mb-1"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-blue-700/50 rounded-full flex items-center justify-center group-hover:bg-blue-600/50 transition-colors">
                           <svg className="w-4 h-4 text-blue-400 group-hover:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
                         <div>
-                          <div className="font-medium text-blue-400 group-hover:text-blue-300">Scan Driver's License</div>
-                          <div className="text-xs text-neutral-500 group-hover:text-neutral-400">Quick setup from ID scan</div>
+                          <div className="font-medium">Scan ID</div>
+                          <div className="text-xs text-neutral-500 group-hover:text-neutral-400">Scan driver's license</div>
                         </div>
                       </div>
                       <svg className="w-4 h-4 text-neutral-500 group-hover:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1450,14 +1480,6 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         </div>,
         document.body
       )}
-      
-      {/* ID Scanner Modal */}
-      <IDScanner
-        isOpen={showIDScanner}
-        onClose={() => setShowIDScanner(false)}
-        onDataScanned={handleIDScanned}
-        onError={handleIDScanError}
-      />
     </>
   );
 });
