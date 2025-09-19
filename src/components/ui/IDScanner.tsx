@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { parse } from '@digitalbazaar/aamva-parse';
 import { BrowserMultiFormatReader, BrowserPDF417Reader } from '@zxing/library';
+import jsQR from 'jsqr';
 
 export interface IDScanResult {
   firstName?: string;
@@ -126,19 +127,19 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
     }
   };
 
-  // Continuous scanning for government ID barcodes
+  // Enhanced scanning for government ID barcodes
   const startContinuousScanning = () => {
-    if (!videoRef.current || !codeReader.current) return;
+    if (!videoRef.current) return;
     
-    console.log('🔍 Starting continuous barcode scanning...');
+    console.log('🔍 Starting enhanced barcode scanning...');
     
     const scanFrame = async () => {
       if (!videoRef.current || !isCameraActive) return;
       
       try {
         // Ensure video is ready
-        if (videoRef.current.readyState < 2) {
-          console.log('⏳ Video not ready yet, waiting...');
+        if (videoRef.current.readyState < 2 || !videoRef.current.videoWidth || !videoRef.current.videoHeight) {
+          console.log('⏳ Video not ready:', videoRef.current.readyState, videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
           return;
         }
         
@@ -146,10 +147,7 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         
-        if (!context || !videoRef.current.videoWidth || !videoRef.current.videoHeight) {
-          console.log('⚠️ Video dimensions not ready:', videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
-          return;
-        }
+        if (!context) return;
         
         canvas.width = videoRef.current.videoWidth;
         canvas.height = videoRef.current.videoHeight;
@@ -157,30 +155,71 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
         
         console.log('📸 Scanning frame:', canvas.width, 'x', canvas.height);
         
-        // Try PDF417 first (most common on driver's licenses)
+        // Get image data for analysis
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        
+        // Method 1: Try jsQR (works for some barcode types)
+        try {
+          const qrResult = jsQR(imageData.data, imageData.width, imageData.height);
+          if (qrResult && qrResult.data) {
+            console.log('🎯 jsQR detected:', qrResult.data);
+            handleBarcodeDetected(qrResult.data);
+            return;
+          }
+        } catch (qrError) {
+          console.log('📱 jsQR scan attempt (no barcode)');
+        }
+        
+        // Method 2: Try ZXing PDF417 Reader
         try {
           if (pdf417Reader.current) {
             const result = await pdf417Reader.current.decodeFromCanvas(canvas);
             if (result && result.text) {
-              console.log('🎯 PDF417 barcode detected:', result.text);
+              console.log('🎯 PDF417 detected:', result.text);
               handleBarcodeDetected(result.text);
               return;
             }
           }
         } catch (pdf417Error) {
-          console.log('📋 PDF417 scan attempt (no barcode found)');
+          console.log('📋 PDF417 scan attempt (no barcode)');
         }
         
-        // Try multi-format reader for other barcode types
+        // Method 3: Try ZXing Multi-format Reader
         try {
-          const result = await codeReader.current!.decodeFromCanvas(canvas);
-          if (result && result.text) {
-            console.log('🎯 Barcode detected:', result.text, 'Format:', result.format);
-            handleBarcodeDetected(result.text);
-            return;
+          if (codeReader.current) {
+            const result = await codeReader.current.decodeFromCanvas(canvas);
+            if (result && result.text) {
+              console.log('🎯 Multi-format detected:', result.text, 'Format:', result.format);
+              handleBarcodeDetected(result.text);
+              return;
+            }
           }
         } catch (multiError) {
-          console.log('🔍 Multi-format scan attempt (no barcode found)');
+          console.log('🔍 Multi-format scan attempt (no barcode)');
+        }
+        
+        // Method 4: Try enhanced image processing
+        try {
+          // Enhance contrast for better barcode detection
+          const enhancedCanvas = document.createElement('canvas');
+          const enhancedContext = enhancedCanvas.getContext('2d');
+          if (enhancedContext) {
+            enhancedCanvas.width = canvas.width;
+            enhancedCanvas.height = canvas.height;
+            enhancedContext.filter = 'contrast(200%) brightness(150%)';
+            enhancedContext.drawImage(canvas, 0, 0);
+            
+            if (codeReader.current) {
+              const result = await codeReader.current.decodeFromCanvas(enhancedCanvas);
+              if (result && result.text) {
+                console.log('🎯 Enhanced scan detected:', result.text);
+                handleBarcodeDetected(result.text);
+                return;
+              }
+            }
+          }
+        } catch (enhancedError) {
+          console.log('🔧 Enhanced scan attempt (no barcode)');
         }
         
       } catch (error) {
@@ -188,9 +227,9 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
       }
     };
     
-    // Scan every 1000ms for better stability
-    scanningInterval.current = setInterval(scanFrame, 1000);
-    console.log('✅ Continuous scanning started');
+    // Scan every 1500ms for better performance
+    scanningInterval.current = setInterval(scanFrame, 1500);
+    console.log('✅ Enhanced scanning started');
   };
   
   // Handle detected barcode
@@ -489,7 +528,9 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
                     
                     <button
                       onClick={async () => {
-                        if (!videoRef.current || !codeReader.current) return;
+                        if (!videoRef.current) return;
+                        
+                        console.log('🔍 Manual scan initiated...');
                         
                         try {
                           const canvas = document.createElement('canvas');
@@ -500,18 +541,51 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
                             canvas.height = videoRef.current.videoHeight;
                             context.drawImage(videoRef.current, 0, 0);
                             
-                            console.log('🔍 Manual scan attempt...');
+                            console.log('📸 Manual scan frame:', canvas.width, 'x', canvas.height);
                             
+                            // Get image data
+                            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                            
+                            // Try all methods sequentially
+                            let detected = false;
+                            
+                            // Method 1: jsQR
                             try {
-                              const result = await codeReader.current.decodeFromCanvas(canvas);
-                              if (result && result.text) {
-                                console.log('✅ Manual scan success:', result.text);
-                                handleBarcodeDetected(result.text);
-                              } else {
-                                console.log('❌ No barcode found in manual scan');
+                              const qrResult = jsQR(imageData.data, imageData.width, imageData.height);
+                              if (qrResult && qrResult.data) {
+                                console.log('✅ Manual jsQR success:', qrResult.data);
+                                handleBarcodeDetected(qrResult.data);
+                                detected = true;
                               }
-                            } catch (err) {
-                              console.log('❌ Manual scan failed:', err);
+                            } catch (e) { console.log('jsQR failed'); }
+                            
+                            if (!detected && pdf417Reader.current) {
+                              // Method 2: PDF417
+                              try {
+                                const result = await pdf417Reader.current.decodeFromCanvas(canvas);
+                                if (result && result.text) {
+                                  console.log('✅ Manual PDF417 success:', result.text);
+                                  handleBarcodeDetected(result.text);
+                                  detected = true;
+                                }
+                              } catch (e) { console.log('PDF417 failed'); }
+                            }
+                            
+                            if (!detected && codeReader.current) {
+                              // Method 3: Multi-format
+                              try {
+                                const result = await codeReader.current.decodeFromCanvas(canvas);
+                                if (result && result.text) {
+                                  console.log('✅ Manual multi-format success:', result.text);
+                                  handleBarcodeDetected(result.text);
+                                  detected = true;
+                                }
+                              } catch (e) { console.log('Multi-format failed'); }
+                            }
+                            
+                            if (!detected) {
+                              console.log('❌ No barcode detected with any method');
+                              setError('No barcode detected. Try adjusting position and lighting.');
                             }
                           }
                         } catch (err) {
