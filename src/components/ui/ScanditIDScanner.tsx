@@ -170,7 +170,8 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
 
   // Handle captured ID
   const handleIdCaptured = async (capturedId: any) => {
-    console.log('ID captured:', capturedId);
+    console.log('🎯 ID captured - raw data:', capturedId);
+    console.log('🔍 Available properties:', Object.keys(capturedId));
     
     try {
       // Stop scanning
@@ -185,55 +186,89 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       
       setScanStatus('Processing ID data...');
       
-      // Extract data from captured ID
+      // Extract data from captured ID using new SDK 7.6 structure
       const result: IDScanResult = {};
       
-      // Get data from VIZ (Visual Inspection Zone) if available
-      if (capturedId.viz) {
-        const viz = capturedId.viz;
-        result.firstName = viz.firstName || undefined;
-        result.lastName = viz.lastName || undefined;
-        result.dateOfBirth = viz.dateOfBirth?.toISOString().split('T')[0] || undefined;
-        result.licenseNumber = viz.documentNumber || undefined;
-        result.expirationDate = viz.dateOfExpiry?.toISOString().split('T')[0] || undefined;
-        result.issuerState = viz.issuingAuthority || undefined;
+      console.log('📋 Extracting data from CapturedId...');
+      console.log('- firstName:', capturedId.firstName);
+      console.log('- lastName:', capturedId.lastName);
+      console.log('- documentNumber:', capturedId.documentNumber);
+      console.log('- dateOfBirth:', capturedId.dateOfBirth);
+      console.log('- dateOfExpiry:', capturedId.dateOfExpiry);
+      console.log('- address:', capturedId.address);
+      console.log('- issuingCountry:', capturedId.issuingCountry);
+      
+      // Direct properties from CapturedId (SDK 7.6 structure)
+      result.firstName = capturedId.firstName || undefined;
+      result.lastName = capturedId.lastName || undefined;
+      result.licenseNumber = capturedId.documentNumber || undefined;
+      
+      // Handle DateResult objects
+      if (capturedId.dateOfBirth && capturedId.dateOfBirth.day && capturedId.dateOfBirth.month && capturedId.dateOfBirth.year) {
+        const dob = capturedId.dateOfBirth;
+        result.dateOfBirth = `${dob.year}-${String(dob.month).padStart(2, '0')}-${String(dob.day).padStart(2, '0')}`;
+      }
+      
+      if (capturedId.dateOfExpiry && capturedId.dateOfExpiry.day && capturedId.dateOfExpiry.month && capturedId.dateOfExpiry.year) {
+        const exp = capturedId.dateOfExpiry;
+        result.expirationDate = `${exp.year}-${String(exp.month).padStart(2, '0')}-${String(exp.day).padStart(2, '0')}`;
+      }
+      
+      // Address (might be a single string in new API)
+      result.address = capturedId.address || undefined;
+      
+      // Issuing state/country
+      result.issuerState = capturedId.issuingCountry || undefined;
+      
+      // Try to extract more detailed info from barcode result if available
+      if (capturedId.barcode) {
+        console.log('📊 Barcode result available:', capturedId.barcode);
+        const barcode = capturedId.barcode;
         
-        // Address information
-        if (viz.address) {
-          result.address = viz.address.street || undefined;
-          result.city = viz.address.city || undefined;
-          result.state = viz.address.state || undefined;
-          result.zipCode = viz.address.postalCode || undefined;
+        // Override with barcode data if available
+        result.firstName = result.firstName || barcode.firstName || undefined;
+        result.lastName = result.lastName || barcode.lastName || undefined;
+        result.licenseNumber = result.licenseNumber || barcode.documentNumber || undefined;
+        
+        // Try to get more address details from barcode
+        if (barcode.address) {
+          result.address = result.address || barcode.address || undefined;
+        }
+        if (barcode.city) {
+          result.city = barcode.city || undefined;
+        }
+        if (barcode.state) {
+          result.state = barcode.state || undefined;
+        }
+        if (barcode.postalCode) {
+          result.zipCode = barcode.postalCode || undefined;
         }
       }
       
-      // Get data from AAMVA barcode if available
-      if (capturedId.aamvaBarcode) {
-        const aamva = capturedId.aamvaBarcode;
-        result.firstName = result.firstName || aamva.firstName || undefined;
-        result.lastName = result.lastName || aamva.lastName || undefined;
-        result.dateOfBirth = result.dateOfBirth || aamva.birthDate?.toISOString().split('T')[0] || undefined;
-        result.licenseNumber = result.licenseNumber || aamva.documentDiscriminatorNumber || undefined;
-        result.expirationDate = result.expirationDate || aamva.expiryDate?.toISOString().split('T')[0] || undefined;
-        result.issuerState = result.issuerState || aamva.issuingJurisdiction || undefined;
+      // Try VIZ result for additional data
+      if (capturedId.vizResult) {
+        console.log('👁️ VIZ result available:', capturedId.vizResult);
+        const viz = capturedId.vizResult;
         
-        // Address from AAMVA
-        result.address = result.address || aamva.addressStreet || undefined;
-        result.city = result.city || aamva.addressCity || undefined;
-        result.state = result.state || aamva.addressJurisdiction || undefined;
-        result.zipCode = result.zipCode || aamva.addressPostalCode || undefined;
+        result.firstName = result.firstName || viz.firstName || undefined;
+        result.lastName = result.lastName || viz.lastName || undefined;
+        result.licenseNumber = result.licenseNumber || viz.documentNumber || undefined;
       }
+      
+      console.log('✅ Extracted result:', result);
       
       // Validate we got essential information
       if (!result.firstName && !result.lastName && !result.licenseNumber) {
-        throw new Error('Unable to extract essential information from ID');
+        console.error('❌ Validation failed - missing essential data');
+        throw new Error('Unable to extract essential information from ID. Please ensure the ID is clearly visible and try again.');
       }
       
+      console.log('🎉 ID processing successful!');
       setScanStatus('ID processed successfully!');
       onScanResult(result);
       
     } catch (err) {
-      console.error('ID processing error:', err);
+      console.error('❌ ID processing error:', err);
       setError(err instanceof Error ? err.message : 'Failed to process ID data');
       setScanStatus('Processing failed');
     }
