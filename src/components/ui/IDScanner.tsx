@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { parse } from '@digitalbazaar/aamva-parse';
-import { Html5Qrcode, Html5QrcodeResult } from 'html5-qrcode';
+import { BrowserMultiFormatReader, BrowserPDF417Reader } from '@zxing/library';
 
 export interface IDScanResult {
   firstName?: string;
@@ -33,105 +33,183 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scannerRef = useRef<HTMLDivElement>(null);
-  const html5QrCode = useRef<Html5Qrcode | null>(null);
-  const scannerElementId = useRef(`id-scanner-${Math.random().toString(36).substr(2, 9)}`);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const codeReader = useRef<BrowserMultiFormatReader | null>(null);
+  const pdf417Reader = useRef<BrowserPDF417Reader | null>(null);
+  const scanningInterval = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize camera scanner
+  // Initialize camera scanner optimized for government IDs
   const initializeCamera = async () => {
-    if (!scannerRef.current || html5QrCode.current) return;
+    if (!videoRef.current || codeReader.current) return;
     
     try {
       setIsProcessing(true);
       setError(null);
       
-      console.log('🎥 Starting camera scanner...');
+      console.log('🆔 Starting government ID scanner...');
       
-      // Create scanner instance
-      html5QrCode.current = new Html5Qrcode(scannerElementId.current);
+      // Initialize both readers for maximum compatibility
+      codeReader.current = new BrowserMultiFormatReader();
+      pdf417Reader.current = new BrowserPDF417Reader();
       
-      // Simple, working config for barcode scanning
-      const config = {
-        fps: 10,
-        qrbox: 250,
-        aspectRatio: 1.0,
-        disableFlip: false
-      };
+      // Get available cameras and prefer back camera
+      const videoInputDevices = await codeReader.current.getVideoInputDevices();
+      console.log('📷 Available cameras:', videoInputDevices.length);
       
-      console.log('🎬 Starting with simplified config');
+      let selectedDeviceId = videoInputDevices[0]?.deviceId;
       
-      // Start with environment camera
-      await html5QrCode.current.start(
-        { facingMode: "environment" },
-        config,
-        (decodedText, decodedResult) => {
-          console.log('🎯 Barcode detected:', decodedText);
-          stopCamera();
-          setScanText(decodedText);
-          setTimeout(() => handleScan(decodedText), 100);
-        },
-        (errorMessage) => {
-          // Ignore scanning errors, only log real issues
-          if (!errorMessage.includes('No code found') && !errorMessage.includes('NotFoundException')) {
-            console.warn('Scanner error:', errorMessage);
-          }
-        }
+      // Look for back/rear camera
+      const backCamera = videoInputDevices.find(device => 
+        device.label.toLowerCase().includes('back') ||
+        device.label.toLowerCase().includes('rear') ||
+        device.label.toLowerCase().includes('environment')
       );
+      
+      if (backCamera) {
+        selectedDeviceId = backCamera.deviceId;
+        console.log('📱 Using back camera:', backCamera.label);
+      }
+      
+      // Start video stream
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+          facingMode: { ideal: 'environment' }
+        }
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      
+      // Start continuous scanning for government ID barcodes
+      startContinuousScanning();
       
       setIsCameraActive(true);
       setIsProcessing(false);
       setCameraPermission('granted');
       
-      console.log('✅ Camera scanner active!');
+      console.log('🎯 Government ID scanner ready!');
       
     } catch (err) {
-      console.error('💥 Camera failed:', err);
+      console.error('💥 ID scanner failed:', err);
       
       const error = err as Error;
-      if (error.message.includes('Permission denied') || error.message.includes('NotAllowedError')) {
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
         setCameraPermission('denied');
-        setError('Camera access denied. Enable camera permissions and try again.');
+        setError('Camera access denied. Please enable camera permissions for ID scanning.');
+      } else if (error.name === 'NotFoundError') {
+        setError('No camera found. Please ensure your device has a camera.');
       } else {
-        setError('Camera initialization failed. Check console for details.');
+        setError(`ID scanner initialization failed: ${error.message}`);
       }
       
       setIsProcessing(false);
       setIsCameraActive(false);
-      
-      if (html5QrCode.current) {
-        try {
-          html5QrCode.current.clear();
-        } catch (e) {
-          console.warn('Cleanup error:', e);
-        }
-        html5QrCode.current = null;
-      }
+      cleanup();
     }
+  };
+
+  // Continuous scanning for government ID barcodes
+  const startContinuousScanning = () => {
+    if (!videoRef.current || !codeReader.current || !pdf417Reader.current) return;
+    
+    const scanFrame = async () => {
+      if (!videoRef.current || !isCameraActive) return;
+      
+      try {
+        // Try PDF417 first (most common on driver's licenses)
+        try {
+          const result = await pdf417Reader.current!.decodeFromVideoElement(videoRef.current);
+          if (result && result.text) {
+            console.log('🎯 PDF417 barcode detected:', result.text);
+            handleBarcodeDetected(result.text);
+            return;
+          }
+        } catch (pdf417Error) {
+          // PDF417 failed, try multi-format reader
+        }
+        
+        // Try multi-format reader for other barcode types
+        try {
+          // Create a canvas to capture the current video frame
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          if (context && videoRef.current) {
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            context.drawImage(videoRef.current, 0, 0);
+            
+            const result = await codeReader.current!.decodeFromCanvas(canvas);
+            if (result && result.text) {
+              console.log('🎯 Barcode detected:', result.text, 'Format:', result.format);
+              handleBarcodeDetected(result.text);
+              return;
+            }
+          }
+        } catch (multiError) {
+          // No barcode found, continue scanning
+        }
+        
+      } catch (error) {
+        // Scanning error, continue
+      }
+    };
+    
+    // Scan every 500ms for better performance
+    scanningInterval.current = setInterval(scanFrame, 500);
+  };
+  
+  // Handle detected barcode
+  const handleBarcodeDetected = (barcodeText: string) => {
+    console.log('🆔 Government ID barcode detected:', barcodeText);
+    stopCamera();
+    setScanText(barcodeText);
+    setTimeout(() => handleScan(barcodeText), 100);
+  };
+  
+  // Cleanup function
+  const cleanup = () => {
+    if (scanningInterval.current) {
+      clearInterval(scanningInterval.current);
+      scanningInterval.current = null;
+    }
+    
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    
+    if (codeReader.current) {
+      try {
+        codeReader.current.reset();
+      } catch (e) {
+        console.warn('Error resetting code reader:', e);
+      }
+      codeReader.current = null;
+    }
+    
+    pdf417Reader.current = null;
   };
 
   // Stop camera scanner
   const stopCamera = async () => {
-    console.log('⏹️ Stopping camera scanner...');
-    
-    try {
-      if (html5QrCode.current) {
-        await html5QrCode.current.stop();
-        html5QrCode.current.clear();
-        html5QrCode.current = null;
-        console.log('✅ Camera scanner stopped');
-      }
-    } catch (err) {
-      console.error('⚠️ Error stopping camera:', err);
-    }
-    
+    console.log('⏹️ Stopping ID scanner...');
+    cleanup();
     setIsCameraActive(false);
     setIsProcessing(false);
+    console.log('✅ ID scanner stopped');
   };
 
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopCamera();
+      cleanup();
     };
   }, []);
 
@@ -191,18 +269,13 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
 
   return (
     <div className="space-y-4">
-      <style jsx global>{`
-        #${scannerElementId.current} {
-          width: 100% !important;
-          height: 264px !important;
-          border-radius: 8px !important;
-        }
-        
-        #${scannerElementId.current} video {
-          width: 100% !important;
-          height: 264px !important;
-          object-fit: cover !important;
-          border-radius: 8px !important;
+      <style jsx>{`
+        .id-scanner-video {
+          width: 100%;
+          height: 264px;
+          object-fit: cover;
+          border-radius: 8px;
+          background: #1f2937;
         }
       `}</style>
       <div className="flex items-center gap-3 mb-4">
@@ -213,10 +286,10 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
         </div>
         <div>
           <h3 className="font-medium text-white" style={{ fontFamily: 'Tiempos, serif' }}>
-            Scan Driver's License
+            Scan Government ID
           </h3>
           <p className="text-xs text-neutral-400">
-            Use camera to scan barcode or enter data manually
+            Optimized for driver's licenses and state IDs
           </p>
         </div>
       </div>
@@ -269,14 +342,15 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
                   ref={scannerRef}
                   className="w-full h-64 bg-neutral-800 rounded-lg overflow-hidden relative"
                 >
-                  {/* Scanner container */}
-                  <div
-                    id={scannerElementId.current}
-                    className="w-full h-full absolute inset-0"
+                  {/* Video element for government ID scanning */}
+                  <video
+                    ref={videoRef}
+                    className="id-scanner-video"
                     style={{ 
-                      display: isCameraActive ? 'block' : 'none',
-                      zIndex: 1
+                      display: isCameraActive ? 'block' : 'none'
                     }}
+                    playsInline
+                    muted
                   />
                   
                   {!isCameraActive && !isProcessing && (
@@ -288,10 +362,10 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
                           </svg>
                         </div>
                         <p className="text-neutral-400 text-sm" style={{ fontFamily: 'Tiempos, serif' }}>
-                          Click "Start Camera" to begin scanning
+                          Click "Start Camera" to scan government ID
                         </p>
                         <p className="text-neutral-500 text-xs mt-2" style={{ fontFamily: 'Tiempos, serif' }}>
-                          Optimized for driver's license barcodes
+                          Supports PDF417, Code 128, and all ID formats
                         </p>
                       </div>
                     </div>
@@ -303,7 +377,7 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
                         <svg className="w-8 h-8 animate-spin text-blue-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        <p className="text-neutral-300 text-sm">Initializing advanced scanner...</p>
+                        <p className="text-neutral-300 text-sm">Initializing government ID scanner...</p>
                       </div>
                     </div>
                   )}
@@ -314,10 +388,10 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
                   <div className="absolute bottom-2 left-2 right-2 pointer-events-none">
                     <div className="bg-black/70 rounded px-3 py-2 text-center">
                       <p className="text-white text-xs font-medium">
-                        📱 Position ID barcode in the scanning area above
+                        🆔 Position state ID or driver's license barcode in view
                       </p>
                       <p className="text-neutral-300 text-xs mt-1">
-                        Scanner will automatically detect and process
+                        Advanced scanner detects PDF417 and all government ID formats
                       </p>
                     </div>
                   </div>
@@ -455,10 +529,10 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
         <div className="text-xs text-neutral-500 space-y-1">
           {isCameraMode ? (
             <>
-              <p>• Advanced barcode scanner optimized for driver's licenses</p>
-              <p>• Supports Code 128, PDF417, and other ID barcode formats</p>
-              <p>• Position barcode horizontally in the scanning area</p>
-              <p>• Scanner automatically detects and extracts customer data</p>
+              <p>• Professional government ID scanner with PDF417 support</p>
+              <p>• Optimized for state driver's licenses and ID cards</p>
+              <p>• Supports all standard government barcode formats</p>
+              <p>• Automatically extracts and processes customer data</p>
               {cameraPermission === 'denied' && (
                 <p className="text-red-400">• Camera access denied - please enable camera permissions</p>
               )}
