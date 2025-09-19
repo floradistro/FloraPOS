@@ -21,6 +21,10 @@ export interface CartItem {
   is_adjustment?: boolean;    // Flag to identify adjustment items
   adjustment_amount?: number; // The adjustment amount (+/-)
   
+  // Price override and discount fields
+  override_price?: number;    // Manual price override (replaces original price)
+  discount_percentage?: number; // Discount percentage to apply (0-100)
+  
   // Pricing tier information
   pricing_tier?: {
     tier_label: string;       // e.g. "Bulk 10+ units"

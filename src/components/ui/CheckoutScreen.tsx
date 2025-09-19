@@ -65,8 +65,14 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
   }>({ isOpen: false, title: '', message: '' });
 
 
-  // Calculate totals
-  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  // Calculate totals with price overrides and discounts
+  const subtotal = items.reduce((sum, item) => {
+    let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
+    if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
+      finalPrice = finalPrice * (1 - item.discount_percentage / 100);
+    }
+    return sum + (finalPrice * item.quantity);
+  }, 0);
   const taxAmount = subtotal * taxRate.rate;
   const total = subtotal + taxAmount;
   const cashReceivedNum = parseFloat(cashReceived) || 0;
@@ -149,12 +155,18 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
           console.log(`✅ Successfully mapped "${item.name}" to WooCommerce product ID ${wooCommerceProductId}`);
         }
         
+        // Calculate final price after overrides and discounts
+        let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
+        if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
+          finalPrice = finalPrice * (1 - item.discount_percentage / 100);
+        }
+        
         const lineItem: any = {
           product_id: productId,
           name: item.name,
           quantity: Math.floor(item.quantity * 1000), // Convert to milligrams/milliunit for integer quantity
-          price: (item.price / 1000), // Adjust price per milliunit
-          total: (item.price * item.quantity).toFixed(2),
+          price: (finalPrice / 1000), // Adjust price per milliunit with overrides/discounts
+          total: (finalPrice * item.quantity).toFixed(2),
           sku: item.sku || item.id, // Use proper SKU or fallback to ID
           meta_data: [
             {
@@ -163,7 +175,11 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
             },
             {
               key: '_actual_price',
-              value: item.price.toString() // Store the actual price per unit
+              value: finalPrice.toString() // Store the final price per unit after overrides/discounts
+            },
+            {
+              key: '_original_price',
+              value: item.price.toString() // Store the original price before overrides
             }
           ], // Initialize meta_data array for line item
         };
@@ -173,6 +189,21 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
             lineItem.variation_id = item.variation_id;
           }
 
+          // Add override and discount information to metadata if present
+          if (item.override_price !== undefined) {
+            lineItem.meta_data.push({
+              key: '_price_override',
+              value: item.override_price.toString()
+            });
+          }
+          
+          if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
+            lineItem.meta_data.push({
+              key: '_discount_percentage',
+              value: item.discount_percentage.toString()
+            });
+          }
+          
           // Add pricing tier information to line item metadata
           if (item.pricing_tier) {
             const tierMetadata = [

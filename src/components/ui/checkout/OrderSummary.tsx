@@ -88,54 +88,123 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
       
       {/* Products List - Scrollable */}
       <div className="pr-2 space-y-0 mb-2 flex-1 overflow-y-auto">
-        {items.map((item) => (
-          <div key={item.id} className="flex justify-between items-center text-xs p-2 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] rounded-lg mb-2 last:mb-0 transition-all duration-300 ease-out">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              {/* Product Image */}
-              <div className="w-6 h-6 relative overflow-hidden flex-shrink-0 rounded">
-                {item.image ? (
-                  <img 
-                    src={item.image} 
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-neutral-700/30">
-                    <Image 
-                      src="/logo123.png" 
-                      alt="Flora POS Logo" 
-                      width={24}
-                      height={24}
-                      className="object-contain opacity-20"
+        {items.map((item) => {
+          // Calculate final price with overrides and discounts
+          let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
+          const originalPrice = item.price;
+          
+          // Apply discount if present
+          if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
+            finalPrice = finalPrice * (1 - item.discount_percentage / 100);
+          }
+          
+          const hasOverride = item.override_price !== undefined && item.override_price !== originalPrice;
+          const hasDiscount = item.discount_percentage !== undefined && item.discount_percentage > 0;
+          
+          return (
+            <div key={item.id} className="flex justify-between items-start text-xs p-2 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] rounded-lg mb-2 last:mb-0 transition-all duration-300 ease-out">
+              <div className="flex items-start gap-2 flex-1 min-w-0">
+                {/* Product Image */}
+                <div className="w-6 h-6 relative overflow-hidden flex-shrink-0 rounded mt-1">
+                  {item.image ? (
+                    <img 
+                      src={item.image} 
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
                     />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-neutral-700/30">
+                      <Image 
+                        src="/logo123.png" 
+                        alt="Flora POS Logo" 
+                        width={24}
+                        height={24}
+                        className="object-contain opacity-20"
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Product Details */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-neutral-400 truncate" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+                    {item.name}
                   </div>
-                )}
+                  
+                  {/* Price and Quantity Line */}
+                  <div className="flex items-center gap-2 mt-1">
+                    {/* Show original price with strikethrough if overridden */}
+                    {hasOverride && (
+                      <span className="text-neutral-600 line-through text-xs">
+                        ${originalPrice.toFixed(2)}
+                      </span>
+                    )}
+                    
+                    {/* Show current price (or override price) */}
+                    <span className="text-neutral-500">
+                      ${(item.override_price ?? originalPrice).toFixed(2)} × {item.quantity}
+                    </span>
+                    
+                    {/* Show discount badge if applied */}
+                    {hasDiscount && (
+                      <span className="text-xs px-1.5 py-0.5 bg-orange-600/20 text-orange-400 border border-orange-600/30 rounded">
+                        -{item.discount_percentage}%
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Display pricing tier information if available */}
+                  {item.pricing_tier && (
+                    <div className="text-xs text-neutral-400 mt-1">
+                      {item.pricing_tier.tier_label}
+                    </div>
+                  )}
+                </div>
               </div>
               
-              {/* Product Details */}
-              <div className="flex-1 min-w-0">
-                <div className="text-neutral-400 truncate" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>{item.name}</div>
-                <div className="text-neutral-500">
-                  ${item.price.toFixed(2)} × {item.quantity}
-                </div>
-                {/* Display pricing tier information if available */}
-                {item.pricing_tier && (
-                  <div className="text-xs text-neutral-400 mt-1">
-                    {item.pricing_tier.tier_label}
+              {/* Final Total Column */}
+              <div className="text-right ml-2">
+                {/* Show original total with strikethrough if there's any discount/override */}
+                {(hasOverride || hasDiscount) && (
+                  <div className="text-neutral-600 line-through text-xs">
+                    ${(originalPrice * item.quantity).toFixed(2)}
                   </div>
                 )}
+                {/* Final total after all discounts/overrides */}
+                <div className="text-neutral-400 font-medium">
+                  ${(finalPrice * item.quantity).toFixed(2)}
+                </div>
               </div>
             </div>
-            <div className="text-neutral-400 font-medium ml-2">
-              ${(item.price * item.quantity).toFixed(2)}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Totals - Fixed at bottom */}
         <div className="pt-2 pr-2 pb-2 border-t border-white/[0.06] space-y-1 flex-shrink-0">
+        {/* Show total discounts if any */}
+        {(() => {
+          const originalSubtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+          const totalDiscount = originalSubtotal - subtotal;
+          
+          if (totalDiscount > 0) {
+            return (
+              <>
+                <div className="flex justify-between text-neutral-500 text-xs">
+                  <span>Original Subtotal</span>
+                  <span className="line-through">${originalSubtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-green-400 text-xs">
+                  <span>Discounts Applied</span>
+                  <span>-${totalDiscount.toFixed(2)}</span>
+                </div>
+              </>
+            );
+          }
+          return null;
+        })()}
+        
         <div className="flex justify-between text-neutral-400 text-xs">
           <span>Subtotal</span>
           <span>${subtotal.toFixed(2)}</span>

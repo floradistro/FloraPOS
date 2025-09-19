@@ -21,6 +21,8 @@ interface CartProps {
   onUpdateAdjustment?: (id: string, adjustmentAmount: number) => void;
   onOpenCustomerSelector?: () => void;
   isCheckoutLoading?: boolean;
+  onUpdatePriceOverride?: (id: string, overridePrice: number | undefined) => void;
+  onUpdateDiscountPercentage?: (id: string, discountPercentage: number | undefined) => void;
 }
 
 const CartComponent = function Cart({ 
@@ -36,13 +38,24 @@ const CartComponent = function Cart({
   onApplyAdjustments,
   onUpdateAdjustment,
   onOpenCustomerSelector,
-  isCheckoutLoading = false
+  isCheckoutLoading = false,
+  onUpdatePriceOverride,
+  onUpdateDiscountPercentage
 }: CartProps) {
 
   const [adjustmentReason, setAdjustmentReason] = useState('');
   const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
+  const [editingPriceItemId, setEditingPriceItemId] = useState<string | null>(null);
+  const [editingDiscountItemId, setEditingDiscountItemId] = useState<string | null>(null);
   
-  const total = items.filter(item => !item.is_adjustment).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  // Calculate total with overrides and discounts
+  const total = items.filter(item => !item.is_adjustment).reduce((sum, item) => {
+    let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
+    if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
+      finalPrice = finalPrice * (1 - item.discount_percentage / 100);
+    }
+    return sum + (finalPrice * item.quantity);
+  }, 0);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const adjustmentCount = items.filter(item => item.is_adjustment).length;
 
@@ -268,28 +281,110 @@ const CartComponent = function Cart({
                           </div>
                         ) : (
                           /* Normal Cart Item Display */
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-neutral-600">${item.price.toFixed(2)}</span>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm text-neutral-600">${item.price.toFixed(2)}</span>
+                              
+                              {/* Quantity Controls */}
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => onUpdateQuantity?.(item.id, Math.max(0, item.quantity - 1))}
+                                  className="w-5 h-5 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
+                                >
+                                  <svg className="w-2.5 h-2.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                  </svg>
+                                </button>
+                                <span className="text-sm text-neutral-400 min-w-[1.5rem] text-center">{item.quantity}</span>
+                                <button
+                                  onClick={() => onUpdateQuantity?.(item.id, item.quantity + 1)}
+                                  className="w-5 h-5 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
+                                >
+                                  <svg className="w-2.5 h-2.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
                             
-                            {/* Quantity Controls */}
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => onUpdateQuantity?.(item.id, Math.max(0, item.quantity - 1))}
-                                className="w-5 h-5 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
-                              >
-                                <svg className="w-2.5 h-2.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                                </svg>
-                              </button>
-                              <span className="text-sm text-neutral-400 min-w-[1.5rem] text-center">{item.quantity}</span>
-                              <button
-                                onClick={() => onUpdateQuantity?.(item.id, item.quantity + 1)}
-                                className="w-5 h-5 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] flex items-center justify-center transition-all duration-300 ease-out rounded-lg"
-                              >
-                                <svg className="w-2.5 h-2.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                              </button>
+                            {/* Price Override and Discount Controls */}
+                            <div className="flex items-center gap-2 ml-2">
+                              {/* Price Override */}
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-neutral-500">Price:</span>
+                                {editingPriceItemId === item.id ? (
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    defaultValue={item.override_price ?? item.price}
+                                    onBlur={(e) => {
+                                      const value = parseFloat(e.target.value);
+                                      if (!isNaN(value) && value >= 0) {
+                                        onUpdatePriceOverride?.(item.id, value === item.price ? undefined : value);
+                                      }
+                                      setEditingPriceItemId(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.currentTarget.blur();
+                                      }
+                                    }}
+                                    className="w-16 h-5 text-xs text-center bg-transparent border border-white/[0.06] hover:border-white/[0.12] rounded text-neutral-300 focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => setEditingPriceItemId(item.id)}
+                                    className={`text-xs px-2 py-0.5 rounded border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 ${
+                                      item.override_price !== undefined
+                                        ? 'text-green-400 border-green-400/30'
+                                        : 'text-neutral-400'
+                                    }`}
+                                  >
+                                    ${(item.override_price ?? item.price).toFixed(2)}
+                                  </button>
+                                )}
+                              </div>
+                              
+                              {/* Discount Percentage */}
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-neutral-500">Disc:</span>
+                                {editingDiscountItemId === item.id ? (
+                                  <input
+                                    type="number"
+                                    step="1"
+                                    min="0"
+                                    max="100"
+                                    defaultValue={item.discount_percentage ?? 0}
+                                    onBlur={(e) => {
+                                      const value = parseFloat(e.target.value);
+                                      if (!isNaN(value) && value >= 0 && value <= 100) {
+                                        onUpdateDiscountPercentage?.(item.id, value === 0 ? undefined : value);
+                                      }
+                                      setEditingDiscountItemId(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.currentTarget.blur();
+                                      }
+                                    }}
+                                    className="w-12 h-5 text-xs text-center bg-transparent border border-white/[0.06] hover:border-white/[0.12] rounded text-neutral-300 focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => setEditingDiscountItemId(item.id)}
+                                    className={`text-xs px-2 py-0.5 rounded border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 ${
+                                      item.discount_percentage
+                                        ? 'text-orange-400 border-orange-400/30'
+                                        : 'text-neutral-400'
+                                    }`}
+                                  >
+                                    {item.discount_percentage ?? 0}%
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         )}
@@ -297,7 +392,13 @@ const CartComponent = function Cart({
                         {/* Subtotal - Only show for non-adjustment items */}
                         {!item.is_adjustment && (
                           <span className="text-sm font-medium text-neutral-400">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            ${(() => {
+                              let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
+                              if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
+                                finalPrice = finalPrice * (1 - item.discount_percentage / 100);
+                              }
+                              return (finalPrice * item.quantity).toFixed(2);
+                            })()}
                           </span>
                         )}
                       </div>

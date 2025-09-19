@@ -14,6 +14,8 @@ interface CartStore {
   updateQuantity: (id: string, quantity: number) => void;
   removeItem: (id: string) => void;
   clearCart: () => void;
+  updatePriceOverride: (id: string, overridePrice: number | undefined) => void;
+  updateDiscountPercentage: (id: string, discountPercentage: number | undefined) => void;
   
   // Computed values
   getTotalItems: () => number;
@@ -95,14 +97,47 @@ export const useCartStore = create<CartStore>()(
         set({ items: [] });
       },
       
+      // Update price override for an item
+      updatePriceOverride: (id: string, overridePrice: number | undefined) => {
+        set((state) => ({
+          items: state.items.map(item => 
+            item.id === id ? { ...item, override_price: overridePrice } : item
+          )
+        }));
+      },
+      
+      // Update discount percentage for an item
+      updateDiscountPercentage: (id: string, discountPercentage: number | undefined) => {
+        set((state) => ({
+          items: state.items.map(item => 
+            item.id === id ? { 
+              ...item, 
+              discount_percentage: discountPercentage !== undefined 
+                ? Math.min(100, Math.max(0, discountPercentage)) 
+                : undefined
+            } : item
+          )
+        }));
+      },
+      
       // Get total number of items
       getTotalItems: () => {
         return get().items.reduce((total, item) => total + item.quantity, 0);
       },
       
-      // Get total price
+      // Get total price with overrides and discounts
       getTotalPrice: () => {
-        return get().items.reduce((total, item) => total + (item.price * item.quantity), 0);
+        return get().items.reduce((total, item) => {
+          // Use override price if set, otherwise use original price
+          let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
+          
+          // Apply discount if set
+          if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
+            finalPrice = finalPrice * (1 - item.discount_percentage / 100);
+          }
+          
+          return total + (finalPrice * item.quantity);
+        }, 0);
       },
       
       // Enhanced optimistic updates with rollback capability

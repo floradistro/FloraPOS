@@ -634,6 +634,23 @@ export default function HomePage() {
   const handleClearCart = () => {
     setCartItems([]);
   };
+  
+  const handleUpdatePriceOverride = (id: string, overridePrice: number | undefined) => {
+    setCartItems(items => items.map(item => 
+      item.id === id ? { ...item, override_price: overridePrice } : item
+    ));
+  };
+  
+  const handleUpdateDiscountPercentage = (id: string, discountPercentage: number | undefined) => {
+    setCartItems(items => items.map(item => 
+      item.id === id ? { 
+        ...item, 
+        discount_percentage: discountPercentage !== undefined 
+          ? Math.min(100, Math.max(0, discountPercentage)) 
+          : undefined
+      } : item
+    ));
+  };
 
   // Removed handleUpdateAdjustment - adjustments now handled directly in AdjustmentsGrid
   /*
@@ -1041,6 +1058,8 @@ export default function HomePage() {
                 isAuditMode={isAuditMode}
                 onOpenCustomerSelector={handleOpenCustomerSelector}
                 isCheckoutLoading={isCheckoutLoading}
+                onUpdatePriceOverride={handleUpdatePriceOverride}
+                onUpdateDiscountPercentage={handleUpdateDiscountPercentage}
                 // onApplyAdjustments={handleApplyAdjustments} - removed
                 // onUpdateAdjustment={handleUpdateAdjustment} - removed
               />

@@ -294,7 +294,7 @@ export class CartService {
   }
 
   /**
-   * Calculate cart totals
+   * Calculate cart totals with price overrides and discounts
    */
   static calculateCartTotals(items: CartItem[]): {
     totalItems: number;
@@ -302,7 +302,17 @@ export class CartService {
   } {
     return {
       totalItems: items.reduce((total, item) => total + item.quantity, 0),
-      totalPrice: items.reduce((total, item) => total + (item.price * item.quantity), 0)
+      totalPrice: items.reduce((total, item) => {
+        // Use override price if set, otherwise use original price
+        let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
+        
+        // Apply discount if set
+        if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
+          finalPrice = finalPrice * (1 - item.discount_percentage / 100);
+        }
+        
+        return total + (finalPrice * item.quantity);
+      }, 0)
     };
   }
 
