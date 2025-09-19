@@ -114,17 +114,30 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
 
       // Add listener for ID capture results
       console.log('📱 Adding ID capture listener...');
-      idCapture.addListener({
+      const listener = {
         didCaptureId: async (capturedId: any) => {
-          console.log('🎉 ID captured successfully!');
+          console.log('🎉 didCaptureId callback triggered!');
+          console.log('📄 Captured ID object:', capturedId);
           await handleIdCaptured(capturedId);
         },
         didFailWithError: (idCapture: any, error: any) => {
-          console.error('ID capture failed:', error);
+          console.error('❌ didFailWithError callback triggered:', error);
           setError(`ID capture failed: ${error.message}`);
+        },
+        didRejectId: (capturedId: any, reason: any) => {
+          console.log('🚫 didRejectId callback triggered:', reason);
+          console.log('📄 Rejected ID:', capturedId);
+          setError(`ID rejected: ${reason}`);
+        },
+        didLocalizeId: (localization: any) => {
+          console.log('📍 didLocalizeId callback triggered (ID detected but not captured yet):', localization);
+          setScanStatus('ID detected, processing...');
         }
-      });
-      console.log('✅ ID capture listener added');
+      };
+      
+      console.log('🔗 Registering listener:', listener);
+      idCapture.addListener(listener);
+      console.log('✅ ID capture listener added successfully');
 
       // Create the data capture view
       if (viewRef.current) {
@@ -150,9 +163,23 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       setIsInitialized(true);
       setScanStatus('Ready to scan ID');
       
+      // Enable ID capture mode
+      console.log('🔄 Enabling ID capture mode...');
+      await idCapture.setEnabled(true);
+      console.log('✅ ID capture mode enabled');
+      
       // Start camera
+      console.log('📹 Starting camera...');
       await camera.switchToDesiredState(SDCCore.FrameSourceState.On);
+      console.log('✅ Camera started');
       setScanStatus('Scanning for ID...');
+      
+      // Debug: Check if everything is working
+      console.log('🔍 Final setup check:');
+      console.log('- Context:', context);
+      console.log('- Camera state:', camera);
+      console.log('- ID capture enabled:', await idCapture.isEnabled());
+      console.log('- View connected:', !!viewRefSDK.current);
       
     } catch (err) {
       console.error('Scandit initialization error:', err);
@@ -276,33 +303,54 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
 
   // Start scanning
   const startScanning = async () => {
+    console.log('🚀 Start scanning called');
+    
     if (!isInitialized) {
+      console.log('⚠️ Not initialized, initializing Scandit...');
       await initializeScandit();
       return;
     }
     
     try {
+      console.log('🔄 Enabling ID capture...');
+      if (idCaptureRef.current) {
+        await idCaptureRef.current.setEnabled(true);
+        console.log('✅ ID capture enabled');
+      }
+      
       if (cameraRef.current) {
+        console.log('📹 Starting camera...');
         const SDCCore = await import('@scandit/web-datacapture-core');
         await cameraRef.current.switchToDesiredState(SDCCore.FrameSourceState.On);
+        console.log('✅ Camera started');
         setScanStatus('Scanning for ID...');
       }
     } catch (err) {
-      console.error('Failed to start camera:', err);
+      console.error('❌ Failed to start scanning:', err);
       setError('Failed to start camera');
     }
   };
 
   // Stop scanning
   const stopScanning = async () => {
+    console.log('🛑 Stop scanning called');
+    
     try {
+      console.log('🔄 Disabling ID capture...');
+      if (idCaptureRef.current) {
+        await idCaptureRef.current.setEnabled(false);
+        console.log('✅ ID capture disabled');
+      }
+      
       if (cameraRef.current) {
+        console.log('📹 Stopping camera...');
         const SDCCore = await import('@scandit/web-datacapture-core');
         await cameraRef.current.switchToDesiredState(SDCCore.FrameSourceState.Off);
+        console.log('✅ Camera stopped');
       }
       setScanStatus('Scanning stopped');
     } catch (err) {
-      console.error('Failed to stop camera:', err);
+      console.error('❌ Failed to stop scanning:', err);
     }
   };
 
