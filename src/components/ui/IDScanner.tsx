@@ -44,89 +44,64 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
       setIsProcessing(true);
       setError(null);
       
-      console.log('🎥 Initializing HTML5-QRCode scanner...');
+      console.log('🎥 Starting camera scanner...');
       
       // Create scanner instance
       html5QrCode.current = new Html5Qrcode(scannerElementId.current);
       
-      // Get available cameras
-      const cameras = await Html5Qrcode.getCameras();
-      console.log('📷 Available cameras:', cameras);
-      
-      // Prefer back camera for ID scanning
-      let cameraId = cameras.length > 0 ? cameras[0].id : undefined;
-      const backCamera = cameras.find(camera => 
-        camera.label.toLowerCase().includes('back') || 
-        camera.label.toLowerCase().includes('rear') ||
-        camera.label.toLowerCase().includes('environment')
-      );
-      if (backCamera) {
-        cameraId = backCamera.id;
-        console.log('📱 Using back camera:', backCamera.label);
-      }
-      
-      // Enhanced config optimized for ID barcode scanning
+      // Simple, working config for barcode scanning
       const config = {
         fps: 10,
-        qrbox: { width: 300, height: 120 }, // Optimized for ID barcode aspect ratio
-        aspectRatio: 1.777, // 16:9 aspect ratio
-        disableFlip: false,
-        videoConstraints: {
-          width: { ideal: 640, min: 480 },
-          height: { ideal: 480, min: 320 },
-          facingMode: backCamera ? undefined : { ideal: "environment" }
-        }
+        qrbox: 250,
+        aspectRatio: 1.0,
+        disableFlip: false
       };
       
-      // Start scanning with detailed logging
-      console.log('🎬 Starting scanner with config:', config);
-      console.log('📷 Using camera:', cameraId || 'facingMode: environment');
+      console.log('🎬 Starting with simplified config');
       
+      // Start with environment camera
       await html5QrCode.current.start(
-        cameraId || { facingMode: "environment" },
+        { facingMode: "environment" },
         config,
-        handleBarcodeSuccess,
-        handleBarcodeError
-      );
-      
-      // Give the camera a moment to initialize
-      setTimeout(() => {
-        const videoElement = document.querySelector(`#${scannerElementId.current} video`);
-        console.log('📹 Video element found:', !!videoElement);
-        if (videoElement) {
-          console.log('📹 Video dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
-          console.log('📹 Video ready state:', videoElement.readyState);
+        (decodedText, decodedResult) => {
+          console.log('🎯 Barcode detected:', decodedText);
+          stopCamera();
+          setScanText(decodedText);
+          setTimeout(() => handleScan(decodedText), 100);
+        },
+        (errorMessage) => {
+          // Ignore scanning errors, only log real issues
+          if (!errorMessage.includes('No code found') && !errorMessage.includes('NotFoundException')) {
+            console.warn('Scanner error:', errorMessage);
+          }
         }
-      }, 1000);
+      );
       
       setIsCameraActive(true);
       setIsProcessing(false);
       setCameraPermission('granted');
       
-      console.log('🎯 ID Scanner ready for barcode detection!');
+      console.log('✅ Camera scanner active!');
       
     } catch (err) {
-      console.error('💥 Camera initialization failed:', err);
+      console.error('💥 Camera failed:', err);
       
       const error = err as Error;
       if (error.message.includes('Permission denied') || error.message.includes('NotAllowedError')) {
         setCameraPermission('denied');
-        setError('Camera access denied. Please enable camera permissions and try again.');
-      } else if (error.message.includes('NotFoundError')) {
-        setError('No camera found. Please ensure your device has a camera.');
+        setError('Camera access denied. Enable camera permissions and try again.');
       } else {
-        setError(`Failed to initialize camera: ${error.message}. Please try manual input.`);
+        setError('Camera initialization failed. Check console for details.');
       }
       
       setIsProcessing(false);
       setIsCameraActive(false);
       
-      // Clean up on error
       if (html5QrCode.current) {
         try {
           html5QrCode.current.clear();
-        } catch (clearError) {
-          console.warn('Error clearing scanner:', clearError);
+        } catch (e) {
+          console.warn('Cleanup error:', e);
         }
         html5QrCode.current = null;
       }
@@ -152,29 +127,6 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
     setIsProcessing(false);
   };
 
-  // Handle successful barcode detection
-  const handleBarcodeSuccess = (decodedText: string, result: Html5QrcodeResult) => {
-    console.log('🎯 Barcode detected:', decodedText);
-    console.log('📊 Scan result:', result);
-    
-    // Stop scanning and process the barcode
-    stopCamera();
-    setScanText(decodedText);
-    
-    // Auto-process the detected barcode
-    setTimeout(() => {
-      handleScan(decodedText);
-    }, 100);
-  };
-
-  // Handle barcode scanning errors (mostly just scanning attempts)
-  const handleBarcodeError = (errorMessage: string) => {
-    // Don't log every scanning attempt as it's too verbose
-    // Only log actual errors
-    if (!errorMessage.includes('No code found') && !errorMessage.includes('NotFoundException')) {
-      console.warn('⚠️ Barcode scan error:', errorMessage);
-    }
-  };
 
   // Cleanup on unmount
   useEffect(() => {
@@ -240,40 +192,17 @@ export function IDScanner({ onScanResult, onCancel, isScanning = false }: IDScan
   return (
     <div className="space-y-4">
       <style jsx global>{`
-        /* Style the html5-qrcode scanner */
-        #${scannerElementId.current} video {
-          border-radius: 8px !important;
-          width: 100% !important;
-          height: 264px !important;
-          object-fit: cover !important;
-          background: #1f2937 !important;
-        }
-        
-        #${scannerElementId.current} > div {
-          border-radius: 8px !important;
-          width: 100% !important;
-          height: 264px !important;
-        }
-        
-        #${scannerElementId.current} canvas {
-          display: none !important;
-        }
-        
-        /* Style the scanner container */
         #${scannerElementId.current} {
           width: 100% !important;
           height: 264px !important;
           border-radius: 8px !important;
-          overflow: hidden !important;
         }
         
-        /* Hide unwanted UI elements */
-        #${scannerElementId.current} .html5-qrcode-element {
+        #${scannerElementId.current} video {
+          width: 100% !important;
+          height: 264px !important;
+          object-fit: cover !important;
           border-radius: 8px !important;
-        }
-        
-        #${scannerElementId.current} .html5-qrcode-anchor {
-          display: none !important;
         }
       `}</style>
       <div className="flex items-center gap-3 mb-4">
