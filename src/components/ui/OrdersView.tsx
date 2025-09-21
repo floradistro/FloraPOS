@@ -710,7 +710,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                   {/* Order Number */}
                   {columns.find(c => c.id === 'order')?.visible && (
                     <div className="w-32">
-                      <div className="text-neutral-200 font-normal text-base" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
+                      <div className="text-neutral-200 text-base font-normal" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
                         #{order.id}
                       </div>
                     </div>
@@ -719,10 +719,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                   {/* Customer */}
                   {columns.find(c => c.id === 'customer')?.visible && (
                     <div className="flex-1 min-w-0">
-                      <div className="text-neutral-200 font-normal text-base" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
+                      <div className="text-neutral-200 text-base font-normal" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
                         {order.billing.first_name} {order.billing.last_name}
                       </div>
-                      <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <div className="text-xs text-neutral-500">
                         {order.billing.email}
                       </div>
                     </div>
@@ -730,56 +730,56 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
 
                   {/* Location */}
                   {columns.find(c => c.id === 'location')?.visible && (
-                    <div className="w-32 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="w-32 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
                       {getOrderLocation(order)}
                     </div>
                   )}
 
                   {/* Source */}
                   {columns.find(c => c.id === 'source')?.visible && (
-                    <div className="w-24 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="w-24 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
                       {getOrderSource(order)}
                     </div>
                   )}
 
                   {/* Date */}
                   {columns.find(c => c.id === 'date')?.visible && (
-                    <div className="w-40 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="w-40 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
                       {formatDate(order.date_created)}
                     </div>
                   )}
 
                   {/* Status */}
                   {columns.find(c => c.id === 'status')?.visible && (
-                    <div className="w-32 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="w-32 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
                       {formatStatus(order.status)}
                     </div>
                   )}
 
                   {/* Total */}
                   {columns.find(c => c.id === 'total')?.visible && (
-                    <div className="w-32 text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="w-32 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
                       {order.currency} {order.total}
                     </div>
                   )}
 
                   {/* Payment Method */}
                   {columns.find(c => c.id === 'payment')?.visible && (
-                    <div className="w-40 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="w-40 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
                       {order.payment_method_title || 'N/A'}
                     </div>
                   )}
 
                   {/* Shipping Method */}
                   {columns.find(c => c.id === 'shipping')?.visible && (
-                    <div className="w-40 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="w-40 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
                       {order.shipping_lines?.[0]?.method_title || 'N/A'}
                     </div>
                   )}
 
                   {/* Items Count */}
                   {columns.find(c => c.id === 'items')?.visible && (
-                    <div className="w-24 text-sm text-neutral-400" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="w-24 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
                       {order.line_items?.length || 0} items
                     </div>
                   )}
@@ -843,7 +843,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                       {(activeOrderTab[order.id] === 'items' || !activeOrderTab[order.id]) && (
                         <>
                           <div className="lg:col-span-2 space-y-2">
-                            <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                            <div className="text-neutral-300 text-sm font-medium mb-2">
                               Order Items
                             </div>
                             {order.line_items?.map((item) => {

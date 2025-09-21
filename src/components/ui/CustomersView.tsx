@@ -636,7 +636,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
         {showAddForm && (
           <div className="border-b border-white/[0.08] px-6 py-4 bg-transparent">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Add New Customer</h3>
+              <h3 className="text-base font-normal text-neutral-200" style={{ fontFamily: 'Tiempos, serif' }}>Add New Customer</h3>
               <IconButton
                 onClick={cancelEditing}
                 variant="ghost"
@@ -863,10 +863,10 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                 {/* Customer Name */}
                 {columns.find(c => c.id === 'customer')?.visible && (
                   <div className="flex-1 min-w-0">
-                    <div className="text-neutral-200 text-sm font-normal" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
+                    <div className="text-neutral-200 text-base font-normal" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
                       {user.display_name || user.name || user.username}
                     </div>
-                    <div className="text-xs text-neutral-400 truncate" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="text-xs text-neutral-500 truncate" style={{ fontFamily: 'Tiempos, serif' }}>
                       ID: {user.id}
                     </div>
                   </div>
@@ -874,35 +874,35 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
                 {/* Email */}
                 {columns.find(c => c.id === 'email')?.visible && (
-                  <div className="w-64 text-neutral-300 text-sm truncate" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="w-64 text-neutral-300 text-xs truncate" style={{ fontFamily: 'Tiempos, serif' }}>
                     {user.email}
                   </div>
                 )}
 
                 {/* Joined Date */}
                 {columns.find(c => c.id === 'joined')?.visible && (
-                  <div className="w-40 text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="w-40 text-neutral-500 text-xs">
                     {new Date().toLocaleDateString()}
                   </div>
                 )}
 
                 {/* Total Orders */}
                 {columns.find(c => c.id === 'orders')?.visible && (
-                  <div className="w-32 text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="w-32 text-neutral-500 text-xs">
                     0 orders
                   </div>
                 )}
 
                 {/* Total Spent */}
                 {columns.find(c => c.id === 'spent')?.visible && (
-                  <div className="w-32 text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="w-32 text-neutral-500 text-xs">
                     $0.00
                   </div>
                 )}
 
                 {/* Last Order */}
                 {columns.find(c => c.id === 'lastOrder')?.visible && (
-                  <div className="w-40 text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="w-40 text-neutral-500 text-xs">
                     Never
                   </div>
                 )}
@@ -1006,7 +1006,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
                          {/* Contact Information */}
                          <div className="space-y-2">
-                           <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                           <div className="text-neutral-400 text-xs font-medium uppercase tracking-wider mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
                              Contact Information
                            </div>
                           {editingUser === user.id ? (
@@ -1053,7 +1053,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
                         {/* Account Details */}
                         <div className="space-y-2">
-                          <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                          <div className="text-neutral-400 text-xs font-medium uppercase tracking-wider mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
                             Account Details
                           </div>
                           {editingUser === user.id ? (
@@ -1116,7 +1116,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
                         {/* Billing Address */}
                         <div className="space-y-2">
-                          <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                          <div className="text-neutral-400 text-xs font-medium uppercase tracking-wider mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
                             Billing Address
                           </div>
                           {editingUser === user.id ? (
@@ -1225,7 +1225,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
                         {/* Shipping Address */}
                         <div className="space-y-2">
-                          <div className="text-neutral-300 font-medium text-xs mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                          <div className="text-neutral-400 text-xs font-medium uppercase tracking-wider mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
                             Shipping Address
                           </div>
                           {editingUser === user.id ? (
@@ -1368,13 +1368,13 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                              </div>
                              <div className="bg-transparent border border-neutral-600/40 rounded p-3">
                                <div className="flex justify-between items-center">
-                                 <span className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Email Notifications:</span>
+                                 <span className="text-neutral-500 text-xs">Email Notifications:</span>
                                  <span className="text-neutral-300 text-xs font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Enabled</span>
                                </div>
                              </div>
                              <div className="bg-transparent border border-neutral-600/40 rounded p-3">
                                <div className="flex justify-between items-center">
-                                 <span className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>SMS Notifications:</span>
+                                 <span className="text-neutral-500 text-xs">SMS Notifications:</span>
                                  <span className="text-neutral-300 text-xs font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Disabled</span>
                                </div>
                              </div>
@@ -1385,13 +1385,13 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                              </div>
                              <div className="bg-transparent border border-neutral-600/40 rounded p-3">
                                <div className="flex justify-between items-center">
-                                 <span className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Language:</span>
+                                 <span className="text-neutral-500 text-xs">Language:</span>
                                  <span className="text-neutral-300 text-xs font-medium" style={{ fontFamily: 'Tiempo, serif' }}>English</span>
                                </div>
                              </div>
                              <div className="bg-transparent border border-neutral-600/40 rounded p-3">
                                <div className="flex justify-between items-center">
-                                 <span className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Currency:</span>
+                                 <span className="text-neutral-500 text-xs">Currency:</span>
                                  <span className="text-neutral-300 text-xs font-medium" style={{ fontFamily: 'Tiempo, serif' }}>USD</span>
                                </div>
                              </div>
@@ -1402,7 +1402,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                              </div>
                              <div className="bg-transparent border border-neutral-600/40 rounded p-3">
                                <div className="flex justify-between items-center">
-                                 <span className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Newsletter:</span>
+                                 <span className="text-neutral-500 text-xs">Newsletter:</span>
                                  <span className="text-neutral-300 text-xs font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Subscribed</span>
                                </div>
                              </div>

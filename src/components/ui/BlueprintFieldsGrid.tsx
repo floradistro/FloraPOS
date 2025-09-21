@@ -174,8 +174,8 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
             <div className="space-y-2">
-              <p className="text-red-400 text-xl font-light">Error Loading Products</p>
-              <p className="text-neutral-500 text-base">{error}</p>
+              <p className="text-red-400 text-base font-normal" style={{ fontFamily: 'Tiempos, serif' }}>Error Loading Products</p>
+              <p className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempos, serif' }}>{error}</p>
             </div>
             <button
               onClick={refreshData}
@@ -252,9 +252,9 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
                   animation: 'subtle-float 3s ease-in-out infinite'
                 }}
               />
-              <p className="text-neutral-300 text-2xl mb-3 font-light">Select a Product</p>
-              <p className="text-neutral-500 text-base mb-2">Use the search bar above to find and select a product</p>
-              <p className="text-neutral-600 text-sm">You can search through the entire product catalog to create labels</p>
+              <p className="text-neutral-300 text-base font-normal mb-3" style={{ fontFamily: 'Tiempos, serif' }}>Select a Product</p>
+              <p className="text-neutral-400 text-xs mb-2" style={{ fontFamily: 'Tiempos, serif' }}>Use the search bar above to find and select a product</p>
+              <p className="text-neutral-500 text-xs" style={{ fontFamily: 'Tiempos, serif' }}>You can search through the entire product catalog to create labels</p>
               
               {/* Custom CSS animations */}
               <style jsx>{`
@@ -996,7 +996,7 @@ const EditableFieldsComponent: React.FC<EditableFieldsComponentProps> = ({
   return (
     <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold text-neutral-200">
+        <h3 className="text-base font-normal text-neutral-200" style={{ fontFamily: 'Tiempos, serif' }}>
           Edit Fields: {product.name}
         </h3>
         <div className="flex items-center gap-2">
@@ -1026,7 +1026,7 @@ const EditableFieldsComponent: React.FC<EditableFieldsComponentProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {editableFields.map((field, index) => (
           <div key={`${field.field_name}-${index}`} className="space-y-2">
-            <label className="block text-sm font-medium text-neutral-300">
+            <label className="block text-xs font-medium text-neutral-400 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
               {field.field_label}
             </label>
             {field.field_type === 'number' ? (

@@ -151,11 +151,11 @@ const ProductCard = memo<ProductCardProps>(({
 
         {/* Product Name and Category - Centered in remaining space */}
         <div className="flex-1 flex flex-col justify-center items-center text-center">
-          <h3 className="text-white font-normal text-lg mb-2 line-clamp-2 leading-tight" style={{ fontFamily: 'Tiempos, serif' }}>
+          <h3 className="text-neutral-200 font-normal text-base mb-2 line-clamp-2 leading-tight" style={{ fontFamily: 'Tiempos, serif' }}>
             {product.name}
           </h3>
           {product.categories.length > 0 && (
-            <p className="text-neutral-300 text-sm mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
+            <p className="text-neutral-300 text-xs mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
               {product.categories[0].name}
             </p>
           )}
@@ -252,7 +252,7 @@ const ProductCard = memo<ProductCardProps>(({
                     <div key={variant.id} className="flex items-center justify-between py-2 px-3 bg-transparent border-b border-neutral-600/30 last:border-b-0">
                       {/* Variant Name */}
                       <div className="flex-1 min-w-0 mr-2">
-                        <div className="text-xs font-medium text-neutral-200 truncate">
+                        <div className="text-xs text-neutral-400 truncate" style={{ fontFamily: 'Tiempos, serif' }}>
                           {variant.name}
                         </div>
                       </div>
@@ -358,9 +358,9 @@ const ProductCard = memo<ProductCardProps>(({
                           : 'bg-transparent border border-neutral-600/40 text-neutral-400 cursor-not-allowed opacity-50'
                       }`}
                     >
-                      <div className={`truncate font-medium ${isSalesView ? 'text-sm' : ''}`}>{variant.name}</div>
+                      <div className={`truncate text-xs text-neutral-400`} style={{ fontFamily: 'Tiempos, serif' }}>{variant.name}</div>
                       <div className="mt-1">
-                        <span className={`${isSalesView ? 'text-sm' : 'text-xs'} ${variantInStock ? 'text-neutral-300' : 'text-red-400'}`}>
+                        <span className={`text-xs ${variantInStock ? 'text-neutral-500' : 'text-red-400'}`}>
                           {variantInStock ? `${variantStock} in stock` : 'Out of stock'}
                         </span>
                       </div>
@@ -368,7 +368,7 @@ const ProductCard = memo<ProductCardProps>(({
                   );
                 })}
                 {product.variants.length > 6 && (
-                  <div className="text-xs text-neutral-300 text-center py-2 col-span-2 border border-dashed border-neutral-600 rounded">
+                  <div className="text-xs text-neutral-500 text-center py-2 col-span-2 border border-dashed border-neutral-600 rounded" style={{ fontFamily: 'Tiempos, serif' }}>
                     +{product.variants.length - 6} more variants
                   </div>
                 )}
@@ -411,18 +411,18 @@ const ProductCard = memo<ProductCardProps>(({
       <div className="text-center mb-2 h-4 flex items-center justify-center">
         {isAuditMode ? (
           /* Audit Mode - Show current stock only when field is focused */
-          <span className={`text-xs text-neutral-300 transition-opacity duration-200 ${
+          <span className={`text-xs text-neutral-500 transition-opacity duration-200 ${
             focusedStockFields.has(`${product.id}`) || (product.has_variants && selectedVariants[product.id] && focusedStockFields.has(`${product.id}-${selectedVariants[product.id]}`))
               ? 'opacity-100' 
               : 'opacity-0'
-          }`}>
+          }`} style={{ fontFamily: 'Tiempos, serif' }}>
             {product.has_variants && product.variants
               ? `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`
               : `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`}
           </span>
         ) : (
           /* Normal Mode - Display Only */
-          <span className="text-xs text-neutral-300">
+          <span className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
             {product.has_variants && !selectedVariants[product.id] 
               ? `${stockDisplay} total stock` 
               : `${stockDisplay} in stock`}
@@ -432,10 +432,10 @@ const ProductCard = memo<ProductCardProps>(({
 
       {/* Selected Price - Bottom Left - Only show in normal mode */}
       {!isAuditMode && (
-        <div className="absolute bottom-2 left-2 text-xs text-neutral-200">
+        <div className="absolute bottom-2 left-2 text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
           {product.has_variants && selectedVariants[product.id] ? (
             product.selected_price ? formatPrice(product.selected_price) : (
-              <span className="text-neutral-300">Select quantity</span>
+              <span className="text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>Select quantity</span>
             )
           ) : product.selected_price ? (
             formatPrice(product.selected_price)

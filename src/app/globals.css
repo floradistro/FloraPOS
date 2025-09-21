@@ -31,6 +31,37 @@ body {
   position: relative;
 }
 
+/* Professional font hierarchy - matching AdjustmentsGrid with Tiempos font */
+.font-heading {
+  @apply text-base font-normal text-neutral-200;
+  font-family: 'Tiempos, serif';
+}
+
+.font-label {
+  @apply text-xs font-medium text-neutral-400 uppercase tracking-wider;
+  font-family: 'Tiempos, serif';
+}
+
+.font-body {
+  @apply text-xs text-neutral-300;
+  font-family: 'Tiempos, serif';
+}
+
+.font-caption {
+  @apply text-xs text-neutral-500;
+  font-family: 'Tiempos, serif';
+}
+
+.font-error {
+  @apply text-base font-normal text-red-400;
+  font-family: 'Tiempos, serif';
+}
+
+.font-success {
+  @apply text-xs text-green-400;
+  font-family: 'Tiempos, serif';
+}
+
 /* Animated 3D Wave Background */
 body::before {
   content: '';

@@ -14,6 +14,13 @@ export interface IDScanResult {
   licenseNumber?: string;
   expirationDate?: string;
   issuerState?: string;
+  // Additional fields for comprehensive ID data
+  fullName?: string;
+  middleName?: string;
+  suffix?: string;
+  addressLine2?: string;
+  country?: string;
+  documentType?: string;
 }
 
 interface ScanditIDScannerProps {
@@ -195,6 +202,69 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
     }
   };
 
+  // Helper function to parse address string into components
+  const parseAddressString = (addressString: string) => {
+    if (!addressString) return {};
+    
+    // Common US address patterns
+    const patterns = [
+      // Pattern: "123 Main St, Anytown, ST 12345"
+      /^(.+?),\s*([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i,
+      // Pattern: "123 Main St Anytown ST 12345" (no commas)
+      /^(.+?)\s+([A-Za-z\s]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i,
+      // Pattern: "123 Main St, Anytown ST 12345" (single comma)
+      /^(.+?),\s*([A-Za-z\s]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i
+    ];
+    
+    for (const pattern of patterns) {
+      const match = addressString.trim().match(pattern);
+      if (match) {
+        return {
+          address: match[1].trim(),
+          city: match[2].trim(),
+          state: match[3].toUpperCase(),
+          zipCode: match[4]
+        };
+      }
+    }
+    
+    // If no pattern matches, try to extract zip code at least
+    const zipMatch = addressString.match(/(\d{5}(?:-\d{4})?)$/);
+    if (zipMatch) {
+      const zipCode = zipMatch[1];
+      const addressWithoutZip = addressString.replace(/\s*\d{5}(?:-\d{4})?$/, '').trim();
+      
+      // Try to extract state (2 letters before zip)
+      const stateMatch = addressWithoutZip.match(/\s([A-Z]{2})\s*$/i);
+      if (stateMatch) {
+        const state = stateMatch[1].toUpperCase();
+        const addressWithoutState = addressWithoutZip.replace(/\s[A-Z]{2}\s*$/i, '').trim();
+        
+        // Split remaining into address and city
+        const parts = addressWithoutState.split(',').map(p => p.trim());
+        if (parts.length >= 2) {
+          return {
+            address: parts[0],
+            city: parts.slice(1).join(', '),
+            state: state,
+            zipCode: zipCode
+          };
+        } else {
+          return {
+            address: addressWithoutState,
+            state: state,
+            zipCode: zipCode
+          };
+        }
+      }
+    }
+    
+    // Fallback: return as single address string
+    return {
+      address: addressString
+    };
+  };
+
   // Handle captured ID
   const handleIdCaptured = async (capturedId: any) => {
     console.log('🎯 ID captured - raw data:', capturedId);
@@ -213,7 +283,7 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       
       setScanStatus('Processing ID data...');
       
-      // Extract data from captured ID using new SDK 7.6 structure
+      // Extract data from captured ID using comprehensive approach
       const result: IDScanResult = {};
       
       console.log('📋 Extracting data from CapturedId...');
@@ -224,52 +294,50 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       console.log('- dateOfExpiry:', capturedId.dateOfExpiry);
       console.log('- address:', capturedId.address);
       console.log('- issuingCountry:', capturedId.issuingCountry);
+      console.log('- issuingState:', capturedId.issuingState);
       
-      // Direct properties from CapturedId (SDK 7.6 structure)
-      result.firstName = capturedId.firstName || undefined;
-      result.lastName = capturedId.lastName || undefined;
-      result.licenseNumber = capturedId.documentNumber || undefined;
+      // Extract from all available sources, prioritizing the most reliable
+      let firstName = capturedId.firstName;
+      let lastName = capturedId.lastName;
+      let middleName = capturedId.middleName;
+      let fullName = capturedId.fullName;
+      let suffix = capturedId.suffix;
+      let documentNumber = capturedId.documentNumber;
+      let dateOfBirth = capturedId.dateOfBirth;
+      let dateOfExpiry = capturedId.dateOfExpiry;
+      let address = capturedId.address;
+      let addressLine2 = capturedId.addressLine2;
+      let city = capturedId.city;
+      let state = capturedId.state;
+      let zipCode = capturedId.zipCode || capturedId.postalCode;
+      let country = capturedId.country;
+      let documentType = capturedId.documentType;
       
-      // Handle DateResult objects
-      if (capturedId.dateOfBirth && capturedId.dateOfBirth.day && capturedId.dateOfBirth.month && capturedId.dateOfBirth.year) {
-        const dob = capturedId.dateOfBirth;
-        result.dateOfBirth = `${dob.year}-${String(dob.month).padStart(2, '0')}-${String(dob.day).padStart(2, '0')}`;
-      }
-      
-      if (capturedId.dateOfExpiry && capturedId.dateOfExpiry.day && capturedId.dateOfExpiry.month && capturedId.dateOfExpiry.year) {
-        const exp = capturedId.dateOfExpiry;
-        result.expirationDate = `${exp.year}-${String(exp.month).padStart(2, '0')}-${String(exp.day).padStart(2, '0')}`;
-      }
-      
-      // Address (might be a single string in new API)
-      result.address = capturedId.address || undefined;
-      
-      // Issuing state/country
-      result.issuerState = capturedId.issuingCountry || undefined;
-      
-      // Try to extract more detailed info from barcode result if available
+      // Try barcode result first (most reliable for US IDs)
       if (capturedId.barcode) {
         console.log('📊 Barcode result available:', capturedId.barcode);
         const barcode = capturedId.barcode;
         
-        // Override with barcode data if available
-        result.firstName = result.firstName || barcode.firstName || undefined;
-        result.lastName = result.lastName || barcode.lastName || undefined;
-        result.licenseNumber = result.licenseNumber || barcode.documentNumber || undefined;
+        firstName = firstName || barcode.firstName || barcode.first_name;
+        lastName = lastName || barcode.lastName || barcode.last_name || barcode.family_name;
+        middleName = middleName || barcode.middleName || barcode.middle_name;
+        fullName = fullName || barcode.fullName || barcode.full_name;
+        suffix = suffix || barcode.suffix;
+        documentNumber = documentNumber || barcode.documentNumber || barcode.license_number || barcode.id;
+        dateOfBirth = dateOfBirth || barcode.dateOfBirth || barcode.dob || barcode.date_of_birth;
+        dateOfExpiry = dateOfExpiry || barcode.dateOfExpiry || barcode.expiration || barcode.exp_date;
+        address = address || barcode.address || barcode.street_address || barcode.address_1;
+        addressLine2 = addressLine2 || barcode.addressLine2 || barcode.address_2;
+        city = city || barcode.city;
+        state = state || barcode.state || barcode.issuer_state;
+        zipCode = zipCode || barcode.postalCode || barcode.postal_code || barcode.zip;
+        country = country || barcode.country;
+        documentType = documentType || barcode.documentType || barcode.document_type;
         
-        // Try to get more address details from barcode
-        if (barcode.address) {
-          result.address = result.address || barcode.address || undefined;
-        }
-        if (barcode.city) {
-          result.city = barcode.city || undefined;
-        }
-        if (barcode.state) {
-          result.state = barcode.state || undefined;
-        }
-        if (barcode.postalCode) {
-          result.zipCode = barcode.postalCode || undefined;
-        }
+        console.log('📊 Barcode extracted:', {
+          firstName, lastName, middleName, fullName, suffix, documentNumber, dateOfBirth, dateOfExpiry,
+          address, addressLine2, city, state, zipCode, country, documentType
+        });
       }
       
       // Try VIZ result for additional data
@@ -277,9 +345,134 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
         console.log('👁️ VIZ result available:', capturedId.vizResult);
         const viz = capturedId.vizResult;
         
-        result.firstName = result.firstName || viz.firstName || undefined;
-        result.lastName = result.lastName || viz.lastName || undefined;
-        result.licenseNumber = result.licenseNumber || viz.documentNumber || undefined;
+        firstName = firstName || viz.firstName || viz.first_name;
+        lastName = lastName || viz.lastName || viz.last_name || viz.family_name;
+        middleName = middleName || viz.middleName || viz.middle_name;
+        fullName = fullName || viz.fullName || viz.full_name;
+        suffix = suffix || viz.suffix;
+        documentNumber = documentNumber || viz.documentNumber || viz.license_number || viz.id;
+        dateOfBirth = dateOfBirth || viz.dateOfBirth || viz.dob || viz.date_of_birth;
+        dateOfExpiry = dateOfExpiry || viz.dateOfExpiry || viz.expiration || viz.exp_date;
+        address = address || viz.address || viz.street_address || viz.address_1;
+        addressLine2 = addressLine2 || viz.addressLine2 || viz.address_2;
+        city = city || viz.city;
+        state = state || viz.state || viz.issuer_state;
+        zipCode = zipCode || viz.postalCode || viz.postal_code || viz.zip;
+        country = country || viz.country;
+        documentType = documentType || viz.documentType || viz.document_type;
+        
+        console.log('👁️ VIZ extracted:', {
+          firstName, lastName, middleName, fullName, suffix, documentNumber, dateOfBirth, dateOfExpiry,
+          address, addressLine2, city, state, zipCode, country, documentType
+        });
+      }
+      
+      // Try MRZ result if available
+      if (capturedId.mrzResult) {
+        console.log('🔍 MRZ result available:', capturedId.mrzResult);
+        const mrz = capturedId.mrzResult;
+        
+        firstName = firstName || mrz.firstName || mrz.first_name;
+        lastName = lastName || mrz.lastName || mrz.last_name || mrz.family_name;
+        middleName = middleName || mrz.middleName || mrz.middle_name;
+        fullName = fullName || mrz.fullName || mrz.full_name;
+        documentNumber = documentNumber || mrz.documentNumber || mrz.license_number || mrz.id;
+        dateOfBirth = dateOfBirth || mrz.dateOfBirth || mrz.dob || mrz.date_of_birth;
+        dateOfExpiry = dateOfExpiry || mrz.dateOfExpiry || mrz.expiration || mrz.exp_date;
+        country = country || mrz.country;
+        documentType = documentType || mrz.documentType || mrz.document_type;
+        
+        console.log('🔍 MRZ extracted:', {
+          firstName, lastName, middleName, fullName, documentNumber, dateOfBirth, dateOfExpiry, country, documentType
+        });
+      }
+      
+      // Set basic fields
+      result.firstName = firstName || undefined;
+      result.lastName = lastName || undefined;
+      result.middleName = middleName || undefined;
+      result.fullName = fullName || `${firstName || ''} ${middleName || ''} ${lastName || ''}`.trim() || undefined;
+      result.suffix = suffix || undefined;
+      result.licenseNumber = documentNumber || undefined;
+      result.issuerState = capturedId.issuingState || capturedId.issuingCountry || state || undefined;
+      result.documentType = documentType || undefined;
+      result.country = country || 'US';
+      
+      // Handle DateResult objects or string dates
+      if (dateOfBirth) {
+        if (typeof dateOfBirth === 'object' && dateOfBirth.day && dateOfBirth.month && dateOfBirth.year) {
+          const dob = dateOfBirth;
+          result.dateOfBirth = `${dob.year}-${String(dob.month).padStart(2, '0')}-${String(dob.day).padStart(2, '0')}`;
+        } else if (typeof dateOfBirth === 'string') {
+          // Try to parse string date formats
+          const dateStr = dateOfBirth.trim();
+          // Handle MMDDYYYY format
+          if (/^\d{8}$/.test(dateStr)) {
+            const month = dateStr.substring(0, 2);
+            const day = dateStr.substring(2, 4);
+            const year = dateStr.substring(4, 8);
+            result.dateOfBirth = `${year}-${month}-${day}`;
+          }
+          // Handle MM/DD/YYYY format
+          else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+            const [month, day, year] = dateStr.split('/');
+            result.dateOfBirth = `${year}-${month}-${day}`;
+          }
+          // Handle YYYY-MM-DD format (already correct)
+          else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            result.dateOfBirth = dateStr;
+          }
+          else {
+            result.dateOfBirth = dateStr; // Keep original if we can't parse
+          }
+        }
+      }
+      
+      if (dateOfExpiry) {
+        if (typeof dateOfExpiry === 'object' && dateOfExpiry.day && dateOfExpiry.month && dateOfExpiry.year) {
+          const exp = dateOfExpiry;
+          result.expirationDate = `${exp.year}-${String(exp.month).padStart(2, '0')}-${String(exp.day).padStart(2, '0')}`;
+        } else if (typeof dateOfExpiry === 'string') {
+          // Similar parsing logic for expiry date
+          const dateStr = dateOfExpiry.trim();
+          if (/^\d{8}$/.test(dateStr)) {
+            const month = dateStr.substring(0, 2);
+            const day = dateStr.substring(2, 4);
+            const year = dateStr.substring(4, 8);
+            result.expirationDate = `${year}-${month}-${day}`;
+          } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+            const [month, day, year] = dateStr.split('/');
+            result.expirationDate = `${year}-${month}-${day}`;
+          } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            result.expirationDate = dateStr;
+          } else {
+            result.expirationDate = dateStr;
+          }
+        }
+      }
+      
+      // Handle address parsing - try individual components first
+      if (city && state && zipCode) {
+        result.city = city;
+        result.state = state;
+        result.zipCode = zipCode;
+        result.address = address || undefined;
+        result.addressLine2 = addressLine2 || undefined;
+      } else if (address) {
+        // Parse address string to extract components
+        const parsedAddress = parseAddressString(address);
+        result.address = parsedAddress.address || address;
+        result.city = parsedAddress.city || city || undefined;
+        result.state = parsedAddress.state || state || undefined;
+        result.zipCode = parsedAddress.zipCode || zipCode || undefined;
+        result.addressLine2 = addressLine2 || undefined;
+      } else {
+        // Set individual components if available
+        result.address = address || undefined;
+        result.addressLine2 = addressLine2 || undefined;
+        result.city = city || undefined;
+        result.state = state || undefined;
+        result.zipCode = zipCode || undefined;
       }
       
       console.log('✅ Extracted result:', result);

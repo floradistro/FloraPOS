@@ -591,12 +591,12 @@ export const ProductGrid = forwardRef<{
     return (
       <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 120px)' }}>
         <div className="text-center">
-          <div className="text-red-400 mb-4">
+          <div className="text-red-400 text-base font-normal mb-4" style={{ fontFamily: 'Tiempos, serif' }}>
             <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-neutral-400">{error}</p>
+          <p className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempos, serif' }}>{error}</p>
           <button 
             onClick={() => {
               console.log('🔄 Manual retry triggered by user');
@@ -616,13 +616,13 @@ export const ProductGrid = forwardRef<{
     return (
       <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 120px)' }}>
         <div className="text-center">
-          <div className="text-neutral-500 mb-4">
+          <div className="text-neutral-300 text-base font-normal mb-4" style={{ fontFamily: 'Tiempos, serif' }}>
             <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
           </div>
-          <p className="text-neutral-400">No products found</p>
-          <p className="text-sm text-neutral-600 mt-2">
+          <p className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempos, serif' }}>No products found</p>
+          <p className="text-xs text-neutral-500 mt-2" style={{ fontFamily: 'Tiempos, serif' }}>
             {searchQuery ? `No results for "${searchQuery}"` : 'Try adjusting your filters'}
           </p>
         </div>

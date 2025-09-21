@@ -176,7 +176,9 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     address: '',
     city: '',
     state: '',
-    zipCode: ''
+    zipCode: '',
+    dateOfBirth: '',
+    licenseNumber: ''
   });
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
   
@@ -368,6 +370,8 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   };
 
   const handleIDScanResult = (result: IDScanResult) => {
+    console.log('🎯 Processing ID scan result:', result);
+    
     // Auto-fill the form with scanned data
     setNewCustomerData(prev => ({
       ...prev,
@@ -378,8 +382,12 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       address: result.address || prev.address,
       city: result.city || prev.city,
       state: result.state || prev.state,
-      zipCode: result.zipCode || prev.zipCode
+      zipCode: result.zipCode || prev.zipCode,
+      dateOfBirth: result.dateOfBirth || prev.dateOfBirth,
+      licenseNumber: result.licenseNumber || prev.licenseNumber
     }));
+    
+    console.log('✅ Updated customer data with ID scan results');
     
     // Switch to the form view with pre-filled data
     setShowIDScanner(false);
@@ -418,7 +426,17 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         username: username,
         password: Math.random().toString(36).slice(-8), // Generate random password
         billing: billingAddress,
-        shipping: billingAddress // Use same address for shipping
+        shipping: billingAddress, // Use same address for shipping
+        meta_data: [
+          ...(newCustomerData.dateOfBirth ? [{
+            key: '_date_of_birth',
+            value: newCustomerData.dateOfBirth
+          }] : []),
+          ...(newCustomerData.licenseNumber ? [{
+            key: '_license_number',
+            value: newCustomerData.licenseNumber
+          }] : [])
+        ]
       };
 
       const response = await fetch('/api/users-matrix/users', {
@@ -438,7 +456,18 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       onCustomerSelect?.(newCustomer);
       
       // Reset form
-      setNewCustomerData({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', state: '', zipCode: '' });
+      setNewCustomerData({ 
+        firstName: '', 
+        lastName: '', 
+        email: '', 
+        phone: '', 
+        address: '', 
+        city: '', 
+        state: '', 
+        zipCode: '',
+        dateOfBirth: '',
+        licenseNumber: ''
+      });
       setShowNewCustomerForm(false);
       setIsOpen(false);
       
@@ -454,7 +483,18 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   };
 
   const handleCancelNewCustomer = () => {
-    setNewCustomerData({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', state: '', zipCode: '' });
+    setNewCustomerData({ 
+      firstName: '', 
+      lastName: '', 
+      email: '', 
+      phone: '', 
+      address: '', 
+      city: '', 
+      state: '', 
+      zipCode: '',
+      dateOfBirth: '',
+      licenseNumber: ''
+    });
     setShowNewCustomerForm(false);
     setShowIDScanner(false);
   };
@@ -852,6 +892,24 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                           placeholder="ZIP"
                           value={newCustomerData.zipCode}
                           onChange={(e) => setNewCustomerData(prev => ({ ...prev, zipCode: e.target.value }))}
+                          className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          style={{ fontFamily: 'Tiempos, serif' }}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="date"
+                          placeholder="Date of Birth"
+                          value={newCustomerData.dateOfBirth}
+                          onChange={(e) => setNewCustomerData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                          className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          style={{ fontFamily: 'Tiempos, serif' }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="License Number"
+                          value={newCustomerData.licenseNumber}
+                          onChange={(e) => setNewCustomerData(prev => ({ ...prev, licenseNumber: e.target.value }))}
                           className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                           style={{ fontFamily: 'Tiempos, serif' }}
                         />

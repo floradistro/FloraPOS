@@ -1075,12 +1075,12 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       return (
         <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 120px)' }}>
           <div className="text-center">
-            <div className="text-red-400 mb-4">
+            <div className="text-red-400 text-base font-normal mb-4" style={{ fontFamily: 'Tiempos, serif' }}>
               <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-neutral-400">{error}</p>
+            <p className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempos, serif' }}>{error}</p>
             <button 
               onClick={() => {
                 setError(null);
@@ -1099,13 +1099,13 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       return (
         <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 120px)' }}>
           <div className="text-center">
-            <div className="text-neutral-500 mb-4">
+            <div className="text-neutral-300 text-base font-normal mb-4" style={{ fontFamily: 'Tiempos, serif' }}>
               <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
-            <p className="text-neutral-400">No products found for adjustments</p>
-            <p className="text-sm text-neutral-600 mt-2">
+            <p className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempos, serif' }}>No products found for adjustments</p>
+            <p className="text-xs text-neutral-500 mt-2" style={{ fontFamily: 'Tiempos, serif' }}>
               {searchQuery ? `No results for "${searchQuery}"` : 'Try adjusting your filters'}
             </p>
           </div>
@@ -1163,7 +1163,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         {showAuditDialog && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-neutral-800 rounded-lg p-6 w-full max-w-md mx-4">
-              <h3 className="text-lg font-semibold text-white mb-4">Create Audit</h3>
+              <h3 className="text-base font-normal text-neutral-200 mb-4" style={{ fontFamily: 'Tiempos, serif' }}>Create Audit</h3>
               
               <div className="space-y-4">
                 <div>
@@ -1175,7 +1175,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
                     value={auditName}
                     onChange={(e) => setAuditName(e.target.value)}
                     placeholder="e.g., Monthly Inventory Count"
-                    className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-neutral-200 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 
@@ -1192,7 +1192,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
                   />
                 </div>
                 
-                <div className="text-sm text-neutral-400">
+                <div className="text-xs text-neutral-500">
                   This will create an audit with {pendingAdjustments.size} adjustment{pendingAdjustments.size !== 1 ? 's' : ''} and generate a unique audit number for tracking.
                 </div>
               </div>
