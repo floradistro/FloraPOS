@@ -398,22 +398,18 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     for (const customer of customers) {
       console.log(`🔍 Checking customer: ${customer.display_name || customer.name} (ID: ${customer.id})`);
       
-      // Strategy 1: Match by license number (most reliable if stored)
-      if (scannedLicenseNumber && customer.meta?.license_number) {
-        const customerLicenseNumber = customer.meta.license_number.trim().toLowerCase();
-        if (customerLicenseNumber === scannedLicenseNumber) {
-          console.log('✅ MATCH: License number match');
-          return customer;
-        }
-      }
-      
-      // Strategy 2: Match by first name + last name combination
+      // Strategy 1: Match by first name + last name combination
       if (scannedFirstName && scannedLastName) {
         const customerDisplayName = (customer.display_name || customer.name || '').trim().toLowerCase();
-        const customerFirstName = customer.first_name?.trim().toLowerCase() || 
-                                 customerDisplayName.split(' ')[0]?.toLowerCase();
-        const customerLastName = customer.last_name?.trim().toLowerCase() || 
-                                customerDisplayName.split(' ').slice(1).join(' ').toLowerCase();
+        const customerName = customer.name?.trim().toLowerCase() || '';
+        
+        // Extract first and last names from display_name or name
+        const displayNameParts = customerDisplayName.split(' ');
+        const nameParts = customerName.split(' ');
+        
+        const customerFirstName = displayNameParts[0]?.toLowerCase() || nameParts[0]?.toLowerCase();
+        const customerLastName = displayNameParts.slice(1).join(' ').toLowerCase() || 
+                                nameParts.slice(1).join(' ').toLowerCase();
         
         // Exact first + last name match
         if (customerFirstName === scannedFirstName && customerLastName === scannedLastName) {
@@ -423,8 +419,9 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         
         // Full name match (scan full name vs customer display name)
         if (scannedFullName) {
-          const normalizedCustomerName = customerDisplayName.replace(/\s+/g, ' ');
-          if (normalizedCustomerName === scannedFullName) {
+          const normalizedCustomerDisplayName = customerDisplayName.replace(/\s+/g, ' ');
+          const normalizedCustomerName = customerName.replace(/\s+/g, ' ');
+          if (normalizedCustomerDisplayName === scannedFullName || normalizedCustomerName === scannedFullName) {
             console.log('✅ MATCH: Full name match');
             return customer;
           }
@@ -439,7 +436,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         }
       }
       
-      // Strategy 3: Match by email (if scanned ID had email and it matches)
+      // Strategy 2: Match by email (if scanned ID had email and it matches)
       if (result.email && customer.email) {
         const scannedEmail = result.email.trim().toLowerCase();
         const customerEmail = customer.email.trim().toLowerCase();
