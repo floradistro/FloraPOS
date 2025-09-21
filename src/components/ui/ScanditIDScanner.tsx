@@ -309,11 +309,62 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       }
     }
     
-    // If we reach here, the primary parsing didn't work, so return the original as address
-    console.log('⚠️ All parsing methods failed, returning original address string');
-    return {
-      address: addressString
+    // Fallback: if we couldn't parse with the new method, try the old step-by-step approach
+    console.log('🔍 Fallback parsing for:', cleanAddress);
+    
+    let fallbackZip: string | undefined, fallbackState: string | undefined, fallbackCity: string | undefined, fallbackAddress: string | undefined;
+    let remainingAddress = cleanAddress;
+    
+    // Extract ZIP code (5 or 9 digits at the end)
+    const fallbackZipMatch = remainingAddress.match(/(\d{5}(?:-\d{4})?)$/);
+    if (fallbackZipMatch) {
+      fallbackZip = fallbackZipMatch[1];
+      remainingAddress = remainingAddress.replace(/\s*\d{5}(?:-\d{4})?$/, '').trim();
+    }
+    
+    // Extract state (2 letter code at the end)
+    const fallbackStateMatch = remainingAddress.match(/\s+([A-Z]{2})$/i);
+    if (fallbackStateMatch) {
+      fallbackState = fallbackStateMatch[1].toUpperCase();
+      remainingAddress = remainingAddress.replace(/\s+[A-Z]{2}$/i, '').trim();
+    }
+    
+    // Split remaining into address and city
+    if (remainingAddress) {
+      const parts = remainingAddress.split(',').map(p => p.trim());
+      if (parts.length >= 2) {
+        fallbackAddress = parts[0];
+        fallbackCity = parts.slice(1).join(', ');
+      } else {
+        // Default split for space-separated
+        const words = remainingAddress.split(' ');
+        if (words.length >= 2) {
+          const cityWordCount = words.length > 3 ? 2 : 1;
+          fallbackAddress = words.slice(0, -cityWordCount).join(' ');
+          fallbackCity = words.slice(-cityWordCount).join(' ');
+        } else {
+          fallbackAddress = remainingAddress;
+        }
+      }
+    }
+    
+    const result = {
+      address: fallbackAddress || undefined,
+      city: fallbackCity || undefined,
+      state: fallbackState || undefined,
+      zipCode: fallbackZip || undefined
     };
+    
+    console.log('🔍 Fallback parsing result:', result);
+    
+    // If we didn't extract anything meaningful, return the original as address
+    if (!result.address && !result.city && !result.state && !result.zipCode) {
+      return {
+        address: addressString
+      };
+    }
+    
+    return result;
   };
 
   // Handle captured ID
@@ -394,6 +445,7 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
           firstName, lastName, middleName, fullName, suffix, documentNumber, dateOfBirth, dateOfExpiry,
           address, addressLine2, city, state, zipCode, country, documentType
         });
+        console.log('📊 Barcode state fields - state:', state, 'city:', city, 'issuer_state:', barcode.issuer_state);
       }
       
       // Try VIZ result for additional data
@@ -422,6 +474,7 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
           firstName, lastName, middleName, fullName, suffix, documentNumber, dateOfBirth, dateOfExpiry,
           address, addressLine2, city, state, zipCode, country, documentType
         });
+        console.log('👁️ VIZ state fields - state:', state, 'city:', city, 'issuer_state:', viz.issuer_state);
       }
       
       // Try MRZ result if available
@@ -510,39 +563,66 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       
       // Handle address parsing - prioritize parsed components over raw data
       console.log('🏠 Address parsing - raw components:', { address, city, state, zipCode, addressLine2 });
-      console.log('🔍 Raw component analysis:');
-      console.log('  - address (length):', address ? `"${address}" (${address.length})` : 'undefined');
-      console.log('  - city (length):', city ? `"${city}" (${city.length})` : 'undefined');
-      console.log('  - state (length):', state ? `"${state}" (${state.length})` : 'undefined');
-      console.log('  - zipCode (length):', zipCode ? `"${zipCode}" (${zipCode.length})` : 'undefined');
+      console.log('🔍 CRITICAL DEBUG - Before address parsing - state:', state, 'city:', city);
       
-      // Check if we have individual components first
-      if (city && state && zipCode) {
-        console.log('✅ Using individual components directly (no parsing needed)');
-        result.address = address || undefined;
-        result.city = city;
-        result.state = state;
-        result.zipCode = zipCode;
-        result.addressLine2 = addressLine2 || undefined;
-      } else if (address) {
-        console.log('🔄 Parsing address string to extract components');
+      if (address) {
         // Always try to parse the address string to extract components
         const parsedAddress = parseAddressString(address);
         console.log('🏠 Parsed address components:', parsedAddress);
         
-        // Use parsed components if available, otherwise fall back to raw components
-        result.address = parsedAddress.address || address;
-        result.city = parsedAddress.city || city || undefined;
-        result.state = parsedAddress.state || state || undefined;
-        result.zipCode = parsedAddress.zipCode || zipCode || undefined;
+        // CRITICAL FIX: Prioritize parsed components completely for state/city to avoid mixing up state initials
+        // Only use raw components as fallback if parsing completely failed
+        if (parsedAddress.address || parsedAddress.city || parsedAddress.state || parsedAddress.zipCode) {
+          // Parsing succeeded, use parsed components and only fall back to raw for missing pieces
+          result.address = parsedAddress.address || address;
+          result.city = parsedAddress.city || undefined; // Don't fall back to raw city if parsing found components
+          result.state = parsedAddress.state || undefined; // Don't fall back to raw state if parsing found components
+          result.zipCode = parsedAddress.zipCode || zipCode || undefined;
+        } else {
+          // Parsing completely failed, use raw components but validate state format
+          result.address = address;
+          // Additional validation: if raw 'city' looks like a state code (2 letters), swap them
+          if (city && city.length === 2 && /^[A-Z]{2}$/i.test(city) && 
+              state && state.length > 2) {
+            console.log('🔄 SWAPPING: Detected state code in city field, swapping city and state');
+            result.city = state;
+            result.state = city.toUpperCase();
+          } else {
+            result.city = city || undefined;
+            result.state = state || undefined;
+          }
+          result.zipCode = zipCode || undefined;
+        }
+        result.addressLine2 = addressLine2 || undefined;
+      } else if (city && state && zipCode) {
+        // If we have individual components but no address string
+        // Validate state format: if city looks like a state code (2 letters), swap them
+        if (city && city.length === 2 && /^[A-Z]{2}$/i.test(city) && 
+            state && state.length > 2) {
+          console.log('🔄 SWAPPING: Detected state code in city field, swapping city and state');
+          result.city = state;
+          result.state = city.toUpperCase();
+        } else {
+          result.city = city;
+          result.state = state;
+        }
+        result.zipCode = zipCode;
+        result.address = address || undefined;
         result.addressLine2 = addressLine2 || undefined;
       } else {
-        console.log('⚠️ No address data available, using whatever components we have');
         // Set whatever individual components we have
         result.address = address || undefined;
         result.addressLine2 = addressLine2 || undefined;
-        result.city = city || undefined;
-        result.state = state || undefined;
+        // Validate state format: if city looks like a state code (2 letters), swap them
+        if (city && city.length === 2 && /^[A-Z]{2}$/i.test(city) && 
+            state && state.length > 2) {
+          console.log('🔄 SWAPPING: Detected state code in city field, swapping city and state');
+          result.city = state;
+          result.state = city.toUpperCase();
+        } else {
+          result.city = city || undefined;
+          result.state = state || undefined;
+        }
         result.zipCode = zipCode || undefined;
       }
       
@@ -553,6 +633,7 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
         zipCode: result.zipCode,
         addressLine2: result.addressLine2
       });
+      console.log('🔍 CRITICAL DEBUG - Final assignment - state:', result.state, 'city:', result.city);
       
       console.log('✅ Extracted result:', result);
       
