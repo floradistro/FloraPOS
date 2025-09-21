@@ -206,63 +206,106 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
   const parseAddressString = (addressString: string) => {
     if (!addressString) return {};
     
-    // Common US address patterns
+    console.log('🏠 Parsing address string:', addressString);
+    
+    // Clean up the address string
+    const cleanAddress = addressString.trim().replace(/\s+/g, ' ');
+    
+    // Common US address patterns - more comprehensive
     const patterns = [
       // Pattern: "123 Main St, Anytown, ST 12345"
       /^(.+?),\s*([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i,
-      // Pattern: "123 Main St Anytown ST 12345" (no commas)
+      // Pattern: "123 Main St, Anytown, ST 12345" (single comma before state)
+      /^(.+?),\s*([A-Za-z\s]+?),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i,
+      // Pattern: "123 Main St Anytown ST 12345" (no commas, space-separated)
       /^(.+?)\s+([A-Za-z\s]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i,
-      // Pattern: "123 Main St, Anytown ST 12345" (single comma)
-      /^(.+?),\s*([A-Za-z\s]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i
+      // Pattern: "123 Main St, Anytown ST 12345" (single comma after street)
+      /^(.+?),\s*([A-Za-z\s]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i,
+      // Pattern: "123 Main St ANYTOWN ST 12345" (all caps city)
+      /^(.+?)\s+([A-Z\s]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i
     ];
     
     for (const pattern of patterns) {
-      const match = addressString.trim().match(pattern);
+      const match = cleanAddress.match(pattern);
       if (match) {
-        return {
+        const parsed = {
           address: match[1].trim(),
           city: match[2].trim(),
           state: match[3].toUpperCase(),
           zipCode: match[4]
         };
+        console.log('✅ Address parsed successfully:', parsed);
+        return parsed;
       }
     }
     
-    // If no pattern matches, try to extract zip code at least
-    const zipMatch = addressString.match(/(\d{5}(?:-\d{4})?)$/);
+    // More aggressive parsing - extract components step by step
+    let remainingAddress = cleanAddress;
+    let zipCode, state, city, address;
+    
+    // Extract ZIP code (5 or 9 digits at the end)
+    const zipMatch = remainingAddress.match(/(\d{5}(?:-\d{4})?)$/);
     if (zipMatch) {
-      const zipCode = zipMatch[1];
-      const addressWithoutZip = addressString.replace(/\s*\d{5}(?:-\d{4})?$/, '').trim();
-      
-      // Try to extract state (2 letters before zip)
-      const stateMatch = addressWithoutZip.match(/\s([A-Z]{2})\s*$/i);
-      if (stateMatch) {
-        const state = stateMatch[1].toUpperCase();
-        const addressWithoutState = addressWithoutZip.replace(/\s[A-Z]{2}\s*$/i, '').trim();
-        
-        // Split remaining into address and city
-        const parts = addressWithoutState.split(',').map(p => p.trim());
-        if (parts.length >= 2) {
-          return {
-            address: parts[0],
-            city: parts.slice(1).join(', '),
-            state: state,
-            zipCode: zipCode
-          };
+      zipCode = zipMatch[1];
+      remainingAddress = remainingAddress.replace(/\s*\d{5}(?:-\d{4})?$/, '').trim();
+      console.log('📮 Found ZIP code:', zipCode);
+    }
+    
+    // Extract state (2 letter code at the end)
+    const stateMatch = remainingAddress.match(/\s([A-Z]{2})\s*$/i);
+    if (stateMatch) {
+      state = stateMatch[1].toUpperCase();
+      remainingAddress = remainingAddress.replace(/\s[A-Z]{2}\s*$/i, '').trim();
+      console.log('🏛️ Found state:', state);
+    }
+    
+    // What's left should be street address and city
+    if (remainingAddress) {
+      // Try to split on comma or find the last "word group" as city
+      const parts = remainingAddress.split(',').map(p => p.trim());
+      if (parts.length >= 2) {
+        address = parts[0];
+        city = parts.slice(1).join(', ');
+      } else {
+        // No comma, try to identify city as the last few words
+        const words = remainingAddress.split(' ');
+        if (words.length >= 3) {
+          // Assume last 1-2 words are city, rest is address
+          const cityWords = words.slice(-2);
+          const addressWords = words.slice(0, -2);
+          
+          // If the second-to-last word looks like a street type, include it in address
+          const streetTypes = ['ST', 'STREET', 'AVE', 'AVENUE', 'RD', 'ROAD', 'BLVD', 'BOULEVARD', 'DR', 'DRIVE', 'LN', 'LANE', 'WAY', 'CT', 'COURT'];
+          if (streetTypes.includes(cityWords[0].toUpperCase())) {
+            address = words.slice(0, -1).join(' ');
+            city = words.slice(-1).join(' ');
+          } else {
+            address = addressWords.join(' ');
+            city = cityWords.join(' ');
+          }
         } else {
-          return {
-            address: addressWithoutState,
-            state: state,
-            zipCode: zipCode
-          };
+          address = remainingAddress;
         }
       }
     }
     
-    // Fallback: return as single address string
-    return {
-      address: addressString
+    const result = {
+      address: address || undefined,
+      city: city || undefined,
+      state: state || undefined,
+      zipCode: zipCode || undefined
     };
+    
+    console.log('🔍 Fallback parsing result:', result);
+    
+    // If we didn't extract anything meaningful, return the original as address
+    if (!result.address && !result.city && !result.state && !result.zipCode) {
+      return {
+        address: addressString
+      };
+    }
+    
+    return result;
   };
 
   // Handle captured ID
@@ -293,6 +336,10 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       console.log('- dateOfBirth:', capturedId.dateOfBirth);
       console.log('- dateOfExpiry:', capturedId.dateOfExpiry);
       console.log('- address:', capturedId.address);
+      console.log('- city:', capturedId.city);
+      console.log('- state:', capturedId.state);
+      console.log('- zipCode:', capturedId.zipCode);
+      console.log('- postalCode:', capturedId.postalCode);
       console.log('- issuingCountry:', capturedId.issuingCountry);
       console.log('- issuingState:', capturedId.issuingState);
       
@@ -316,21 +363,22 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       // Try barcode result first (most reliable for US IDs)
       if (capturedId.barcode) {
         console.log('📊 Barcode result available:', capturedId.barcode);
+        console.log('📊 Barcode properties:', Object.keys(capturedId.barcode));
         const barcode = capturedId.barcode;
         
-        firstName = firstName || barcode.firstName || barcode.first_name;
-        lastName = lastName || barcode.lastName || barcode.last_name || barcode.family_name;
+        firstName = firstName || barcode.firstName || barcode.first_name || barcode.givenName;
+        lastName = lastName || barcode.lastName || barcode.last_name || barcode.family_name || barcode.surname;
         middleName = middleName || barcode.middleName || barcode.middle_name;
         fullName = fullName || barcode.fullName || barcode.full_name;
         suffix = suffix || barcode.suffix;
         documentNumber = documentNumber || barcode.documentNumber || barcode.license_number || barcode.id;
         dateOfBirth = dateOfBirth || barcode.dateOfBirth || barcode.dob || barcode.date_of_birth;
         dateOfExpiry = dateOfExpiry || barcode.dateOfExpiry || barcode.expiration || barcode.exp_date;
-        address = address || barcode.address || barcode.street_address || barcode.address_1;
+        address = address || barcode.address || barcode.street_address || barcode.address_1 || barcode.streetAddress;
         addressLine2 = addressLine2 || barcode.addressLine2 || barcode.address_2;
-        city = city || barcode.city;
-        state = state || barcode.state || barcode.issuer_state;
-        zipCode = zipCode || barcode.postalCode || barcode.postal_code || barcode.zip;
+        city = city || barcode.city || barcode.locality;
+        state = state || barcode.state || barcode.issuer_state || barcode.region || barcode.province;
+        zipCode = zipCode || barcode.postalCode || barcode.postal_code || barcode.zip || barcode.zipCode;
         country = country || barcode.country;
         documentType = documentType || barcode.documentType || barcode.document_type;
         
@@ -343,21 +391,22 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       // Try VIZ result for additional data
       if (capturedId.vizResult) {
         console.log('👁️ VIZ result available:', capturedId.vizResult);
+        console.log('👁️ VIZ properties:', Object.keys(capturedId.vizResult));
         const viz = capturedId.vizResult;
         
-        firstName = firstName || viz.firstName || viz.first_name;
-        lastName = lastName || viz.lastName || viz.last_name || viz.family_name;
+        firstName = firstName || viz.firstName || viz.first_name || viz.givenName;
+        lastName = lastName || viz.lastName || viz.last_name || viz.family_name || viz.surname;
         middleName = middleName || viz.middleName || viz.middle_name;
         fullName = fullName || viz.fullName || viz.full_name;
         suffix = suffix || viz.suffix;
         documentNumber = documentNumber || viz.documentNumber || viz.license_number || viz.id;
         dateOfBirth = dateOfBirth || viz.dateOfBirth || viz.dob || viz.date_of_birth;
         dateOfExpiry = dateOfExpiry || viz.dateOfExpiry || viz.expiration || viz.exp_date;
-        address = address || viz.address || viz.street_address || viz.address_1;
+        address = address || viz.address || viz.street_address || viz.address_1 || viz.streetAddress;
         addressLine2 = addressLine2 || viz.addressLine2 || viz.address_2;
-        city = city || viz.city;
-        state = state || viz.state || viz.issuer_state;
-        zipCode = zipCode || viz.postalCode || viz.postal_code || viz.zip;
+        city = city || viz.city || viz.locality;
+        state = state || viz.state || viz.issuer_state || viz.region || viz.province;
+        zipCode = zipCode || viz.postalCode || viz.postal_code || viz.zip || viz.zipCode;
         country = country || viz.country;
         documentType = documentType || viz.documentType || viz.document_type;
         
@@ -451,29 +500,43 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
         }
       }
       
-      // Handle address parsing - try individual components first
-      if (city && state && zipCode) {
-        result.city = city;
-        result.state = state;
-        result.zipCode = zipCode;
-        result.address = address || undefined;
-        result.addressLine2 = addressLine2 || undefined;
-      } else if (address) {
-        // Parse address string to extract components
+      // Handle address parsing - prioritize parsed components over raw data
+      console.log('🏠 Address parsing - raw components:', { address, city, state, zipCode, addressLine2 });
+      
+      if (address) {
+        // Always try to parse the address string to extract components
         const parsedAddress = parseAddressString(address);
+        console.log('🏠 Parsed address components:', parsedAddress);
+        
+        // Use parsed components if available, otherwise fall back to raw components
         result.address = parsedAddress.address || address;
         result.city = parsedAddress.city || city || undefined;
         result.state = parsedAddress.state || state || undefined;
         result.zipCode = parsedAddress.zipCode || zipCode || undefined;
         result.addressLine2 = addressLine2 || undefined;
+      } else if (city && state && zipCode) {
+        // If we have individual components but no address string
+        result.city = city;
+        result.state = state;
+        result.zipCode = zipCode;
+        result.address = address || undefined;
+        result.addressLine2 = addressLine2 || undefined;
       } else {
-        // Set individual components if available
+        // Set whatever individual components we have
         result.address = address || undefined;
         result.addressLine2 = addressLine2 || undefined;
         result.city = city || undefined;
         result.state = state || undefined;
         result.zipCode = zipCode || undefined;
       }
+      
+      console.log('🏠 Final address result:', {
+        address: result.address,
+        city: result.city,
+        state: result.state,
+        zipCode: result.zipCode,
+        addressLine2: result.addressLine2
+      });
       
       console.log('✅ Extracted result:', result);
       
