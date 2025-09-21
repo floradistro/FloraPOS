@@ -602,207 +602,181 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
 
   return (
     <div className="flex-1 flex flex-col p-6 bg-transparent">
-      {/* Header */}
-      <div className="flex items-center justify-end mb-6">
-        <div className="flex items-center gap-4">
+      {/* Compact Toolbar */}
+      <div className="flex items-center justify-between mb-4 bg-neutral-900/40 backdrop-blur-sm border border-neutral-700/50 rounded-lg p-2">
+        {/* Left Side - Mode Controls */}
+        <div className="flex items-center gap-1">
           {/* Orientation Toggle */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Orientation:</span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setOrientation('horizontal')}
-                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                  orientation === 'horizontal' 
-                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                }`}
-                title="Horizontal Orientation"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <rect x="2" y="6" width="20" height="12" rx="2" strokeWidth={2} />
-                </svg>
-              </button>
-              <button
-                onClick={() => setOrientation('vertical')}
-                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                  orientation === 'vertical' 
-                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                }`}
-                title="Vertical Orientation"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="2" width="12" height="20" rx="2" strokeWidth={2} />
-                </svg>
-              </button>
-            </div>
+          <div className="flex items-center border-r border-neutral-700/50 pr-2 mr-2">
+            <button
+              onClick={() => setOrientation('horizontal')}
+              className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                orientation === 'horizontal' 
+                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+              }`}
+              title="Horizontal"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="2" y="6" width="20" height="12" rx="2" strokeWidth={2} />
+              </svg>
+            </button>
+            <button
+              onClick={() => setOrientation('vertical')}
+              className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                orientation === 'vertical' 
+                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+              }`}
+              title="Vertical"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="6" y="2" width="12" height="20" rx="2" strokeWidth={2} />
+              </svg>
+            </button>
           </div>
 
           {/* View Mode Toggle */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>View:</span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setViewMode('auto')}
-                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                  viewMode === 'auto' 
-                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                }`}
-                title="Auto (Flower=Table, Others=Card)"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setViewMode('table')}
-                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                  viewMode === 'table' 
-                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                }`}
-                title="Table View"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18m-9 8h9m-9 4h9m-18-8v8a2 2 0 002 2h16a2 2 0 002-2v-8M5 6V4a2 2 0 012-2h10a2 2 0 012 2v2" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setViewMode('card')}
-                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                  viewMode === 'card' 
-                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                }`}
-                title="Card View"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-              </button>
-            </div>
+          <div className="flex items-center border-r border-neutral-700/50 pr-2 mr-2">
+            <button
+              onClick={() => setViewMode('auto')}
+              className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                viewMode === 'auto' 
+                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+              }`}
+              title="Auto"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                viewMode === 'table' 
+                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+              }`}
+              title="Table"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18m-9 8h9m-9 4h9m-18-8v8a2 2 0 002 2h16a2 2 0 002-2v-8M5 6V4a2 2 0 012-2h10a2 2 0 012 2v2" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode('card')}
+              className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                viewMode === 'card' 
+                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+              }`}
+              title="Card"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </button>
           </div>
 
           {/* Image Toggle */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Images:</span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setShowImages(true)}
-                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                  showImages 
-                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                }`}
-                title="Show Images"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setShowImages(false)}
-                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                  !showImages 
-                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                }`}
-                title="Hide Images"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                </svg>
-              </button>
-            </div>
+          <div className="flex items-center border-r border-neutral-700/50 pr-2 mr-2">
+            <button
+              onClick={() => setShowImages(true)}
+              className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                showImages 
+                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+              }`}
+              title="Show Images"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowImages(false)}
+              className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                !showImages 
+                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+              }`}
+              title="Hide Images"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+              </svg>
+            </button>
           </div>
 
-          {/* Color Customization */}
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Colors:</span>
-            
-            {/* Background Color */}
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-white" style={{ fontFamily: 'Tiempo, serif' }}>Background</label>
-              <input
-                type="color"
-                value={backgroundColor}
-                onChange={(e) => setBackgroundColor(e.target.value)}
-                className="w-8 h-8 rounded border border-neutral-500/30 bg-transparent cursor-pointer"
-                title="Background Color"
-              />
-            </div>
-            
-            {/* Font Color */}
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-white" style={{ fontFamily: 'Tiempo, serif' }}>Font</label>
-              <input
-                type="color"
-                value={fontColor}
-                onChange={(e) => setFontColor(e.target.value)}
-                className="w-8 h-8 rounded border border-neutral-500/30 bg-transparent cursor-pointer"
-                title="Font Color"
-              />
-            </div>
-            
-            {/* Container Color */}
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-white" style={{ fontFamily: 'Tiempo, serif' }}>Container</label>
-              <input
-                type="color"
-                value={containerColor}
-                onChange={(e) => setContainerColor(e.target.value)}
-                className="w-8 h-8 rounded border border-neutral-500/30 bg-transparent cursor-pointer"
-                title="Container Color"
-              />
-            </div>
+          {/* Color Pickers */}
+          <div className="flex items-center gap-1">
+            <input
+              type="color"
+              value={backgroundColor}
+              onChange={(e) => setBackgroundColor(e.target.value)}
+              className="w-6 h-6 rounded border border-neutral-600/50 bg-transparent cursor-pointer"
+              title="Background Color"
+            />
+            <input
+              type="color"
+              value={fontColor}
+              onChange={(e) => setFontColor(e.target.value)}
+              className="w-6 h-6 rounded border border-neutral-600/50 bg-transparent cursor-pointer"
+              title="Font Color"
+            />
+            <input
+              type="color"
+              value={containerColor}
+              onChange={(e) => setContainerColor(e.target.value)}
+              className="w-6 h-6 rounded border border-neutral-600/50 bg-transparent cursor-pointer"
+              title="Container Color"
+            />
           </div>
+        </div>
+
+        {/* Right Side - Category & Actions */}
+        <div className="flex items-center gap-2">
+          {/* Category Selector */}
+          <select
+            value={selectedMenuCategory || ''}
+            onChange={(e) => setSelectedMenuCategory(e.target.value || null)}
+            className="px-2 h-[28px] bg-transparent hover:bg-neutral-600/10 border border-neutral-600/50 hover:border-neutral-500/70 rounded text-white text-xs focus:bg-neutral-600/10 focus:border-neutral-400 focus:outline-none transition-all duration-200 ease-out"
+          >
+            <option value="">All Categories</option>
+            {getUniqueCategories().map(category => (
+              <option key={category.id} value={category.slug}>
+                {category.name}
+              </option>
+            ))}
+          </select>
           
-          <div className="flex items-center gap-3">
-            {/* Category Selector */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Category:</span>
-              <select
-                value={selectedMenuCategory || ''}
-                onChange={(e) => setSelectedMenuCategory(e.target.value || null)}
-                className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
-              >
-                <option value="">All Categories</option>
-                {getUniqueCategories().map(category => (
-                  <option key={category.id} value={category.slug}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-          <div className="flex items-center gap-3">
+          {/* Launch Button */}
+          <button
+            onClick={() => openPopoutMenu(selectedMenuCategory || undefined)}
+            className="flex items-center gap-1.5 px-2 h-[28px] text-xs transition-all duration-200 ease-out rounded border bg-transparent text-white border-neutral-600/50 hover:bg-neutral-600/10 hover:border-neutral-500/70"
+            title={`Launch ${orientation} ${viewMode} menu ${showImages ? 'with' : 'without'} images`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            Launch
+          </button>
+          
+          {/* Dual Menu Button */}
+          {orientation === 'horizontal' && (
             <button
-              onClick={() => openPopoutMenu(selectedMenuCategory || undefined)}
-              className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-white border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-white"
-              style={{ fontFamily: 'Tiempo, serif' }}
+              onClick={handleDualMenuLaunch}
+              className="flex items-center gap-1.5 px-2 h-[28px] text-xs transition-all duration-200 ease-out rounded border bg-transparent text-white border-neutral-600/50 hover:bg-neutral-600/10 hover:border-neutral-500/70"
+              title="Configure dual menu layout"
             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                Open {selectedMenuCategory ? `${getUniqueCategories().find(c => c.slug === selectedMenuCategory)?.name} ` : ''}{orientation === 'vertical' ? 'Vertical' : 'Horizontal'} {viewMode === 'auto' ? 'Auto' : viewMode === 'table' ? 'Table' : 'Card'} Menu {showImages ? '(Images)' : '(No Images)'}
-              </button>
-              
-              {orientation === 'horizontal' && (
-                <button
-                  onClick={handleDualMenuLaunch}
-                  className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-white border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-white"
-                  style={{ fontFamily: 'Tiempo, serif' }}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12" />
-                  </svg>
-                  Dual Menu
-                </button>
-              )}
-            </div>
-          </div>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12" />
+              </svg>
+              Dual
+            </button>
+          )}
         </div>
       </div>
 
