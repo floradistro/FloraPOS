@@ -362,15 +362,119 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const handleNewCustomerClick = () => {
     setShowNewCustomerForm(true);
     setShowIDScanner(false);
+    setIsOpen(true); // Ensure dropdown stays open to show the form
+    setIsCustomerMode(true); // Ensure we're in customer mode
   };
 
   const handleIDScannerClick = () => {
     setShowIDScanner(true);
     setShowNewCustomerForm(false);
+    setIsOpen(true); // Ensure dropdown stays open during scanning
+    setIsCustomerMode(true); // Ensure we're in customer mode
+  };
+
+  // Function to find matching customer based on ID scan results
+  const findMatchingCustomer = (result: IDScanResult): WordPressUser | null => {
+    console.log('🔍 Searching for matching customer with data:', result);
+    
+    if (!customers || customers.length === 0) {
+      console.log('📭 No customers loaded to match against');
+      return null;
+    }
+    
+    // Create normalized versions of scanned data for comparison
+    const scannedFirstName = result.firstName?.trim().toLowerCase();
+    const scannedLastName = result.lastName?.trim().toLowerCase();
+    const scannedFullName = result.fullName?.trim().toLowerCase();
+    const scannedLicenseNumber = result.licenseNumber?.trim().toLowerCase();
+    
+    console.log('🔍 Normalized scan data:', {
+      scannedFirstName,
+      scannedLastName,
+      scannedFullName,
+      scannedLicenseNumber
+    });
+    
+    for (const customer of customers) {
+      console.log(`🔍 Checking customer: ${customer.display_name || customer.name} (ID: ${customer.id})`);
+      
+      // Strategy 1: Match by license number (most reliable if stored)
+      if (scannedLicenseNumber && customer.meta?.license_number) {
+        const customerLicenseNumber = customer.meta.license_number.trim().toLowerCase();
+        if (customerLicenseNumber === scannedLicenseNumber) {
+          console.log('✅ MATCH: License number match');
+          return customer;
+        }
+      }
+      
+      // Strategy 2: Match by first name + last name combination
+      if (scannedFirstName && scannedLastName) {
+        const customerDisplayName = (customer.display_name || customer.name || '').trim().toLowerCase();
+        const customerFirstName = customer.first_name?.trim().toLowerCase() || 
+                                 customerDisplayName.split(' ')[0]?.toLowerCase();
+        const customerLastName = customer.last_name?.trim().toLowerCase() || 
+                                customerDisplayName.split(' ').slice(1).join(' ').toLowerCase();
+        
+        // Exact first + last name match
+        if (customerFirstName === scannedFirstName && customerLastName === scannedLastName) {
+          console.log('✅ MATCH: First + Last name exact match');
+          return customer;
+        }
+        
+        // Full name match (scan full name vs customer display name)
+        if (scannedFullName) {
+          const normalizedCustomerName = customerDisplayName.replace(/\s+/g, ' ');
+          if (normalizedCustomerName === scannedFullName) {
+            console.log('✅ MATCH: Full name match');
+            return customer;
+          }
+        }
+        
+        // Partial name match with high confidence (both first and last contain each other)
+        if (customerFirstName && customerLastName &&
+            customerFirstName.includes(scannedFirstName) && scannedFirstName.includes(customerFirstName) &&
+            customerLastName.includes(scannedLastName) && scannedLastName.includes(customerLastName)) {
+          console.log('✅ MATCH: High confidence partial name match');
+          return customer;
+        }
+      }
+      
+      // Strategy 3: Match by email (if scanned ID had email and it matches)
+      if (result.email && customer.email) {
+        const scannedEmail = result.email.trim().toLowerCase();
+        const customerEmail = customer.email.trim().toLowerCase();
+        if (scannedEmail === customerEmail) {
+          console.log('✅ MATCH: Email match');
+          return customer;
+        }
+      }
+    }
+    
+    console.log('❌ No matching customer found');
+    return null;
   };
 
   const handleIDScanResult = (result: IDScanResult) => {
     console.log('🎯 Processing ID scan result:', result);
+    
+    try {
+      // First, try to match against existing customers
+      const matchedCustomer = findMatchingCustomer(result);
+      
+      if (matchedCustomer) {
+        console.log('🎉 Found matching customer:', matchedCustomer);
+        console.log('🎯 AUTO-SELECTING existing customer for sale');
+        // Automatically select the matched customer
+        handleCustomerSelect(matchedCustomer);
+        setShowIDScanner(false);
+        return;
+      }
+      
+      console.log('👤 No matching customer found, proceeding to new customer form');
+    } catch (error) {
+      console.error('❌ Error during customer matching:', error);
+      console.log('🔄 Falling back to new customer form');
+    }
     
     // Auto-fill the form with scanned data
     setNewCustomerData(prev => ({
@@ -389,9 +493,11 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     
     console.log('✅ Updated customer data with ID scan results');
     
-    // Switch to the form view with pre-filled data
+    // Switch to the form view with pre-filled data and ensure dropdown stays open
     setShowIDScanner(false);
     setShowNewCustomerForm(true);
+    setIsOpen(true); // Ensure dropdown stays open to show the form
+    setIsCustomerMode(true); // Ensure we're in customer mode
   };
 
   const handleCancelIDScanner = () => {
