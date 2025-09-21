@@ -216,18 +216,18 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
     // Clean up the address string
     const cleanAddress = addressString.trim().replace(/\s+/g, ' ');
     
-    // Common US address patterns - more comprehensive
+    // Common US address patterns - more comprehensive and precise
     const patterns = [
-      // Pattern: "123 Main St, Anytown, ST 12345"
+      // Pattern: "123 Main St, Anytown, ST 12345" (with commas)
       /^(.+?),\s*([^,]+),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i,
-      // Pattern: "123 Main St, Anytown, ST 12345" (single comma before state)
-      /^(.+?),\s*([A-Za-z\s]+?),\s*([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i,
-      // Pattern: "123 Main St Anytown ST 12345" (no commas, space-separated)
+      // Pattern: "123 Main St Anytown ST 12345" (space-separated, strict state match)
       /^(.+?)\s+([A-Za-z\s]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i,
-      // Pattern: "123 Main St, Anytown ST 12345" (single comma after street)
+      // Pattern: "123 Main St, Anytown ST 12345" (comma after street, then city state zip)
       /^(.+?),\s*([A-Za-z\s]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i,
-      // Pattern: "123 Main St ANYTOWN ST 12345" (all caps city)
-      /^(.+?)\s+([A-Z\s]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i
+      // Pattern: "123 Main St ANYTOWN ST 12345" (all caps, ensure proper state extraction)
+      /^(.+?)\s+([A-Z\s]+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/,
+      // Pattern: More flexible - any text, then 2 letters (state), then 5-9 digits (zip)
+      /^(.+?)\s+(.+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/i
     ];
     
     for (const pattern of patterns) {
@@ -248,48 +248,78 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
     let remainingAddress = cleanAddress;
     let zipCode: string | undefined, state: string | undefined, city: string | undefined, address: string | undefined;
     
+    console.log('🔍 Starting step-by-step parsing of:', remainingAddress);
+    
     // Extract ZIP code (5 or 9 digits at the end)
     const zipMatch = remainingAddress.match(/(\d{5}(?:-\d{4})?)$/);
     if (zipMatch) {
       zipCode = zipMatch[1];
       remainingAddress = remainingAddress.replace(/\s*\d{5}(?:-\d{4})?$/, '').trim();
-      console.log('📮 Found ZIP code:', zipCode);
+      console.log('📮 Found ZIP code:', zipCode, '| Remaining:', remainingAddress);
     }
     
-    // Extract state (2 letter code at the end)
-    const stateMatch = remainingAddress.match(/\s([A-Z]{2})\s*$/i);
+    // Extract state (2 letter code at the end, more strict matching)
+    const stateMatch = remainingAddress.match(/\s+([A-Z]{2})$/i);
     if (stateMatch) {
       state = stateMatch[1].toUpperCase();
-      remainingAddress = remainingAddress.replace(/\s[A-Z]{2}\s*$/i, '').trim();
-      console.log('🏛️ Found state:', state);
+      remainingAddress = remainingAddress.replace(/\s+[A-Z]{2}$/i, '').trim();
+      console.log('🏛️ Found state:', state, '| Remaining:', remainingAddress);
+    } else {
+      // Try alternative state pattern - state might be embedded differently
+      const altStateMatch = remainingAddress.match(/\s+([A-Z]{2})\s+/i);
+      if (altStateMatch) {
+        state = altStateMatch[1].toUpperCase();
+        remainingAddress = remainingAddress.replace(/\s+[A-Z]{2}\s+/i, ' ').trim();
+        console.log('🏛️ Found state (alternative):', state, '| Remaining:', remainingAddress);
+      }
     }
     
     // What's left should be street address and city
     if (remainingAddress) {
-      // Try to split on comma or find the last "word group" as city
+      console.log('🏘️ Parsing remaining address and city from:', remainingAddress);
+      
+      // Try to split on comma first
       const parts = remainingAddress.split(',').map(p => p.trim());
       if (parts.length >= 2) {
         address = parts[0];
         city = parts.slice(1).join(', ');
+        console.log('📍 Comma-separated - Address:', address, '| City:', city);
       } else {
-        // No comma, try to identify city as the last few words
+        // No comma, try to identify city as the last words
         const words = remainingAddress.split(' ');
-        if (words.length >= 3) {
-          // Assume last 1-2 words are city, rest is address
-          const cityWords = words.slice(-2);
-          const addressWords = words.slice(0, -2);
+        console.log('📝 Words to parse:', words);
+        
+        if (words.length >= 2) {
+          // Check if last word might be part of street address
+          const streetTypes = ['ST', 'STREET', 'AVE', 'AVENUE', 'RD', 'ROAD', 'BLVD', 'BOULEVARD', 'DR', 'DRIVE', 'LN', 'LANE', 'WAY', 'CT', 'COURT', 'PL', 'PLACE', 'CIR', 'CIRCLE'];
+          const lastWord = words[words.length - 1].toUpperCase();
+          const secondLastWord = words.length > 1 ? words[words.length - 2].toUpperCase() : '';
           
-          // If the second-to-last word looks like a street type, include it in address
-          const streetTypes = ['ST', 'STREET', 'AVE', 'AVENUE', 'RD', 'ROAD', 'BLVD', 'BOULEVARD', 'DR', 'DRIVE', 'LN', 'LANE', 'WAY', 'CT', 'COURT'];
-          if (streetTypes.includes(cityWords[0].toUpperCase())) {
-            address = words.slice(0, -1).join(' ');
-            city = words.slice(-1).join(' ');
+          if (streetTypes.includes(lastWord) || streetTypes.includes(secondLastWord)) {
+            // Last words are likely part of street address, no clear city
+            address = remainingAddress;
+            console.log('🏠 Street type detected, treating as full address:', address);
           } else {
-            address = addressWords.join(' ');
-            city = cityWords.join(' ');
+            // Assume last 1-2 words are city
+            if (words.length >= 3) {
+              // Take last 1-2 words as city depending on length
+              const cityWords = words.length > 4 ? words.slice(-2) : words.slice(-1);
+              const addressWords = words.length > 4 ? words.slice(0, -2) : words.slice(0, -1);
+              
+              address = addressWords.join(' ');
+              city = cityWords.join(' ');
+              console.log('📍 Split - Address:', address, '| City:', city);
+            } else {
+              // Short address, split in half
+              const midPoint = Math.ceil(words.length / 2);
+              address = words.slice(0, midPoint).join(' ');
+              city = words.slice(midPoint).join(' ');
+              console.log('📍 Half split - Address:', address, '| City:', city);
+            }
           }
         } else {
           address = remainingAddress;
+          console.log('🏠 Single word/short address:', address);
         }
       }
     }
