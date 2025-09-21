@@ -309,62 +309,11 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       }
     }
     
-    // Fallback: if we couldn't parse with the new method, try the old step-by-step approach
-    console.log('🔍 Fallback parsing for:', cleanAddress);
-    
-    let fallbackZip: string | undefined, fallbackState: string | undefined, fallbackCity: string | undefined, fallbackAddress: string | undefined;
-    let remainingAddress = cleanAddress;
-    
-    // Extract ZIP code (5 or 9 digits at the end)
-    const fallbackZipMatch = remainingAddress.match(/(\d{5}(?:-\d{4})?)$/);
-    if (fallbackZipMatch) {
-      fallbackZip = fallbackZipMatch[1];
-      remainingAddress = remainingAddress.replace(/\s*\d{5}(?:-\d{4})?$/, '').trim();
-    }
-    
-    // Extract state (2 letter code at the end)
-    const fallbackStateMatch = remainingAddress.match(/\s+([A-Z]{2})$/i);
-    if (fallbackStateMatch) {
-      fallbackState = fallbackStateMatch[1].toUpperCase();
-      remainingAddress = remainingAddress.replace(/\s+[A-Z]{2}$/i, '').trim();
-    }
-    
-    // Split remaining into address and city
-    if (remainingAddress) {
-      const parts = remainingAddress.split(',').map(p => p.trim());
-      if (parts.length >= 2) {
-        fallbackAddress = parts[0];
-        fallbackCity = parts.slice(1).join(', ');
-      } else {
-        // Default split for space-separated
-        const words = remainingAddress.split(' ');
-        if (words.length >= 2) {
-          const cityWordCount = words.length > 3 ? 2 : 1;
-          fallbackAddress = words.slice(0, -cityWordCount).join(' ');
-          fallbackCity = words.slice(-cityWordCount).join(' ');
-        } else {
-          fallbackAddress = remainingAddress;
-        }
-      }
-    }
-    
-    const result = {
-      address: fallbackAddress || undefined,
-      city: fallbackCity || undefined,
-      state: fallbackState || undefined,
-      zipCode: fallbackZip || undefined
+    // If we reach here, the primary parsing didn't work, so return the original as address
+    console.log('⚠️ All parsing methods failed, returning original address string');
+    return {
+      address: addressString
     };
-    
-    console.log('🔍 Fallback parsing result:', result);
-    
-    // If we didn't extract anything meaningful, return the original as address
-    if (!result.address && !result.city && !result.state && !result.zipCode) {
-      return {
-        address: addressString
-      };
-    }
-    
-    return result;
   };
 
   // Handle captured ID
@@ -561,8 +510,22 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       
       // Handle address parsing - prioritize parsed components over raw data
       console.log('🏠 Address parsing - raw components:', { address, city, state, zipCode, addressLine2 });
+      console.log('🔍 Raw component analysis:');
+      console.log('  - address (length):', address ? `"${address}" (${address.length})` : 'undefined');
+      console.log('  - city (length):', city ? `"${city}" (${city.length})` : 'undefined');
+      console.log('  - state (length):', state ? `"${state}" (${state.length})` : 'undefined');
+      console.log('  - zipCode (length):', zipCode ? `"${zipCode}" (${zipCode.length})` : 'undefined');
       
-      if (address) {
+      // Check if we have individual components first
+      if (city && state && zipCode) {
+        console.log('✅ Using individual components directly (no parsing needed)');
+        result.address = address || undefined;
+        result.city = city;
+        result.state = state;
+        result.zipCode = zipCode;
+        result.addressLine2 = addressLine2 || undefined;
+      } else if (address) {
+        console.log('🔄 Parsing address string to extract components');
         // Always try to parse the address string to extract components
         const parsedAddress = parseAddressString(address);
         console.log('🏠 Parsed address components:', parsedAddress);
@@ -573,14 +536,8 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
         result.state = parsedAddress.state || state || undefined;
         result.zipCode = parsedAddress.zipCode || zipCode || undefined;
         result.addressLine2 = addressLine2 || undefined;
-      } else if (city && state && zipCode) {
-        // If we have individual components but no address string
-        result.city = city;
-        result.state = state;
-        result.zipCode = zipCode;
-        result.address = address || undefined;
-        result.addressLine2 = addressLine2 || undefined;
       } else {
+        console.log('⚠️ No address data available, using whatever components we have');
         // Set whatever individual components we have
         result.address = address || undefined;
         result.addressLine2 = addressLine2 || undefined;
