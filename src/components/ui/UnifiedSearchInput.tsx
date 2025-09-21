@@ -436,15 +436,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         }
       }
       
-      // Strategy 2: Match by email (if scanned ID had email and it matches)
-      if (result.email && customer.email) {
-        const scannedEmail = result.email.trim().toLowerCase();
-        const customerEmail = customer.email.trim().toLowerCase();
-        if (scannedEmail === customerEmail) {
-          console.log('✅ MATCH: Email match');
-          return customer;
-        }
-      }
+      // Note: Email matching removed as IDScanResult doesn't typically contain email addresses
     }
     
     console.log('❌ No matching customer found');
