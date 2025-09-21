@@ -9,23 +9,66 @@ export default function MenuDisplayPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [viewMode, setViewMode] = useState<'table' | 'card' | 'auto'>('auto');
+  const [showImages, setShowImages] = useState<boolean>(true);
+  const [leftMenuImages, setLeftMenuImages] = useState<boolean>(true);
+  const [rightMenuImages, setRightMenuImages] = useState<boolean>(true);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [selectedCategoryName, setSelectedCategoryName] = useState<string>('');
   const [isDualMenu, setIsDualMenu] = useState(false);
   const [leftMenuCategory, setLeftMenuCategory] = useState<string | null>(null);
   const [rightMenuCategory, setRightMenuCategory] = useState<string | null>(null);
+  const [leftMenuCategory2, setLeftMenuCategory2] = useState<string | null>(null);
+  const [rightMenuCategory2, setRightMenuCategory2] = useState<string | null>(null);
+  const [leftMenuImages2, setLeftMenuImages2] = useState<boolean>(true);
+  const [rightMenuImages2, setRightMenuImages2] = useState<boolean>(true);
+  const [enableLeftStacking, setEnableLeftStacking] = useState<boolean>(false);
+  const [enableRightStacking, setEnableRightStacking] = useState<boolean>(false);
+  // Color customization
+  const [backgroundColor, setBackgroundColor] = useState<string>('#f5f5f4'); // stone-100
+  const [fontColor, setFontColor] = useState<string>('#1f2937'); // gray-800
+  const [containerColor, setContainerColor] = useState<string>('#d1d5db'); // gray-300
 
   useEffect(() => {
-    // Get orientation and category from URL params
+    // Get orientation, view mode, images, and category from URL params
     const urlParams = new URLSearchParams(window.location.search);
     const urlOrientation = urlParams.get('orientation');
+    const urlViewMode = urlParams.get('viewMode');
+    const urlShowImages = urlParams.get('showImages');
+    const urlLeftImages = urlParams.get('leftImages');
+    const urlRightImages = urlParams.get('rightImages');
     const urlCategory = urlParams.get('category');
     const urlDualMenu = urlParams.get('dual');
     const urlLeftCategory = urlParams.get('leftCategory');
     const urlRightCategory = urlParams.get('rightCategory');
+    const urlLeftCategory2 = urlParams.get('leftCategory2');
+    const urlRightCategory2 = urlParams.get('rightCategory2');
+    const urlLeftImages2 = urlParams.get('leftImages2');
+    const urlRightImages2 = urlParams.get('rightImages2');
+    const urlLeftStacking = urlParams.get('leftStacking');
+    const urlRightStacking = urlParams.get('rightStacking');
+    const urlBackgroundColor = urlParams.get('backgroundColor');
+    const urlFontColor = urlParams.get('fontColor');
+    const urlContainerColor = urlParams.get('containerColor');
     
     if (urlOrientation === 'vertical' || urlOrientation === 'horizontal') {
       setOrientation(urlOrientation);
+    }
+    
+    if (urlViewMode === 'table' || urlViewMode === 'card' || urlViewMode === 'auto') {
+      setViewMode(urlViewMode);
+    }
+    
+    if (urlShowImages === 'true' || urlShowImages === 'false') {
+      setShowImages(urlShowImages === 'true');
+    } else if (urlShowImages === 'dual') {
+      // Handle dual menu image settings
+      if (urlLeftImages === 'true' || urlLeftImages === 'false') {
+        setLeftMenuImages(urlLeftImages === 'true');
+      }
+      if (urlRightImages === 'true' || urlRightImages === 'false') {
+        setRightMenuImages(urlRightImages === 'true');
+      }
     }
     
     if (urlCategory) {
@@ -36,6 +79,32 @@ export default function MenuDisplayPage() {
       setIsDualMenu(true);
       setLeftMenuCategory(urlLeftCategory);
       setRightMenuCategory(urlRightCategory);
+      setLeftMenuCategory2(urlLeftCategory2);
+      setRightMenuCategory2(urlRightCategory2);
+      
+      if (urlLeftImages2 === 'true' || urlLeftImages2 === 'false') {
+        setLeftMenuImages2(urlLeftImages2 === 'true');
+      }
+      if (urlRightImages2 === 'true' || urlRightImages2 === 'false') {
+        setRightMenuImages2(urlRightImages2 === 'true');
+      }
+      if (urlLeftStacking === 'true' || urlLeftStacking === 'false') {
+        setEnableLeftStacking(urlLeftStacking === 'true');
+      }
+      if (urlRightStacking === 'true' || urlRightStacking === 'false') {
+        setEnableRightStacking(urlRightStacking === 'true');
+      }
+    }
+
+    // Set colors from URL params
+    if (urlBackgroundColor) {
+      setBackgroundColor(decodeURIComponent(urlBackgroundColor));
+    }
+    if (urlFontColor) {
+      setFontColor(decodeURIComponent(urlFontColor));
+    }
+    if (urlContainerColor) {
+      setContainerColor(decodeURIComponent(urlContainerColor));
     }
 
     // Listen for data from parent window
@@ -48,6 +117,52 @@ export default function MenuDisplayPage() {
         if (event.data.orientation) {
           setOrientation(event.data.orientation);
         }
+        if (event.data.viewMode) {
+          setViewMode(event.data.viewMode);
+        }
+        if (typeof event.data.showImages === 'boolean') {
+          setShowImages(event.data.showImages);
+        } else if (event.data.showImages === 'dual') {
+          // Handle dual menu image settings
+          if (typeof event.data.leftMenuImages === 'boolean') {
+            setLeftMenuImages(event.data.leftMenuImages);
+          }
+          if (typeof event.data.rightMenuImages === 'boolean') {
+            setRightMenuImages(event.data.rightMenuImages);
+          }
+          if (typeof event.data.leftMenuImages2 === 'boolean') {
+            setLeftMenuImages2(event.data.leftMenuImages2);
+          }
+          if (typeof event.data.rightMenuImages2 === 'boolean') {
+            setRightMenuImages2(event.data.rightMenuImages2);
+          }
+        }
+        
+        // Handle stacking settings
+        if (typeof event.data.enableLeftStacking === 'boolean') {
+          setEnableLeftStacking(event.data.enableLeftStacking);
+        }
+        if (typeof event.data.enableRightStacking === 'boolean') {
+          setEnableRightStacking(event.data.enableRightStacking);
+        }
+        if (event.data.leftMenuCategory2) {
+          setLeftMenuCategory2(event.data.leftMenuCategory2);
+        }
+        if (event.data.rightMenuCategory2) {
+          setRightMenuCategory2(event.data.rightMenuCategory2);
+        }
+        
+        // Handle color settings
+        if (event.data.backgroundColor) {
+          setBackgroundColor(event.data.backgroundColor);
+        }
+        if (event.data.fontColor) {
+          setFontColor(event.data.fontColor);
+        }
+        if (event.data.containerColor) {
+          setContainerColor(event.data.containerColor);
+        }
+        
         if (event.data.categoryFilter) {
           setCategoryFilter(event.data.categoryFilter);
         }
@@ -249,19 +364,48 @@ export default function MenuDisplayPage() {
     }
   }, [categoryFilter, categories]);
 
-  // Auto-balance flower products between columns
-  const balanceFlowerProducts = (products: Product[]) => {
+  // Auto-balance table products between columns (single column if < 12 products)
+  const balanceTableProducts = (products: Product[]) => {
     const totalProducts = products.length;
-    const leftColumnCount = Math.ceil(totalProducts / 2);
     
+    // Use single column if less than 12 products
+    if (totalProducts < 12) {
+      return {
+        leftColumn: products,
+        rightColumn: []
+      };
+    }
+    
+    // Use 2-column layout for 12+ products
+    const leftColumnCount = Math.ceil(totalProducts / 2);
     return {
       leftColumn: products.slice(0, leftColumnCount),
       rightColumn: products.slice(leftColumnCount)
     };
   };
 
+  // Determine which image setting to use for dual menus
+  const getImageSetting = (isLeftSide: boolean = false, categorySlug: string | null = null) => {
+    if (isDualMenu) {
+      if (isLeftSide) {
+        // Check if this is the second left menu
+        if (enableLeftStacking && categorySlug === leftMenuCategory2) {
+          return leftMenuImages2;
+        }
+        return leftMenuImages;
+      } else {
+        // Check if this is the second right menu
+        if (enableRightStacking && categorySlug === rightMenuCategory2) {
+          return rightMenuImages2;
+        }
+        return rightMenuImages;
+      }
+    }
+    return showImages;
+  };
+
   // Render a single menu section (for dual menu support)
-  const renderMenuSection = (categorySlug: string | null, sectionTitle?: string) => {
+  const renderMenuSection = (categorySlug: string | null, sectionTitle?: string, isLeftSide: boolean = false) => {
     const sectionProducts = categorySlug 
       ? displayProducts.filter(product => 
           product.categories?.some(cat => cat.slug === categorySlug)
@@ -278,6 +422,8 @@ export default function MenuDisplayPage() {
         product.categories?.some(cat => cat.id === category.id)
       )
     })).filter(group => group.products.length > 0);
+
+    const currentShowImages = getImageSetting(isLeftSide, categorySlug);
 
     return (
       <div className="flex-1 h-full overflow-y-auto pb-8">
@@ -303,7 +449,7 @@ export default function MenuDisplayPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-6 p-4 pb-8">
+          <div className="space-y-6 p-4 pb-8 pt-4">
             {productsByCategory.map(({ category, products: categoryProducts }) => (
               <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-4' : ''}>
                 {/* Category Header - Only show if not in dual mode or if multiple categories */}
@@ -317,12 +463,13 @@ export default function MenuDisplayPage() {
                 )}
                 
                 {/* Products Display */}
-                {isFlowerCategory(category.name) ? (
-                    /* 2-Column Layout for Flower Products - Auto-balanced */
+                {getActualViewMode(category.name) === 'table' ? (
+                    /* Table Layout - Single column if < 12 products, 2-column if 12+ */
                     (() => {
-                      const { leftColumn, rightColumn } = balanceFlowerProducts(categoryProducts);
+                      const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);
+                      const useSingleColumn = rightColumn.length === 0;
                       return (
-                        <div className="grid grid-cols-2 gap-6 py-6">
+                        <div className={`grid gap-6 py-4 pt-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`}>
                           {/* Left Column */}
                           <div className="space-y-2">
                             {leftColumn.map((product, index) => {
@@ -333,13 +480,17 @@ export default function MenuDisplayPage() {
                         return (
                           <div 
                             key={product.id}
-                            className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:border-slate-400/50 hover:bg-gray-300/80 hover:shadow-md hover:shadow-neutral-700/10"
+                            className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
+                            style={{ 
+                              backgroundColor: `${containerColor}99`,
+                              borderColor: `${containerColor}4d`
+                            }}
                           >
                             <div className="grid grid-cols-12 gap-4 items-center">
                               {/* Product Info */}
-                              <div className="col-span-6 flex items-center gap-4">
+                              <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
                                 {/* Product Image */}
-                                <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                <div className={`w-12 h-12 relative overflow-hidden flex-shrink-0 ${!showImages ? 'hidden' : ''}`}>
                                   {product.image ? (
                                     <img 
                                       src={product.image} 
@@ -356,11 +507,11 @@ export default function MenuDisplayPage() {
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <h3 className="text-slate-900 font-semibold text-sm leading-tight mb-1 truncate" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                                  <h3 className="font-semibold text-sm leading-tight mb-1 truncate" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
                                     {product.name}
                                   </h3>
                                   {product.sku && (
-                                    <p className="text-xs text-slate-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                                    <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
                                       {product.sku}
                                     </p>
                                   )}
@@ -369,14 +520,14 @@ export default function MenuDisplayPage() {
 
                               {/* Type */}
                               <div className="col-span-3 text-center">
-                                <span className="text-slate-700 font-medium text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                                <span className="font-medium text-sm" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
                                   {strainType}
                                 </span>
                               </div>
 
                               {/* THCA % */}
                               <div className="col-span-3 text-center">
-                                <span className="text-slate-800 font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                                <span className="font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
                                   {thcaPercent}
                                 </span>
                               </div>
@@ -386,7 +537,8 @@ export default function MenuDisplayPage() {
                         })}
                       </div>
                       
-                          {/* Right Column */}
+                          {/* Right Column - Only render if not single column */}
+                          {!useSingleColumn && (
                           <div className="space-y-2">
                             {rightColumn.map((product, index) => {
                         const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
@@ -396,13 +548,17 @@ export default function MenuDisplayPage() {
                         return (
                           <div 
                             key={product.id}
-                            className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:border-slate-400/50 hover:bg-gray-300/80 hover:shadow-md hover:shadow-neutral-700/10"
+                            className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
+                            style={{ 
+                              backgroundColor: `${containerColor}99`,
+                              borderColor: `${containerColor}4d`
+                            }}
                           >
                             <div className="grid grid-cols-12 gap-4 items-center">
                               {/* Product Info */}
-                              <div className="col-span-6 flex items-center gap-4">
+                              <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
                                 {/* Product Image */}
-                                <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                <div className={`w-12 h-12 relative overflow-hidden flex-shrink-0 ${!showImages ? 'hidden' : ''}`}>
                                   {product.image ? (
                                     <img 
                                       src={product.image} 
@@ -419,11 +575,11 @@ export default function MenuDisplayPage() {
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <h3 className="text-slate-900 font-semibold text-sm leading-tight mb-1 truncate" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                                  <h3 className="font-semibold text-sm leading-tight mb-1 truncate" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
                                     {product.name}
                                   </h3>
                                   {product.sku && (
-                                    <p className="text-xs text-slate-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                                    <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
                                       {product.sku}
                                     </p>
                                   )}
@@ -432,14 +588,14 @@ export default function MenuDisplayPage() {
 
                               {/* Type */}
                               <div className="col-span-3 text-center">
-                                <span className="text-slate-700 font-medium text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                                <span className="font-medium text-sm" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
                                   {strainType}
                                 </span>
                               </div>
 
                               {/* THCA % */}
                               <div className="col-span-3 text-center">
-                                <span className="text-slate-800 font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif' }}>
+                                <span className="font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
                                   {thcaPercent}
                                 </span>
                               </div>
@@ -448,6 +604,7 @@ export default function MenuDisplayPage() {
                             );
                             })}
                           </div>
+                          )}
                         </div>
                       );
                     })()
@@ -462,12 +619,16 @@ export default function MenuDisplayPage() {
                       return (
                         <div 
                           key={product.id} 
-                          className="rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:bg-gray-300/80 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
+                          className="rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
+                          style={{ 
+                            backgroundColor: `${containerColor}99`,
+                            borderColor: `${containerColor}4d`
+                          }}
                         >
                           
                           
-                          {/* Product Image - Only for specific categories */}
-                          {shouldShowImages(category.name) && (
+                          {/* Product Image - Show based on user preference and view mode */}
+                          {currentShowImages && (getActualViewMode(category.name) === 'card' || shouldShowImages(category.name)) && (
                             <div className="flex justify-center mb-3 relative z-10">
                               <div className="w-20 h-20 relative overflow-hidden rounded-lg">
                                 {product.image ? (
@@ -489,7 +650,7 @@ export default function MenuDisplayPage() {
                           )}
                           
                           {/* Product Name - Center */}
-                          <h4 className="font-medium text-slate-900 leading-relaxed mb-5 relative z-10 text-xl text-center tracking-wide" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                          <h4 className="font-medium leading-relaxed mb-5 relative z-10 text-xl text-center tracking-wide" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.05)', color: fontColor }}>
                             {product.name}
                           </h4>
                           
@@ -541,6 +702,14 @@ export default function MenuDisplayPage() {
     );
   };
 
+  // Determine actual view mode to use
+  const getActualViewMode = (categoryName: string) => {
+    if (viewMode === 'auto') {
+      return isFlowerCategory(categoryName) ? 'table' : 'card';
+    }
+    return viewMode;
+  };
+
   // Check if category should display product images
   const shouldShowImages = (categoryName: string) => {
     const imageCategories = ['edible', 'concentrate', 'vape', 'cartridge', 'extract', 'dab', 'wax', 'shatter', 'rosin', 'live resin'];
@@ -562,7 +731,13 @@ export default function MenuDisplayPage() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-stone-50 via-stone-100 to-stone-200 text-slate-900 overflow-hidden flex flex-col relative">
+    <div 
+      className="h-screen text-slate-900 overflow-hidden flex flex-col relative"
+      style={{ 
+        background: `linear-gradient(to bottom right, ${backgroundColor}, ${backgroundColor}dd, ${backgroundColor}bb)`,
+        color: fontColor 
+      }}
+    >
       {/* Multi-layered Premium Background */}
       <div className="absolute inset-0">
         {/* Base gradient layer */}
@@ -636,56 +811,188 @@ export default function MenuDisplayPage() {
       {/* Content */}
       <div className="flex-1 overflow-hidden">
         {isDualMenu && orientation === 'horizontal' ? (
-          /* Dual Menu Layout - Side by Side */
+          /* Dual Menu Layout - Side by Side with Optional Stacking */
           <div className="flex h-full">
-            {/* Left Menu with Header */}
+            {/* Left Side - Single or Stacked */}
             <div className="w-1/2 flex flex-col border border-slate-200/40 border-r-1 shadow-xl rounded-l-xl overflow-hidden">
-              {/* Left Header */}
-              <div className="bg-gradient-to-r from-gray-300/95 via-gray-300/90 to-gray-300/95 backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={{
-                boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
-              }}>
-                <h1 className="text-slate-800 text-6xl text-center relative z-10 tracking-wide" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                  {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Left Menu' : 'Left Menu'}
-                </h1>
-                <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                
-                {/* Left Menu Pricing */}
-                <div className="w-full flex justify-center mt-1">
-                  {renderHeaderPricing(leftMenuCategory ? displayProducts.filter(product => 
-                    product.categories?.some(cat => cat.slug === leftMenuCategory)
-                  ) : [], orientation)}
+              {enableLeftStacking ? (
+                /* Left Side - Stacked Layout */
+                <div className="flex flex-col h-full">
+                  {/* Top Left Menu */}
+                  <div className="flex-1 flex flex-col border-b border-slate-200/40">
+                    {/* Top Left Header */}
+              <div 
+                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
+                style={{
+                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
+                }}
+              >
+                      <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                        {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Top Left' : 'Top Left'}
+                      </h1>
+                      <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
+                      
+                      {/* Top Left Menu Pricing */}
+                      <div className="w-full flex justify-center mt-1">
+                        {renderHeaderPricing(leftMenuCategory ? displayProducts.filter(product => 
+                          product.categories?.some(cat => cat.slug === leftMenuCategory)
+                        ) : [], orientation)}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      {renderMenuSection(leftMenuCategory, undefined, true)}
+                    </div>
+                  </div>
+                  
+                  {/* Bottom Left Menu */}
+                  <div className="flex-1 flex flex-col">
+                    {/* Bottom Left Header */}
+              <div 
+                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
+                style={{
+                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
+                }}
+              >
+                      <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                        {leftMenuCategory2 ? categories.find(c => c.slug === leftMenuCategory2)?.name || 'Bottom Left' : 'Bottom Left'}
+                      </h1>
+                      <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
+                      
+                      {/* Bottom Left Menu Pricing */}
+                      <div className="w-full flex justify-center mt-1">
+                        {renderHeaderPricing(leftMenuCategory2 ? displayProducts.filter(product => 
+                          product.categories?.some(cat => cat.slug === leftMenuCategory2)
+                        ) : [], orientation)}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      {renderMenuSection(leftMenuCategory2, undefined, true)}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              {/* Left Content */}
-              <div className="flex-1">
-                {renderMenuSection(leftMenuCategory)}
-              </div>
+              ) : (
+                /* Left Side - Single Layout */
+                <>
+                  {/* Left Header */}
+              <div 
+                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
+                style={{
+                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
+                }}
+              >
+                    <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                      {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Left Menu' : 'Left Menu'}
+                    </h1>
+                    <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
+                    
+                    {/* Left Menu Pricing */}
+                    <div className="w-full flex justify-center mt-1">
+                      {renderHeaderPricing(leftMenuCategory ? displayProducts.filter(product => 
+                        product.categories?.some(cat => cat.slug === leftMenuCategory)
+                      ) : [], orientation)}
+                    </div>
+                  </div>
+                  
+                  {/* Left Content */}
+                  <div className="flex-1">
+                    {renderMenuSection(leftMenuCategory, undefined, true)}
+                  </div>
+                </>
+              )}
             </div>
             
-            {/* Right Menu with Header */}
+            {/* Right Side - Single or Stacked */}
             <div className="w-1/2 flex flex-col border border-slate-200/40 border-l-1 shadow-xl rounded-r-xl overflow-hidden">
-              {/* Right Header */}
-              <div className="bg-gradient-to-r from-gray-300/95 via-gray-300/90 to-gray-300/95 backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={{
-                boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
-              }}>
-                <h1 className="text-slate-800 text-6xl text-center relative z-10 tracking-wide" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                  {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Right Menu' : 'Right Menu'}
-                </h1>
-                <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                
-                {/* Right Menu Pricing */}
-                <div className="w-full flex justify-center mt-1">
-                  {renderHeaderPricing(rightMenuCategory ? displayProducts.filter(product => 
-                    product.categories?.some(cat => cat.slug === rightMenuCategory)
-                  ) : [], orientation)}
+              {enableRightStacking ? (
+                /* Right Side - Stacked Layout */
+                <div className="flex flex-col h-full">
+                  {/* Top Right Menu */}
+                  <div className="flex-1 flex flex-col border-b border-slate-200/40">
+                    {/* Top Right Header */}
+              <div 
+                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
+                style={{
+                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
+                }}
+              >
+                      <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                        {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Top Right' : 'Top Right'}
+                      </h1>
+                      <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
+                      
+                      {/* Top Right Menu Pricing */}
+                      <div className="w-full flex justify-center mt-1">
+                        {renderHeaderPricing(rightMenuCategory ? displayProducts.filter(product => 
+                          product.categories?.some(cat => cat.slug === rightMenuCategory)
+                        ) : [], orientation)}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      {renderMenuSection(rightMenuCategory, undefined, false)}
+                    </div>
+                  </div>
+                  
+                  {/* Bottom Right Menu */}
+                  <div className="flex-1 flex flex-col">
+                    {/* Bottom Right Header */}
+              <div 
+                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
+                style={{
+                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
+                }}
+              >
+                      <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                        {rightMenuCategory2 ? categories.find(c => c.slug === rightMenuCategory2)?.name || 'Bottom Right' : 'Bottom Right'}
+                      </h1>
+                      <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
+                      
+                      {/* Bottom Right Menu Pricing */}
+                      <div className="w-full flex justify-center mt-1">
+                        {renderHeaderPricing(rightMenuCategory2 ? displayProducts.filter(product => 
+                          product.categories?.some(cat => cat.slug === rightMenuCategory2)
+                        ) : [], orientation)}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      {renderMenuSection(rightMenuCategory2, undefined, false)}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              
-              {/* Right Content */}
-              <div className="flex-1">
-                {renderMenuSection(rightMenuCategory)}
-              </div>
+              ) : (
+                /* Right Side - Single Layout */
+                <>
+                  {/* Right Header */}
+              <div 
+                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
+                style={{
+                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
+                }}
+              >
+                    <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                      {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Right Menu' : 'Right Menu'}
+                    </h1>
+                    <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
+                    
+                    {/* Right Menu Pricing */}
+                    <div className="w-full flex justify-center mt-1">
+                      {renderHeaderPricing(rightMenuCategory ? displayProducts.filter(product => 
+                        product.categories?.some(cat => cat.slug === rightMenuCategory)
+                      ) : [], orientation)}
+                    </div>
+                  </div>
+                  
+                  {/* Right Content */}
+                  <div className="flex-1">
+                    {renderMenuSection(rightMenuCategory, undefined, false)}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -704,7 +1011,7 @@ export default function MenuDisplayPage() {
               </div>
               </div>
             ) : (
-              <div className={`${orientation === 'vertical' ? 'space-y-6' : 'space-y-8'} pb-6`}>
+              <div className={`${orientation === 'vertical' ? 'space-y-6' : 'space-y-8'} pb-6 pt-4`}>
                 {productsByCategory.map(({ category, products: categoryProducts }) => (
                   <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-8' : ''}>
                     {/* Category Header - Only show if not filtered to single category */}
@@ -725,12 +1032,13 @@ export default function MenuDisplayPage() {
                     )}
                     
                     {/* Conditional Layout: Table for Flower, Grid for Others */}
-                    {isFlowerCategory(category.name) ? (
-                        /* 2-Column Layout for Flower Products - Auto-balanced */
+                    {getActualViewMode(category.name) === 'table' ? (
+                        /* Table Layout - Single column if < 12 products, 2-column if 12+ */
                         (() => {
-                          const { leftColumn, rightColumn } = balanceFlowerProducts(categoryProducts);
+                          const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);
+                          const useSingleColumn = rightColumn.length === 0;
                           return (
-                            <div className="grid grid-cols-2 gap-6 py-6">
+                            <div className={`grid gap-6 py-4 pt-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`}>
                               {/* Left Column */}
                               <div className="space-y-2">
                                 {leftColumn.map((product, index) => {
@@ -742,13 +1050,17 @@ export default function MenuDisplayPage() {
                             return (
                               <div 
                                 key={product.id}
-                                className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:border-slate-400/50 hover:bg-gray-300/80 hover:shadow-md hover:shadow-neutral-700/10"
+                                className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
+                            style={{ 
+                              backgroundColor: `${containerColor}99`,
+                              borderColor: `${containerColor}4d`
+                            }}
                               >
                                 <div className="grid grid-cols-12 gap-4 items-center">
                                   {/* Product Info */}
-                                  <div className="col-span-6 flex items-center gap-4">
+                                  <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
                                     {/* Product Image */}
-                                    <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                    <div className={`w-12 h-12 relative overflow-hidden flex-shrink-0 ${!showImages ? 'hidden' : ''}`}>
                                       {product.image ? (
                                         <img 
                                           src={product.image} 
@@ -771,7 +1083,7 @@ export default function MenuDisplayPage() {
                                         {product.name}
                                       </h3>
                                       {product.sku && (
-                                        <p className="text-xs text-slate-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                                        <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
                                           {product.sku}
                                         </p>
                                       )}
@@ -801,7 +1113,8 @@ export default function MenuDisplayPage() {
                             })}
                           </div>
                           
-                              {/* Right Column */}
+                              {/* Right Column - Only render if not single column */}
+                              {!useSingleColumn && (
                               <div className="space-y-2">
                                 {rightColumn.map((product, index) => {
                             const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
@@ -812,13 +1125,17 @@ export default function MenuDisplayPage() {
                             return (
                               <div 
                                 key={product.id}
-                                className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:border-slate-400/50 hover:bg-gray-300/80 hover:shadow-md hover:shadow-neutral-700/10"
+                                className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
+                            style={{ 
+                              backgroundColor: `${containerColor}99`,
+                              borderColor: `${containerColor}4d`
+                            }}
                               >
                                 <div className="grid grid-cols-12 gap-4 items-center">
                                   {/* Product Info */}
-                                  <div className="col-span-6 flex items-center gap-4">
+                                  <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
                                     {/* Product Image */}
-                                    <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                    <div className={`w-12 h-12 relative overflow-hidden flex-shrink-0 ${!showImages ? 'hidden' : ''}`}>
                                       {product.image ? (
                                         <img 
                                           src={product.image} 
@@ -841,7 +1158,7 @@ export default function MenuDisplayPage() {
                                         {product.name}
                                       </h3>
                                       {product.sku && (
-                                        <p className="text-xs text-slate-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                                        <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
                                           {product.sku}
                                         </p>
                                       )}
@@ -870,6 +1187,7 @@ export default function MenuDisplayPage() {
                                 );
                                 })}
                               </div>
+                              )}
                             </div>
                           );
                         })()
@@ -917,7 +1235,7 @@ export default function MenuDisplayPage() {
                                     {product.name}
                                   </h3>
                                   {product.sku && (
-                                    <p className="text-xs text-slate-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                                    <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
                                       {product.sku}
                                     </p>
                                   )}

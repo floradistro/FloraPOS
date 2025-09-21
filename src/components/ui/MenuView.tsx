@@ -17,10 +17,25 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('auto'); // 'auto' uses category-based logic
+  const [showImages, setShowImages] = useState<boolean>(true); // Toggle for showing product images
+  const [leftMenuImages, setLeftMenuImages] = useState<boolean>(true); // Images for left dual menu
+  const [rightMenuImages, setRightMenuImages] = useState<boolean>(true); // Images for right dual menu
   const [selectedMenuCategory, setSelectedMenuCategory] = useState<string | null>(null);
   const [showDualMenuSelector, setShowDualMenuSelector] = useState(false);
   const [leftMenuCategory, setLeftMenuCategory] = useState<string | null>(null);
   const [rightMenuCategory, setRightMenuCategory] = useState<string | null>(null);
+  // Vertical stacking support
+  const [leftMenuCategory2, setLeftMenuCategory2] = useState<string | null>(null);
+  const [rightMenuCategory2, setRightMenuCategory2] = useState<string | null>(null);
+  const [leftMenuImages2, setLeftMenuImages2] = useState<boolean>(true);
+  const [rightMenuImages2, setRightMenuImages2] = useState<boolean>(true);
+  const [enableLeftStacking, setEnableLeftStacking] = useState<boolean>(false);
+  const [enableRightStacking, setEnableRightStacking] = useState<boolean>(false);
+  // Color customization
+  const [backgroundColor, setBackgroundColor] = useState<string>('#f5f5f4'); // stone-100
+  const [fontColor, setFontColor] = useState<string>('#1f2937'); // gray-800
+  const [containerColor, setContainerColor] = useState<string>('#d1d5db'); // gray-300
   const [openWindows, setOpenWindows] = useState<Map<string, Window>>(new Map());
 
   const openPopoutMenu = useCallback((categorySlug?: string, isDual = false) => {
@@ -35,15 +50,28 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
       ? 'width=1080,height=1920,fullscreen=yes,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes'
       : 'width=1920,height=1080,fullscreen=yes,menubar=no,toolbar=no,location=no,status=no,scrollbars=yes';
     
-    // Build URL with orientation and category parameters
+    // Build URL with orientation, view mode, images, colors, and category parameters
     const urlParams = new URLSearchParams({
       orientation: orientation,
+      viewMode: viewMode,
+      showImages: isDual ? 'dual' : showImages.toString(),
+      backgroundColor: encodeURIComponent(backgroundColor),
+      fontColor: encodeURIComponent(fontColor),
+      containerColor: encodeURIComponent(containerColor),
       windowId: windowId,
       ...(categorySlug && { category: categorySlug }),
       ...(isDual && { 
         dual: 'true',
         leftCategory: leftMenuCategory || '',
-        rightCategory: rightMenuCategory || ''
+        rightCategory: rightMenuCategory || '',
+        leftImages: leftMenuImages.toString(),
+        rightImages: rightMenuImages.toString(),
+        leftCategory2: enableLeftStacking ? (leftMenuCategory2 || '') : '',
+        rightCategory2: enableRightStacking ? (rightMenuCategory2 || '') : '',
+        leftImages2: enableLeftStacking ? leftMenuImages2.toString() : 'false',
+        rightImages2: enableRightStacking ? rightMenuImages2.toString() : 'false',
+        leftStacking: enableLeftStacking.toString(),
+        rightStacking: enableRightStacking.toString()
       })
     });
     
@@ -79,17 +107,30 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           products: products,
           categories: getUniqueCategories(),
           orientation: orientation,
+          viewMode: viewMode,
+          showImages: isDual ? 'dual' : showImages,
+          backgroundColor: backgroundColor,
+          fontColor: fontColor,
+          containerColor: containerColor,
+          leftMenuImages: leftMenuImages,
+          rightMenuImages: rightMenuImages,
+          leftMenuImages2: leftMenuImages2,
+          rightMenuImages2: rightMenuImages2,
           categoryFilter: categorySlug,
           isDual: isDual,
           leftMenuCategory: leftMenuCategory,
           rightMenuCategory: rightMenuCategory,
+          leftMenuCategory2: enableLeftStacking ? leftMenuCategory2 : null,
+          rightMenuCategory2: enableRightStacking ? rightMenuCategory2 : null,
+          enableLeftStacking: enableLeftStacking,
+          enableRightStacking: enableRightStacking,
           windowId: windowId
         }, window.location.origin);
       });
     } else {
       alert('Please allow popups for this site to open the TV menu display.');
     }
-  }, [products, orientation, leftMenuCategory, rightMenuCategory]);
+  }, [products, orientation, viewMode, showImages, backgroundColor, fontColor, containerColor, leftMenuImages, rightMenuImages, leftMenuImages2, rightMenuImages2, leftMenuCategory, rightMenuCategory, leftMenuCategory2, rightMenuCategory2, enableLeftStacking, enableRightStacking]);
 
   const handleDualMenuLaunch = () => {
     if (orientation !== 'horizontal') {
@@ -102,6 +143,14 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   const launchDualMenu = () => {
     if (!leftMenuCategory || !rightMenuCategory) {
       alert('Please select categories for both left and right menus.');
+      return;
+    }
+    if (enableLeftStacking && !leftMenuCategory2) {
+      alert('Please select a category for the second left menu.');
+      return;
+    }
+    if (enableRightStacking && !rightMenuCategory2) {
+      alert('Please select a category for the second right menu.');
       return;
     }
     setShowDualMenuSelector(false);
@@ -138,10 +187,12 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   }, [openWindows]);
 
   // Live Preview Component
-  const LiveMenuPreview = ({ products: previewProducts, categories: previewCategories, orientation: previewOrient, categoryFilter }: {
+  const LiveMenuPreview = ({ products: previewProducts, categories: previewCategories, orientation: previewOrient, viewMode: previewViewMode, showImages: previewShowImages, categoryFilter }: {
     products: Product[];
     categories: Category[];
     orientation: 'horizontal' | 'vertical';
+    viewMode: 'table' | 'card' | 'auto';
+    showImages: boolean;
     categoryFilter?: string;
   }) => {
     const displayProducts = categoryFilter 
@@ -160,6 +211,14 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
         product.categories?.some(cat => cat.id === category.id)
       )
     })).filter(group => group.products.length > 0);
+
+    // Determine actual view mode to use
+    const getActualViewMode = (categoryName: string) => {
+      if (previewViewMode === 'auto') {
+        return isFlowerCategory(categoryName) ? 'table' : 'card';
+      }
+      return previewViewMode;
+    };
 
     return (
       <div className="h-full bg-gray-50 text-black overflow-hidden flex flex-col border-2 border-gray-200">
@@ -205,7 +264,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                     </div>
                   )}
                   
-                  {isFlowerCategory(category.name) ? (
+                  {getActualViewMode(category.name) === 'table' ? (
                     <div className="flex-1 overflow-hidden relative -mx-4 rounded-lg border border-gray-200 bg-white/95 shadow-sm">
                       <div className="overflow-x-auto h-full relative z-10">
                         <table className="w-full h-full border-collapse">
@@ -275,7 +334,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             previewOrient === 'vertical' ? 'p-6' : 'p-5'
                           } border border-gray-200 bg-white/95 hover:border-gray-300 hover:bg-white hover:scale-105 shadow-sm hover:shadow-md backdrop-blur-sm`}
                         >
-                          {shouldShowImages(category.name) && (
+                          {previewShowImages && (getActualViewMode(category.name) === 'card' || shouldShowImages(category.name)) && (
                             <div className="flex justify-center mb-3 relative z-10">
                               <div className={`relative overflow-hidden rounded-lg ${
                                 previewOrient === 'vertical' ? 'w-20 h-20' : 'w-16 h-16'
@@ -544,11 +603,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   return (
     <div className="flex-1 flex flex-col p-6 bg-transparent">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'Tiempo, serif' }}>Menu Configuration</h1>
-        </div>
-        
+      <div className="flex items-center justify-end mb-6">
         <div className="flex items-center gap-4">
           {/* Orientation Toggle */}
           <div className="flex items-center gap-2">
@@ -582,6 +637,126 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               </button>
             </div>
           </div>
+
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>View:</span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setViewMode('auto')}
+                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                  viewMode === 'auto' 
+                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                }`}
+                title="Auto (Flower=Table, Others=Card)"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                  viewMode === 'table' 
+                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                }`}
+                title="Table View"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18m-9 8h9m-9 4h9m-18-8v8a2 2 0 002 2h16a2 2 0 002-2v-8M5 6V4a2 2 0 012-2h10a2 2 0 012 2v2" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode('card')}
+                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                  viewMode === 'card' 
+                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                }`}
+                title="Card View"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Image Toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Images:</span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowImages(true)}
+                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                  showImages 
+                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                }`}
+                title="Show Images"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setShowImages(false)}
+                className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                  !showImages 
+                    ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                    : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                }`}
+                title="Hide Images"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Color Customization */}
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Colors:</span>
+            
+            {/* Background Color */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-white" style={{ fontFamily: 'Tiempo, serif' }}>Background</label>
+              <input
+                type="color"
+                value={backgroundColor}
+                onChange={(e) => setBackgroundColor(e.target.value)}
+                className="w-8 h-8 rounded border border-neutral-500/30 bg-transparent cursor-pointer"
+                title="Background Color"
+              />
+            </div>
+            
+            {/* Font Color */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-white" style={{ fontFamily: 'Tiempo, serif' }}>Font</label>
+              <input
+                type="color"
+                value={fontColor}
+                onChange={(e) => setFontColor(e.target.value)}
+                className="w-8 h-8 rounded border border-neutral-500/30 bg-transparent cursor-pointer"
+                title="Font Color"
+              />
+            </div>
+            
+            {/* Container Color */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-white" style={{ fontFamily: 'Tiempo, serif' }}>Container</label>
+              <input
+                type="color"
+                value={containerColor}
+                onChange={(e) => setContainerColor(e.target.value)}
+                className="w-8 h-8 rounded border border-neutral-500/30 bg-transparent cursor-pointer"
+                title="Container Color"
+              />
+            </div>
+          </div>
           
           <div className="flex items-center gap-3">
             {/* Category Selector */}
@@ -610,7 +785,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
-                Open {selectedMenuCategory ? `${getUniqueCategories().find(c => c.slug === selectedMenuCategory)?.name} ` : ''}{orientation === 'vertical' ? 'Vertical' : 'Horizontal'} Menu
+                Open {selectedMenuCategory ? `${getUniqueCategories().find(c => c.slug === selectedMenuCategory)?.name} ` : ''}{orientation === 'vertical' ? 'Vertical' : 'Horizontal'} {viewMode === 'auto' ? 'Auto' : viewMode === 'table' ? 'Table' : 'Card'} Menu {showImages ? '(Images)' : '(No Images)'}
               </button>
               
               {orientation === 'horizontal' && (
@@ -631,39 +806,6 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
         </div>
       </div>
 
-      {/* Quick Launch Categories */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-white mb-3" style={{ fontFamily: 'Tiempo, serif' }}>Quick Launch Category Menus</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {getUniqueCategories().map(category => {
-            const categoryProducts = filteredProducts.filter(product => 
-              product.categories?.some(cat => cat.id === category.id)
-            );
-            
-            return (
-              <button
-                key={category.id}
-                onClick={() => openPopoutMenu(category.slug)}
-                className="rounded-lg p-4 text-left transition-all duration-200 ease-out border bg-transparent text-white border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-white group"
-                style={{ fontFamily: 'Tiempo, serif' }}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif' }}>{category.name}</h4>
-                  <svg className="w-4 h-4 text-white group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </div>
-                <div className="text-xs text-white" style={{ fontFamily: 'Tiempo, serif' }}>
-                  {categoryProducts.length} products • {orientation}
-                </div>
-                <div className="text-xs text-green-400 mt-1 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
-                  Open {category.name} Menu
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       {/* Multiple Window Management */}
       {openWindows.size > 0 && (
@@ -786,28 +928,31 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           {productsByCategory.length === 0 ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <p className="text-black" style={{ fontFamily: 'Tiempo, serif' }}>No products available for preview</p>
-                <p className="text-sm text-gray-600 mt-2" style={{ fontFamily: 'Tiempo, serif' }}>Add products to see live menu previews</p>
+                <p className="text-white" style={{ fontFamily: 'Tiempo, serif' }}>No products available for preview</p>
+                <p className="text-sm text-gray-400 mt-2" style={{ fontFamily: 'Tiempo, serif' }}>Add products to see live menu previews</p>
               </div>
             </div>
           ) : (
             <div className="space-y-8">
               {/* All Categories Preview */}
               {!selectedMenuCategory && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-black" style={{ fontFamily: 'Tiempo, serif' }}>All Categories Menu</h3>
-                  <div className="flex gap-6 justify-center">
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-white" style={{ fontFamily: 'Tiempo, serif' }}>All Categories Menu</h3>
+                  <div className="flex gap-8 justify-center">
                     {/* Horizontal Preview */}
-                    <div className="relative">
-                      <div className="absolute -top-6 left-0 text-xs text-black font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="relative group">
+                      <div className="absolute -top-8 left-0 text-sm text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                         Horizontal (1920×1080)
                       </div>
-                      <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
-                           style={{ width: '240px', height: '135px' }}>
+                      <button
+                        onClick={() => openPopoutMenu(undefined)}
+                        className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300 hover:border-neutral-400/60 hover:bg-neutral-800/60 hover:scale-105 hover:shadow-2xl group-hover:shadow-neutral-700/20" 
+                        style={{ width: '360px', height: '202px' }}
+                      >
                         <div 
-                          className="origin-top-left"
+                          className="origin-top-left pointer-events-none"
                           style={{
-                            transform: 'scale(0.125)',
+                            transform: 'scale(0.1875)',
                             width: '1920px',
                             height: '1080px',
                           }}
@@ -816,23 +961,45 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             products={filteredProducts}
                             categories={getUniqueCategories()}
                             orientation="horizontal"
+                            viewMode={viewMode}
+                            showImages={showImages}
                             categoryFilter={undefined}
                           />
+                        </div>
+                        {/* Launch Overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            <span className="text-black font-medium text-sm" style={{ fontFamily: 'Tiempo, serif' }}>Launch Menu</span>
+                          </div>
+                        </div>
+                      </button>
+                      <div className="mt-2 text-center">
+                        <div className="text-xs text-gray-400" style={{ fontFamily: 'Tiempo, serif' }}>
+                          {filteredProducts.length} products • {viewMode === 'auto' ? 'Auto' : viewMode === 'table' ? 'Table' : 'Card'} • {showImages ? 'Images' : 'No Images'}
                         </div>
                       </div>
                     </div>
 
                     {/* Vertical Preview */}
-                    <div className="relative">
-                      <div className="absolute -top-6 left-0 text-xs text-black font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                    <div className="relative group">
+                      <div className="absolute -top-8 left-0 text-sm text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                         Vertical (1080×1920)
                       </div>
-                      <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
-                           style={{ width: '108px', height: '192px' }}>
+                      <button
+                        onClick={() => {
+                          setOrientation('vertical');
+                          setTimeout(() => openPopoutMenu(undefined), 100);
+                        }}
+                        className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300 hover:border-neutral-400/60 hover:bg-neutral-800/60 hover:scale-105 hover:shadow-2xl group-hover:shadow-neutral-700/20" 
+                        style={{ width: '162px', height: '288px' }}
+                      >
                         <div 
-                          className="origin-top-left"
+                          className="origin-top-left pointer-events-none"
                           style={{
-                            transform: 'scale(0.1)',
+                            transform: 'scale(0.15)',
                             width: '1080px',
                             height: '1920px',
                           }}
@@ -841,8 +1008,24 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             products={filteredProducts}
                             categories={getUniqueCategories()}
                             orientation="vertical"
+                            viewMode={viewMode}
+                            showImages={showImages}
                             categoryFilter={undefined}
                           />
+                        </div>
+                        {/* Launch Overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2">
+                            <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            <span className="text-black font-medium text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Launch</span>
+                          </div>
+                        </div>
+                      </button>
+                      <div className="mt-2 text-center">
+                        <div className="text-xs text-gray-400" style={{ fontFamily: 'Tiempo, serif' }}>
+                          {filteredProducts.length} products • {viewMode === 'auto' ? 'Auto' : viewMode === 'table' ? 'Table' : 'Card'} • {showImages ? 'Images' : 'No Images'}
                         </div>
                       </div>
                     </div>
@@ -859,27 +1042,30 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 if (categoryProducts.length === 0) return null;
                 
                 return (
-                  <div key={category.id} className="space-y-4">
+                  <div key={category.id} className="space-y-6">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-black" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <h3 className="text-xl font-semibold text-white" style={{ fontFamily: 'Tiempo, serif' }}>
                         {category.name} Menu
                       </h3>
-                      <span className="text-xs text-gray-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <span className="text-sm text-gray-400" style={{ fontFamily: 'Tiempo, serif' }}>
                         {categoryProducts.length} products
                       </span>
                     </div>
-                    <div className="flex gap-6 justify-center">
+                    <div className="flex gap-8 justify-center">
                       {/* Horizontal Preview */}
-                      <div className="relative">
-                        <div className="absolute -top-6 left-0 text-xs text-black font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <div className="relative group">
+                        <div className="absolute -top-8 left-0 text-sm text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                           Horizontal
                         </div>
-                        <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
-                             style={{ width: '240px', height: '135px' }}>
+                        <button
+                          onClick={() => openPopoutMenu(category.slug)}
+                          className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300 hover:border-neutral-400/60 hover:bg-neutral-800/60 hover:scale-105 hover:shadow-2xl group-hover:shadow-neutral-700/20" 
+                          style={{ width: '360px', height: '202px' }}
+                        >
                           <div 
-                            className="origin-top-left"
+                            className="origin-top-left pointer-events-none"
                             style={{
-                              transform: 'scale(0.125)',
+                              transform: 'scale(0.1875)',
                               width: '1920px',
                               height: '1080px',
                             }}
@@ -888,23 +1074,45 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                               products={filteredProducts}
                               categories={getUniqueCategories()}
                               orientation="horizontal"
+                              viewMode={viewMode}
+                              showImages={showImages}
                               categoryFilter={category.slug}
                             />
+                          </div>
+                          {/* Launch Overlay */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-2 flex items-center gap-2">
+                              <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              <span className="text-black font-medium text-sm" style={{ fontFamily: 'Tiempo, serif' }}>Launch {category.name}</span>
+                            </div>
+                          </div>
+                        </button>
+                        <div className="mt-2 text-center">
+                          <div className="text-xs text-gray-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                            {categoryProducts.length} products • {viewMode === 'auto' ? 'Auto' : viewMode === 'table' ? 'Table' : 'Card'} • {showImages ? 'Images' : 'No Images'}
                           </div>
                         </div>
                       </div>
 
                       {/* Vertical Preview */}
-                      <div className="relative">
-                        <div className="absolute -top-6 left-0 text-xs text-black font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
+                      <div className="relative group">
+                        <div className="absolute -top-8 left-0 text-sm text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>
                           Vertical
                         </div>
-                        <div className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300" 
-                             style={{ width: '108px', height: '192px' }}>
+                        <button
+                          onClick={() => {
+                            setOrientation('vertical');
+                            setTimeout(() => openPopoutMenu(category.slug), 100);
+                          }}
+                          className="relative bg-neutral-800/40 rounded-lg border border-neutral-500/30 overflow-hidden transition-all duration-300 hover:border-neutral-400/60 hover:bg-neutral-800/60 hover:scale-105 hover:shadow-2xl group-hover:shadow-neutral-700/20" 
+                          style={{ width: '162px', height: '288px' }}
+                        >
                           <div 
-                            className="origin-top-left"
+                            className="origin-top-left pointer-events-none"
                             style={{
-                              transform: 'scale(0.1)',
+                              transform: 'scale(0.15)',
                               width: '1080px',
                               height: '1920px',
                             }}
@@ -913,8 +1121,24 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                               products={filteredProducts}
                               categories={getUniqueCategories()}
                               orientation="vertical"
+                              viewMode={viewMode}
+                              showImages={showImages}
                               categoryFilter={category.slug}
                             />
+                          </div>
+                          {/* Launch Overlay */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 flex items-center gap-2">
+                              <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              <span className="text-black font-medium text-xs" style={{ fontFamily: 'Tiempo, serif' }}>Launch</span>
+                            </div>
+                          </div>
+                        </button>
+                        <div className="mt-2 text-center">
+                          <div className="text-xs text-gray-600" style={{ fontFamily: 'Tiempo, serif' }}>
+                            {categoryProducts.length} products • {viewMode === 'auto' ? 'Auto' : viewMode === 'table' ? 'Table' : 'Card'} • {showImages ? 'Images' : 'No Images'}
                           </div>
                         </div>
                       </div>
@@ -928,7 +1152,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
         
         <div className="p-3 border-t border-neutral-500/30">
           <div className="text-xs text-white text-center" style={{ fontFamily: 'Tiempo, serif' }}>
-            Live menu previews • Each category shown in both orientations • Updates automatically
+            Interactive menu previews • Click any preview to launch TV menu • Updates automatically
           </div>
         </div>
       </div>
@@ -952,19 +1176,40 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
             </div>
             
             <p className="text-white mb-8 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
-              Select which categories to display on each side of the dual menu layout.
+              Select which categories to display on each side of the dual menu layout. You can enable vertical stacking to show multiple menus per side.
             </p>
             
             <div className="grid grid-cols-2 gap-8 mb-8">
               {/* Left Menu Selection */}
               <div>
-                <label className="block text-white font-semibold mb-3 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
-                  Left Menu Category
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-white font-semibold text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
+                    Left Side Menus
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Stack Vertically</span>
+                    <button
+                      onClick={() => setEnableLeftStacking(!enableLeftStacking)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        enableLeftStacking ? 'bg-green-600' : 'bg-neutral-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          enableLeftStacking ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+                
+                <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                  Top Menu Category
                 </label>
                 <select
                   value={leftMenuCategory || ''}
                   onChange={(e) => setLeftMenuCategory(e.target.value || null)}
-                  className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
+                  className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out mb-4"
                 >
                   <option value="">Select Category</option>
                   {getUniqueCategories().map(category => (
@@ -973,17 +1218,134 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                     </option>
                   ))}
                 </select>
+                
+                {/* Left Menu Images Toggle */}
+                <div>
+                  <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                    Show Images (Top)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setLeftMenuImages(true)}
+                      className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                        leftMenuImages 
+                          ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                          : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                      }`}
+                      title="Show Images"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setLeftMenuImages(false)}
+                      className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                        !leftMenuImages 
+                          ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                          : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                      }`}
+                      title="Hide Images"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                      </svg>
+                    </button>
+                    <span className="text-sm text-white ml-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                      {leftMenuImages ? 'On' : 'Off'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Second Left Menu (if stacking enabled) */}
+                {enableLeftStacking && (
+                  <>
+                    <label className="block text-white font-medium mb-2 mt-4" style={{ fontFamily: 'Tiempo, serif' }}>
+                      Bottom Menu Category
+                    </label>
+                    <select
+                      value={leftMenuCategory2 || ''}
+                      onChange={(e) => setLeftMenuCategory2(e.target.value || null)}
+                      className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out mb-4"
+                    >
+                      <option value="">Select Category</option>
+                      {getUniqueCategories().map(category => (
+                        <option key={category.id} value={category.slug}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                        Show Images (Bottom)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setLeftMenuImages2(true)}
+                          className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                            leftMenuImages2 
+                              ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                              : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                          }`}
+                          title="Show Images"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setLeftMenuImages2(false)}
+                          className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                            !leftMenuImages2 
+                              ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                              : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                          }`}
+                          title="Hide Images"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                          </svg>
+                        </button>
+                        <span className="text-sm text-white ml-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                          {leftMenuImages2 ? 'On' : 'Off'}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
               
               {/* Right Menu Selection */}
               <div>
-                <label className="block text-white font-semibold mb-3 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
-                  Right Menu Category
+                <div className="flex items-center justify-between mb-4">
+                  <label className="block text-white font-semibold text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
+                    Right Side Menus
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Stack Vertically</span>
+                    <button
+                      onClick={() => setEnableRightStacking(!enableRightStacking)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        enableRightStacking ? 'bg-green-600' : 'bg-neutral-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          enableRightStacking ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+                
+                <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                  Top Menu Category
                 </label>
                 <select
                   value={rightMenuCategory || ''}
                   onChange={(e) => setRightMenuCategory(e.target.value || null)}
-                  className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
+                  className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out mb-4"
                 >
                   <option value="">Select Category</option>
                   {getUniqueCategories().map(category => (
@@ -992,6 +1354,102 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                     </option>
                   ))}
                 </select>
+                
+                {/* Right Menu Images Toggle */}
+                <div>
+                  <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                    Show Images (Top)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setRightMenuImages(true)}
+                      className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                        rightMenuImages 
+                          ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                          : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                      }`}
+                      title="Show Images"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setRightMenuImages(false)}
+                      className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                        !rightMenuImages 
+                          ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                          : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                      }`}
+                      title="Hide Images"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                      </svg>
+                    </button>
+                    <span className="text-sm text-white ml-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                      {rightMenuImages ? 'On' : 'Off'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Second Right Menu (if stacking enabled) */}
+                {enableRightStacking && (
+                  <>
+                    <label className="block text-white font-medium mb-2 mt-4" style={{ fontFamily: 'Tiempo, serif' }}>
+                      Bottom Menu Category
+                    </label>
+                    <select
+                      value={rightMenuCategory2 || ''}
+                      onChange={(e) => setRightMenuCategory2(e.target.value || null)}
+                      className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out mb-4"
+                    >
+                      <option value="">Select Category</option>
+                      {getUniqueCategories().map(category => (
+                        <option key={category.id} value={category.slug}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    
+                    <div>
+                      <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                        Show Images (Bottom)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setRightMenuImages2(true)}
+                          className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                            rightMenuImages2 
+                              ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                              : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                          }`}
+                          title="Show Images"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setRightMenuImages2(false)}
+                          className={`p-2 rounded-lg transition-all duration-200 ease-out ${
+                            !rightMenuImages2 
+                              ? 'text-white bg-neutral-800/90 border border-neutral-500' 
+                              : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+                          }`}
+                          title="Hide Images"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                          </svg>
+                        </button>
+                        <span className="text-sm text-white ml-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                          {rightMenuImages2 ? 'On' : 'Off'}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
             
@@ -1007,12 +1465,38 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                     <div className="text-white text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
                       {getUniqueCategories().find(c => c.slug === leftMenuCategory)?.name}
                     </div>
+                    <div className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'Tiempo, serif' }}>
+                      Images: {leftMenuImages ? 'On' : 'Off'}
+                    </div>
+                    {enableLeftStacking && leftMenuCategory2 && (
+                      <>
+                        <div className="text-white text-sm mt-2 pt-2 border-t border-neutral-600/30" style={{ fontFamily: 'Tiempo, serif' }}>
+                          {getUniqueCategories().find(c => c.slug === leftMenuCategory2)?.name}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'Tiempo, serif' }}>
+                          Images: {leftMenuImages2 ? 'On' : 'Off'}
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="bg-neutral-700 p-3 rounded">
                     <div className="text-blue-400 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Right Side</div>
                     <div className="text-white text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
                       {getUniqueCategories().find(c => c.slug === rightMenuCategory)?.name}
                     </div>
+                    <div className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'Tiempo, serif' }}>
+                      Images: {rightMenuImages ? 'On' : 'Off'}
+                    </div>
+                    {enableRightStacking && rightMenuCategory2 && (
+                      <>
+                        <div className="text-white text-sm mt-2 pt-2 border-t border-neutral-600/30" style={{ fontFamily: 'Tiempo, serif' }}>
+                          {getUniqueCategories().find(c => c.slug === rightMenuCategory2)?.name}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'Tiempo, serif' }}>
+                          Images: {rightMenuImages2 ? 'On' : 'Off'}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
