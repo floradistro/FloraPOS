@@ -203,7 +203,12 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
   };
 
   // Helper function to parse address string into components
-  const parseAddressString = (addressString: string) => {
+  const parseAddressString = (addressString: string): {
+    address?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+  } => {
     if (!addressString) return {};
     
     console.log('🏠 Parsing address string:', addressString);
@@ -241,7 +246,7 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
     
     // More aggressive parsing - extract components step by step
     let remainingAddress = cleanAddress;
-    let zipCode, state, city, address;
+    let zipCode: string | undefined, state: string | undefined, city: string | undefined, address: string | undefined;
     
     // Extract ZIP code (5 or 9 digits at the end)
     const zipMatch = remainingAddress.match(/(\d{5}(?:-\d{4})?)$/);
