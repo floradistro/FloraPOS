@@ -45,18 +45,39 @@ export async function POST(request: NextRequest) {
         }
 
         // Get pricing rules for the blueprint from cache
-        const pricingRules = findBlueprintRulesFromCache(assignment.blueprint_id);
+        const allPricingRules = findBlueprintRulesFromCache(assignment.blueprint_id);
 
-        if (!pricingRules || pricingRules.length === 0) {
+        if (!allPricingRules || allPricingRules.length === 0) {
           results[productId] = null;
           continue;
+        }
+
+        // For moonwater blueprint (ID 44), filter rules by product name to get specific pricing tier
+        let relevantRules = allPricingRules;
+        if (assignment.blueprint_id === 44) {
+          // Get the product name to match with rule name
+          const productName = await getProductName(productId);
+          if (productName) {
+            // Filter rules to only include the one that matches this product
+            const matchingRules = allPricingRules.filter((rule: any) => {
+              const ruleName = rule.rule_name.toLowerCase();
+              const prodName = productName.toLowerCase();
+              
+              // Match patterns like "Day Drinker" product with "Day drinker 5mg" rule
+              return ruleName.includes(prodName) || prodName.includes(ruleName.split(' ')[0]);
+            });
+            
+            if (matchingRules.length > 0) {
+              relevantRules = matchingRules;
+            }
+          }
         }
 
         results[productId] = {
           productId,
           blueprintId: assignment.blueprint_id,
           blueprintName: assignment.blueprint_name,
-          ruleGroups: convertRulesToGroupedTiers(pricingRules)
+          ruleGroups: convertRulesToGroupedTiers(relevantRules)
         };
 
       } catch (error) {
@@ -345,4 +366,21 @@ function convertRulesToGroupedTiers(rules: any[]) {
   }
 
   return ruleGroups;
+}
+
+// Helper function to get product name from WooCommerce API
+async function getProductName(productId: number): Promise<string | null> {
+  try {
+    const response = await fetch(`${FLORA_API_URL}/wp-json/wc/v3/products/${productId}?consumer_key=${WC_CONSUMER_KEY}&consumer_secret=${WC_CONSUMER_SECRET}`);
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    const product = await response.json();
+    return product.name || null;
+  } catch (error) {
+    console.error(`Error fetching product name for ${productId}:`, error);
+    return null;
+  }
 }

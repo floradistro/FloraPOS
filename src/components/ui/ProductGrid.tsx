@@ -295,14 +295,11 @@ export const ProductGrid = forwardRef<{
 
         const batchPricingResponse = await BlueprintPricingService.getBlueprintPricingBatch(productsWithCategories);
         
-        // Apply batch pricing results to products (but NOT to variable products)
+        // Apply batch pricing results to products
         baseProducts.forEach(product => {
-          // Only apply blueprint pricing to simple products, not variable products
-          if (product.type !== 'variable') {
-            const pricingData = batchPricingResponse[product.id];
-            if (pricingData) {
-              product.blueprintPricing = pricingData;
-            }
+          const pricingData = batchPricingResponse[product.id];
+          if (pricingData) {
+            product.blueprintPricing = pricingData;
           }
         });
         
@@ -319,24 +316,19 @@ export const ProductGrid = forwardRef<{
             // Check if this is a variable product and load variants
             if (baseProduct.type === 'variable') {
               try {
-                console.log(`🔍 [POSV1] Loading variants for variable product ${baseProduct.id} (${baseProduct.name})`);
+                console.log(`🔍 [POSV1] Loading variants for variable product ${baseProduct.id}`);
                 const variants = await loadVariantsForProduct(baseProduct.id);
                 
                 if (variants && variants.length > 0) {
                   baseProduct.has_variants = true;
                   baseProduct.variants = variants;
-                  console.log(`✅ [POSV1] Loaded ${variants.length} variants for product ${baseProduct.id} (${baseProduct.name}):`, variants.map(v => v.name));
+                  console.log(`✅ [POSV1] Loaded ${variants.length} variants for product ${baseProduct.id}`);
                 } else {
-                  console.warn(`⚠️ [POSV1] No variants found for variable product ${baseProduct.id} (${baseProduct.name})`);
-                  // Force has_variants to false if no variants loaded
-                  baseProduct.has_variants = false;
-                  baseProduct.variants = undefined;
+                  console.warn(`⚠️ [POSV1] No variants found for variable product ${baseProduct.id}`);
                 }
               } catch (variantError) {
-                console.error(`❌ [POSV1] Failed to load variants for product ${baseProduct.id} (${baseProduct.name}):`, variantError instanceof Error ? variantError.message : 'Unknown error');
-                // Force has_variants to false on error
-                baseProduct.has_variants = false;
-                baseProduct.variants = undefined;
+                console.error(`❌ [POSV1] Failed to load variants for product ${baseProduct.id}:`, variantError instanceof Error ? variantError.message : 'Unknown error');
+                // Continue without variants
               }
             }
 
@@ -500,12 +492,11 @@ export const ProductGrid = forwardRef<{
     inventory: Array<{ location_id: number; quantity: number }>;
     total_stock: number;
   }> | null> => {
-    const userLocationId = user?.location_id ? parseInt(user.location_id) : 0;
     try {
       console.log(`🔍 Loading variants for variable product ${productId}`);
       
       // Get variants from WooCommerce API
-      const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=1000&_t=${Date.now()}`;
+      const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=100&_t=${Date.now()}`;
       const variantsResponse = await fetch(variantsUrl, {
         method: 'GET',
         headers: {
@@ -527,27 +518,58 @@ export const ProductGrid = forwardRef<{
         return null;
       }
 
-      // Process variants with simplified inventory (use stock_quantity from WooCommerce)
-      const processedVariants = variants.map((variant: any) => {
-        // Use stock_quantity from WooCommerce response directly
-        const stock_quantity = parseInt(variant.stock_quantity) || 0;
-        
-        // Create simplified inventory array
-        const inventory: Array<{location_id: number; quantity: number}> = [{
-          location_id: userLocationId || 0,
-          quantity: stock_quantity
-        }];
+      // Process variants and get inventory for each
+      const processedVariants = await Promise.all(
+        variants.map(async (variant: any) => {
+          let inventory: Array<{location_id: number; quantity: number}> = [];
+          
+          // Get inventory for this variant
+          try {
+            const inventoryParams = new URLSearchParams({
+              product_id: productId.toString(),
+              variation_id: variant.id.toString(),
+              _t: Date.now().toString()
+            });
 
-        return {
-          id: variant.id,
-          name: variant.attributes?.map((attr: any) => attr.option).filter(Boolean).join(', ') || `Variant #${variant.id}`,
-          sku: variant.sku || '',
-          regular_price: variant.regular_price || '0',
-          sale_price: variant.sale_price,
-          inventory,
-          total_stock: stock_quantity
-        };
-      });
+            if (user?.location_id) {
+              inventoryParams.append('location_id', user.location_id);
+            }
+
+            const inventoryResponse = await fetch(`/api/proxy/flora-im/inventory?${inventoryParams}`, {
+              method: 'GET',
+              headers: { 
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+              }
+            });
+
+            if (inventoryResponse.ok) {
+              const inventoryData = await inventoryResponse.json();
+              if (Array.isArray(inventoryData)) {
+                inventory = inventoryData.map((record: any) => ({
+                  location_id: parseInt(record.location_id),
+                  quantity: parseFloat(record.quantity) || parseFloat(record.available_quantity) || 0
+                }));
+              }
+            }
+          } catch (error) {
+            console.error(`Failed to load inventory for variant ${variant.id}:`, error);
+          }
+
+          const total_stock = inventory.reduce((sum, inv) => sum + inv.quantity, 0);
+
+          return {
+            id: variant.id,
+            name: variant.attributes?.map((attr: any) => attr.option).filter(Boolean).join(', ') || `Variant #${variant.id}`,
+            sku: variant.sku || '',
+            regular_price: variant.regular_price || '0',
+            sale_price: variant.sale_price,
+            inventory,
+            total_stock
+          };
+        })
+      );
       
       console.log(`✅ Loaded ${processedVariants.length} variants for product ${productId}`);
       return processedVariants;
