@@ -98,19 +98,15 @@ export const ProductGrid = forwardRef<{
     
     return matchesSearch && matchesCategory;
   }).sort((a, b) => {
-    // Primary sort: Alphabetical by name
-    const nameComparison = a.name.localeCompare(b.name);
-    if (nameComparison !== 0) return nameComparison;
-    
-    // Secondary sort: Sort products with variants to the bottom (they are taller)
+    // Primary sort: Products with variants go to the bottom (they are taller cards)
     const aHasVariants = a.has_variants && a.variants && a.variants.length > 0;
     const bHasVariants = b.has_variants && b.variants && b.variants.length > 0;
     
     if (aHasVariants && !bHasVariants) return 1; // a goes to bottom
     if (!aHasVariants && bHasVariants) return -1; // b goes to bottom
     
-    // If both have variants or both don't have variants, maintain original order
-    return 0;
+    // Secondary sort: Within each group (with/without variants), sort alphabetically
+    return a.name.localeCompare(b.name);
   });
   }, [products, searchQuery, categoryFilter]);
 
@@ -197,7 +193,7 @@ export const ProductGrid = forwardRef<{
       
       // NO CACHING IN DEVELOPMENT
       const params = new URLSearchParams({
-        per_page: '100',
+        per_page: '1000',  // Fetch all products (increased from 100)
         page: '1',
         _t: Math.floor(Date.now() / 300000).toString() // Cache for 5 minutes
       });
@@ -235,16 +231,18 @@ export const ProductGrid = forwardRef<{
       const productsWithInventory = result.data;
       console.log(`✅ Fetched ${productsWithInventory.length} products from Flora IM API`);
 
-      // Filter products by location if user has a specific location
-      let filteredProducts = productsWithInventory;
+      // Don't filter products by location - show ALL products with stock > 0 anywhere
+      // The user's location will still be used for display purposes
+      let filteredProducts = productsWithInventory.filter((product: any) => {
+        // Show products that have total stock > 0 (stock at any location)
+        const totalStock = product.total_stock || 
+          (product.inventory?.reduce((sum: number, inv: any) => sum + (parseFloat(inv.stock) || parseFloat(inv.quantity) || 0), 0) || 0);
+        return totalStock > 0;
+      });
+      console.log(`✅ Showing ${filteredProducts.length} products with stock > 0 (from ${productsWithInventory.length} total)`);
+      
       if (user?.location_id) {
-        const userLocationId = parseInt(user.location_id);
-        filteredProducts = productsWithInventory.filter((product: any) => 
-          product.inventory?.some((inv: any) => 
-            parseInt(inv.location_id) === userLocationId && inv.stock > 0
-          )
-        );
-        console.log(`✅ Filtered to ${filteredProducts.length} products for location ${user.location_id}`);
+        console.log(`📍 User location: ${user.location_id} - will display location-specific stock in UI`);
       }
 
       // Filter by category if categoryFilter is set (client-side filtering)
@@ -497,7 +495,7 @@ export const ProductGrid = forwardRef<{
       console.log(`🔍 Loading variants for variable product ${productId}`);
       
       // Get variants from WooCommerce API
-      const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=100&_t=${Date.now()}`;
+      const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=1000&_t=${Date.now()}`;
       const variantsResponse = await fetch(variantsUrl, {
         method: 'GET',
         headers: {

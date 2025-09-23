@@ -305,7 +305,7 @@ export default function MenuDisplayPage() {
 
   const fetchMenuData = async () => {
     try {
-      const response = await fetch(`/api/proxy/flora-im/products?per_page=100&_t=${Date.now()}`, {
+      const response = await fetch(`/api/proxy/flora-im/products?per_page=1000&_t=${Date.now()}`, {
         headers: { 'Cache-Control': 'no-cache' }
       });
 

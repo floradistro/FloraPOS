@@ -142,18 +142,17 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         
         return matchesSearch && matchesCategory && matchesStockCriteria && matchesSelectedFilter;
       }).sort((a, b) => {
-        if (sortAlphabetically) {
-          // Primary sort: Alphabetical by name
-          const nameComparison = a.name.localeCompare(b.name);
-          if (nameComparison !== 0) return nameComparison;
-        }
-        
-        // Secondary sort: Sort products with variants to the bottom
+        // Primary sort: Products with variants go to the bottom (they are taller cards)
         const aHasVariants = a.has_variants && a.variants && a.variants.length > 0;
         const bHasVariants = b.has_variants && b.variants && b.variants.length > 0;
         
-        if (aHasVariants && !bHasVariants) return 1;
-        if (!aHasVariants && bHasVariants) return -1;
+        if (aHasVariants && !bHasVariants) return 1; // a goes to bottom
+        if (!aHasVariants && bHasVariants) return -1; // b goes to bottom
+        
+        // Secondary sort: Within each group (with/without variants), sort alphabetically if enabled
+        if (sortAlphabetically) {
+          return a.name.localeCompare(b.name);
+        }
         
         return 0;
       });
@@ -272,7 +271,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         console.log(`🔄 Fetching products for adjustments...`);
         
         const params = new URLSearchParams({
-          per_page: '100',
+          per_page: '1000',  // Fetch all products (increased from 100)
           page: '1',
           _t: Date.now().toString() // Use full timestamp for better cache busting
         });
@@ -305,16 +304,13 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         const productsWithInventory = result.data;
         console.log(`✅ Fetched ${productsWithInventory.length} products`);
 
-        // Filter products by location if user has a specific location
+        // Don't filter products by location - show ALL products
+        // The user's location will still be used for display purposes
         let filteredProducts = productsWithInventory;
+        console.log(`✅ Showing all ${filteredProducts.length} products`);
+        
         if (user?.location_id) {
-          const userLocationId = parseInt(user.location_id);
-          filteredProducts = productsWithInventory.filter((product: any) => 
-            product.inventory?.some((inv: any) => 
-              parseInt(inv.location_id) === userLocationId
-            )
-          );
-          console.log(`✅ Filtered to ${filteredProducts.length} products for location ${user.location_id}`);
+          console.log(`📍 User location: ${user.location_id} - will display location-specific stock in UI`);
         }
 
         // Filter by category if needed
@@ -404,7 +400,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       total_stock: number;
     }> | null> => {
       try {
-        const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=100&_t=${Date.now()}`;
+        const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=1000&_t=${Date.now()}`;
         const variantsResponse = await fetch(variantsUrl, {
           method: 'GET',
           headers: {

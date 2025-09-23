@@ -10,7 +10,7 @@ export class CategoriesService {
   static async getCategories(): Promise<Category[]> {
     try {
       // Fetch products first to extract categories with optimized caching
-      const response = await fetch('/api/proxy/flora-im/products?per_page=100&page=1', {
+      const response = await fetch('/api/proxy/flora-im/products?per_page=1000&page=1', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
