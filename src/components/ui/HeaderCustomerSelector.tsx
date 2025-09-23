@@ -245,7 +245,7 @@ export function HeaderCustomerSelector({
           </div>
 
           {/* Customer Options */}
-          <div className="py-1 max-h-96 overflow-y-auto">
+          <div className="py-1 max-h-[32rem] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
             {/* Clear Selection Option */}
             <button
               onClick={() => handleCustomerSelect(null)}
