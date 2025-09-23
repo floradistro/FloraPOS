@@ -168,10 +168,10 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       }
 
       setIsInitialized(true);
-      setScanStatus('Ready to scan ID');
+      setScanStatus('Scanning for ID...');
       
-      // Enable ID capture mode
-      console.log('🔄 Enabling ID capture mode...');
+      // Enable ID capture mode and start scanning immediately
+      console.log('🔄 Enabling ID capture mode and starting scan...');
       await idCapture.setEnabled(true);
       console.log('✅ ID capture mode enabled');
       
@@ -712,13 +712,15 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
     setIsClient(true);
   }, []);
 
-  // Initialize when client-side is ready
+  // Initialize and start scanning when client-side is ready
   useEffect(() => {
     if (isClient) {
-      initializeScandit();
+      initializeScandit(); // Scanner starts automatically during initialization
     }
     
     return () => {
+      // Clean up when component unmounts
+      stopScanning();
       if (contextRef.current) {
         contextRef.current.dispose();
       }
@@ -728,25 +730,12 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
   // Show loading state during SSR
   if (!isClient) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 bg-blue-600/20 rounded-full flex items-center justify-center">
-            <div className="animate-spin w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full"></div>
-          </div>
-          <div>
-            <h3 className="font-medium text-white" style={{ fontFamily: 'Tiempos, serif' }}>
-              Loading Scanner...
-            </h3>
-            <p className="text-xs text-neutral-400">
-              Initializing Scandit SDK
-            </p>
-          </div>
-        </div>
-        <div className="relative bg-neutral-800 rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
+      <div className="space-y-2">
+        <div className="relative bg-neutral-800 rounded-lg overflow-hidden" style={{ height: '200px', width: '100%' }}>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-white">
-              <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full mx-auto mb-2"></div>
-              <p>Loading scanner...</p>
+              <div className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full mx-auto mb-1"></div>
+              <p className="text-xs">Initializing scanner...</p>
             </div>
           </div>
         </div>
@@ -755,37 +744,28 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-8 h-8 bg-blue-600/20 rounded-full flex items-center justify-center">
-          <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <div>
-          <h3 className="font-medium text-white" style={{ fontFamily: 'Tiempos, serif' }}>
-            Scan Government ID
-          </h3>
-          <p className="text-xs text-neutral-400">
-            Powered by Scandit SDK
-          </p>
-        </div>
-      </div>
-
-      {/* Scanner View */}
-      <div className="relative bg-neutral-800 rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
+    <div className="space-y-2">
+      {/* Scanner View - Wide rectangle for ID cards */}
+      <div className="relative bg-neutral-800 rounded-lg overflow-hidden" style={{ height: '200px', width: '100%' }}>
         <div
           ref={viewRef}
-          className="w-full h-full min-h-[400px]"
-          style={{ position: 'relative' }}
+          className="w-full h-full"
+          style={{ position: 'relative', height: '200px' }}
         />
         
+        {/* ID Card Guide Overlay */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-x-8 inset-y-4">
+            <div className="w-full h-full border-2 border-dashed border-white/30 rounded-lg"></div>
+          </div>
+        </div>
+        
         {/* Status Overlay */}
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="bg-black/70 rounded px-3 py-2 text-center">
-            <p className="text-white text-sm font-medium">Status: {scanStatus}</p>
-            <p className="text-neutral-300 text-xs">
-              Position ID within the scanning area
+        <div className="absolute bottom-2 left-4 right-4">
+          <div className="bg-black/70 rounded px-3 py-1 text-center">
+            <p className="text-white text-xs font-medium">{scanStatus}</p>
+            <p className="text-neutral-300 text-[10px]">
+              Hold ID steady within the guide frame
             </p>
           </div>
         </div>
@@ -807,42 +787,17 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
         </div>
       )}
 
-      {/* Controls */}
-      <div className="flex gap-2">
+      {/* Cancel Button Only - Scanner is always active */}
+      <div className="mt-2">
         <button
           onClick={() => {
             stopScanning();
             onCancel();
           }}
-          className="flex-1 px-3 py-2 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 rounded text-xs"
+          className="w-full px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 rounded text-xs transition-colors"
         >
           Cancel
         </button>
-        
-        {isInitialized && (
-          <>
-            <button
-              onClick={startScanning}
-              className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
-            >
-              Start Scanning
-            </button>
-            <button
-              onClick={stopScanning}
-              className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs"
-            >
-              Stop Scanning
-            </button>
-          </>
-        )}
-      </div>
-
-      <div className="text-xs text-neutral-500">
-        <p className="font-medium mb-1">Scandit ID Capture Features:</p>
-        <p>• High-accuracy ID document scanning</p>
-        <p>• Support for driver's licenses and ID cards</p>
-        <p>• VIZ and barcode data extraction</p>
-        <p>• Real-time document detection</p>
       </div>
     </div>
   );

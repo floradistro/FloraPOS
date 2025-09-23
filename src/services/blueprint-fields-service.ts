@@ -83,29 +83,29 @@ export class BlueprintFieldsService {
         return null; // No meta data
       }
 
-      // Extract magic2 fields from meta_data
-      const magic2MetaKeys = ['_supplier', '_cost_price'];
-      const magic2MetaData = product.meta_data.filter((meta: any) => 
-        magic2MetaKeys.includes(meta.key)
+      // Extract real blueprint fields from meta_data
+      const blueprintFieldKeys = [
+        'effect', '_effect',
+        'lineage', '_lineage', 
+        'nose', '_nose',
+        'terpene', '_terpene',
+        'strain_type', '_strain_type',
+        'thca_percentage', '_thca_percentage',
+        'supplier', '_supplier',
+        'cost_price', '_cost_price'
+      ];
+      
+      const blueprintMetaData = product.meta_data.filter((meta: any) => 
+        blueprintFieldKeys.includes(meta.key)
       );
 
-      if (magic2MetaData.length === 0) {
-        return null; // No magic2 fields found
+      if (blueprintMetaData.length === 0) {
+        return null; // No blueprint fields found
       }
 
       // Convert meta_data back to fields format
-      const fields = magic2MetaData.map((meta: any) => {
-        let fieldName;
-        switch (meta.key) {
-          case '_supplier':
-            fieldName = 'supplier';
-            break;
-          case '_cost_price':
-            fieldName = 'cost';
-            break;
-          default:
-            fieldName = meta.key.replace('_', ''); // Remove underscore prefix
-        }
+      const fields = blueprintMetaData.map((meta: any) => {
+        let fieldName = meta.key.startsWith('_') ? meta.key.substring(1) : meta.key;
         
         return {
           field_name: fieldName,
@@ -135,6 +135,7 @@ export class BlueprintFieldsService {
     const labelMap: Record<string, string> = {
       'supplier': 'Supplier',
       'cost': 'Cost',
+      'cost_price': 'Cost Price',
       'strain_type': 'Type',
       'thca_percentage': 'THCA %',
       'effect': 'Effect',
@@ -151,6 +152,7 @@ export class BlueprintFieldsService {
   private static getFieldType(fieldName: string): string {
     const typeMap: Record<string, string> = {
       'cost': 'number',
+      'cost_price': 'number',
       'thca_percentage': 'number',
       'supplier': 'text',
       'strain_type': 'text',

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BlueprintPricingService } from '../../services/blueprint-pricing-service';
+import { ProductBlueprintFields } from '../../services/blueprint-fields-service';
 import { Product, Category } from '../../types';
 
 export default function MenuDisplayPage() {
@@ -28,6 +29,32 @@ export default function MenuDisplayPage() {
   const [fontColor, setFontColor] = useState<string>('#1f2937');
   const [containerColor, setContainerColor] = useState<string>('#d1d5db');
   const [pandaMode, setPandaMode] = useState<boolean>(false);
+  // Table styling states
+  const [tableBorderColor, setTableBorderColor] = useState<string>('#e5e7eb');
+  const [tableBorderWidth, setTableBorderWidth] = useState<number>(1);
+  const [tableRowHoverColor, setTableRowHoverColor] = useState<string>('#f3f4f6');
+  const [tableHeaderColor, setTableHeaderColor] = useState<string>('#f9fafb');
+  const [tableAlternateRowColor, setTableAlternateRowColor] = useState<string>('#ffffff');
+  const [tableBorderRadius, setTableBorderRadius] = useState<number>(8);
+  const [tablePadding, setTablePadding] = useState<number>(8);
+  // Per-category column selection state
+  const [categoryColumnConfigs, setCategoryColumnConfigs] = useState<Map<string, string[]>>(new Map());
+  const [categoryBlueprintFields, setCategoryBlueprintFields] = useState<Map<string, ProductBlueprintFields[]>>(new Map());
+
+  // Get columns for a specific category or default
+  const getCategoryColumns = (categorySlug?: string): string[] => {
+    if (!categorySlug) return ['name'];
+    
+    // Get the configured columns for this category
+    const configuredColumns = categoryColumnConfigs.get(categorySlug);
+    
+    if (configuredColumns && configuredColumns.length > 0) {
+      return configuredColumns;
+    }
+    
+    // Default - just show product name, user must explicitly select other columns
+    return ['name'];
+  };
 
   useEffect(() => {
     // Get parameters from URL
@@ -51,6 +78,14 @@ export default function MenuDisplayPage() {
     const urlFontColor = urlParams.get('fontColor');
     const urlContainerColor = urlParams.get('containerColor');
     const urlPandaMode = urlParams.get('pandaMode');
+    const urlTableBorderColor = urlParams.get('tableBorderColor');
+    const urlTableBorderWidth = urlParams.get('tableBorderWidth');
+    const urlTableRowHoverColor = urlParams.get('tableRowHoverColor');
+    const urlTableHeaderColor = urlParams.get('tableHeaderColor');
+    const urlTableAlternateRowColor = urlParams.get('tableAlternateRowColor');
+    const urlTableBorderRadius = urlParams.get('tableBorderRadius');
+    const urlTablePadding = urlParams.get('tablePadding');
+    const urlCategoryColumnConfigs = urlParams.get('categoryColumnConfigs');
     
     if (urlOrientation === 'vertical' || urlOrientation === 'horizontal') {
       setOrientation(urlOrientation);
@@ -109,6 +144,45 @@ export default function MenuDisplayPage() {
       setPandaMode(urlPandaMode === 'true');
     }
 
+    // Set table styling from URL params
+    if (urlTableBorderColor) {
+      setTableBorderColor(decodeURIComponent(urlTableBorderColor));
+    }
+    if (urlTableBorderWidth) {
+      setTableBorderWidth(Number(urlTableBorderWidth));
+    }
+    if (urlTableRowHoverColor) {
+      setTableRowHoverColor(decodeURIComponent(urlTableRowHoverColor));
+    }
+    if (urlTableHeaderColor) {
+      setTableHeaderColor(decodeURIComponent(urlTableHeaderColor));
+    }
+    if (urlTableAlternateRowColor) {
+      setTableAlternateRowColor(decodeURIComponent(urlTableAlternateRowColor));
+    }
+    if (urlTableBorderRadius) {
+      setTableBorderRadius(Number(urlTableBorderRadius));
+    }
+    if (urlTablePadding) {
+      setTablePadding(Number(urlTablePadding));
+    }
+    if (urlCategoryColumnConfigs) {
+      try {
+        const configs = JSON.parse(decodeURIComponent(urlCategoryColumnConfigs));
+        if (typeof configs === 'object' && configs !== null) {
+          const configMap = new Map<string, string[]>();
+          Object.entries(configs).forEach(([categorySlug, columns]) => {
+            if (Array.isArray(columns)) {
+              configMap.set(categorySlug, columns);
+            }
+          });
+          setCategoryColumnConfigs(configMap);
+        }
+      } catch (error) {
+        console.warn('Failed to parse categoryColumnConfigs from URL:', error);
+      }
+    }
+
     // Listen for data from parent window
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
@@ -163,6 +237,49 @@ export default function MenuDisplayPage() {
         }
         if (typeof event.data.pandaMode === 'boolean') {
           setPandaMode(event.data.pandaMode);
+        }
+        
+        // Handle table styling settings
+        if (event.data.tableBorderColor) {
+          setTableBorderColor(event.data.tableBorderColor);
+        }
+        if (typeof event.data.tableBorderWidth === 'number') {
+          setTableBorderWidth(event.data.tableBorderWidth);
+        }
+        if (event.data.tableRowHoverColor) {
+          setTableRowHoverColor(event.data.tableRowHoverColor);
+        }
+        if (event.data.tableHeaderColor) {
+          setTableHeaderColor(event.data.tableHeaderColor);
+        }
+        if (event.data.tableAlternateRowColor) {
+          setTableAlternateRowColor(event.data.tableAlternateRowColor);
+        }
+        if (typeof event.data.tableBorderRadius === 'number') {
+          setTableBorderRadius(event.data.tableBorderRadius);
+        }
+        if (typeof event.data.tablePadding === 'number') {
+          setTablePadding(event.data.tablePadding);
+        }
+        
+        // Handle per-category column configurations
+        if (event.data.categoryColumnConfigs && typeof event.data.categoryColumnConfigs === 'object') {
+          const configMap = new Map<string, string[]>();
+          Object.entries(event.data.categoryColumnConfigs).forEach(([categorySlug, columns]) => {
+            if (Array.isArray(columns)) {
+              configMap.set(categorySlug, columns as string[]);
+            }
+          });
+          setCategoryColumnConfigs(configMap);
+        }
+        
+        // Handle blueprint fields data
+        if (event.data.categoryBlueprintFields) {
+          const fieldsMap = new Map<string, ProductBlueprintFields[]>();
+          Object.entries(event.data.categoryBlueprintFields).forEach(([slug, fields]) => {
+            fieldsMap.set(slug, fields as ProductBlueprintFields[]);
+          });
+          setCategoryBlueprintFields(fieldsMap);
         }
         
         if (event.data.categoryFilter) {
@@ -255,6 +372,79 @@ export default function MenuDisplayPage() {
     return thca ? `${thca}%` : 'N/A';
   };
 
+  // Get blueprint field value for a product
+  const getBlueprintFieldValue = (product: Product, fieldName: string, categorySlug?: string): string => {
+    if (!categorySlug) return '';
+    
+    const categoryFields = categoryBlueprintFields.get(categorySlug);
+    if (!categoryFields) return '';
+    
+    const productFields = categoryFields.find(pf => pf.product_id === product.id);
+    if (!productFields) return '';
+    
+    const field = productFields.fields.find(f => f.field_name === fieldName);
+    return field?.field_value?.toString() || '';
+  };
+
+  // Get display value for any column
+  const getColumnValue = (product: Product, columnName: string, categorySlug?: string): string => {
+    // Handle special case for product name
+    if (columnName === 'name') {
+      return product.name;
+    }
+    
+    // For all other fields, try blueprint fields first, then meta_data
+    const blueprintValue = getBlueprintFieldValue(product, columnName, categorySlug);
+    if (blueprintValue) return blueprintValue;
+    
+    // Fallback to meta_data
+    const metaValue = getMetaValue(product, columnName) || getMetaValue(product, `_${columnName}`);
+    if (metaValue) return metaValue;
+    
+    // Final fallback for common WooCommerce fields
+    switch (columnName) {
+      case 'sku':
+        return product.sku || '';
+      default:
+        return '';
+    }
+  };
+
+  // Get column label
+  const getColumnLabel = (columnName: string, categorySlug?: string): string => {
+    // Special case for product name
+    if (columnName === 'name') return 'Product Name';
+    
+    // Try to get label from blueprint fields first
+    if (categorySlug) {
+      const categoryFields = categoryBlueprintFields.get(categorySlug);
+      if (categoryFields && categoryFields.length > 0) {
+        const field = categoryFields[0].fields.find(f => f.field_name === columnName);
+        if (field?.field_label) return field.field_label;
+      }
+    }
+    
+    // Common WooCommerce field labels
+    const commonLabels: Record<string, string> = {
+      'sku': 'SKU',
+      'price': 'Price',
+      'regular_price': 'Regular Price',
+      'sale_price': 'Sale Price',
+      'stock_quantity': 'Stock',
+      'weight': 'Weight',
+      'length': 'Length',
+      'width': 'Width',
+      'height': 'Height'
+    };
+    
+    if (commonLabels[columnName]) return commonLabels[columnName];
+    
+    // Fallback to formatted field name
+    return columnName.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
+
   // Determine which image setting to use for dual menus
   const getImageSetting = (isLeftSide: boolean = false, categorySlug: string | null = null) => {
     if (isDualMenu) {
@@ -326,6 +516,15 @@ export default function MenuDisplayPage() {
     backgroundColor: pandaMode ? '#000000' : containerColor,
     border: pandaMode ? '1px solid rgba(255, 255, 255, 0.2)' : `1px solid ${containerColor}`,
     color: fontColor
+  });
+
+  const getTableRowStyle = (isHover: boolean = false, isAlternate: boolean = false) => ({
+    backgroundColor: pandaMode ? '#000000' : (isHover ? tableRowHoverColor : (isAlternate ? tableAlternateRowColor : containerColor)),
+    border: pandaMode ? `${tableBorderWidth}px solid rgba(255, 255, 255, 0.2)` : `${tableBorderWidth}px solid ${tableBorderColor}`,
+    borderRadius: `${tableBorderRadius}px`,
+    padding: `${tablePadding}px`,
+    color: fontColor,
+    transition: 'all 0.2s ease-out'
   });
 
   const getHeaderStyle = () => ({
@@ -494,64 +693,64 @@ export default function MenuDisplayPage() {
                     const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);
                     const useSingleColumn = rightColumn.length === 0;
                     return (
-                      <div className={`grid gap-6 py-4 pt-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`} 
+                      <div className={`grid gap-6 pt-4 pb-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`} 
                            style={getBackgroundStyle()}>
                         {/* Left Column */}
                         <div className="space-y-2">
                           {leftColumn.map((product, index) => {
-                            const strainType = getStrainType(product);
-                            const thcaPercent = getTHCAPercentage(product);
-
                             return (
                               <div key={product.id} 
-                                   className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
-                                   style={getContainerStyle()}>
-                                <div className="grid grid-cols-12 gap-4 items-center">
-                                  {/* Product Info */}
-                                  <div className={`col-span-6 flex items-center ${currentShowImages ? 'gap-4' : ''}`}>
-                                    {/* Product Image */}
-                                    {currentShowImages && (
-                                      <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
-                                        {product.image ? (
-                                          <img src={product.image} alt={product.name}
-                                               className="w-full h-full object-contain rounded" loading="lazy" />
-                                        ) : (
-                                          <div className="w-full h-full flex items-center justify-center rounded" 
-                                               style={getContainerStyle()}>
-                                            <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                            </svg>
+                                   className="overflow-visible cursor-pointer transition-all duration-200 ease-out hover:shadow-md"
+                                   style={getTableRowStyle(false, index % 2 === 1)}
+                                   onMouseEnter={(e) => {
+                                     const hoverStyle = getTableRowStyle(true, index % 2 === 1);
+                                     Object.assign(e.currentTarget.style, hoverStyle);
+                                   }}
+                                   onMouseLeave={(e) => {
+                                     const normalStyle = getTableRowStyle(false, index % 2 === 1);
+                                     Object.assign(e.currentTarget.style, normalStyle);
+                                   }}>
+                                <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(categorySlug || undefined).length}, 1fr)` }}>
+                                  {getCategoryColumns(categorySlug || undefined).map((columnName, colIndex) => {
+                                    const value = getColumnValue(product, columnName, categorySlug || undefined);
+                                    const isFirstColumn = colIndex === 0;
+                                    return (
+                                      <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
+                                        {isFirstColumn && currentShowImages && (
+                                          <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                            {product.image ? (
+                                              <img src={product.image} alt={product.name}
+                                                   className="w-full h-full object-contain rounded" loading="lazy" />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center rounded" 
+                                                   style={getContainerStyle()}>
+                                                <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                              </div>
+                                            )}
                                           </div>
                                         )}
+                                        <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
+                                          <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} text-sm leading-tight ${
+                                            isFirstColumn ? 'block truncate' : ''
+                                          }`} style={{ 
+                                            fontFamily: 'Tiempo, serif', 
+                                            textShadow: isFirstColumn ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                                            color: isFirstColumn ? fontColor : `${fontColor}dd` 
+                                          }}>
+                                            {value || 'N/A'}
+                                          </span>
+                                          {isFirstColumn && columnName === 'name' && product.sku && (
+                                            <p className="text-xs mt-1" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
+                                              {product.sku}
+                                            </p>
+                                          )}
+                                        </div>
                                       </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <h3 className="font-semibold text-sm leading-tight mb-1 truncate" 
-                                          style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
-                                        {product.name}
-                                      </h3>
-                                      {product.sku && (
-                                        <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                          {product.sku}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Type */}
-                                  <div className="col-span-3 text-center">
-                                    <span className="font-medium text-sm" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
-                                      {strainType}
-                                    </span>
-                                  </div>
-
-                                  {/* THCA % */}
-                                  <div className="col-span-3 text-center">
-                                    <span className="font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
-                                      {thcaPercent}
-                                    </span>
-                                  </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             );
@@ -562,59 +761,51 @@ export default function MenuDisplayPage() {
                         {!useSingleColumn && (
                           <div className="space-y-2">
                             {rightColumn.map((product, index) => {
-                              const strainType = getStrainType(product);
-                              const thcaPercent = getTHCAPercentage(product);
-
                               return (
                                 <div key={product.id} 
                                      className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
                                      style={getContainerStyle()}>
-                                  <div className="grid grid-cols-12 gap-4 items-center">
-                                    {/* Product Info */}
-                                    <div className={`col-span-6 flex items-center ${currentShowImages ? 'gap-4' : ''}`}>
-                                      {/* Product Image */}
-                                      {currentShowImages && (
-                                        <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
-                                          {product.image ? (
-                                            <img src={product.image} alt={product.name}
-                                                 className="w-full h-full object-contain rounded" loading="lazy" />
-                                          ) : (
-                                            <div className="w-full h-full flex items-center justify-center rounded" 
-                                                 style={getContainerStyle()}>
-                                              <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                              </svg>
+                                  <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(categorySlug || undefined).length}, 1fr)` }}>
+                                    {getCategoryColumns(categorySlug || undefined).map((columnName, colIndex) => {
+                                      const value = getColumnValue(product, columnName, categorySlug || undefined);
+                                      const isFirstColumn = colIndex === 0;
+                                      return (
+                                        <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
+                                          {isFirstColumn && currentShowImages && (
+                                            <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                              {product.image ? (
+                                                <img src={product.image} alt={product.name}
+                                                     className="w-full h-full object-contain rounded" loading="lazy" />
+                                              ) : (
+                                                <div className="w-full h-full flex items-center justify-center rounded" 
+                                                     style={getContainerStyle()}>
+                                                  <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                                  </svg>
+                                                </div>
+                                              )}
                                             </div>
                                           )}
+                                          <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
+                                            <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} text-sm leading-tight ${
+                                              isFirstColumn ? 'block truncate' : ''
+                                            }`} style={{ 
+                                              fontFamily: 'Tiempo, serif', 
+                                              textShadow: isFirstColumn ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                                              color: isFirstColumn ? fontColor : `${fontColor}dd` 
+                                            }}>
+                                              {value || 'N/A'}
+                                            </span>
+                                            {isFirstColumn && columnName === 'name' && product.sku && (
+                                              <p className="text-xs mt-1" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
+                                                {product.sku}
+                                              </p>
+                                            )}
+                                          </div>
                                         </div>
-                                      )}
-                                      <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-sm leading-tight mb-1 truncate" 
-                                            style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
-                                          {product.name}
-                                        </h3>
-                                        {product.sku && (
-                                          <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                            {product.sku}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {/* Type */}
-                                    <div className="col-span-3 text-center">
-                                      <span className="font-medium text-sm" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
-                                        {strainType}
-                                      </span>
-                                    </div>
-
-                                    {/* THCA % */}
-                                    <div className="col-span-3 text-center">
-                                      <span className="font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
-                                        {thcaPercent}
-                                      </span>
-                                    </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               );
@@ -626,7 +817,7 @@ export default function MenuDisplayPage() {
                   })()
                 ) : (
                   /* Grid Layout for Non-Flower Products */
-                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style={getBackgroundStyle()}>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-4 pb-4" style={getBackgroundStyle()}>
                     {categoryProducts.map(product => {
                       return (
                         <div key={product.id} 
@@ -937,69 +1128,58 @@ export default function MenuDisplayPage() {
                         const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);
                         const useSingleColumn = rightColumn.length === 0;
                         return (
-                          <div className={`grid gap-6 py-4 pt-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`} 
+                          <div className={`grid gap-6 pt-4 pb-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`} 
                                style={getBackgroundStyle()}>
                             {/* Left Column */}
                             <div className="space-y-2">
                               {leftColumn.map((product, index) => {
-                                const strainType = getStrainType(product);
-                                const thcaPercent = getTHCAPercentage(product);
-
                                 return (
                                   <div key={product.id} 
                                        className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
                                        style={getContainerStyle()}>
-                                    <div className="grid grid-cols-12 gap-4 items-center">
-                                      {/* Product Info */}
-                                      <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
-                                        {/* Product Image */}
-                                        {showImages && (
-                                          <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
-                                            {product.image ? (
-                                              <img src={product.image} alt={product.name}
-                                                   className="w-full h-full object-contain rounded" loading="lazy" />
-                                            ) : (
-                                              <div className="w-full h-full flex items-center justify-center rounded" 
-                                                   style={getContainerStyle()}>
-                                                <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                                </svg>
+                                    <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(categoryFilter || undefined).length}, 1fr)` }}>
+                                      {getCategoryColumns(categoryFilter || undefined).map((columnName, colIndex) => {
+                                        const value = getColumnValue(product, columnName, categoryFilter || undefined);
+                                        const isFirstColumn = colIndex === 0;
+                                        return (
+                                          <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
+                                            {isFirstColumn && showImages && (
+                                              <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                                {product.image ? (
+                                                  <img src={product.image} alt={product.name}
+                                                       className="w-full h-full object-contain rounded" loading="lazy" />
+                                                ) : (
+                                                  <div className="w-full h-full flex items-center justify-center rounded" 
+                                                       style={getContainerStyle()}>
+                                                    <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                  </div>
+                                                )}
                                               </div>
                                             )}
+                                            <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
+                                              <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} leading-tight ${
+                                                isFirstColumn ? 'block truncate' : ''
+                                              } ${
+                                                orientation === 'vertical' ? 'text-base' : 'text-sm'
+                                              }`} style={{ 
+                                                fontFamily: 'Tiempo, serif', 
+                                                textShadow: isFirstColumn ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                                                color: isFirstColumn ? fontColor : `${fontColor}dd` 
+                                              }}>
+                                                {value || 'N/A'}
+                                              </span>
+                                              {isFirstColumn && columnName === 'name' && product.sku && (
+                                                <p className="text-xs mt-1" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
+                                                  {product.sku}
+                                                </p>
+                                              )}
+                                            </div>
                                           </div>
-                                        )}
-                                        <div className="flex-1 min-w-0">
-                                          <h3 className={`font-semibold leading-tight mb-1 truncate ${
-                                            orientation === 'vertical' ? 'text-base' : 'text-sm'
-                                          }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
-                                            {product.name}
-                                          </h3>
-                                          {product.sku && (
-                                            <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                              {product.sku}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      {/* Type */}
-                                      <div className="col-span-3 text-center">
-                                        <span className={`font-medium ${
-                                          orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                        }`} style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
-                                          {strainType}
-                                        </span>
-                                      </div>
-
-                                      {/* THCA % */}
-                                      <div className="col-span-3 text-center">
-                                        <span className={`font-semibold ${
-                                          orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                        }`} style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
-                                          {thcaPercent}
-                                        </span>
-                                      </div>
+                                        );
+                                      })}
                                     </div>
                                   </div>
                                 );
@@ -1010,64 +1190,53 @@ export default function MenuDisplayPage() {
                             {!useSingleColumn && (
                               <div className="space-y-2">
                                 {rightColumn.map((product, index) => {
-                                  const strainType = getStrainType(product);
-                                  const thcaPercent = getTHCAPercentage(product);
-
                                   return (
                                     <div key={product.id} 
                                          className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
                                          style={getContainerStyle()}>
-                                      <div className="grid grid-cols-12 gap-4 items-center">
-                                        {/* Product Info */}
-                                        <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
-                                          {/* Product Image */}
-                                          {showImages && (
-                                            <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
-                                              {product.image ? (
-                                                <img src={product.image} alt={product.name}
-                                                     className="w-full h-full object-contain rounded" loading="lazy" />
-                                              ) : (
-                                                <div className="w-full h-full flex items-center justify-center rounded" 
-                                                     style={getContainerStyle()}>
-                                                  <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                                  </svg>
+                                      <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(categoryFilter || undefined).length}, 1fr)` }}>
+                                        {getCategoryColumns(categoryFilter || undefined).map((columnName, colIndex) => {
+                                          const value = getColumnValue(product, columnName, categoryFilter || undefined);
+                                          const isFirstColumn = colIndex === 0;
+                                          return (
+                                            <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
+                                              {isFirstColumn && showImages && (
+                                                <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                                  {product.image ? (
+                                                    <img src={product.image} alt={product.name}
+                                                         className="w-full h-full object-contain rounded" loading="lazy" />
+                                                  ) : (
+                                                    <div className="w-full h-full flex items-center justify-center rounded" 
+                                                         style={getContainerStyle()}>
+                                                      <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                                      </svg>
+                                                    </div>
+                                                  )}
                                                 </div>
                                               )}
+                                              <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
+                                                <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} leading-tight ${
+                                                  isFirstColumn ? 'block truncate' : ''
+                                                } ${
+                                                  orientation === 'vertical' ? 'text-base' : 'text-sm'
+                                                }`} style={{ 
+                                                  fontFamily: 'Tiempo, serif', 
+                                                  textShadow: isFirstColumn ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                                                  color: isFirstColumn ? fontColor : `${fontColor}dd` 
+                                                }}>
+                                                  {value || 'N/A'}
+                                                </span>
+                                                {isFirstColumn && columnName === 'name' && product.sku && (
+                                                  <p className="text-xs mt-1" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
+                                                    {product.sku}
+                                                  </p>
+                                                )}
+                                              </div>
                                             </div>
-                                          )}
-                                          <div className="flex-1 min-w-0">
-                                            <h3 className={`font-semibold leading-tight mb-1 truncate ${
-                                              orientation === 'vertical' ? 'text-base' : 'text-sm'
-                                            }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
-                                              {product.name}
-                                            </h3>
-                                            {product.sku && (
-                                              <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                                {product.sku}
-                                              </p>
-                                            )}
-                                          </div>
-                                        </div>
-
-                                        {/* Type */}
-                                        <div className="col-span-3 text-center">
-                                          <span className={`font-medium ${
-                                            orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                          }`} style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
-                                            {strainType}
-                                          </span>
-                                        </div>
-
-                                        {/* THCA % */}
-                                        <div className="col-span-3 text-center">
-                                          <span className={`font-semibold ${
-                                            orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                          }`} style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
-                                            {thcaPercent}
-                                          </span>
-                                        </div>
+                                          );
+                                        })}
                                       </div>
                                     </div>
                                   );
@@ -1079,7 +1248,7 @@ export default function MenuDisplayPage() {
                       })()
                     ) : (
                       /* Grid Layout for Non-Flower Products */
-                      <div className={`grid gap-2 px-6 py-1 ${
+                      <div className={`grid gap-2 px-6 pt-4 pb-4 ${
                         orientation === 'vertical' 
                           ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
                           : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
