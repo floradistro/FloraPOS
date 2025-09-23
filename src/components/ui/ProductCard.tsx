@@ -329,12 +329,15 @@ const ProductCard = memo<ProductCardProps>(({
             ) : null}
           </div>
         ) : (
-          /* Normal Mode - Show variants if this is a variable product with loaded variants */
-          (product.type === 'variable' && product.variants && product.variants.length > 0) ? (
+          /* Normal Mode - Show variants for variable products, otherwise show pricing */
+          product.type === 'variable' ? (
             <div className="space-y-2">
-              {/* Variant options - Clean theme-consistent design */}
-              <div className="grid grid-cols-2 gap-1">
-                {product.variants.slice(0, 6).map((variant) => {
+              {/* Variable products should never show blueprint pricing - only variants */}
+              {product.variants && product.variants.length > 0 ? (
+                <>
+                  {/* Variant options - Clean theme-consistent design */}
+                  <div className="grid grid-cols-2 gap-1">
+                    {product.variants.slice(0, 6).map((variant) => {
                   const selectedVariantId = selectedVariants[product.id];
                   const isVariantSelected = selectedVariantId === variant.id;
                   const variantStock = userLocationId 
@@ -391,6 +394,14 @@ const ProductCard = memo<ProductCardProps>(({
                     disabled={false}
                     hidePrices={isSalesView}
                   />
+                </div>
+              )}
+                </>
+              ) : (
+                /* Variants not loaded yet - show simple message, no blueprint pricing */
+                <div className="text-center py-4">
+                  <div className="text-xs text-neutral-500">Variable product - variants loading...</div>
+                  <div className="text-[10px] text-neutral-600 mt-1">Select a variant to see pricing</div>
                 </div>
               )}
             </div>
