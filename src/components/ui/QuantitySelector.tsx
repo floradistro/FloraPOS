@@ -45,8 +45,8 @@ export function QuantitySelector({
     return `$${numPrice.toFixed(2)}`;
   };
 
-  // If no blueprint pricing, show base price
-  if (!blueprintPricing || !blueprintPricing.ruleGroups || blueprintPricing.ruleGroups.length === 0) {
+  // If product has a specific price set, show only that price (not blueprint pricing)
+  if (basePrice > 0) {
     return (
       <div className="text-center">
         {!hidePrices && (
@@ -54,8 +54,27 @@ export function QuantitySelector({
             {formatPrice(basePrice)}
           </div>
         )}
+        <button
+          onClick={(e) => handleQuantitySelect(e, 1, basePrice)}
+          disabled={disabled}
+          className={`px-3 py-1.5 text-xs transition-all duration-300 ease-out border rounded-lg ${
+            selectedQuantity === 1
+              ? 'bg-neutral-600/10 text-neutral-200 font-medium border-neutral-400/60'
+              : 'bg-transparent text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-200 border-neutral-500/20 hover:border-neutral-400/40'
+          } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        >
+          Add to Cart
+        </button>
+      </div>
+    );
+  }
+
+  // If no blueprint pricing, show fallback
+  if (!blueprintPricing || !blueprintPricing.ruleGroups || blueprintPricing.ruleGroups.length === 0) {
+    return (
+      <div className="text-center">
         <div className="text-[9px] text-neutral-500 mt-1">
-          No pricing tiers
+          No pricing available
         </div>
       </div>
     );

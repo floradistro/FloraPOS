@@ -143,8 +143,9 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         return matchesSearch && matchesCategory && matchesStockCriteria && matchesSelectedFilter;
       }).sort((a, b) => {
         // Primary sort: Products with variants go to the bottom (they are taller cards)
-        const aHasVariants = a.has_variants && a.variants && a.variants.length > 0;
-        const bHasVariants = b.has_variants && b.variants && b.variants.length > 0;
+        // Check both has_variants flag AND type === 'variable' to be more robust
+        const aHasVariants = (a.has_variants && a.variants && a.variants.length > 0) || a.type === 'variable';
+        const bHasVariants = (b.has_variants && b.variants && b.variants.length > 0) || b.type === 'variable';
         
         if (aHasVariants && !bHasVariants) return 1; // a goes to bottom
         if (!aHasVariants && bHasVariants) return -1; // b goes to bottom

@@ -54,7 +54,7 @@ const ProductCard = memo<ProductCardProps>(({
   let displayPrice = product.regular_price;
   let isInStock = false;
 
-  if (product.has_variants && product.variants) {
+  if (product.type === 'variable' && product.variants && product.variants.length > 0) {
     const selectedVariantId = selectedVariants[product.id];
     const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
     
@@ -163,7 +163,7 @@ const ProductCard = memo<ProductCardProps>(({
       </div>
 
       {/* Quantity Selector for Non-Variant Products in Adjustment Mode */}
-      {isAuditMode && !product.has_variants && (
+      {isAuditMode && !(product.type === 'variable' && product.variants && product.variants.length > 0) && (
         <div className="flex items-center">
           <div className="relative flex items-center">
             {/* Decrease Button */}
@@ -237,7 +237,7 @@ const ProductCard = memo<ProductCardProps>(({
       <div className="mb-4">
         {isAuditMode ? (
           <div className="space-y-2">
-            {product.has_variants && product.variants ? (
+            {(product.type === 'variable' && product.variants && product.variants.length > 0) ? (
               <div className="space-y-1">
                 {product.variants.slice(0, 4).map((variant) => {
                   const variantStock = userLocationId 
@@ -329,8 +329,8 @@ const ProductCard = memo<ProductCardProps>(({
             ) : null}
           </div>
         ) : (
-          /* Normal Mode - Full Quantity Selector */
-          product.has_variants && product.variants ? (
+          /* Normal Mode - Show variants if this is a variable product with loaded variants */
+          (product.type === 'variable' && product.variants && product.variants.length > 0) ? (
             <div className="space-y-2">
               {/* Variant options - Clean theme-consistent design */}
               <div className="grid grid-cols-2 gap-1">
@@ -412,18 +412,18 @@ const ProductCard = memo<ProductCardProps>(({
         {isAuditMode ? (
           /* Audit Mode - Show current stock only when field is focused */
           <span className={`text-xs text-neutral-500 transition-opacity duration-200 ${
-            focusedStockFields.has(`${product.id}`) || (product.has_variants && selectedVariants[product.id] && focusedStockFields.has(`${product.id}-${selectedVariants[product.id]}`))
+            focusedStockFields.has(`${product.id}`) || ((product.type === 'variable' && product.variants && product.variants.length > 0) && selectedVariants[product.id] && focusedStockFields.has(`${product.id}-${selectedVariants[product.id]}`))
               ? 'opacity-100' 
               : 'opacity-0'
           }`} style={{ fontFamily: 'Tiempos, serif' }}>
-            {product.has_variants && product.variants
+            {(product.type === 'variable' && product.variants && product.variants.length > 0)
               ? `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`
               : `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`}
           </span>
         ) : (
           /* Normal Mode - Display Only */
           <span className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-            {product.has_variants && !selectedVariants[product.id] 
+            {(product.type === 'variable' && product.variants && product.variants.length > 0) && !selectedVariants[product.id] 
               ? `${stockDisplay} total stock` 
               : `${stockDisplay} in stock`}
           </span>
@@ -433,7 +433,7 @@ const ProductCard = memo<ProductCardProps>(({
       {/* Selected Price - Bottom Left - Only show in normal mode */}
       {!isAuditMode && (
         <div className="absolute bottom-2 left-2 text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-          {product.has_variants && selectedVariants[product.id] ? (
+          {(product.type === 'variable' && product.variants && product.variants.length > 0) && selectedVariants[product.id] ? (
             product.selected_price ? formatPrice(product.selected_price) : (
               <span className="text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>Select quantity</span>
             )
@@ -448,8 +448,8 @@ const ProductCard = memo<ProductCardProps>(({
       {/* Action Buttons - Add to Cart */}
       {!isAuditMode && (
         /* Normal Mode - Add to Cart Button */
-        ((product.has_variants && selectedVariants[product.id] && product.selected_quantity && product.selected_price) || 
-          (!product.has_variants && ((product.selected_quantity && product.selected_price) || !product.blueprintPricing))) ? (
+        (((product.type === 'variable' && product.variants && product.variants.length > 0) && selectedVariants[product.id] && product.selected_quantity && product.selected_price) || 
+          (!(product.type === 'variable' && product.variants && product.variants.length > 0) && ((product.selected_quantity && product.selected_price) || !product.blueprintPricing))) ? (
           <button
             onClick={(e) => {
               e.stopPropagation();
