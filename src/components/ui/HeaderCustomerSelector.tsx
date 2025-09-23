@@ -65,16 +65,40 @@ export function HeaderCustomerSelector({
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      // Match search bar width: max-w-[768px] with responsive min widths
-      const viewportWidth = window.innerWidth;
-      let minWidth = 180; // Base min-width
-      if (viewportWidth >= 640) minWidth = 200; // sm:min-w-[200px]
-      if (viewportWidth >= 768) minWidth = 300; // md:min-w-[300px]
       
-      const dropdownWidth = Math.min(768, Math.max(minWidth, showNewCustomerForm ? 380 : 280));
+      // Try to find the search bar element to match its exact width
+      const searchBarElement = document.querySelector('[class*="UnifiedSearchInput"]') || 
+                              document.querySelector('input[placeholder*="Search"]') ||
+                              document.querySelector('.header-nav input');
+      
+      let dropdownWidth = showNewCustomerForm ? 380 : 280; // fallback
+      
+      if (searchBarElement) {
+        const searchBarRect = searchBarElement.getBoundingClientRect();
+        dropdownWidth = searchBarRect.width;
+        console.log('🎯 Matching search bar width:', dropdownWidth);
+      } else {
+        // Fallback to responsive calculation
+        const viewportWidth = window.innerWidth;
+        let minWidth = 180;
+        if (viewportWidth >= 640) minWidth = 200;
+        if (viewportWidth >= 768) minWidth = 300;
+        dropdownWidth = Math.min(768, Math.max(minWidth, dropdownWidth));
+        console.log('🔄 Using fallback width calculation:', dropdownWidth);
+      }
+      
+      // Adjust left position to center the dropdown relative to the search bar
+      let leftPosition = rect.left - 60; // Default offset
+      
+      if (searchBarElement) {
+        const searchBarRect = searchBarElement.getBoundingClientRect();
+        // Center the dropdown relative to the search bar
+        leftPosition = searchBarRect.left;
+      }
+      
       setDropdownPosition({
         top: rect.bottom + 8,
-        left: rect.left - 60, // Offset to make dropdown wider than button
+        left: leftPosition,
         width: dropdownWidth
       });
     }
