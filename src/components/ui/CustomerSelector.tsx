@@ -200,7 +200,7 @@ export function CustomerSelector({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 min-w-[20rem] mt-2 bg-neutral-800 rounded-lg shadow-2xl z-50 max-h-[32rem] overflow-hidden flex flex-col border border-neutral-700/30">
+        <div className="absolute top-full left-0 right-0 w-full max-w-[768px] min-w-[180px] sm:min-w-[200px] md:min-w-[300px] mt-2 bg-neutral-800 rounded-lg shadow-2xl z-50 max-h-[32rem] overflow-hidden flex flex-col border border-neutral-700/30">
           {loading ? (
             <div className="p-4 text-center text-neutral-500 text-sm">
               Loading customers...

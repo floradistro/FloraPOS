@@ -65,7 +65,13 @@ export function HeaderCustomerSelector({
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const dropdownWidth = showNewCustomerForm ? 380 : 280; // Wider when form is shown
+      // Match search bar width: max-w-[768px] with responsive min widths
+      const viewportWidth = window.innerWidth;
+      let minWidth = 180; // Base min-width
+      if (viewportWidth >= 640) minWidth = 200; // sm:min-w-[200px]
+      if (viewportWidth >= 768) minWidth = 300; // md:min-w-[300px]
+      
+      const dropdownWidth = Math.min(768, Math.max(minWidth, showNewCustomerForm ? 380 : 280));
       setDropdownPosition({
         top: rect.bottom + 8,
         left: rect.left - 60, // Offset to make dropdown wider than button
