@@ -22,7 +22,6 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   const [leftMenuImages, setLeftMenuImages] = useState<boolean>(true); // Images for left dual menu
   const [rightMenuImages, setRightMenuImages] = useState<boolean>(true); // Images for right dual menu
   const [selectedMenuCategory, setSelectedMenuCategory] = useState<string | null>(null);
-  const [showDualMenuSelector, setShowDualMenuSelector] = useState(false);
   const [leftMenuCategory, setLeftMenuCategory] = useState<string | null>(null);
   const [rightMenuCategory, setRightMenuCategory] = useState<string | null>(null);
   // Vertical stacking support
@@ -36,7 +35,26 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   const [backgroundColor, setBackgroundColor] = useState<string>('#f5f5f4'); // stone-100
   const [fontColor, setFontColor] = useState<string>('#1f2937'); // gray-800
   const [containerColor, setContainerColor] = useState<string>('#d1d5db'); // gray-300
+  const [pandaMode, setPandaMode] = useState<boolean>(false); // Panda mode for white font/black background
   const [openWindows, setOpenWindows] = useState<Map<string, Window>>(new Map());
+
+  // Handle panda mode toggle
+  const handlePandaModeToggle = () => {
+    const newPandaMode = !pandaMode;
+    setPandaMode(newPandaMode);
+    
+    if (newPandaMode) {
+      // Panda mode: pure black and white with subtle borders
+      setBackgroundColor('#000000'); // Pure Black
+      setFontColor('#ffffff'); // Pure White
+      setContainerColor('#000000'); // Pure Black containers with white borders
+    } else {
+      // Normal mode: dark font, light backgrounds
+      setBackgroundColor('#f5f5f4'); // Stone-100
+      setFontColor('#1f2937'); // Gray-800
+      setContainerColor('#d1d5db'); // Gray-300
+    }
+  };
 
   const openPopoutMenu = useCallback((categorySlug?: string, isDual = false) => {
     // Generate unique window name based on timestamp and content
@@ -58,6 +76,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
       backgroundColor: encodeURIComponent(backgroundColor),
       fontColor: encodeURIComponent(fontColor),
       containerColor: encodeURIComponent(containerColor),
+      pandaMode: pandaMode.toString(),
       windowId: windowId,
       ...(categorySlug && { category: categorySlug }),
       ...(isDual && { 
@@ -112,6 +131,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           backgroundColor: backgroundColor,
           fontColor: fontColor,
           containerColor: containerColor,
+          pandaMode: pandaMode,
           leftMenuImages: leftMenuImages,
           rightMenuImages: rightMenuImages,
           leftMenuImages2: leftMenuImages2,
@@ -130,15 +150,8 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     } else {
       alert('Please allow popups for this site to open the TV menu display.');
     }
-  }, [products, orientation, viewMode, showImages, backgroundColor, fontColor, containerColor, leftMenuImages, rightMenuImages, leftMenuImages2, rightMenuImages2, leftMenuCategory, rightMenuCategory, leftMenuCategory2, rightMenuCategory2, enableLeftStacking, enableRightStacking]);
+  }, [products, orientation, viewMode, showImages, backgroundColor, fontColor, containerColor, pandaMode, leftMenuImages, rightMenuImages, leftMenuImages2, rightMenuImages2, leftMenuCategory, rightMenuCategory, leftMenuCategory2, rightMenuCategory2, enableLeftStacking, enableRightStacking]);
 
-  const handleDualMenuLaunch = () => {
-    if (orientation !== 'horizontal') {
-      alert('Dual menu is only available in horizontal orientation.');
-      return;
-    }
-    setShowDualMenuSelector(true);
-  };
 
   const launchDualMenu = () => {
     if (!leftMenuCategory || !rightMenuCategory) {
@@ -153,7 +166,6 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
       alert('Please select a category for the second right menu.');
       return;
     }
-    setShowDualMenuSelector(false);
     openPopoutMenu(undefined, true);
   };
 
@@ -187,12 +199,16 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   }, [openWindows]);
 
   // Live Preview Component
-  const LiveMenuPreview = ({ products: previewProducts, categories: previewCategories, orientation: previewOrient, viewMode: previewViewMode, showImages: previewShowImages, categoryFilter }: {
+  const LiveMenuPreview = ({ products: previewProducts, categories: previewCategories, orientation: previewOrient, viewMode: previewViewMode, showImages: previewShowImages, backgroundColor: previewBg, fontColor: previewFont, containerColor: previewContainer, pandaMode: previewPanda, categoryFilter }: {
     products: Product[];
     categories: Category[];
     orientation: 'horizontal' | 'vertical';
     viewMode: 'table' | 'card' | 'auto';
     showImages: boolean;
+    backgroundColor: string;
+    fontColor: string;
+    containerColor: string;
+    pandaMode: boolean;
     categoryFilter?: string;
   }) => {
     const displayProducts = categoryFilter 
@@ -221,21 +237,44 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     };
 
     return (
-      <div className="h-full bg-gray-50 text-black overflow-hidden flex flex-col border-2 border-gray-200">
+      <div 
+        className="h-full overflow-hidden flex flex-col border-2"
+        style={{ 
+          background: `linear-gradient(to bottom right, ${previewBg}, ${previewBg}dd, ${previewBg}bb)`,
+          color: previewFont,
+          borderColor: previewPanda ? '#ffffff33' : '#e5e7eb'
+        }}
+      >
         {/* Header */}
-        <div className={`bg-white/95 border-b border-gray-200 px-6 flex-shrink-0 relative z-10 ${
-          previewOrient === 'vertical' ? 'py-3' : 'py-2'
-        }`}>
+        <div 
+          className={`border-b px-6 flex-shrink-0 relative z-10 ${
+            previewOrient === 'vertical' ? 'py-3' : 'py-2'
+          }`}
+          style={{
+            background: previewPanda 
+              ? 'linear-gradient(to right, #000000, #000000, #000000)'
+              : `linear-gradient(to right, ${previewContainer}f2, ${previewContainer}e6, ${previewContainer}f2)`,
+            borderBottomColor: previewPanda ? '#ffffff33' : '#e5e7eb'
+          }}
+        >
           <div className={`flex flex-col items-center relative z-10 ${
             previewOrient === 'vertical' ? 'gap-1' : 'gap-0'
           }`}>
             <div className="text-center">
-              <h1 className={`font-bold text-black ${
-                previewOrient === 'vertical' ? 'text-8xl' : 'text-7xl'
-              }`} style={{ fontFamily: 'Tiempo, serif' }}>
+              <h1 
+                className={`font-bold ${
+                  previewOrient === 'vertical' ? 'text-8xl' : 'text-7xl'
+                }`} 
+                style={{ fontFamily: 'Tiempo, serif', color: previewFont }}
+              >
                 {categoryFilter ? `${previewCategories.find(c => c.slug === categoryFilter)?.name || categoryFilter} Menu` : 'Flora Menu'}
               </h1>
-              <div className="w-32 h-0.5 bg-gradient-to-r from-transparent via-gray-400 to-transparent mx-auto mt-3 opacity-60"></div>
+              <div 
+                className="w-32 h-0.5 mx-auto mt-3 opacity-60"
+                style={{ 
+                  background: `linear-gradient(to right, transparent, ${previewFont}66, transparent)` 
+                }}
+              ></div>
             </div>
           </div>
         </div>
@@ -253,36 +292,67 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
             <div className={`h-full ${previewOrient === 'vertical' ? 'space-y-6' : 'space-y-8'} p-4`}>
               {productsByCategory.map(({ category, products: categoryProducts }) => (
                 <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-8' : ''}>
-                  {!categoryFilter && (
-                    <div className="bg-white/95 px-6 py-3 border-b border-gray-200 relative rounded-t-lg">
-                      <h2 className={`font-bold text-black uppercase tracking-wider relative z-10 ${
-                        previewOrient === 'vertical' ? 'text-lg' : 'text-xl'
-                      }`} style={{ fontFamily: 'Tiempo, serif' }}>
-                        {category.name}
-                      </h2>
-                      <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-gray-400/60 to-transparent mt-2"></div>
-                    </div>
-                  )}
+                    {!categoryFilter && (
+                      <div 
+                        className="px-6 py-3 border-b relative rounded-t-lg"
+                        style={{
+                          background: previewPanda 
+                            ? 'linear-gradient(to right, #000000, #000000, #000000)'
+                            : `linear-gradient(to right, ${previewContainer}f2, ${previewContainer}e6, ${previewContainer}f2)`,
+                          borderBottomColor: previewPanda ? '#ffffff33' : '#e5e7eb'
+                        }}
+                      >
+                        <h2 
+                          className={`font-bold uppercase tracking-wider relative z-10 ${
+                            previewOrient === 'vertical' ? 'text-lg' : 'text-xl'
+                          }`} 
+                          style={{ fontFamily: 'Tiempo, serif', color: previewFont }}
+                        >
+                          {category.name}
+                        </h2>
+                        <div 
+                          className="w-24 h-0.5 mt-2"
+                          style={{ 
+                            background: `linear-gradient(to right, transparent, ${previewFont}60, transparent)` 
+                          }}
+                        ></div>
+                      </div>
+                    )}
                   
                   {getActualViewMode(category.name) === 'table' ? (
-                    <div className="flex-1 overflow-hidden relative -mx-4 rounded-lg border border-gray-200 bg-white/95 shadow-sm">
+                    <div 
+                      className="flex-1 overflow-hidden relative -mx-4 rounded-lg border shadow-sm"
+                      style={{
+                        backgroundColor: previewPanda ? '#000000' : '#ffffff95',
+                        borderColor: previewPanda ? '#ffffff33' : '#e5e7eb'
+                      }}
+                    >
                       <div className="overflow-x-auto h-full relative z-10">
                         <table className="w-full h-full border-collapse">
-                          <thead className="bg-gray-50/90 border-b border-gray-200 sticky top-0 z-20 backdrop-blur-sm">
-                            <tr className="border-b border-gray-200">
-                              <th className={`text-left text-black font-medium px-2 py-1 ${
+                          <thead 
+                            className="border-b sticky top-0 z-20 backdrop-blur-sm"
+                            style={{
+                              backgroundColor: previewPanda ? '#000000' : '#f9fafb90',
+                              borderBottomColor: previewPanda ? '#ffffff33' : '#e5e7eb'
+                            }}
+                          >
+                            <tr 
+                              className="border-b"
+                              style={{ borderBottomColor: previewPanda ? '#ffffff33' : '#e5e7eb' }}
+                            >
+                              <th className={`text-left font-medium px-2 py-1 ${
                                 previewOrient === 'vertical' ? 'text-sm' : 'text-xs'
-                              }`} style={{ fontFamily: 'Tiempo, serif' }}>
+                              }`} style={{ fontFamily: 'Tiempo, serif', color: previewFont }}>
                                 Product Name
                               </th>
-                              <th className={`text-center text-black font-medium px-2 py-1 ${
+                              <th className={`text-center font-medium px-2 py-1 ${
                                 previewOrient === 'vertical' ? 'text-sm' : 'text-xs'
-                              }`} style={{ fontFamily: 'Tiempo, serif' }}>
+                              }`} style={{ fontFamily: 'Tiempo, serif', color: previewFont }}>
                                 Type
                               </th>
-                              <th className={`text-center text-black font-medium px-2 py-1 ${
+                              <th className={`text-center font-medium px-2 py-1 ${
                                 previewOrient === 'vertical' ? 'text-sm' : 'text-xs'
-                              }`} style={{ fontFamily: 'Tiempo, serif' }}>
+                              }`} style={{ fontFamily: 'Tiempo, serif', color: previewFont }}>
                                 THCA %
                               </th>
                             </tr>
@@ -295,23 +365,27 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                               return (
                                 <tr 
                                   key={product.id}
-                                  className={`border-b border-gray-200 hover:bg-gray-50 transition-all duration-300 ease-out cursor-pointer ${
-                                    index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
-                                  }`}
+                                  className="border-b hover:bg-opacity-10 transition-all duration-300 ease-out cursor-pointer"
+                                  style={{
+                                    backgroundColor: previewPanda 
+                                      ? (index % 2 === 0 ? '#000000' : '#ffffff08')
+                                      : (index % 2 === 0 ? '#ffffff' : '#f9fafb80'),
+                                    borderBottomColor: previewPanda ? '#ffffff33' : '#e5e7eb'
+                                  }}
                                 >
-                                  <td className={`px-2 py-1 text-black font-medium leading-tight ${
+                                  <td className={`px-2 py-1 font-medium leading-tight ${
                                     previewOrient === 'vertical' ? 'text-sm' : 'text-xs'
-                                  }`} style={{ fontFamily: 'Tiempo, serif' }}>
+                                  }`} style={{ fontFamily: 'Tiempo, serif', color: previewFont }}>
                                     {product.name}
                                   </td>
-                                  <td className={`px-2 py-1 text-center text-gray-700 ${
+                                  <td className={`px-2 py-1 text-center ${
                                     previewOrient === 'vertical' ? 'text-xs' : 'text-xs'
-                                  }`} style={{ fontFamily: 'Tiempo, serif' }}>
+                                  }`} style={{ fontFamily: 'Tiempo, serif', color: `${previewFont}dd` }}>
                                     {strainType}
                                   </td>
-                                  <td className={`px-2 py-1 text-center text-black font-medium ${
+                                  <td className={`px-2 py-1 text-center font-medium ${
                                     previewOrient === 'vertical' ? 'text-xs' : 'text-xs'
-                                  }`} style={{ fontFamily: 'Tiempo, serif' }}>
+                                  }`} style={{ fontFamily: 'Tiempo, serif', color: previewFont }}>
                                     {thcaPercent}
                                   </td>
                                 </tr>
@@ -332,7 +406,11 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                           key={product.id} 
                           className={`relative rounded-xl overflow-hidden transition-all duration-300 ease-out cursor-pointer ${
                             previewOrient === 'vertical' ? 'p-6' : 'p-5'
-                          } border border-gray-200 bg-white/95 hover:border-gray-300 hover:bg-white hover:scale-105 shadow-sm hover:shadow-md backdrop-blur-sm`}
+                          } border hover:scale-105 shadow-sm hover:shadow-md backdrop-blur-sm`}
+                          style={{
+                            backgroundColor: previewPanda ? '#000000' : '#ffffff95',
+                            borderColor: previewPanda ? '#ffffff33' : '#e5e7eb'
+                          }}
                         >
                           {previewShowImages && (getActualViewMode(category.name) === 'card' || shouldShowImages(category.name)) && (
                             <div className="flex justify-center mb-3 relative z-10">
@@ -359,9 +437,9 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             </div>
                           )}
                           
-                          <h3 className={`font-semibold text-black leading-tight mb-4 relative z-10 text-center ${
+                          <h3 className={`font-semibold leading-tight mb-4 relative z-10 text-center ${
                             previewOrient === 'vertical' ? 'text-xl' : 'text-lg'
-                          }`} style={{ fontFamily: 'Tiempo, serif' }}>
+                          }`} style={{ fontFamily: 'Tiempo, serif', color: previewFont }}>
                             {product.name}
                           </h3>
                           
@@ -369,9 +447,12 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             previewOrient === 'vertical' ? 'text-sm' : 'text-xs'
                           }`}>
                             {product.sku && (
-                              <div className="text-center pt-2 border-t border-gray-200">
-                                <div className="text-gray-600 mb-1" style={{ fontFamily: 'Tiempo, serif' }}>SKU</div>
-                                <div className="text-black font-mono text-xs">{product.sku}</div>
+                              <div 
+                                className="text-center pt-2 border-t"
+                                style={{ borderTopColor: previewPanda ? '#ffffff33' : '#e5e7eb' }}
+                              >
+                                <div className="mb-1" style={{ fontFamily: 'Tiempo, serif', color: `${previewFont}cc` }}>SKU</div>
+                                <div className="font-mono text-xs" style={{ color: previewFont }}>{product.sku}</div>
                               </div>
                             )}
                           </div>
@@ -603,181 +684,448 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   return (
     <div className="flex-1 flex flex-col p-6 bg-transparent">
       {/* Compact Toolbar */}
-      <div className="flex items-center justify-between mb-4 bg-neutral-900/40 backdrop-blur-sm border border-neutral-700/50 rounded-lg p-2">
-        {/* Left Side - Mode Controls */}
-        <div className="flex items-center gap-1">
-          {/* Orientation Toggle */}
-          <div className="flex items-center border-r border-neutral-700/50 pr-2 mr-2">
-            <button
-              onClick={() => setOrientation('horizontal')}
-              className={`p-1.5 rounded transition-all duration-200 ease-out ${
-                orientation === 'horizontal' 
-                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
-                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
-              }`}
-              title="Horizontal"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <rect x="2" y="6" width="20" height="12" rx="2" strokeWidth={2} />
-              </svg>
-            </button>
-            <button
-              onClick={() => setOrientation('vertical')}
-              className={`p-1.5 rounded transition-all duration-200 ease-out ${
-                orientation === 'vertical' 
-                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
-                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
-              }`}
-              title="Vertical"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <rect x="6" y="2" width="12" height="20" rx="2" strokeWidth={2} />
-              </svg>
-            </button>
-          </div>
-
-          {/* View Mode Toggle */}
-          <div className="flex items-center border-r border-neutral-700/50 pr-2 mr-2">
-            <button
-              onClick={() => setViewMode('auto')}
-              className={`p-1.5 rounded transition-all duration-200 ease-out ${
-                viewMode === 'auto' 
-                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
-                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
-              }`}
-              title="Auto"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded transition-all duration-200 ease-out ${
-                viewMode === 'table' 
-                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
-                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
-              }`}
-              title="Table"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18m-9 8h9m-9 4h9m-18-8v8a2 2 0 002 2h16a2 2 0 002-2v-8M5 6V4a2 2 0 012-2h10a2 2 0 012 2v2" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setViewMode('card')}
-              className={`p-1.5 rounded transition-all duration-200 ease-out ${
-                viewMode === 'card' 
-                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
-                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
-              }`}
-              title="Card"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Image Toggle */}
-          <div className="flex items-center border-r border-neutral-700/50 pr-2 mr-2">
-            <button
-              onClick={() => setShowImages(true)}
-              className={`p-1.5 rounded transition-all duration-200 ease-out ${
-                showImages 
-                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
-                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
-              }`}
-              title="Show Images"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setShowImages(false)}
-              className={`p-1.5 rounded transition-all duration-200 ease-out ${
-                !showImages 
-                  ? 'text-white bg-neutral-700/80 border border-neutral-500' 
-                  : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
-              }`}
-              title="Hide Images"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Color Pickers */}
+      <div className="space-y-3 mb-4">
+        {/* Main Controls Row */}
+        <div className="flex items-center justify-between bg-neutral-900/40 backdrop-blur-sm border border-neutral-700/50 rounded-lg p-2">
+          {/* Left Side - Mode Controls */}
           <div className="flex items-center gap-1">
-            <input
-              type="color"
-              value={backgroundColor}
-              onChange={(e) => setBackgroundColor(e.target.value)}
-              className="w-6 h-6 rounded border border-neutral-600/50 bg-transparent cursor-pointer"
-              title="Background Color"
-            />
-            <input
-              type="color"
-              value={fontColor}
-              onChange={(e) => setFontColor(e.target.value)}
-              className="w-6 h-6 rounded border border-neutral-600/50 bg-transparent cursor-pointer"
-              title="Font Color"
-            />
-            <input
-              type="color"
-              value={containerColor}
-              onChange={(e) => setContainerColor(e.target.value)}
-              className="w-6 h-6 rounded border border-neutral-600/50 bg-transparent cursor-pointer"
-              title="Container Color"
-            />
+            {/* Orientation Toggle */}
+            <div className="flex items-center border-r border-neutral-700/50 pr-2 mr-2">
+              <button
+                onClick={() => setOrientation('horizontal')}
+                className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                  orientation === 'horizontal' 
+                    ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                    : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                }`}
+                title="Horizontal"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="2" y="6" width="20" height="12" rx="2" strokeWidth={2} />
+                </svg>
+              </button>
+              <button
+                onClick={() => setOrientation('vertical')}
+                className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                  orientation === 'vertical' 
+                    ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                    : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                }`}
+                title="Vertical"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="6" y="2" width="12" height="20" rx="2" strokeWidth={2} />
+                </svg>
+              </button>
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center border-r border-neutral-700/50 pr-2 mr-2">
+              <button
+                onClick={() => setViewMode('auto')}
+                className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                  viewMode === 'auto' 
+                    ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                    : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                }`}
+                title="Auto"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                  viewMode === 'table' 
+                    ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                    : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                }`}
+                title="Table"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18m-9 8h9m-9 4h9m-18-8v8a2 2 0 002 2h16a2 2 0 002-2v-8M5 6V4a2 2 0 012-2h10a2 2 0 012 2v2" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode('card')}
+                className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                  viewMode === 'card' 
+                    ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                    : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                }`}
+                title="Card"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Image Toggle */}
+            <div className="flex items-center border-r border-neutral-700/50 pr-2 mr-2">
+              <button
+                onClick={() => setShowImages(true)}
+                className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                  showImages 
+                    ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                    : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                }`}
+                title="Show Images"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setShowImages(false)}
+                className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                  !showImages 
+                    ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                    : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                }`}
+                title="Hide Images"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Panda Mode Toggle */}
+            <div className="flex items-center border-r border-neutral-700/50 pr-2 mr-2">
+              <button
+                onClick={handlePandaModeToggle}
+                className={`p-1.5 rounded transition-all duration-200 ease-out ${
+                  pandaMode 
+                    ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                    : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                }`}
+                title="Panda Mode (Dark Theme)"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Color Pickers */}
+            <div className="flex items-center gap-1">
+              <input
+                type="color"
+                value={backgroundColor}
+                onChange={(e) => setBackgroundColor(e.target.value)}
+                className="w-6 h-6 rounded border border-neutral-600/50 bg-transparent cursor-pointer"
+                title="Background Color"
+              />
+              <input
+                type="color"
+                value={fontColor}
+                onChange={(e) => setFontColor(e.target.value)}
+                className="w-6 h-6 rounded border border-neutral-600/50 bg-transparent cursor-pointer"
+                title="Font Color"
+              />
+              <input
+                type="color"
+                value={containerColor}
+                onChange={(e) => setContainerColor(e.target.value)}
+                className="w-6 h-6 rounded border border-neutral-600/50 bg-transparent cursor-pointer"
+                title="Container Color"
+              />
+            </div>
+          </div>
+
+          {/* Right Side - Category & Actions */}
+          <div className="flex items-center gap-2">
+            {/* Category Selector */}
+            <select
+              value={selectedMenuCategory || ''}
+              onChange={(e) => setSelectedMenuCategory(e.target.value || null)}
+              className="px-2 h-[28px] bg-transparent hover:bg-neutral-600/10 border border-neutral-600/50 hover:border-neutral-500/70 rounded text-white text-xs focus:bg-neutral-600/10 focus:border-neutral-400 focus:outline-none transition-all duration-200 ease-out"
+            >
+              <option value="">All Categories</option>
+              {getUniqueCategories().map(category => (
+                <option key={category.id} value={category.slug}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            
+            {/* Launch Button */}
+            <button
+              onClick={() => openPopoutMenu(selectedMenuCategory || undefined)}
+              className="flex items-center gap-1.5 px-2 h-[28px] text-xs transition-all duration-200 ease-out rounded border bg-transparent text-white border-neutral-600/50 hover:bg-neutral-600/10 hover:border-neutral-500/70"
+              title={`Launch ${orientation} ${viewMode} menu ${showImages ? 'with' : 'without'} images`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Launch
+            </button>
           </div>
         </div>
 
-        {/* Right Side - Category & Actions */}
-        <div className="flex items-center gap-2">
-          {/* Category Selector */}
-          <select
-            value={selectedMenuCategory || ''}
-            onChange={(e) => setSelectedMenuCategory(e.target.value || null)}
-            className="px-2 h-[28px] bg-transparent hover:bg-neutral-600/10 border border-neutral-600/50 hover:border-neutral-500/70 rounded text-white text-xs focus:bg-neutral-600/10 focus:border-neutral-400 focus:outline-none transition-all duration-200 ease-out"
-          >
-            <option value="">All Categories</option>
-            {getUniqueCategories().map(category => (
-              <option key={category.id} value={category.slug}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-          
-          {/* Launch Button */}
-          <button
-            onClick={() => openPopoutMenu(selectedMenuCategory || undefined)}
-            className="flex items-center gap-1.5 px-2 h-[28px] text-xs transition-all duration-200 ease-out rounded border bg-transparent text-white border-neutral-600/50 hover:bg-neutral-600/10 hover:border-neutral-500/70"
-            title={`Launch ${orientation} ${viewMode} menu ${showImages ? 'with' : 'without'} images`}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            Launch
-          </button>
-          
-          {/* Dual Menu Button */}
-          {orientation === 'horizontal' && (
-            <button
-              onClick={handleDualMenuLaunch}
-              className="flex items-center gap-1.5 px-2 h-[28px] text-xs transition-all duration-200 ease-out rounded border bg-transparent text-white border-neutral-600/50 hover:bg-neutral-600/10 hover:border-neutral-500/70"
-              title="Configure dual menu layout"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12" />
-              </svg>
-              Dual
-            </button>
-          )}
-        </div>
+        {/* Dual Menu Controls Row - Only show when horizontal orientation */}
+        {orientation === 'horizontal' && (
+          <div className="bg-neutral-900/40 backdrop-blur-sm border border-neutral-700/50 rounded-lg p-2">
+            <div className="flex items-center justify-between">
+              {/* Dual Menu Header */}
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12" />
+                </svg>
+                <span className="text-xs text-white font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Dual Menu Configuration</span>
+              </div>
+
+              {/* Launch Dual Menu Button */}
+              <button
+                onClick={launchDualMenu}
+                disabled={!leftMenuCategory || !rightMenuCategory}
+                className="flex items-center gap-1.5 px-2 h-[28px] text-xs transition-all duration-200 ease-out rounded border bg-transparent text-white border-neutral-600/50 hover:bg-neutral-600/10 hover:border-neutral-500/70 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Launch dual menu layout"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Launch Dual
+              </button>
+            </div>
+
+            {/* Dual Menu Configuration Grid */}
+            <div className="grid grid-cols-2 gap-4 mt-3">
+              {/* Left Side Configuration */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-green-400 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Left Side</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-neutral-300">Stack</span>
+                    <button
+                      onClick={() => setEnableLeftStacking(!enableLeftStacking)}
+                      className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
+                        enableLeftStacking ? 'bg-green-600' : 'bg-neutral-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-2 w-2 transform rounded-full bg-white transition-transform ${
+                          enableLeftStacking ? 'translate-x-4' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Left Top Category */}
+                <select
+                  value={leftMenuCategory || ''}
+                  onChange={(e) => setLeftMenuCategory(e.target.value || null)}
+                  className="w-full px-2 h-[24px] bg-transparent hover:bg-neutral-600/10 border border-neutral-600/50 hover:border-neutral-500/70 rounded text-white text-xs focus:bg-neutral-600/10 focus:border-neutral-400 focus:outline-none transition-all duration-200 ease-out"
+                >
+                  <option value="">Select Top Category</option>
+                  {getUniqueCategories().map(category => (
+                    <option key={category.id} value={category.slug}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Left Images Toggle */}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setLeftMenuImages(true)}
+                    className={`p-1 rounded transition-all duration-200 ease-out ${
+                      leftMenuImages 
+                        ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                        : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                    }`}
+                    title="Show Images"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setLeftMenuImages(false)}
+                    className={`p-1 rounded transition-all duration-200 ease-out ${
+                      !leftMenuImages 
+                        ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                        : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                    }`}
+                    title="Hide Images"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    </svg>
+                  </button>
+                  <span className="text-xs text-neutral-300 ml-1">{leftMenuImages ? 'On' : 'Off'}</span>
+                </div>
+
+                {/* Left Bottom Category (if stacking) */}
+                {enableLeftStacking && (
+                  <>
+                    <select
+                      value={leftMenuCategory2 || ''}
+                      onChange={(e) => setLeftMenuCategory2(e.target.value || null)}
+                      className="w-full px-2 h-[24px] bg-transparent hover:bg-neutral-600/10 border border-neutral-600/50 hover:border-neutral-500/70 rounded text-white text-xs focus:bg-neutral-600/10 focus:border-neutral-400 focus:outline-none transition-all duration-200 ease-out"
+                    >
+                      <option value="">Select Bottom Category</option>
+                      {getUniqueCategories().map(category => (
+                        <option key={category.id} value={category.slug}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setLeftMenuImages2(true)}
+                        className={`p-1 rounded transition-all duration-200 ease-out ${
+                          leftMenuImages2 
+                            ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                            : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                        }`}
+                        title="Show Images"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setLeftMenuImages2(false)}
+                        className={`p-1 rounded transition-all duration-200 ease-out ${
+                          !leftMenuImages2 
+                            ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                            : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                        }`}
+                        title="Hide Images"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        </svg>
+                      </button>
+                      <span className="text-xs text-neutral-300 ml-1">{leftMenuImages2 ? 'On' : 'Off'}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Right Side Configuration */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-blue-400 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Right Side</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-neutral-300">Stack</span>
+                    <button
+                      onClick={() => setEnableRightStacking(!enableRightStacking)}
+                      className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
+                        enableRightStacking ? 'bg-green-600' : 'bg-neutral-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-2 w-2 transform rounded-full bg-white transition-transform ${
+                          enableRightStacking ? 'translate-x-4' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right Top Category */}
+                <select
+                  value={rightMenuCategory || ''}
+                  onChange={(e) => setRightMenuCategory(e.target.value || null)}
+                  className="w-full px-2 h-[24px] bg-transparent hover:bg-neutral-600/10 border border-neutral-600/50 hover:border-neutral-500/70 rounded text-white text-xs focus:bg-neutral-600/10 focus:border-neutral-400 focus:outline-none transition-all duration-200 ease-out"
+                >
+                  <option value="">Select Top Category</option>
+                  {getUniqueCategories().map(category => (
+                    <option key={category.id} value={category.slug}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Right Images Toggle */}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setRightMenuImages(true)}
+                    className={`p-1 rounded transition-all duration-200 ease-out ${
+                      rightMenuImages 
+                        ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                        : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                    }`}
+                    title="Show Images"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setRightMenuImages(false)}
+                    className={`p-1 rounded transition-all duration-200 ease-out ${
+                      !rightMenuImages 
+                        ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                        : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                    }`}
+                    title="Hide Images"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    </svg>
+                  </button>
+                  <span className="text-xs text-neutral-300 ml-1">{rightMenuImages ? 'On' : 'Off'}</span>
+                </div>
+
+                {/* Right Bottom Category (if stacking) */}
+                {enableRightStacking && (
+                  <>
+                    <select
+                      value={rightMenuCategory2 || ''}
+                      onChange={(e) => setRightMenuCategory2(e.target.value || null)}
+                      className="w-full px-2 h-[24px] bg-transparent hover:bg-neutral-600/10 border border-neutral-600/50 hover:border-neutral-500/70 rounded text-white text-xs focus:bg-neutral-600/10 focus:border-neutral-400 focus:outline-none transition-all duration-200 ease-out"
+                    >
+                      <option value="">Select Bottom Category</option>
+                      {getUniqueCategories().map(category => (
+                        <option key={category.id} value={category.slug}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setRightMenuImages2(true)}
+                        className={`p-1 rounded transition-all duration-200 ease-out ${
+                          rightMenuImages2 
+                            ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                            : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                        }`}
+                        title="Show Images"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setRightMenuImages2(false)}
+                        className={`p-1 rounded transition-all duration-200 ease-out ${
+                          !rightMenuImages2 
+                            ? 'text-white bg-neutral-700/80 border border-neutral-500' 
+                            : 'text-neutral-400 hover:text-neutral-200 bg-transparent hover:bg-neutral-800/40'
+                        }`}
+                        title="Hide Images"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        </svg>
+                      </button>
+                      <span className="text-xs text-neutral-300 ml-1">{rightMenuImages2 ? 'On' : 'Off'}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
 
@@ -937,6 +1285,10 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             orientation="horizontal"
                             viewMode={viewMode}
                             showImages={showImages}
+                            backgroundColor={backgroundColor}
+                            fontColor={fontColor}
+                            containerColor={containerColor}
+                            pandaMode={pandaMode}
                             categoryFilter={undefined}
                           />
                         </div>
@@ -984,6 +1336,10 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             orientation="vertical"
                             viewMode={viewMode}
                             showImages={showImages}
+                            backgroundColor={backgroundColor}
+                            fontColor={fontColor}
+                            containerColor={containerColor}
+                            pandaMode={pandaMode}
                             categoryFilter={undefined}
                           />
                         </div>
@@ -1050,6 +1406,10 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                               orientation="horizontal"
                               viewMode={viewMode}
                               showImages={showImages}
+                              backgroundColor={backgroundColor}
+                              fontColor={fontColor}
+                              containerColor={containerColor}
+                              pandaMode={pandaMode}
                               categoryFilter={category.slug}
                             />
                           </div>
@@ -1097,6 +1457,10 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                               orientation="vertical"
                               viewMode={viewMode}
                               showImages={showImages}
+                              backgroundColor={backgroundColor}
+                              fontColor={fontColor}
+                              containerColor={containerColor}
+                              pandaMode={pandaMode}
                               categoryFilter={category.slug}
                             />
                           </div>
@@ -1131,371 +1495,6 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
         </div>
       </div>
 
-      {/* Dual Menu Selector Modal */}
-      {showDualMenuSelector && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="rounded-xl p-8 max-w-2xl w-full mx-4 border border-neutral-500/30 bg-neutral-900/80 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'Tiempo, serif' }}>
-                Configure Dual Menu
-              </h2>
-              <button
-                onClick={() => setShowDualMenuSelector(false)}
-                className="text-white hover:text-white transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <p className="text-white mb-8 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
-              Select which categories to display on each side of the dual menu layout. You can enable vertical stacking to show multiple menus per side.
-            </p>
-            
-            <div className="grid grid-cols-2 gap-8 mb-8">
-              {/* Left Menu Selection */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <label className="block text-white font-semibold text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
-                    Left Side Menus
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Stack Vertically</span>
-                    <button
-                      onClick={() => setEnableLeftStacking(!enableLeftStacking)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        enableLeftStacking ? 'bg-green-600' : 'bg-neutral-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          enableLeftStacking ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-                
-                <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
-                  Top Menu Category
-                </label>
-                <select
-                  value={leftMenuCategory || ''}
-                  onChange={(e) => setLeftMenuCategory(e.target.value || null)}
-                  className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out mb-4"
-                >
-                  <option value="">Select Category</option>
-                  {getUniqueCategories().map(category => (
-                    <option key={category.id} value={category.slug}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-                
-                {/* Left Menu Images Toggle */}
-                <div>
-                  <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
-                    Show Images (Top)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setLeftMenuImages(true)}
-                      className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                        leftMenuImages 
-                          ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                          : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                      }`}
-                      title="Show Images"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setLeftMenuImages(false)}
-                      className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                        !leftMenuImages 
-                          ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                          : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                      }`}
-                      title="Hide Images"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                      </svg>
-                    </button>
-                    <span className="text-sm text-white ml-2" style={{ fontFamily: 'Tiempo, serif' }}>
-                      {leftMenuImages ? 'On' : 'Off'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Second Left Menu (if stacking enabled) */}
-                {enableLeftStacking && (
-                  <>
-                    <label className="block text-white font-medium mb-2 mt-4" style={{ fontFamily: 'Tiempo, serif' }}>
-                      Bottom Menu Category
-                    </label>
-                    <select
-                      value={leftMenuCategory2 || ''}
-                      onChange={(e) => setLeftMenuCategory2(e.target.value || null)}
-                      className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out mb-4"
-                    >
-                      <option value="">Select Category</option>
-                      {getUniqueCategories().map(category => (
-                        <option key={category.id} value={category.slug}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                    
-                    <div>
-                      <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
-                        Show Images (Bottom)
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setLeftMenuImages2(true)}
-                          className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                            leftMenuImages2 
-                              ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                              : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                          }`}
-                          title="Show Images"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => setLeftMenuImages2(false)}
-                          className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                            !leftMenuImages2 
-                              ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                              : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                          }`}
-                          title="Hide Images"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                          </svg>
-                        </button>
-                        <span className="text-sm text-white ml-2" style={{ fontFamily: 'Tiempo, serif' }}>
-                          {leftMenuImages2 ? 'On' : 'Off'}
-                        </span>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-              
-              {/* Right Menu Selection */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <label className="block text-white font-semibold text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
-                    Right Side Menus
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Stack Vertically</span>
-                    <button
-                      onClick={() => setEnableRightStacking(!enableRightStacking)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        enableRightStacking ? 'bg-green-600' : 'bg-neutral-600'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          enableRightStacking ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-                
-                <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
-                  Top Menu Category
-                </label>
-                <select
-                  value={rightMenuCategory || ''}
-                  onChange={(e) => setRightMenuCategory(e.target.value || null)}
-                  className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out mb-4"
-                >
-                  <option value="">Select Category</option>
-                  {getUniqueCategories().map(category => (
-                    <option key={category.id} value={category.slug}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-                
-                {/* Right Menu Images Toggle */}
-                <div>
-                  <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
-                    Show Images (Top)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setRightMenuImages(true)}
-                      className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                        rightMenuImages 
-                          ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                          : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                      }`}
-                      title="Show Images"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setRightMenuImages(false)}
-                      className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                        !rightMenuImages 
-                          ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                          : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                      }`}
-                      title="Hide Images"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                      </svg>
-                    </button>
-                    <span className="text-sm text-white ml-2" style={{ fontFamily: 'Tiempo, serif' }}>
-                      {rightMenuImages ? 'On' : 'Off'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Second Right Menu (if stacking enabled) */}
-                {enableRightStacking && (
-                  <>
-                    <label className="block text-white font-medium mb-2 mt-4" style={{ fontFamily: 'Tiempo, serif' }}>
-                      Bottom Menu Category
-                    </label>
-                    <select
-                      value={rightMenuCategory2 || ''}
-                      onChange={(e) => setRightMenuCategory2(e.target.value || null)}
-                      className="w-full px-4 py-3 bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-white text-base focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out mb-4"
-                    >
-                      <option value="">Select Category</option>
-                      {getUniqueCategories().map(category => (
-                        <option key={category.id} value={category.slug}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                    
-                    <div>
-                      <label className="block text-white font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
-                        Show Images (Bottom)
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setRightMenuImages2(true)}
-                          className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                            rightMenuImages2 
-                              ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                              : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                          }`}
-                          title="Show Images"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => setRightMenuImages2(false)}
-                          className={`p-2 rounded-lg transition-all duration-200 ease-out ${
-                            !rightMenuImages2 
-                              ? 'text-white bg-neutral-800/90 border border-neutral-500' 
-                              : 'text-white hover:text-white bg-transparent border border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                          }`}
-                          title="Hide Images"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                          </svg>
-                        </button>
-                        <span className="text-sm text-white ml-2" style={{ fontFamily: 'Tiempo, serif' }}>
-                          {rightMenuImages2 ? 'On' : 'Off'}
-                        </span>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-            
-            {/* Preview */}
-            {leftMenuCategory && rightMenuCategory && (
-              <div className="mb-8 p-4 rounded-lg border border-neutral-500/30 bg-transparent">
-                <h3 className="text-white font-semibold mb-3" style={{ fontFamily: 'Tiempo, serif' }}>
-                  Preview Layout:
-                </h3>
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="p-3 rounded border-r border-neutral-500/30 bg-transparent">
-                    <div className="text-green-400 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Left Side</div>
-                    <div className="text-white text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
-                      {getUniqueCategories().find(c => c.slug === leftMenuCategory)?.name}
-                    </div>
-                    <div className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'Tiempo, serif' }}>
-                      Images: {leftMenuImages ? 'On' : 'Off'}
-                    </div>
-                    {enableLeftStacking && leftMenuCategory2 && (
-                      <>
-                        <div className="text-white text-sm mt-2 pt-2 border-t border-neutral-600/30" style={{ fontFamily: 'Tiempo, serif' }}>
-                          {getUniqueCategories().find(c => c.slug === leftMenuCategory2)?.name}
-                        </div>
-                        <div className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'Tiempo, serif' }}>
-                          Images: {leftMenuImages2 ? 'On' : 'Off'}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <div className="bg-neutral-700 p-3 rounded">
-                    <div className="text-blue-400 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Right Side</div>
-                    <div className="text-white text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
-                      {getUniqueCategories().find(c => c.slug === rightMenuCategory)?.name}
-                    </div>
-                    <div className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'Tiempo, serif' }}>
-                      Images: {rightMenuImages ? 'On' : 'Off'}
-                    </div>
-                    {enableRightStacking && rightMenuCategory2 && (
-                      <>
-                        <div className="text-white text-sm mt-2 pt-2 border-t border-neutral-600/30" style={{ fontFamily: 'Tiempo, serif' }}>
-                          {getUniqueCategories().find(c => c.slug === rightMenuCategory2)?.name}
-                        </div>
-                        <div className="text-xs text-gray-400 mt-1" style={{ fontFamily: 'Tiempo, serif' }}>
-                          Images: {rightMenuImages2 ? 'On' : 'Off'}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setShowDualMenuSelector(false)}
-                className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-white border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-white"
-                style={{ fontFamily: 'Tiempo, serif' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={launchDualMenu}
-                disabled={!leftMenuCategory || !rightMenuCategory}
-                className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-white border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ fontFamily: 'Tiempo, serif' }}
-              >
-                Launch Dual Menu
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -24,13 +24,13 @@ export default function MenuDisplayPage() {
   const [rightMenuImages2, setRightMenuImages2] = useState<boolean>(true);
   const [enableLeftStacking, setEnableLeftStacking] = useState<boolean>(false);
   const [enableRightStacking, setEnableRightStacking] = useState<boolean>(false);
-  // Color customization
-  const [backgroundColor, setBackgroundColor] = useState<string>('#f5f5f4'); // stone-100
-  const [fontColor, setFontColor] = useState<string>('#1f2937'); // gray-800
-  const [containerColor, setContainerColor] = useState<string>('#d1d5db'); // gray-300
+  const [backgroundColor, setBackgroundColor] = useState<string>('#f5f5f4');
+  const [fontColor, setFontColor] = useState<string>('#1f2937');
+  const [containerColor, setContainerColor] = useState<string>('#d1d5db');
+  const [pandaMode, setPandaMode] = useState<boolean>(false);
 
   useEffect(() => {
-    // Get orientation, view mode, images, and category from URL params
+    // Get parameters from URL
     const urlParams = new URLSearchParams(window.location.search);
     const urlOrientation = urlParams.get('orientation');
     const urlViewMode = urlParams.get('viewMode');
@@ -50,6 +50,7 @@ export default function MenuDisplayPage() {
     const urlBackgroundColor = urlParams.get('backgroundColor');
     const urlFontColor = urlParams.get('fontColor');
     const urlContainerColor = urlParams.get('containerColor');
+    const urlPandaMode = urlParams.get('pandaMode');
     
     if (urlOrientation === 'vertical' || urlOrientation === 'horizontal') {
       setOrientation(urlOrientation);
@@ -62,7 +63,6 @@ export default function MenuDisplayPage() {
     if (urlShowImages === 'true' || urlShowImages === 'false') {
       setShowImages(urlShowImages === 'true');
     } else if (urlShowImages === 'dual') {
-      // Handle dual menu image settings
       if (urlLeftImages === 'true' || urlLeftImages === 'false') {
         setLeftMenuImages(urlLeftImages === 'true');
       }
@@ -96,7 +96,6 @@ export default function MenuDisplayPage() {
       }
     }
 
-    // Set colors from URL params
     if (urlBackgroundColor) {
       setBackgroundColor(decodeURIComponent(urlBackgroundColor));
     }
@@ -105,6 +104,9 @@ export default function MenuDisplayPage() {
     }
     if (urlContainerColor) {
       setContainerColor(decodeURIComponent(urlContainerColor));
+    }
+    if (urlPandaMode === 'true' || urlPandaMode === 'false') {
+      setPandaMode(urlPandaMode === 'true');
     }
 
     // Listen for data from parent window
@@ -123,7 +125,6 @@ export default function MenuDisplayPage() {
         if (typeof event.data.showImages === 'boolean') {
           setShowImages(event.data.showImages);
         } else if (event.data.showImages === 'dual') {
-          // Handle dual menu image settings
           if (typeof event.data.leftMenuImages === 'boolean') {
             setLeftMenuImages(event.data.leftMenuImages);
           }
@@ -138,7 +139,6 @@ export default function MenuDisplayPage() {
           }
         }
         
-        // Handle stacking settings
         if (typeof event.data.enableLeftStacking === 'boolean') {
           setEnableLeftStacking(event.data.enableLeftStacking);
         }
@@ -152,7 +152,6 @@ export default function MenuDisplayPage() {
           setRightMenuCategory2(event.data.rightMenuCategory2);
         }
         
-        // Handle color settings
         if (event.data.backgroundColor) {
           setBackgroundColor(event.data.backgroundColor);
         }
@@ -161,6 +160,9 @@ export default function MenuDisplayPage() {
         }
         if (event.data.containerColor) {
           setContainerColor(event.data.containerColor);
+        }
+        if (typeof event.data.pandaMode === 'boolean') {
+          setPandaMode(event.data.pandaMode);
         }
         
         if (event.data.categoryFilter) {
@@ -172,7 +174,6 @@ export default function MenuDisplayPage() {
 
     window.addEventListener('message', handleMessage);
     
-    // Fallback: fetch data if not received from parent
     const fallbackTimeout = setTimeout(() => {
       if (loading) {
         fetchMenuData();
@@ -199,7 +200,6 @@ export default function MenuDisplayPage() {
             return hasStock;
           });
           
-          // Load blueprint pricing for all products
           try {
             console.log(`🔍 [Menu Display] Batch fetching blueprint pricing for ${availableProducts.length} products`);
             const productsWithCategories = availableProducts.map((product: Product) => ({
@@ -209,7 +209,6 @@ export default function MenuDisplayPage() {
 
             const batchPricingResponse = await BlueprintPricingService.getBlueprintPricingBatch(productsWithCategories);
             
-            // Apply batch pricing results to products
             availableProducts.forEach((product: Product) => {
               const pricingData = batchPricingResponse[product.id];
               if (pricingData) {
@@ -220,12 +219,10 @@ export default function MenuDisplayPage() {
             console.log(`✅ [Menu Display] Applied blueprint pricing to ${Object.keys(batchPricingResponse).length}/${availableProducts.length} products`);
           } catch (pricingError) {
             console.warn(`⚠️ [Menu Display] Failed to get batch blueprint pricing:`, pricingError instanceof Error ? pricingError.message : 'Unknown error');
-            // Continue without pricing
           }
           
           setProducts(availableProducts);
           
-          // Extract unique categories
           const categoryMap = new Map();
           availableProducts.forEach((product: Product) => {
             product.categories?.forEach(cat => {
@@ -258,12 +255,89 @@ export default function MenuDisplayPage() {
     return thca ? `${thca}%` : 'N/A';
   };
 
-  // Render tiered pricing for header - compact horizontal layout
-  const renderHeaderPricing = (allProducts: Product[], orientation: 'horizontal' | 'vertical') => {
-    // Debug logging
-    console.log(`🔍 [Menu Display] Rendering header pricing for ${allProducts.length} products`);
+  // Determine which image setting to use for dual menus
+  const getImageSetting = (isLeftSide: boolean = false, categorySlug: string | null = null) => {
+    if (isDualMenu) {
+      if (isLeftSide) {
+        if (enableLeftStacking && categorySlug === leftMenuCategory2) {
+          return leftMenuImages2;
+        }
+        return leftMenuImages;
+      } else {
+        if (enableRightStacking && categorySlug === rightMenuCategory2) {
+          return rightMenuImages2;
+        }
+        return rightMenuImages;
+      }
+    }
+    return showImages;
+  };
+
+  // Check if we're displaying flower products (for table view)
+  const isFlowerCategory = (categoryName: string) => {
+    const flowerKeywords = ['flower', 'bud', 'strain'];
+    return flowerKeywords.some(keyword => 
+      categoryName.toLowerCase().includes(keyword)
+    );
+  };
+
+  // Determine actual view mode to use
+  const getActualViewMode = (categoryName: string) => {
+    if (viewMode === 'auto') {
+      return isFlowerCategory(categoryName) ? 'table' : 'card';
+    }
+    return viewMode;
+  };
+
+  // Check if category should display product images
+  const shouldShowImages = (categoryName: string) => {
+    const imageCategories = ['edible', 'concentrate', 'vape', 'cartridge', 'extract', 'dab', 'wax', 'shatter', 'rosin', 'live resin'];
+    return imageCategories.some(keyword => 
+      categoryName.toLowerCase().includes(keyword)
+    );
+  };
+
+  // Auto-balance table products between columns (2 columns if > 13 products)
+  const balanceTableProducts = (products: Product[]) => {
+    const totalProducts = products.length;
     
-    // Get all unique pricing tiers from all products
+    // Use single column if 13 or fewer products
+    if (totalProducts <= 13) {
+      return {
+        leftColumn: products,
+        rightColumn: []
+      };
+    }
+    
+    // Use 2-column layout for 14+ products
+    const leftColumnCount = Math.ceil(totalProducts / 2);
+    return {
+      leftColumn: products.slice(0, leftColumnCount),
+      rightColumn: products.slice(leftColumnCount)
+    };
+  };
+
+  // Get consistent styles
+  const getBackgroundStyle = () => ({
+    backgroundColor: pandaMode ? '#000000' : backgroundColor
+  });
+
+  const getContainerStyle = () => ({
+    backgroundColor: pandaMode ? '#000000' : containerColor,
+    border: pandaMode ? '1px solid rgba(255, 255, 255, 0.2)' : `1px solid ${containerColor}`,
+    color: fontColor
+  });
+
+  const getHeaderStyle = () => ({
+    background: pandaMode 
+      ? 'linear-gradient(to right, #000000, #000000, #000000)'
+      : `linear-gradient(to right, ${containerColor}90, ${containerColor}85, ${containerColor}90)`,
+    borderBottomColor: pandaMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(203, 213, 225, 0.6)',
+    color: fontColor
+  });
+
+  // Render tiered pricing for header
+  const renderHeaderPricing = (allProducts: Product[], orientation: 'horizontal' | 'vertical') => {
     const pricingTiers = new Map<string, { label: string; price: number; ruleName: string }>();
     
     allProducts.forEach(product => {
@@ -283,10 +357,8 @@ export default function MenuDisplayPage() {
       }
     });
 
-    console.log(`🔍 [Menu Display] Found ${pricingTiers.size} header pricing tiers`);
     if (pricingTiers.size === 0) return null;
 
-    // Group tiers by rule name
     const tiersByRule = new Map<string, Array<{ label: string; price: number }>>();
     pricingTiers.forEach(tier => {
       if (!tiersByRule.has(tier.ruleName)) {
@@ -295,7 +367,6 @@ export default function MenuDisplayPage() {
       tiersByRule.get(tier.ruleName)!.push({ label: tier.label, price: tier.price });
     });
 
-    // Sort tiers within each rule by price
     tiersByRule.forEach(tiers => {
       tiers.sort((a, b) => a.price - b.price);
     });
@@ -308,9 +379,9 @@ export default function MenuDisplayPage() {
           <div key={ruleName} className={`flex items-center gap-1 ${
             orientation === 'vertical' ? 'flex-col text-center' : ''
           }`}>
-            <div className={`text-black font-medium uppercase tracking-wider ${
+            <div className={`font-medium uppercase tracking-wider ${
               orientation === 'vertical' ? 'text-base mb-2' : 'text-sm'
-            }`} style={{ fontFamily: 'Tiempo, serif' }}>
+            }`} style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
               {ruleName}
             </div>
             <div className={`flex gap-1 ${
@@ -319,28 +390,26 @@ export default function MenuDisplayPage() {
               {tiers.map((tier, index) => (
                 <div
                   key={`${ruleName}-${index}`}
-                  className={`relative rounded-2xl px-4 py-3 transition-all duration-500 ease-out cursor-pointer border border-slate-200/60 bg-gradient-to-br from-gray-300/95 via-gray-300/90 to-gray-300/85 backdrop-blur-md hover:border-slate-300/80 hover:from-gray-300/98 hover:via-gray-300/95 hover:to-gray-300/92 hover:scale-105 shadow-lg hover:shadow-2xl group ${
+                  className={`relative rounded-2xl px-4 py-3 transition-all duration-500 ease-out cursor-pointer border backdrop-blur-md hover:scale-105 shadow-lg hover:shadow-2xl group ${
                     orientation === 'vertical' ? 'text-sm' : 'text-xs'
                   }`}
                   style={{
-                    boxShadow: '0 8px 25px rgba(0,0,0,0.1), inset 0 1px 0 rgba(156,163,175,0.2)'
+                    ...getContainerStyle(),
+                    boxShadow: pandaMode 
+                      ? '0 8px 25px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.2)'
+                      : '0 8px 25px rgba(0,0,0,0.1), inset 0 1px 0 rgba(156,163,175,0.2)'
                   }}
                 >
-                  
-                  <div className="text-slate-700 font-semibold text-center relative z-10 tracking-wide group-hover:text-slate-800 transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="font-semibold text-center relative z-10 tracking-wide transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
                     {tier.label}
                   </div>
-                  <div className="text-slate-800 font-bold text-center mt-1 relative z-10 group-hover:text-slate-900 transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif' }}>
+                  <div className="font-bold text-center mt-1 relative z-10 transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
                     ${tier.price.toFixed(2)}
                   </div>
-                  
-                  {/* Subtle inner glow effect */}
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 bg-gradient-to-r from-gray-300/10 via-transparent to-gray-300/10 transition-opacity duration-300"></div>
                 </div>
               ))}
             </div>
             
-            {/* Divider between different pricing rule groups */}
             {ruleIndex < Array.from(tiersByRule.entries()).length - 1 && (
               <div className={`${
                 orientation === 'vertical' 
@@ -354,71 +423,21 @@ export default function MenuDisplayPage() {
     );
   };
 
-  // Update selected category name when categoryFilter changes
-  useEffect(() => {
-    if (categoryFilter && categories.length > 0) {
-      const selectedCategory = categories.find(cat => cat.slug === categoryFilter);
-      setSelectedCategoryName(selectedCategory?.name || '');
-    } else {
-      setSelectedCategoryName('');
-    }
-  }, [categoryFilter, categories]);
-
-  // Auto-balance table products between columns (single column if < 12 products)
-  const balanceTableProducts = (products: Product[]) => {
-    const totalProducts = products.length;
-    
-    // Use single column if less than 12 products
-    if (totalProducts < 12) {
-      return {
-        leftColumn: products,
-        rightColumn: []
-      };
-    }
-    
-    // Use 2-column layout for 12+ products
-    const leftColumnCount = Math.ceil(totalProducts / 2);
-    return {
-      leftColumn: products.slice(0, leftColumnCount),
-      rightColumn: products.slice(leftColumnCount)
-    };
-  };
-
-  // Determine which image setting to use for dual menus
-  const getImageSetting = (isLeftSide: boolean = false, categorySlug: string | null = null) => {
-    if (isDualMenu) {
-      if (isLeftSide) {
-        // Check if this is the second left menu
-        if (enableLeftStacking && categorySlug === leftMenuCategory2) {
-          return leftMenuImages2;
-        }
-        return leftMenuImages;
-      } else {
-        // Check if this is the second right menu
-        if (enableRightStacking && categorySlug === rightMenuCategory2) {
-          return rightMenuImages2;
-        }
-        return rightMenuImages;
-      }
-    }
-    return showImages;
-  };
-
-  // Render a single menu section (for dual menu support)
+  // Render a single menu section
   const renderMenuSection = (categorySlug: string | null, sectionTitle?: string, isLeftSide: boolean = false) => {
-    const sectionProducts = categorySlug 
-      ? displayProducts.filter(product => 
+    const displayProducts = categorySlug 
+      ? products.filter(product => 
           product.categories?.some(cat => cat.slug === categorySlug)
         )
-      : displayProducts;
+      : products;
 
-    const sectionCategories = categorySlug
+    const displayCategories = categorySlug
       ? categories.filter(cat => cat.slug === categorySlug)
       : categories;
 
-    const productsByCategory = sectionCategories.map(category => ({
+    const productsByCategory = displayCategories.map(category => ({
       category,
-      products: sectionProducts.filter(product => 
+      products: displayProducts.filter(product => 
         product.categories?.some(cat => cat.id === category.id)
       )
     })).filter(group => group.products.length > 0);
@@ -426,20 +445,23 @@ export default function MenuDisplayPage() {
     const currentShowImages = getImageSetting(isLeftSide, categorySlug);
 
     return (
-      <div className="flex-1 h-full overflow-y-auto pb-8">
+      <div className="flex-1 h-full overflow-y-auto pb-8" style={getBackgroundStyle()}>
         {sectionTitle && (
-          <div className="bg-gray-300/90 backdrop-blur-md px-8 py-4 border-b border-slate-200/60 relative shadow-sm">
-            <h2 className="text-slate-800 uppercase tracking-widest relative z-10 text-xl text-center" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, letterSpacing: '0.15em' }}>
+          <div className="backdrop-blur-md px-8 py-4 border-b relative shadow-sm" style={getHeaderStyle()}>
+            <h2 className="uppercase tracking-widest relative z-10 text-xl text-center" 
+                style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, letterSpacing: '0.15em', color: fontColor }}>
               {sectionTitle}
             </h2>
-            <div className="w-28 h-px bg-gradient-to-r from-transparent via-slate-400/70 to-transparent mt-3 mx-auto"></div>
+            <div className="w-28 h-px mt-3 mx-auto" 
+                 style={{ background: `linear-gradient(to right, transparent, ${fontColor}70, transparent)` }}>
+            </div>
           </div>
         )}
         
         {productsByCategory.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <p className="text-2xl text-black mb-3">
+              <p className="text-2xl mb-3" style={{ color: fontColor }}>
                 {sectionTitle 
                   ? `No ${sectionTitle.toLowerCase()} products currently available`
                   : 'No products currently available'
@@ -449,199 +471,181 @@ export default function MenuDisplayPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-6 p-4 pb-8 pt-4">
+          <div className="space-y-6 p-4 pb-8 pt-4" style={getBackgroundStyle()}>
             {productsByCategory.map(({ category, products: categoryProducts }) => (
-              <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-4' : ''}>
-                {/* Category Header - Only show if not in dual mode or if multiple categories */}
+              <div key={category.id}>
                 {(!isDualMenu || productsByCategory.length > 1) && (
-                  <div className="bg-gray-300/90 backdrop-blur-md px-8 py-4 border-b border-slate-200/60 relative mb-4 rounded-t-xl shadow-sm">
-                    <h3 className="text-slate-800 uppercase tracking-widest relative z-10 text-lg" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, letterSpacing: '0.15em' }}>
+                  <div className="backdrop-blur-md px-8 py-4 border-b relative mb-4 rounded-t-xl shadow-sm" 
+                       style={getHeaderStyle()}>
+                    <h3 className="uppercase tracking-widest relative z-10 text-lg" 
+                        style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, letterSpacing: '0.15em', color: fontColor }}>
                       {category.name}
                     </h3>
-                    <div className="w-28 h-px bg-gradient-to-r from-transparent via-slate-400/70 to-transparent mt-3"></div>
+                    <div className="w-28 h-px mt-3" 
+                         style={{ background: `linear-gradient(to right, transparent, ${fontColor}70, transparent)` }}>
+                    </div>
                   </div>
                 )}
                 
                 {/* Products Display */}
                 {getActualViewMode(category.name) === 'table' ? (
-                    /* Table Layout - Single column if < 12 products, 2-column if 12+ */
-                    (() => {
-                      const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);
-                      const useSingleColumn = rightColumn.length === 0;
-                      return (
-                        <div className={`grid gap-6 py-4 pt-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`}>
-                          {/* Left Column */}
-                          <div className="space-y-2">
-                            {leftColumn.map((product, index) => {
-                        const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
-                        const strainType = getStrainType(product);
-                        const thcaPercent = getTHCAPercentage(product);
+                  /* Table Layout - Single column if ≤ 13 products, 2-column if 14+ */
+                  (() => {
+                    const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);
+                    const useSingleColumn = rightColumn.length === 0;
+                    return (
+                      <div className={`grid gap-6 py-4 pt-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`} 
+                           style={getBackgroundStyle()}>
+                        {/* Left Column */}
+                        <div className="space-y-2">
+                          {leftColumn.map((product, index) => {
+                            const strainType = getStrainType(product);
+                            const thcaPercent = getTHCAPercentage(product);
 
-                        return (
-                          <div 
-                            key={product.id}
-                            className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
-                            style={{ 
-                              backgroundColor: `${containerColor}99`,
-                              borderColor: `${containerColor}4d`
-                            }}
-                          >
-                            <div className="grid grid-cols-12 gap-4 items-center">
-                              {/* Product Info */}
-                              <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
-                                {/* Product Image */}
-                                <div className={`w-12 h-12 relative overflow-hidden flex-shrink-0 ${!showImages ? 'hidden' : ''}`}>
-                                  {product.image ? (
-                                    <img 
-                                      src={product.image} 
-                                      alt={product.name}
-                                      className="w-full h-full object-contain rounded"
-                                      loading="lazy"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-neutral-800/30 rounded">
-                                      <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                      </svg>
+                            return (
+                              <div key={product.id} 
+                                   className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
+                                   style={getContainerStyle()}>
+                                <div className="grid grid-cols-12 gap-4 items-center">
+                                  {/* Product Info */}
+                                  <div className={`col-span-6 flex items-center ${currentShowImages ? 'gap-4' : ''}`}>
+                                    {/* Product Image */}
+                                    {currentShowImages && (
+                                      <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                        {product.image ? (
+                                          <img src={product.image} alt={product.name}
+                                               className="w-full h-full object-contain rounded" loading="lazy" />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center rounded" 
+                                               style={getContainerStyle()}>
+                                            <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="font-semibold text-sm leading-tight mb-1 truncate" 
+                                          style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
+                                        {product.name}
+                                      </h3>
+                                      {product.sku && (
+                                        <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
+                                          {product.sku}
+                                        </p>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h3 className="font-semibold text-sm leading-tight mb-1 truncate" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
-                                    {product.name}
-                                  </h3>
-                                  {product.sku && (
-                                    <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                      {product.sku}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
+                                  </div>
 
-                              {/* Type */}
-                              <div className="col-span-3 text-center">
-                                <span className="font-medium text-sm" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
-                                  {strainType}
-                                </span>
-                              </div>
+                                  {/* Type */}
+                                  <div className="col-span-3 text-center">
+                                    <span className="font-medium text-sm" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
+                                      {strainType}
+                                    </span>
+                                  </div>
 
-                              {/* THCA % */}
-                              <div className="col-span-3 text-center">
-                                <span className="font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
-                                  {thcaPercent}
-                                </span>
+                                  {/* THCA % */}
+                                  <div className="col-span-3 text-center">
+                                    <span className="font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                                      {thcaPercent}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        );
-                        })}
-                      </div>
-                      
-                          {/* Right Column - Only render if not single column */}
-                          {!useSingleColumn && (
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Right Column - Only render if not single column */}
+                        {!useSingleColumn && (
                           <div className="space-y-2">
                             {rightColumn.map((product, index) => {
-                        const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
-                        const strainType = getStrainType(product);
-                        const thcaPercent = getTHCAPercentage(product);
+                              const strainType = getStrainType(product);
+                              const thcaPercent = getTHCAPercentage(product);
 
-                        return (
-                          <div 
-                            key={product.id}
-                            className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
-                            style={{ 
-                              backgroundColor: `${containerColor}99`,
-                              borderColor: `${containerColor}4d`
-                            }}
-                          >
-                            <div className="grid grid-cols-12 gap-4 items-center">
-                              {/* Product Info */}
-                              <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
-                                {/* Product Image */}
-                                <div className={`w-12 h-12 relative overflow-hidden flex-shrink-0 ${!showImages ? 'hidden' : ''}`}>
-                                  {product.image ? (
-                                    <img 
-                                      src={product.image} 
-                                      alt={product.name}
-                                      className="w-full h-full object-contain rounded"
-                                      loading="lazy"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-neutral-800/30 rounded">
-                                      <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                      </svg>
+                              return (
+                                <div key={product.id} 
+                                     className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
+                                     style={getContainerStyle()}>
+                                  <div className="grid grid-cols-12 gap-4 items-center">
+                                    {/* Product Info */}
+                                    <div className={`col-span-6 flex items-center ${currentShowImages ? 'gap-4' : ''}`}>
+                                      {/* Product Image */}
+                                      {currentShowImages && (
+                                        <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                          {product.image ? (
+                                            <img src={product.image} alt={product.name}
+                                                 className="w-full h-full object-contain rounded" loading="lazy" />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center rounded" 
+                                                 style={getContainerStyle()}>
+                                              <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                              </svg>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-sm leading-tight mb-1 truncate" 
+                                            style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
+                                          {product.name}
+                                        </h3>
+                                        {product.sku && (
+                                          <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
+                                            {product.sku}
+                                          </p>
+                                        )}
+                                      </div>
                                     </div>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h3 className="font-semibold text-sm leading-tight mb-1 truncate" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
-                                    {product.name}
-                                  </h3>
-                                  {product.sku && (
-                                    <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                      {product.sku}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
 
-                              {/* Type */}
-                              <div className="col-span-3 text-center">
-                                <span className="font-medium text-sm" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
-                                  {strainType}
-                                </span>
-                              </div>
+                                    {/* Type */}
+                                    <div className="col-span-3 text-center">
+                                      <span className="font-medium text-sm" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
+                                        {strainType}
+                                      </span>
+                                    </div>
 
-                              {/* THCA % */}
-                              <div className="col-span-3 text-center">
-                                <span className="font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
-                                  {thcaPercent}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                            );
+                                    {/* THCA % */}
+                                    <div className="col-span-3 text-center">
+                                      <span className="font-semibold text-sm" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                                        {thcaPercent}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
                             })}
                           </div>
-                          )}
-                        </div>
-                      );
-                    })()
+                        )}
+                      </div>
+                    );
+                  })()
                 ) : (
                   /* Grid Layout for Non-Flower Products */
-                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3" style={getBackgroundStyle()}>
                     {categoryProducts.map(product => {
-                      const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
-                      const strainType = getStrainType(product);
-                      const thcaPercent = getTHCAPercentage(product);
-
                       return (
-                        <div 
-                          key={product.id} 
-                          className="rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
-                          style={{ 
-                            backgroundColor: `${containerColor}99`,
-                            borderColor: `${containerColor}4d`
-                          }}
-                        >
-                          
+                        <div key={product.id} 
+                             className="rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
+                             style={getContainerStyle()}>
                           
                           {/* Product Image - Show based on user preference and view mode */}
                           {currentShowImages && (getActualViewMode(category.name) === 'card' || shouldShowImages(category.name)) && (
                             <div className="flex justify-center mb-3 relative z-10">
                               <div className="w-20 h-20 relative overflow-hidden rounded-lg">
                                 {product.image ? (
-                                  <img 
-                                    src={product.image} 
-                                    alt={product.name}
-                                    className="w-full h-full object-contain  rounded-lg"
-                                    loading="lazy"
-                                  />
+                                  <img src={product.image} alt={product.name}
+                                       className="w-full h-full object-contain rounded-lg" loading="lazy" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center  rounded-lg">
+                                  <div className="w-full h-full flex items-center justify-center rounded-lg" 
+                                       style={getContainerStyle()}>
                                     <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
                                     </svg>
                                   </div>
                                 )}
@@ -650,16 +654,19 @@ export default function MenuDisplayPage() {
                           )}
                           
                           {/* Product Name - Center */}
-                          <h4 className="font-medium leading-relaxed mb-5 relative z-10 text-xl text-center tracking-wide" style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.05)', color: fontColor }}>
+                          <h4 className="font-medium leading-relaxed mb-5 relative z-10 text-xl text-center tracking-wide" 
+                              style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.05)', color: fontColor }}>
                             {product.name}
                           </h4>
                           
                           {/* Product Details - Bottom Centered */}
                           <div className="space-y-3 relative z-10 text-sm">
                             {product.sku && (
-                              <div className="text-center pt-3 border-t border-slate-200/60">
-                                <div className="text-slate-500 mb-1 font-medium tracking-wide" style={{ fontFamily: 'Tiempo, serif' }}>SKU</div>
-                                <div className="text-black font-mono text-xs">{product.sku}</div>
+                              <div className="text-center pt-3 border-t" 
+                                   style={{ borderTopColor: pandaMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(203, 213, 225, 0.6)' }}>
+                                <div className="mb-1 font-medium tracking-wide" 
+                                     style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>SKU</div>
+                                <div className="font-mono text-xs" style={{ color: fontColor }}>{product.sku}</div>
                               </div>
                             )}
                           </div>
@@ -694,36 +701,22 @@ export default function MenuDisplayPage() {
     )
   })).filter(group => group.products.length > 0);
 
-  // Check if we're displaying flower products (for table view)
-  const isFlowerCategory = (categoryName: string) => {
-    const flowerKeywords = ['flower', 'bud', 'strain'];
-    return flowerKeywords.some(keyword => 
-      categoryName.toLowerCase().includes(keyword)
-    );
-  };
-
-  // Determine actual view mode to use
-  const getActualViewMode = (categoryName: string) => {
-    if (viewMode === 'auto') {
-      return isFlowerCategory(categoryName) ? 'table' : 'card';
+  // Update selected category name when categoryFilter changes
+  useEffect(() => {
+    if (categoryFilter && categories.length > 0) {
+      const selectedCategory = categories.find(cat => cat.slug === categoryFilter);
+      setSelectedCategoryName(selectedCategory?.name || '');
+    } else {
+      setSelectedCategoryName('');
     }
-    return viewMode;
-  };
-
-  // Check if category should display product images
-  const shouldShowImages = (categoryName: string) => {
-    const imageCategories = ['edible', 'concentrate', 'vape', 'cartridge', 'extract', 'dab', 'wax', 'shatter', 'rosin', 'live resin'];
-    return imageCategories.some(keyword => 
-      categoryName.toLowerCase().includes(keyword)
-    );
-  };
+  }, [categoryFilter, categories]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-stone-100 to-stone-200 flex items-center justify-center">
-        <div className="text-center text-slate-800">
+      <div className="min-h-screen flex items-center justify-center" style={getBackgroundStyle()}>
+        <div className="text-center">
           <div className="animate-spin rounded-full h-14 w-14 border-b-3 border-slate-600 mx-auto mb-6"></div>
-          <p className="text-2xl tracking-wide" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200 }}>Loading Menu...</p>
+          <p className="text-2xl tracking-wide" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, color: fontColor }}>Loading Menu...</p>
           <p className="text-sm text-slate-500 mt-3 font-medium">Preparing premium display</p>
         </div>
       </div>
@@ -731,80 +724,39 @@ export default function MenuDisplayPage() {
   }
 
   return (
-    <div 
-      className="h-screen text-slate-900 overflow-hidden flex flex-col relative"
-      style={{ 
-        background: `linear-gradient(to bottom right, ${backgroundColor}, ${backgroundColor}dd, ${backgroundColor}bb)`,
-        color: fontColor 
-      }}
-    >
-      {/* Multi-layered Premium Background */}
-      <div className="absolute inset-0">
-        {/* Base gradient layer */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-300/30 via-stone-50/40 to-stone-200/50"></div>
-        
-        {/* Radial gradient overlay for depth */}
-        <div className="absolute inset-0 bg-gradient-radial from-gray-300/10 via-transparent to-stone-300/20"></div>
-        
-        {/* Animated subtle gradient */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-gray-300/5 to-stone-100/10 animate-pulse" style={{ animationDuration: '8s' }}></div>
-        
-        {/* Premium texture pattern */}
-        <svg 
-          className="absolute inset-0 w-full h-full object-cover opacity-20"
-          viewBox="0 0 200 200" 
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <pattern id="elegant-texture" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-              <rect width="80" height="80" fill="rgba(156,163,175,0.03)"/>
-              <circle cx="20" cy="25" r="0.4" fill="rgba(156,163,175,0.06)" opacity="0.7"/>
-              <circle cx="60" cy="15" r="0.25" fill="rgba(156,163,175,0.04)" opacity="0.5"/>
-              <circle cx="40" cy="55" r="0.35" fill="rgba(156,163,175,0.05)" opacity="0.6"/>
-              <circle cx="70" cy="45" r="0.2" fill="rgba(156,163,175,0.03)" opacity="0.4"/>
-              <circle cx="25" cy="65" r="0.3" fill="rgba(156,163,175,0.04)" opacity="0.5"/>
-              {/* Subtle lines for texture */}
-              <line x1="0" y1="40" x2="80" y2="40" stroke="rgba(156,163,175,0.02)" strokeWidth="0.5" opacity="0.3"/>
-              <line x1="40" y1="0" x2="40" y2="80" stroke="rgba(156,163,175,0.02)" strokeWidth="0.5" opacity="0.3"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#elegant-texture)"/>
-        </svg>
-      </div>
-      
-      {/* Sophisticated overlay gradients */}
-      <div className="absolute inset-0 bg-gradient-to-t from-stone-100/10 via-transparent to-gray-300/15 pointer-events-none"></div>
-      <div className="absolute inset-0 bg-gradient-to-r from-stone-50/5 via-transparent to-stone-100/10 pointer-events-none"></div>
+    <div className="h-screen text-slate-900 overflow-hidden flex flex-col relative" 
+         style={{ background: `linear-gradient(to bottom right, ${backgroundColor}, ${backgroundColor}dd, ${backgroundColor}bb)`, color: fontColor }}>
       
       {/* Header - Hide in dual menu mode */}
       {!isDualMenu && (
-        <div className={`bg-gradient-to-r from-gray-300/90 via-gray-300/85 to-gray-300/90 backdrop-blur-md border-b border-slate-200/60 px-8 flex-shrink-0 relative z-10 shadow-lg ${
+        <div className={`backdrop-blur-md border-b px-8 flex-shrink-0 relative z-10 shadow-lg ${
           orientation === 'vertical' ? 'py-4' : 'py-3'
-        }`} style={{
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
-        }}>
-        
-        <div className={`flex flex-col items-center relative z-10 ${
-          orientation === 'vertical' ? 'gap-1' : 'gap-0'
-        }`}>
-          {/* Title - Centered */}
-          <div className="text-center">
-            <h1 className={`text-slate-800 tracking-wide ${
-              orientation === 'vertical' ? 'text-8xl' : 'text-7xl'
-            }`} style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-              {selectedCategoryName ? `${selectedCategoryName} Menu` : 'Flora Menu'}
-            </h1>
-            {/* Premium title underline effect */}
-            <div className="w-40 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-4 opacity-80"></div>
-            {/* Elegant shimmer effect */}
-            <div className="w-24 h-px bg-gradient-to-r from-transparent via-gray-300/60 to-transparent mx-auto mt-1 opacity-40 animate-pulse" style={{ animationDuration: '3s' }}></div>
+        }`} style={getHeaderStyle()}>
+          <div className={`flex flex-col items-center relative z-10 ${
+            orientation === 'vertical' ? 'gap-1' : 'gap-0'
+          }`}>
+            {/* Title - Centered */}
+            <div className="text-center">
+              <h1 className={`tracking-wide ${
+                orientation === 'vertical' ? 'text-8xl' : 'text-7xl'
+              }`} style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                {selectedCategoryName ? `${selectedCategoryName} Menu` : 'Flora Menu'}
+              </h1>
+              {/* Premium title underline effect */}
+              <div className="w-40 h-px mx-auto mt-4 opacity-80" 
+                   style={{ background: `linear-gradient(to right, transparent, ${fontColor}80, transparent)` }}>
+              </div>
+              {/* Elegant shimmer effect */}
+              <div className="w-24 h-px mx-auto mt-1 opacity-40 animate-pulse" 
+                   style={{ background: `linear-gradient(to right, transparent, ${fontColor}60, transparent)`, animationDuration: '3s' }}>
+              </div>
+            </div>
+            
+            {/* Tiered Pricing in Header - Centered */}
+            <div className="w-full flex justify-center">
+              {renderHeaderPricing(displayProducts, orientation)}
+            </div>
           </div>
-          
-          {/* Tiered Pricing in Header - Centered */}
-          <div className="w-full flex justify-center">
-            {renderHeaderPricing(displayProducts, orientation)}
-          </div>
-        </div>
         </div>
       )}
 
@@ -813,27 +765,19 @@ export default function MenuDisplayPage() {
         {isDualMenu && orientation === 'horizontal' ? (
           /* Dual Menu Layout - Side by Side with Optional Stacking */
           <div className="flex h-full">
-            {/* Left Side - Single or Stacked */}
+            {/* Left Side */}
             <div className="w-1/2 flex flex-col border border-slate-200/40 border-r-1 shadow-xl rounded-l-xl overflow-hidden">
               {enableLeftStacking ? (
                 /* Left Side - Stacked Layout */
                 <div className="flex flex-col h-full">
                   {/* Top Left Menu */}
                   <div className="flex-1 flex flex-col border-b border-slate-200/40">
-                    {/* Top Left Header */}
-              <div 
-                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
-                style={{
-                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
-                }}
-              >
-                      <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                    <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
+                      <h1 className="text-center relative z-10 tracking-wide text-6xl" 
+                          style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                         {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Top Left' : 'Top Left'}
                       </h1>
                       <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                      
-                      {/* Top Left Menu Pricing */}
                       <div className="w-full flex justify-center mt-1">
                         {renderHeaderPricing(leftMenuCategory ? displayProducts.filter(product => 
                           product.categories?.some(cat => cat.slug === leftMenuCategory)
@@ -847,20 +791,12 @@ export default function MenuDisplayPage() {
                   
                   {/* Bottom Left Menu */}
                   <div className="flex-1 flex flex-col">
-                    {/* Bottom Left Header */}
-              <div 
-                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
-                style={{
-                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
-                }}
-              >
-                      <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                    <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
+                      <h1 className="text-center relative z-10 tracking-wide text-6xl" 
+                          style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                         {leftMenuCategory2 ? categories.find(c => c.slug === leftMenuCategory2)?.name || 'Bottom Left' : 'Bottom Left'}
                       </h1>
                       <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                      
-                      {/* Bottom Left Menu Pricing */}
                       <div className="w-full flex justify-center mt-1">
                         {renderHeaderPricing(leftMenuCategory2 ? displayProducts.filter(product => 
                           product.categories?.some(cat => cat.slug === leftMenuCategory2)
@@ -875,83 +811,57 @@ export default function MenuDisplayPage() {
               ) : (
                 /* Left Side - Single Layout */
                 <>
-                  {/* Left Header */}
-              <div 
-                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
-                style={{
-                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
-                }}
-              >
-                    <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                  <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
+                    <h1 className="text-center relative z-10 tracking-wide text-6xl" 
+                        style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                       {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Left Menu' : 'Left Menu'}
                     </h1>
                     <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                    
-                    {/* Left Menu Pricing */}
                     <div className="w-full flex justify-center mt-1">
                       {renderHeaderPricing(leftMenuCategory ? displayProducts.filter(product => 
                         product.categories?.some(cat => cat.slug === leftMenuCategory)
                       ) : [], orientation)}
                     </div>
                   </div>
-                  
-                  {/* Left Content */}
-                  <div className="flex-1">
+                  <div className="flex-1" style={getBackgroundStyle()}>
                     {renderMenuSection(leftMenuCategory, undefined, true)}
                   </div>
                 </>
               )}
             </div>
             
-            {/* Right Side - Single or Stacked */}
+            {/* Right Side */}
             <div className="w-1/2 flex flex-col border border-slate-200/40 border-l-1 shadow-xl rounded-r-xl overflow-hidden">
               {enableRightStacking ? (
                 /* Right Side - Stacked Layout */
                 <div className="flex flex-col h-full">
                   {/* Top Right Menu */}
                   <div className="flex-1 flex flex-col border-b border-slate-200/40">
-                    {/* Top Right Header */}
-              <div 
-                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
-                style={{
-                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
-                }}
-              >
-                      <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                    <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
+                      <h1 className="text-center relative z-10 tracking-wide text-6xl" 
+                          style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                         {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Top Right' : 'Top Right'}
                       </h1>
                       <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                      
-                      {/* Top Right Menu Pricing */}
                       <div className="w-full flex justify-center mt-1">
                         {renderHeaderPricing(rightMenuCategory ? displayProducts.filter(product => 
                           product.categories?.some(cat => cat.slug === rightMenuCategory)
                         ) : [], orientation)}
                       </div>
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1" style={getBackgroundStyle()}>
                       {renderMenuSection(rightMenuCategory, undefined, false)}
                     </div>
                   </div>
                   
                   {/* Bottom Right Menu */}
                   <div className="flex-1 flex flex-col">
-                    {/* Bottom Right Header */}
-              <div 
-                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
-                style={{
-                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
-                }}
-              >
-                      <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                    <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
+                      <h1 className="text-center relative z-10 tracking-wide text-6xl" 
+                          style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                         {rightMenuCategory2 ? categories.find(c => c.slug === rightMenuCategory2)?.name || 'Bottom Right' : 'Bottom Right'}
                       </h1>
                       <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                      
-                      {/* Bottom Right Menu Pricing */}
                       <div className="w-full flex justify-center mt-1">
                         {renderHeaderPricing(rightMenuCategory2 ? displayProducts.filter(product => 
                           product.categories?.some(cat => cat.slug === rightMenuCategory2)
@@ -966,28 +876,18 @@ export default function MenuDisplayPage() {
               ) : (
                 /* Right Side - Single Layout */
                 <>
-                  {/* Right Header */}
-              <div 
-                className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" 
-                style={{
-                  background: `linear-gradient(to right, ${containerColor}f2, ${containerColor}e6, ${containerColor}f2)`,
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.2)'
-                }}
-              >
-                    <h1 className="text-center relative z-10 tracking-wide text-6xl" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                  <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
+                    <h1 className="text-center relative z-10 tracking-wide text-6xl" 
+                        style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                       {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Right Menu' : 'Right Menu'}
                     </h1>
                     <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                    
-                    {/* Right Menu Pricing */}
                     <div className="w-full flex justify-center mt-1">
                       {renderHeaderPricing(rightMenuCategory ? displayProducts.filter(product => 
                         product.categories?.some(cat => cat.slug === rightMenuCategory)
                       ) : [], orientation)}
                     </div>
                   </div>
-                  
-                  {/* Right Content */}
                   <div className="flex-1">
                     {renderMenuSection(rightMenuCategory, undefined, false)}
                   </div>
@@ -997,253 +897,230 @@ export default function MenuDisplayPage() {
           </div>
         ) : (
           /* Single Menu Layout */
-          <div className="flex-1 overflow-y-auto pb-8">
+          <div className="flex-1 overflow-y-auto pb-8" style={getBackgroundStyle()}>
             {productsByCategory.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <p className="text-2xl text-black mb-3">
-                  {selectedCategoryName 
-                    ? `No ${selectedCategoryName.toLowerCase()} products currently available`
-                    : 'No products currently available'
-                  }
-                </p>
-                <p className="text-lg text-gray-600">Check back soon for updates</p>
-              </div>
+                <div className="text-center">
+                  <p className="text-2xl mb-3" style={{ color: fontColor }}>
+                    {selectedCategoryName 
+                      ? `No ${selectedCategoryName.toLowerCase()} products currently available`
+                      : 'No products currently available'
+                    }
+                  </p>
+                  <p className="text-lg text-gray-600">Check back soon for updates</p>
+                </div>
               </div>
             ) : (
-              <div className={`${orientation === 'vertical' ? 'space-y-6' : 'space-y-8'} pb-6 pt-4`}>
+              <div className={`${orientation === 'vertical' ? 'space-y-6' : 'space-y-8'} pb-6 pt-4`} 
+                   style={getBackgroundStyle()}>
                 {productsByCategory.map(({ category, products: categoryProducts }) => (
-                  <div key={category.id} className={isFlowerCategory(category.name) ? '-mt-8' : ''}>
+                  <div key={category.id}>
                     {/* Category Header - Only show if not filtered to single category */}
                     {!selectedCategoryName && (
-                      <div className="bg-gradient-to-r from-gray-300/95 via-gray-300/90 to-gray-300/95 backdrop-blur-md px-8 py-4 border-b border-slate-200/60 relative rounded-t-xl shadow-lg" style={{
-                        boxShadow: '0 6px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(156,163,175,0.3)'
-                      }}>
-                        
-                        <h2 className={`font-medium text-slate-800 uppercase tracking-widest relative z-10 ${
+                      <div className="backdrop-blur-md px-8 py-4 border-b relative rounded-t-xl shadow-lg" 
+                           style={getHeaderStyle()}>
+                        <h2 className={`font-medium uppercase tracking-widest relative z-10 ${
                           orientation === 'vertical' ? 'text-lg' : 'text-xl'
-                        }`} style={{ fontFamily: 'Tiempo, serif', letterSpacing: '0.15em' }}>
+                        }`} style={{ fontFamily: 'Tiempo, serif', letterSpacing: '0.15em', color: fontColor }}>
                           {category.name}
                         </h2>
-                        
-                        {/* Premium underline */}
-                        <div className="w-28 h-px bg-gradient-to-r from-transparent via-slate-400/70 to-transparent mt-3"></div>
+                        <div className="w-28 h-px mt-3" 
+                             style={{ background: `linear-gradient(to right, transparent, ${fontColor}70, transparent)` }}>
+                        </div>
                       </div>
                     )}
                     
                     {/* Conditional Layout: Table for Flower, Grid for Others */}
                     {getActualViewMode(category.name) === 'table' ? (
-                        /* Table Layout - Single column if < 12 products, 2-column if 12+ */
-                        (() => {
-                          const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);
-                          const useSingleColumn = rightColumn.length === 0;
-                          return (
-                            <div className={`grid gap-6 py-4 pt-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`}>
-                              {/* Left Column */}
-                              <div className="space-y-2">
-                                {leftColumn.map((product, index) => {
-                            const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
-                            const price = product.sale_price || product.regular_price;
-                            const strainType = getStrainType(product);
-                            const thcaPercent = getTHCAPercentage(product);
+                      /* Table Layout - Single column if ≤ 13 products, 2-column if 14+ */
+                      (() => {
+                        const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);
+                        const useSingleColumn = rightColumn.length === 0;
+                        return (
+                          <div className={`grid gap-6 py-4 pt-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`} 
+                               style={getBackgroundStyle()}>
+                            {/* Left Column */}
+                            <div className="space-y-2">
+                              {leftColumn.map((product, index) => {
+                                const strainType = getStrainType(product);
+                                const thcaPercent = getTHCAPercentage(product);
 
-                            return (
-                              <div 
-                                key={product.id}
-                                className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
-                            style={{ 
-                              backgroundColor: `${containerColor}99`,
-                              borderColor: `${containerColor}4d`
-                            }}
-                              >
-                                <div className="grid grid-cols-12 gap-4 items-center">
-                                  {/* Product Info */}
-                                  <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
-                                    {/* Product Image */}
-                                    <div className={`w-12 h-12 relative overflow-hidden flex-shrink-0 ${!showImages ? 'hidden' : ''}`}>
-                                      {product.image ? (
-                                        <img 
-                                          src={product.image} 
-                                          alt={product.name}
-                                          className="w-full h-full object-contain rounded"
-                                          loading="lazy"
-                                        />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-neutral-800/30 rounded">
-                                          <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                          </svg>
+                                return (
+                                  <div key={product.id} 
+                                       className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
+                                       style={getContainerStyle()}>
+                                    <div className="grid grid-cols-12 gap-4 items-center">
+                                      {/* Product Info */}
+                                      <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
+                                        {/* Product Image */}
+                                        {showImages && (
+                                          <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                            {product.image ? (
+                                              <img src={product.image} alt={product.name}
+                                                   className="w-full h-full object-contain rounded" loading="lazy" />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center rounded" 
+                                                   style={getContainerStyle()}>
+                                                <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <h3 className={`font-semibold leading-tight mb-1 truncate ${
+                                            orientation === 'vertical' ? 'text-base' : 'text-sm'
+                                          }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
+                                            {product.name}
+                                          </h3>
+                                          {product.sku && (
+                                            <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
+                                              {product.sku}
+                                            </p>
+                                          )}
                                         </div>
-                                      )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <h3 className={`text-slate-900 font-semibold leading-tight mb-1 truncate ${
-                                        orientation === 'vertical' ? 'text-base' : 'text-sm'
-                                      }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-                                        {product.name}
-                                      </h3>
-                                      {product.sku && (
-                                        <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                          {product.sku}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
+                                      </div>
 
-                                  {/* Type */}
-                                  <div className="col-span-3 text-center">
-                                    <span className={`text-slate-700 font-medium ${
-                                      orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                    }`} style={{ fontFamily: 'Tiempo, serif' }}>
-                                      {strainType}
-                                    </span>
-                                  </div>
+                                      {/* Type */}
+                                      <div className="col-span-3 text-center">
+                                        <span className={`font-medium ${
+                                          orientation === 'vertical' ? 'text-sm' : 'text-xs'
+                                        }`} style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
+                                          {strainType}
+                                        </span>
+                                      </div>
 
-                                  {/* THCA % */}
-                                  <div className="col-span-3 text-center">
-                                    <span className={`text-slate-800 font-semibold ${
-                                      orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                    }`} style={{ fontFamily: 'Tiempo, serif' }}>
-                                      {thcaPercent}
-                                    </span>
+                                      {/* THCA % */}
+                                      <div className="col-span-3 text-center">
+                                        <span className={`font-semibold ${
+                                          orientation === 'vertical' ? 'text-sm' : 'text-xs'
+                                        }`} style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                                          {thcaPercent}
+                                        </span>
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
-                              </div>
-                            );
-                            })}
-                          </div>
-                          
-                              {/* Right Column - Only render if not single column */}
-                              {!useSingleColumn && (
+                                );
+                              })}
+                            </div>
+                            
+                            {/* Right Column - Only render if not single column */}
+                            {!useSingleColumn && (
                               <div className="space-y-2">
                                 {rightColumn.map((product, index) => {
-                            const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
-                            const price = product.sale_price || product.regular_price;
-                            const strainType = getStrainType(product);
-                            const thcaPercent = getTHCAPercentage(product);
+                                  const strainType = getStrainType(product);
+                                  const thcaPercent = getTHCAPercentage(product);
 
-                            return (
-                              <div 
-                                key={product.id}
-                                className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10"
-                            style={{ 
-                              backgroundColor: `${containerColor}99`,
-                              borderColor: `${containerColor}4d`
-                            }}
-                              >
-                                <div className="grid grid-cols-12 gap-4 items-center">
-                                  {/* Product Info */}
-                                  <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
-                                    {/* Product Image */}
-                                    <div className={`w-12 h-12 relative overflow-hidden flex-shrink-0 ${!showImages ? 'hidden' : ''}`}>
-                                      {product.image ? (
-                                        <img 
-                                          src={product.image} 
-                                          alt={product.name}
-                                          className="w-full h-full object-contain rounded"
-                                          loading="lazy"
-                                        />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-neutral-800/30 rounded">
-                                          <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                          </svg>
+                                  return (
+                                    <div key={product.id} 
+                                         className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
+                                         style={getContainerStyle()}>
+                                      <div className="grid grid-cols-12 gap-4 items-center">
+                                        {/* Product Info */}
+                                        <div className={`col-span-6 flex items-center ${showImages ? 'gap-4' : ''}`}>
+                                          {/* Product Image */}
+                                          {showImages && (
+                                            <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
+                                              {product.image ? (
+                                                <img src={product.image} alt={product.name}
+                                                     className="w-full h-full object-contain rounded" loading="lazy" />
+                                              ) : (
+                                                <div className="w-full h-full flex items-center justify-center rounded" 
+                                                     style={getContainerStyle()}>
+                                                  <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                                  </svg>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                          <div className="flex-1 min-w-0">
+                                            <h3 className={`font-semibold leading-tight mb-1 truncate ${
+                                              orientation === 'vertical' ? 'text-base' : 'text-sm'
+                                            }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
+                                              {product.name}
+                                            </h3>
+                                            {product.sku && (
+                                              <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
+                                                {product.sku}
+                                              </p>
+                                            )}
+                                          </div>
                                         </div>
-                                      )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <h3 className={`text-slate-900 font-semibold leading-tight mb-1 truncate ${
-                                        orientation === 'vertical' ? 'text-base' : 'text-sm'
-                                      }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-                                        {product.name}
-                                      </h3>
-                                      {product.sku && (
-                                        <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                          {product.sku}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
 
-                                  {/* Type */}
-                                  <div className="col-span-3 text-center">
-                                    <span className={`text-slate-700 font-medium ${
-                                      orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                    }`} style={{ fontFamily: 'Tiempo, serif' }}>
-                                      {strainType}
-                                    </span>
-                                  </div>
+                                        {/* Type */}
+                                        <div className="col-span-3 text-center">
+                                          <span className={`font-medium ${
+                                            orientation === 'vertical' ? 'text-sm' : 'text-xs'
+                                          }`} style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
+                                            {strainType}
+                                          </span>
+                                        </div>
 
-                                  {/* THCA % */}
-                                  <div className="col-span-3 text-center">
-                                    <span className={`text-slate-800 font-semibold ${
-                                      orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                                    }`} style={{ fontFamily: 'Tiempo, serif' }}>
-                                      {thcaPercent}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                                );
+                                        {/* THCA % */}
+                                        <div className="col-span-3 text-center">
+                                          <span className={`font-semibold ${
+                                            orientation === 'vertical' ? 'text-sm' : 'text-xs'
+                                          }`} style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                                            {thcaPercent}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
                                 })}
                               </div>
-                              )}
-                            </div>
-                          );
-                        })()
+                            )}
+                          </div>
+                        );
+                      })()
                     ) : (
                       /* Grid Layout for Non-Flower Products */
                       <div className={`grid gap-2 px-6 py-1 ${
                         orientation === 'vertical' 
                           ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
                           : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-                      }`}>
-                        {categoryProducts.map(product => {
-                          const totalStock = product.inventory?.reduce((sum, inv) => sum + inv.stock, 0) || 0;
-                          const price = product.sale_price || product.regular_price;
-                          const strainType = getStrainType(product);
-                          const thcaPercent = getTHCAPercentage(product);
-
-                          return (
-                            <div 
-                              key={product.id} 
-                              className={`rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border border-slate-300/30 bg-gray-300/60 hover:bg-gray-300/80 hover:border-slate-400/50 hover:shadow-md hover:shadow-neutral-700/10`}
-                            >
-                              {/* Product Image and Name Row - Matching Audit Mode */}
-                              <div className="flex gap-4 items-center mb-4">
-                                {/* Product Image */}
-                                <div className="w-16 h-16 relative overflow-hidden flex-shrink-0">
-                                  {product.image ? (
-                                    <img 
-                                      src={product.image} 
-                                      alt={product.name}
-                                      className="w-full h-full object-contain"
-                                      loading="lazy"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-neutral-800/30 rounded">
-                                      <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                      </svg>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h3 className={`text-slate-900 font-semibold leading-tight mb-1 truncate ${
-                                    orientation === 'vertical' ? 'text-base' : 'text-sm'
-                                  }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-                                    {product.name}
-                                  </h3>
-                                  {product.sku && (
-                                    <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                      {product.sku}
-                                    </p>
-                                  )}
-                                </div>
+                      }`} style={getBackgroundStyle()}>
+                        {categoryProducts.map(product => (
+                          <div key={product.id} 
+                               className="rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
+                               style={getContainerStyle()}>
+                            
+                            {/* Product Image and Name Row */}
+                            <div className="flex gap-4 items-center mb-4">
+                              {/* Product Image */}
+                              <div className="w-16 h-16 relative overflow-hidden flex-shrink-0">
+                                {product.image ? (
+                                  <img src={product.image} alt={product.name}
+                                       className="w-full h-full object-contain" loading="lazy" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center rounded" 
+                                       style={getContainerStyle()}>
+                                    <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className={`font-semibold leading-tight mb-1 truncate ${
+                                  orientation === 'vertical' ? 'text-base' : 'text-sm'
+                                }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
+                                  {product.name}
+                                </h3>
+                                {product.sku && (
+                                  <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
+                                    {product.sku}
+                                  </p>
+                                )}
                               </div>
                             </div>
-                          );
-                        })}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -1253,7 +1130,6 @@ export default function MenuDisplayPage() {
           </div>
         )}
       </div>
-
     </div>
   );
 }
