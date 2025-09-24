@@ -305,17 +305,26 @@ export default function MenuDisplayPage() {
 
   const fetchMenuData = async () => {
     try {
-      const response = await fetch(`/api/proxy/flora-im/products?per_page=1000&_t=${Date.now()}`, {
+      // Build URL with location ID for stock filtering
+      const params = new URLSearchParams({
+        per_page: '1000',
+        _t: Date.now().toString()
+      });
+      
+      // Get location from URL params or use default
+      const urlParams = new URLSearchParams(window.location.search);
+      const locationId = urlParams.get('location') || '1'; // Default to location 1
+      params.append('location_id', locationId);
+
+      const response = await fetch(`/api/proxy/flora-im/products?${params}`, {
         headers: { 'Cache-Control': 'no-cache' }
       });
 
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
-          const availableProducts = result.data.filter((product: Product) => {
-            const hasStock = product.inventory?.some(inv => inv.stock > 0);
-            return hasStock;
-          });
+          // Products are already filtered by stock at API level
+          const availableProducts = result.data;
           
           try {
             console.log(`🔍 [Menu Display] Batch fetching blueprint pricing for ${availableProducts.length} products`);

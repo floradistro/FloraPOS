@@ -635,7 +635,17 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/proxy/flora-im/products?per_page=1000&_t=${Date.now()}`, {
+      // Build URL with location ID for stock filtering
+      const params = new URLSearchParams({
+        per_page: '1000',
+        _t: Date.now().toString()
+      });
+      
+      if (user?.location_id) {
+        params.append('location_id', user.location_id);
+      }
+
+      const response = await fetch(`/api/proxy/flora-im/products?${params}`, {
         headers: { 'Cache-Control': 'no-cache' }
       });
 
@@ -646,14 +656,8 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
       const result = await response.json();
       
       if (result.success && result.data) {
-        // Filter products that have inventory at current location
-        const locationId = user?.location_id?.toString() || '0';
-        const filteredProducts = result.data.filter((product: Product) => {
-          const locationInventory = product.inventory?.find(inv => 
-            inv.location_id === locationId
-          );
-          return locationInventory && locationInventory.stock > 0;
-        });
+        // Products are already filtered by stock at API level
+        const filteredProducts = result.data;
 
         // Load blueprint pricing for all products
         try {

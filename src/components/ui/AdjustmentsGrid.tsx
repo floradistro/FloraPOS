@@ -277,6 +277,19 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           _t: Date.now().toString() // Use full timestamp for better cache busting
         });
 
+        // Add location ID
+        if (user?.location_id) {
+          params.append('location_id', user.location_id);
+        }
+
+        // For audit mode and restock mode, include zero stock products
+        if (isAuditMode) {
+          params.append('audit_mode', 'true');
+        }
+        if (isRestockMode) {
+          params.append('restock_mode', 'true');
+        }
+
         if (searchQuery) {
           params.append('search', searchQuery);
         }

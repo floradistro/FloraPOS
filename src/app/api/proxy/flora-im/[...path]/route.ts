@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { InventoryVisibilityService } from '@/services/inventory-visibility-service';
 
 const FLORA_API_BASE = 'https://api.floradistro.com/wp-json';
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
@@ -54,6 +55,30 @@ export async function GET(
     }
     
     const data = await response.json();
+    
+    // Apply stock filtering for products endpoint if enabled
+    // IMPORTANT: Only filter products endpoint, NOT inventory endpoint to preserve refresh functionality
+    if (path === 'products' && data.success && data.data) {
+      // Check if this is audit mode or restock mode from query params
+      const isAuditMode = searchParams.get('audit_mode') === 'true';
+      const isRestockMode = searchParams.get('restock_mode') === 'true';
+      const includeZeroStock = searchParams.get('include_zero_stock') === 'true';
+      
+      // Get location ID from query params (sent by frontend)
+      const locationId = searchParams.get('location_id');
+      
+      if (locationId && !isAuditMode && !isRestockMode && !includeZeroStock) {
+        // Apply stock filtering while preserving all other product data
+        const filteredProducts = InventoryVisibilityService.filterProductsByStock(
+          data.data,
+          locationId,
+          { isAuditMode, isRestockMode, includeZeroStock }
+        );
+        
+        console.log(`🔍 Stock filtering: ${data.data.length} products -> ${filteredProducts.length} with stock at location ${locationId}`);
+        data.data = filteredProducts;
+      }
+    }
     
     // Return the data with proper CORS headers and no-cache for development
     return NextResponse.json(data, {
@@ -116,6 +141,30 @@ export async function POST(
     }
     
     const data = await response.json();
+    
+    // Apply stock filtering for products endpoint if enabled
+    // IMPORTANT: Only filter products endpoint, NOT inventory endpoint to preserve refresh functionality
+    if (path === 'products' && data.success && data.data) {
+      // Check if this is audit mode or restock mode from query params
+      const isAuditMode = searchParams.get('audit_mode') === 'true';
+      const isRestockMode = searchParams.get('restock_mode') === 'true';
+      const includeZeroStock = searchParams.get('include_zero_stock') === 'true';
+      
+      // Get location ID from query params (sent by frontend)
+      const locationId = searchParams.get('location_id');
+      
+      if (locationId && !isAuditMode && !isRestockMode && !includeZeroStock) {
+        // Apply stock filtering while preserving all other product data
+        const filteredProducts = InventoryVisibilityService.filterProductsByStock(
+          data.data,
+          locationId,
+          { isAuditMode, isRestockMode, includeZeroStock }
+        );
+        
+        console.log(`🔍 Stock filtering: ${data.data.length} products -> ${filteredProducts.length} with stock at location ${locationId}`);
+        data.data = filteredProducts;
+      }
+    }
     
     // Return the data with proper CORS headers and no-cache for development
     return NextResponse.json(data, {

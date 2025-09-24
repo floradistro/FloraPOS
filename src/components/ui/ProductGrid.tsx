@@ -199,6 +199,11 @@ export const ProductGrid = forwardRef<{
         _t: Math.floor(Date.now() / 300000).toString() // Cache for 5 minutes
       });
 
+      // Add location ID for stock filtering
+      if (user?.location_id) {
+        params.append('location_id', user.location_id);
+      }
+
       if (searchQuery) {
         params.append('search', searchQuery);
       }
