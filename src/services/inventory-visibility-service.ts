@@ -42,6 +42,7 @@ export class InventoryVisibilityService {
 
   /**
    * Filter products by stock availability at specific location
+   * Handles both simple products and variable products with variants
    * Preserves all product data and doesn't interfere with refresh mechanisms
    */
   static filterProductsByStock<T extends Product>(
@@ -67,7 +68,16 @@ export class InventoryVisibilityService {
 
     // Filter products that have stock > 0 at the specified location
     return products.filter(product => {
-      // Check if product has inventory data
+      // For variable products, we need to check if they have variants with stock
+      // The parent product inventory might show 0, but variants could have stock
+      if (product.type === 'variable') {
+        // Variable products should be shown if they exist - variants will be filtered later
+        // We can't determine variant stock at this level since variants are loaded dynamically
+        // Let the product through and let the variant loading handle stock checks
+        return true;
+      }
+
+      // For simple products, check the parent product inventory
       if (!product.inventory || !Array.isArray(product.inventory)) {
         // No inventory data means we can't determine stock, so hide it
         return false;

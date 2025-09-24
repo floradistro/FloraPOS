@@ -5,6 +5,7 @@ const FLORA_API_BASE = 'https://api.floradistro.com/wp-json';
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
 
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { path: string[] } }
@@ -69,6 +70,7 @@ export async function GET(
       
       if (locationId && !isAuditMode && !isRestockMode && !includeZeroStock) {
         // Apply stock filtering while preserving all other product data
+        // For variable products, we let them through and filter variants at UI level
         const filteredProducts = InventoryVisibilityService.filterProductsByStock(
           data.data,
           locationId,
@@ -155,6 +157,7 @@ export async function POST(
       
       if (locationId && !isAuditMode && !isRestockMode && !includeZeroStock) {
         // Apply stock filtering while preserving all other product data
+        // For variable products, we let them through and filter variants at UI level
         const filteredProducts = InventoryVisibilityService.filterProductsByStock(
           data.data,
           locationId,
