@@ -108,6 +108,7 @@ export async function POST(
   { params }: { params: { path: string[] } }
 ) {
   const path = params.path.join('/');
+  const searchParams = request.nextUrl.searchParams;
   
   // Enable inventory modifications for checkout process
   console.log(`📦 Processing Flora-IM POST request: ${path}`);
