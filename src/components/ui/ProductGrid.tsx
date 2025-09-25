@@ -7,6 +7,20 @@ import { BlueprintPricingService, BlueprintPricingData } from '../../services/bl
 import ProductCard from './ProductCard';
 // import { inventoryEventBus } from '../../utils/inventoryEventBus'; // Disabled to prevent automatic refresh
 
+// Category Header Component
+const CategoryHeader = ({ categoryName, productCount }: { categoryName: string; productCount: number }) => (
+  <div className="col-span-full bg-neutral-900/40 border-b border-neutral-700/50 px-6 py-4 sticky top-0 z-10 backdrop-blur-sm">
+    <div className="flex items-center justify-between">
+      <h2 className="text-lg font-medium text-white tracking-wide">
+        {categoryName}
+      </h2>
+      <span className="text-sm text-neutral-400 bg-neutral-800/60 px-3 py-1 rounded-full">
+        {productCount} {productCount === 1 ? 'product' : 'products'}
+      </span>
+    </div>
+  </div>
+);
+
 
 export interface Product {
   id: number;
@@ -118,30 +132,101 @@ export const ProductGrid = forwardRef<{
     };
   }, []);
 
-  // Memoized filtered products for performance
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-    const matchesSearch = !searchQuery || 
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.categories.some(cat => cat.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Memoized filtered and grouped products for performance
+  const { filteredProducts, groupedByCategory } = useMemo(() => {
+    const filtered = products.filter((product) => {
+      const matchesSearch = !searchQuery || 
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.categories.some(cat => cat.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesCategory = !categoryFilter || 
+        product.categories.some(cat => cat.slug === categoryFilter);
+      
+      return matchesSearch && matchesCategory;
+    });
+
+    // Group products by category
+    const categoryGroups = new Map<string, { category: { id: number; name: string; slug: string }, products: Product[] }>();
     
-    const matchesCategory = !categoryFilter || 
-      product.categories.some(cat => cat.slug === categoryFilter);
+    filtered.forEach((product) => {
+      // Handle products with multiple categories - use the first category as primary
+      const primaryCategory = product.categories?.[0];
+      if (primaryCategory) {
+        const categoryKey = primaryCategory.slug;
+        if (!categoryGroups.has(categoryKey)) {
+          categoryGroups.set(categoryKey, {
+            category: primaryCategory,
+            products: []
+          });
+        }
+        categoryGroups.get(categoryKey)!.products.push(product);
+      } else {
+        // Handle products without categories
+        const uncategorizedKey = 'uncategorized';
+        if (!categoryGroups.has(uncategorizedKey)) {
+          categoryGroups.set(uncategorizedKey, {
+            category: { id: 0, name: 'Uncategorized', slug: 'uncategorized' },
+            products: []
+          });
+        }
+        categoryGroups.get(uncategorizedKey)!.products.push(product);
+      }
+    });
+
+    // Sort products within each category
+    categoryGroups.forEach((group) => {
+      group.products.sort((a, b) => {
+        // Primary sort: Products with variants go to the bottom (they are taller cards)
+        const aHasVariants = (a.has_variants && a.variants && a.variants.length > 0) || a.type === 'variable';
+        const bHasVariants = (b.has_variants && b.variants && b.variants.length > 0) || b.type === 'variable';
+        
+        if (aHasVariants && !bHasVariants) return 1; // a goes to bottom
+        if (!aHasVariants && bHasVariants) return -1; // b goes to bottom
+        
+        // Secondary sort: Within each group (with/without variants), sort alphabetically
+        return a.name.localeCompare(b.name);
+      });
+    });
+
+    // Convert to array and sort categories with custom priority order
+    const priorityOrder = ['flower', 'vape', 'concentrate', 'edible', 'moonwater'];
     
-    return matchesSearch && matchesCategory;
-  }).sort((a, b) => {
-    // Primary sort: Products with variants go to the bottom (they are taller cards)
-    // Check both has_variants flag AND type === 'variable' to be more robust
-    const aHasVariants = (a.has_variants && a.variants && a.variants.length > 0) || a.type === 'variable';
-    const bHasVariants = (b.has_variants && b.variants && b.variants.length > 0) || b.type === 'variable';
-    
-    if (aHasVariants && !bHasVariants) return 1; // a goes to bottom
-    if (!aHasVariants && bHasVariants) return -1; // b goes to bottom
-    
-    // Secondary sort: Within each group (with/without variants), sort alphabetically
-    return a.name.localeCompare(b.name);
-  });
+    const groupedArray = Array.from(categoryGroups.values()).sort((a, b) => {
+      // Put uncategorized at the end
+      if (a.category.slug === 'uncategorized') return 1;
+      if (b.category.slug === 'uncategorized') return -1;
+      
+      // Check priority order (case-insensitive matching)
+      const aSlugLower = a.category.slug.toLowerCase();
+      const bSlugLower = b.category.slug.toLowerCase();
+      const aNameLower = a.category.name.toLowerCase();
+      const bNameLower = b.category.name.toLowerCase();
+      
+      const aPriority = priorityOrder.findIndex(priority => 
+        aSlugLower.includes(priority) || aNameLower.includes(priority)
+      );
+      const bPriority = priorityOrder.findIndex(priority => 
+        bSlugLower.includes(priority) || bNameLower.includes(priority)
+      );
+      
+      // If both have priority, sort by priority order
+      if (aPriority !== -1 && bPriority !== -1) {
+        return aPriority - bPriority;
+      }
+      
+      // If only one has priority, prioritize it
+      if (aPriority !== -1) return -1;
+      if (bPriority !== -1) return 1;
+      
+      // If neither has priority, sort alphabetically
+      return a.category.name.localeCompare(b.category.name);
+    });
+
+    return {
+      filteredProducts: filtered,
+      groupedByCategory: groupedArray
+    };
   }, [products, searchQuery, categoryFilter]);
 
 
@@ -669,32 +754,50 @@ export const ProductGrid = forwardRef<{
 
   return (
     <div className="relative">
-      {/* Clean Grid View */}
+      {/* Organized Grid View by Category */}
       <div ref={gridRef} className="grid grid-cols-3 max-[1024px]:grid-cols-2 product-grid">
-        {filteredProducts.map((product, index) => {
+        {groupedByCategory.map((categoryGroup, groupIndex) => {
           const userLocationId = user?.location_id ? parseInt(user.location_id) : undefined;
           
           return (
-            <div 
-              key={product.id} 
-              className="product-grid-cell border-r border-b border-neutral-500/20 last:border-r-0 [&:nth-child(3n)]:border-r-0 max-[1024px]:[&:nth-child(2n)]:border-r-0 max-[1024px]:[&:nth-child(3n)]:border-r relative group hover:bg-neutral-800/10 transition-colors duration-300"
-              style={{
-                animation: `fadeInUp 0.3s ease-out ${index * 0.03}s both`,
-              }}
-            >
-              <ProductCard
-                product={product}
-                userLocationId={userLocationId}
-                selectedVariants={selectedVariants}
-                isAuditMode={false}
-                isSalesView={false}
-                onVariantSelect={handleVariantSelect}
-                onQuantityChange={handleQuantityChange}
-                onAddToCartWithVariant={handleAddToCartWithVariant}
-                onProductSelection={handleProductSelection}
-                isSelected={selectedProduct === product.id}
+            <React.Fragment key={categoryGroup.category.slug}>
+              {/* Category Header */}
+              <CategoryHeader 
+                categoryName={categoryGroup.category.name} 
+                productCount={categoryGroup.products.length}
               />
-            </div>
+              
+              {/* Products in this category */}
+              {categoryGroup.products.map((product, productIndex) => {
+                // Calculate global index for staggered animations
+                const globalIndex = groupedByCategory
+                  .slice(0, groupIndex)
+                  .reduce((sum, group) => sum + group.products.length, 0) + productIndex;
+                
+                return (
+                  <div 
+                    key={product.id} 
+                    className="product-grid-cell border-r border-b border-neutral-500/20 last:border-r-0 [&:nth-child(3n)]:border-r-0 max-[1024px]:[&:nth-child(2n)]:border-r-0 max-[1024px]:[&:nth-child(3n)]:border-r relative group hover:bg-neutral-800/10 transition-colors duration-300"
+                    style={{
+                      animation: `fadeInUp 0.3s ease-out ${globalIndex * 0.03}s both`,
+                    }}
+                  >
+                    <ProductCard
+                      product={product}
+                      userLocationId={userLocationId}
+                      selectedVariants={selectedVariants}
+                      isAuditMode={false}
+                      isSalesView={false}
+                      onVariantSelect={handleVariantSelect}
+                      onQuantityChange={handleQuantityChange}
+                      onAddToCartWithVariant={handleAddToCartWithVariant}
+                      onProductSelection={handleProductSelection}
+                      isSelected={selectedProduct === product.id}
+                    />
+                  </div>
+                );
+              })}
+            </React.Fragment>
           );
         })}
       </div>
