@@ -151,14 +151,14 @@ const ProductCard = memo<ProductCardProps>(({
       className={`p-3 relative cursor-pointer group transition-all duration-300 ease-out ${
         isAuditMode 
           ? isAuditSelected
-            ? 'bg-blue-950/30 border-l-2 border-l-blue-400'
+            ? 'bg-blue-950/30'
             : 'bg-transparent hover:bg-neutral-800/20'
           : isSalesView 
             ? isSelected
-              ? 'bg-neutral-600/20 border-l-2 border-l-white/40'
+              ? 'bg-neutral-600/20'
               : 'bg-black hover:bg-neutral-900'
             : isSelected
-              ? 'bg-gradient-to-br from-neutral-800/25 to-neutral-700/15 border-l-2 border-l-white/60 shadow-lg shadow-black/10'
+              ? 'bg-gradient-to-br from-neutral-800/25 to-neutral-700/15 shadow-lg shadow-black/10'
               : 'bg-transparent hover:bg-neutral-800/15'
       }`}
     >

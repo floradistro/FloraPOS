@@ -1,5 +1,6 @@
 import React from 'react';
 import { AnimatedLogo } from './AnimatedLogo';
+import { MatrixRain } from './MatrixRain';
 
 interface LoadingSpinnerProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -18,14 +19,15 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 }) => {
 
   const content = (
-    <div className="text-center">
-      <AnimatedLogo size={size} className="mx-auto" />
+    <div className="text-center relative">
+      <AnimatedLogo size={size} className="mx-auto relative z-10" />
     </div>
   );
 
   if (overlay) {
     return (
       <div className="absolute inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50">
+        <MatrixRain size={size} className="opacity-30" />
         {content}
       </div>
     );
@@ -33,7 +35,8 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   if (centered) {
     return (
-      <div className={`flex items-center justify-center ${fullHeight ? 'h-full' : ''} w-full`}>
+      <div className={`flex items-center justify-center ${fullHeight ? 'h-full' : ''} w-full relative`}>
+        <MatrixRain size={size} className="opacity-30" />
         {content}
       </div>
     );

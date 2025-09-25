@@ -1,0 +1,172 @@
+'use client';
+
+import React, { useEffect, useRef } from 'react';
+
+interface MatrixRainProps {
+  className?: string;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+}
+
+export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = 'lg' }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number>();
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas size to full viewport
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Extended matrix characters (more code-like symbols)
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()_+-=[]{}|;:,.<>?/\\~`!abcdefghijklmnopqrstuvwxyz';
+    const codeSymbols = '{}[]();,.<>?/\\|~`!@#$%^&*()_+-=:;';
+    const numbers = '0123456789';
+    const charArray = chars.split('');
+    const codeArray = codeSymbols.split('');
+    const numArray = numbers.split('');
+
+    const fontSize = 16; // Larger font for better readability
+    const columns = Math.floor(canvas.width / fontSize);
+    
+    // Array of drops with streak data
+    const drops: Array<{
+      y: number;
+      speed: number;
+      streak: string[];
+      streakLength: number;
+    }> = [];
+    
+    // Initialize drops with streaks - spread them across the screen immediately
+    for (let i = 0; i < columns; i++) {
+      const streakLength = Math.floor(Math.random() * 8) + 5; // 5-12 characters long
+      const streak: string[] = [];
+      
+      // Generate a streak of characters
+      for (let j = 0; j < streakLength; j++) {
+        const rand = Math.random();
+        if (rand < 0.3) {
+          streak.push(codeArray[Math.floor(Math.random() * codeArray.length)]);
+        } else if (rand < 0.6) {
+          streak.push(numArray[Math.floor(Math.random() * numArray.length)]);
+        } else {
+          streak.push(charArray[Math.floor(Math.random() * charArray.length)]);
+        }
+      }
+      
+      drops[i] = {
+        y: Math.random() * (canvas.height / fontSize),
+        speed: Math.random() * 0.3 + 0.2, // 0.2-0.5 speed (much slower)
+        streak: streak,
+        streakLength: streakLength
+      };
+    }
+
+    const draw = () => {
+      // Clear canvas completely (no background)
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Set text properties - larger, bolder font for readability
+      ctx.font = `bold ${fontSize + 2}px 'Courier New', monospace`;
+      ctx.textBaseline = 'top';
+
+      // Draw character streaks
+      for (let i = 0; i < drops.length; i++) {
+        const drop = drops[i];
+        const x = i * fontSize;
+        
+        // Draw the entire streak
+        for (let j = 0; j < drop.streakLength; j++) {
+          const charY = (drop.y - j) * fontSize;
+          
+          // Only draw if character is visible on screen
+          if (charY >= -fontSize && charY < canvas.height + fontSize) {
+            // Randomly change characters as they fall (Matrix effect)
+            let char = drop.streak[j];
+            if (Math.random() < 0.05) { // 5% chance to change each frame
+              const rand = Math.random();
+              if (rand < 0.3) {
+                char = codeArray[Math.floor(Math.random() * codeArray.length)];
+              } else if (rand < 0.6) {
+                char = numArray[Math.floor(Math.random() * numArray.length)];
+              } else {
+                char = charArray[Math.floor(Math.random() * charArray.length)];
+              }
+              // Update the streak with the new character
+              drop.streak[j] = char;
+            }
+            
+            // Calculate opacity based on position in streak (brighter at head)
+            let opacity = 1 - (j / drop.streakLength);
+            opacity = Math.max(opacity, 0.3); // Higher minimum opacity for readability
+            
+            // All characters are bright white for maximum readability
+            ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+            
+            ctx.fillText(char, x, charY);
+          }
+        }
+
+        // Move drop down
+        drop.y += drop.speed;
+
+        // Reset drop when the head goes off screen
+        if (drop.y * fontSize > canvas.height + drop.streakLength * fontSize) {
+          // Generate new streak
+          const newStreakLength = Math.floor(Math.random() * 8) + 5;
+          const newStreak: string[] = [];
+          
+          for (let j = 0; j < newStreakLength; j++) {
+            const rand = Math.random();
+            if (rand < 0.3) {
+              newStreak.push(codeArray[Math.floor(Math.random() * codeArray.length)]);
+            } else if (rand < 0.6) {
+              newStreak.push(numArray[Math.floor(Math.random() * numArray.length)]);
+            } else {
+              newStreak.push(charArray[Math.floor(Math.random() * charArray.length)]);
+            }
+          }
+          
+          drop.y = -Math.random() * 10;
+          drop.speed = Math.random() * 0.3 + 0.2;
+          drop.streak = newStreak;
+          drop.streakLength = newStreakLength;
+        }
+      }
+    };
+
+    const animate = () => {
+      draw();
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [size]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={`fixed inset-0 ${className}`}
+      style={{
+        zIndex: -1,
+        background: 'transparent'
+      }}
+    />
+  );
+};
