@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { QuantitySelector } from './QuantitySelector';
 import { BlueprintPricingService, BlueprintPricingData } from '../../services/blueprint-pricing-service';
@@ -84,6 +84,39 @@ export const ProductGrid = forwardRef<{
   
   // Selected product state for highlighting in sales view
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
+  
+  // Ref for the grid container
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // Clear quantity selections when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (gridRef.current && !gridRef.current.contains(event.target as Node)) {
+        // Clear quantity selections for all products
+        setProducts(prevProducts => 
+          prevProducts.map(product => ({
+            ...product,
+            selected_quantity: undefined,
+            selected_price: undefined,
+            selected_category: undefined
+          }))
+        );
+        
+        // Also clear selected variants to reset everything
+        setSelectedVariants({});
+        
+        // Force re-render of QuantitySelector components by triggering a state change
+        // This will cause QuantitySelector useEffect to reset its internal state
+        const event = new CustomEvent('clearQuantitySelections');
+        window.dispatchEvent(event);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Memoized filtered products for performance
   const filteredProducts = useMemo(() => {
@@ -635,29 +668,50 @@ export const ProductGrid = forwardRef<{
   }
 
   return (
-    <div>
-      {/* Regular Grid View */}
-      <div className="grid grid-cols-3 max-[1024px]:grid-cols-2 gap-2 p-2">
-        {filteredProducts.map((product) => {
+    <div className="relative">
+      {/* Clean Grid View */}
+      <div ref={gridRef} className="grid grid-cols-3 max-[1024px]:grid-cols-2 product-grid">
+        {filteredProducts.map((product, index) => {
           const userLocationId = user?.location_id ? parseInt(user.location_id) : undefined;
           
           return (
-            <ProductCard
+            <div 
               key={product.id} 
-              product={product}
-              userLocationId={userLocationId}
-              selectedVariants={selectedVariants}
-              isAuditMode={false}
-              isSalesView={false}
-              onVariantSelect={handleVariantSelect}
-              onQuantityChange={handleQuantityChange}
-              onAddToCartWithVariant={handleAddToCartWithVariant}
-              onProductSelection={handleProductSelection}
-              isSelected={selectedProduct === product.id}
-            />
+              className="product-grid-cell border-r border-b border-neutral-500/20 last:border-r-0 [&:nth-child(3n)]:border-r-0 max-[1024px]:[&:nth-child(2n)]:border-r-0 max-[1024px]:[&:nth-child(3n)]:border-r relative group hover:bg-neutral-800/10 transition-colors duration-300"
+              style={{
+                animation: `fadeInUp 0.3s ease-out ${index * 0.03}s both`,
+              }}
+            >
+              <ProductCard
+                product={product}
+                userLocationId={userLocationId}
+                selectedVariants={selectedVariants}
+                isAuditMode={false}
+                isSalesView={false}
+                onVariantSelect={handleVariantSelect}
+                onQuantityChange={handleQuantityChange}
+                onAddToCartWithVariant={handleAddToCartWithVariant}
+                onProductSelection={handleProductSelection}
+                isSelected={selectedProduct === product.id}
+              />
+            </div>
           );
         })}
       </div>
+      
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(15px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 });

@@ -157,9 +157,7 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
     if (loading) {
       return (
         <LoadingSpinner 
-          size="lg" 
-          text="Loading Products"
-          subText="Preparing product catalog for search..."
+          size="lg"
           centered
           fullHeight
         />
@@ -208,9 +206,7 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
           {parentSelectedProduct && loadingProductFields && (
             <div className="flex flex-col items-center w-full animate-fadeIn gap-4">
               <LoadingSpinner 
-                size="md" 
-                text={`Loading Blueprint Fields for ${parentSelectedProduct.name}`}
-                subText="Fetching product configuration..."
+                size="md"
               />
             </div>
           )}

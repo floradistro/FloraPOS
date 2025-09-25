@@ -152,6 +152,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const [internalValue, setInternalValue] = useState(searchValue);
+  const [customerSearchValue, setCustomerSearchValue] = useState(''); // Separate search for customer modal
   const [isCustomerMode, setIsCustomerMode] = useState(customerOnlyMode);
   const [isProductMode, setIsProductMode] = useState(productOnlyMode);
   const [isEditingProduct, setIsEditingProduct] = useState(false);
@@ -251,7 +252,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     setInternalValue(searchValue);
   }, [searchValue]);
 
-  // Call search callback when debounced value changes
+  // Call search callback when debounced value changes - products only, no customers
   useEffect(() => {
     if (debouncedSearchValue !== searchValue && !isCustomerMode && !isProductMode) {
       onSearchChange(debouncedSearchValue);
@@ -621,12 +622,12 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   // Check if product functionality is enabled - in product mode OR when productOnlyMode is true
   const productEnabled = isProductMode || productOnlyMode;
 
-  // Filter customers based on search
+  // Filter customers based on separate customer search (not main search)
   const filteredCustomers = useMemo(() => {
     if (!customerEnabled) return [];
-    if (!debouncedSearchValue) return customers; // Show all customers when no search
+    if (!customerSearchValue) return customers; // Show all customers when no search
     
-    const query = debouncedSearchValue.toLowerCase();
+    const query = customerSearchValue.toLowerCase();
     return customers.filter(customer => {
       const name = (customer.display_name || customer.name || '').toLowerCase();
       const email = customer.email?.toLowerCase() || '';
@@ -644,7 +645,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         customerId.includes(word)
       );
     }); // No limit - show all matching results
-  }, [customers, debouncedSearchValue, customerEnabled]);
+  }, [customers, customerSearchValue, customerEnabled]);
 
   // Filter products based on search
   const filteredProducts = useMemo(() => {
@@ -715,7 +716,16 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           }
           style={{ 
             fontFamily: 'Tiempos, serif',
-            ...(showProductSelection) ? { textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' } : {}
+            ...(showProductSelection) ? { textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' } : {},
+            ...(isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0) ? { 
+              boxShadow: '0 0 0 1px rgba(34, 197, 94, 0.3), 0 0 20px rgba(34, 197, 94, 0.2), 0 0 40px rgba(34, 197, 94, 0.1)' 
+            } : {},
+            ...(isAuditMode && pendingAdjustments && pendingAdjustments.size > 0) ? { 
+              boxShadow: '0 0 0 1px rgba(168, 85, 247, 0.3), 0 0 20px rgba(168, 85, 247, 0.2), 0 0 40px rgba(168, 85, 247, 0.1)' 
+            } : {},
+            ...(hasSelections && !(isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0) && !(isAuditMode && pendingAdjustments && pendingAdjustments.size > 0)) ? { 
+              boxShadow: '0 0 0 1px rgba(236, 72, 153, 0.3), 0 0 20px rgba(236, 72, 153, 0.2), 0 0 40px rgba(236, 72, 153, 0.1)' 
+            } : {}
           }}
           value={showProductSelection ? selectedProduct.name : internalValue}
           readOnly={showProductSelection || false}
@@ -729,7 +739,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               setIsOpen(true);
             }
           }}
-          className={`w-full h-[30px] bg-transparent hover:bg-neutral-600/10 rounded-lg placeholder-neutral-400 focus:bg-neutral-600/10 focus:outline-none text-sm text-center placeholder:text-center transition-all duration-200 ease-out min-w-0 ${
+          className={`w-full h-[38px] bg-transparent hover:bg-neutral-600/10 rounded-lg placeholder-neutral-400 focus:bg-neutral-600/10 focus:outline-none text-sm text-center placeholder:text-center transition-all duration-200 ease-out min-w-0 ${
             showProductSelection
               ? 'text-neutral-200 font-medium'
               : isAuditDropdownMode
@@ -739,42 +749,42 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                   : 'text-neutral-400'
           } ${
             isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0
-              ? 'border-2 border-green-500/30 bg-green-500/10 shadow-lg shadow-green-500/20 cursor-pointer'
+              ? 'border-2 border-green-500/30 bg-green-500/10 cursor-pointer'
               : isAuditMode && pendingAdjustments && pendingAdjustments.size > 0
-                ? 'border-2 border-purple-500/30 bg-purple-500/10 shadow-lg shadow-purple-500/20 cursor-pointer'
+                ? 'border-2 border-purple-500/30 bg-purple-500/10 cursor-pointer'
               : hasSelections 
-                ? 'border-2 border-blue-500/30 bg-blue-500/10 shadow-lg shadow-blue-500/20' 
+                ? 'border-2 border-pink-500/30 bg-pink-500/10' 
                 : 'border border-neutral-500/30 hover:border-neutral-400/50 focus:border-neutral-300'
           } ${
             selectedCustomer && selectedCustomer.id >= 0 && !isCustomerMode
               ? 'px-3 pr-36' 
               : isAuditMode && pendingAdjustments && pendingAdjustments.size > 0
-                ? 'px-3 pr-24'
-                : 'px-3'
+                ? 'px-3 pr-28'
+                : isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0
+                  ? 'px-3 pr-24'
+                  : 'px-3'
           }`}
         />
         
-        {/* Selected customer display on the right side */}
+        {/* Selected customer display as part of the search bar */}
         {selectedCustomer && selectedCustomer.id >= 0 && !isCustomerMode && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-            <div className="flex items-center gap-1 bg-blue-600/20 border border-blue-500/30 rounded px-2 py-0.5 text-xs">
-              <span className="text-blue-200 font-medium" style={{ fontFamily: 'Tiempos, serif' }}>
-                {selectedCustomer.id === 0 ? 'Guest' : (selectedCustomer.display_name || selectedCustomer.name || selectedCustomer.username)}
-              </span>
-              {selectedCustomer.id > 0 && <CustomerPoints customerId={selectedCustomer.id} />}
-              <button
-                onClick={() => {
-                  handleCustomerSelect(null);
-                  inputRef.current?.focus();
-                }}
-                className="text-blue-300 hover:text-blue-100 hover:bg-blue-500/20 transition-all ml-1 pointer-events-auto p-0.5 rounded-full"
-                title="Clear customer"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 text-xs pointer-events-auto">
+            <span className="text-pink-300 font-medium truncate max-w-24" style={{ fontFamily: 'Tiempo, serif' }}>
+              {selectedCustomer.id === 0 ? 'Guest' : (selectedCustomer.display_name || selectedCustomer.name || selectedCustomer.username)}
+            </span>
+            {selectedCustomer.id > 0 && <CustomerPoints customerId={selectedCustomer.id} />}
+            <button
+              onClick={() => {
+                handleCustomerSelect(null);
+                inputRef.current?.focus();
+              }}
+              className="text-pink-400 hover:text-pink-200 transition-all p-0.5 rounded-full hover:bg-pink-500/10"
+              title="Clear customer"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         )}
         
@@ -786,10 +796,12 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               handleCategorySelect(null);
               inputRef.current?.focus();
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors p-1 rounded-full hover:bg-neutral-600/20"
             title="Clear filters"
           >
-            <span className="text-xs">✕</span>
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         )}
 
@@ -801,10 +813,12 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               setIsOpen(false);
               setInternalValue('');
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors p-1 rounded-full hover:bg-neutral-600/20"
             title="Exit customer mode"
           >
-            <span className="text-xs">✕</span>
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         )}
 
@@ -816,10 +830,12 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               setIsOpen(false);
               setInternalValue('');
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors p-1 rounded-full hover:bg-neutral-600/20"
             title="Exit product mode"
           >
-            <span className="text-xs">✕</span>
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         )}
 
@@ -832,10 +848,12 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               setLastSearchValue('');
               inputRef.current?.focus();
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors p-1 rounded-full hover:bg-neutral-600/20"
             title="Clear product selection"
           >
-            <span className="text-xs">✕</span>
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         )}
 
@@ -848,10 +866,12 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               setAuditName('');
               setAuditDescription('');
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors p-1 rounded-full hover:bg-neutral-600/20"
             title="Exit audit mode"
           >
-            <span className="text-xs">✕</span>
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         )}
 
@@ -864,22 +884,25 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               setSupplierName('');
               setPONotes('');
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors p-1 rounded-full hover:bg-neutral-600/20"
             title="Exit purchase order mode"
           >
-            <span className="text-xs">✕</span>
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         )}
 
-        {/* Audit mode indicator */}
+        {/* Audit mode indicator as part of the search bar */}
         {isAuditMode && pendingAdjustments && pendingAdjustments.size > 0 && !isCustomerMode && !isProductMode && !showProductSelection && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
             <button
               onClick={() => {
                 setIsAuditDropdownMode(true);
                 setIsOpen(true);
               }}
-              className="text-white text-xs font-medium bg-purple-600/40 px-2 py-0.5 rounded border border-purple-500/30 pointer-events-auto transition-all duration-200"
+              className="text-purple-300 text-xs font-medium pointer-events-auto transition-all duration-200 hover:text-purple-200"
+              style={{ fontFamily: 'Tiempo, serif' }}
               title={`Create audit with ${pendingAdjustments.size} pending adjustments`}
             >
               {pendingAdjustments.size} Adjustments
@@ -887,15 +910,16 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           </div>
         )}
 
-        {/* Restock mode indicator */}
+        {/* Restock mode indicator as part of the search bar */}
         {isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0 && !isCustomerMode && !isProductMode && !showProductSelection && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
             <button
               onClick={() => {
                 setIsPurchaseOrderMode(true);
                 setIsOpen(true);
               }}
-              className="text-white text-xs font-medium bg-green-600/40 px-2 py-0.5 rounded border border-green-500/30 pointer-events-auto transition-all duration-200 hover:bg-green-600/60"
+              className="text-green-300 text-xs font-medium pointer-events-auto transition-all duration-200 hover:text-green-200"
+              style={{ fontFamily: 'Tiempo, serif' }}
               title={`Create purchase order with ${pendingRestockProducts.size} products`}
             >
               {pendingRestockProducts.size} Products
@@ -904,30 +928,71 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         )}
       </div>
 
-      {isOpen && dropdownPosition && typeof document !== 'undefined' && ReactDOM.createPortal(
+      {isOpen && typeof document !== 'undefined' && ReactDOM.createPortal(
         (() => {
-          const desiredWidth = Math.min(700, dropdownPosition.width + 300); // Desired dropdown width
-          const extraWidth = desiredWidth - dropdownPosition.width; // How much wider than input
-          const leftOffset = extraWidth / 2; // Center by offsetting half the extra width
-          
           return (
-            <div 
-              ref={dropdownRef}
-              className="fixed bg-neutral-700/95 border border-white/[0.08] rounded-lg shadow-2xl overflow-hidden backdrop-blur-sm"
-              style={{ 
-                top: dropdownPosition.top,
-                left: Math.max(10, dropdownPosition.left - leftOffset), // Center on search bar
-                width: desiredWidth,
-                zIndex: 99999
-              }}
-            >
-          {/* Customers Section - Only show if not in product-only mode */}
+            <>
+              {/* Transparent Blur Overlay */}
+              <div 
+                className="fixed inset-0 backdrop-blur-sm transition-all duration-500"
+                style={{ 
+                  zIndex: 99998,
+                  background: 'transparent'
+                }}
+                onClick={() => setIsOpen(false)}
+              />
+              
+              {/* Subtle Customer Modal */}
+              <div 
+                ref={dropdownRef}
+                className="fixed border border-white/20 rounded-2xl overflow-hidden backdrop-blur-xl shadow-2xl"
+                style={{ 
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: 'min(90vw, 800px)',
+                  height: 'min(80vh, 700px)',
+                  zIndex: 99999,
+                  background: 'transparent',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                }}
+              >
+                {/* Customers Section - Only show if not in product-only mode */}
           {!productOnlyMode && filteredCustomers.length > 0 && (
             <>
-              <div className="px-4 py-2.5 border-b border-neutral-500/20 bg-transparent">
-                <h3 className="text-xs font-medium text-neutral-300 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
-                  {isCustomerMode ? 'Select Customer' : 'Customers'}
-                </h3>
+              <div className="px-6 py-4 border-b border-white/10">
+                <div className="flex items-center justify-center gap-2 relative">
+                  {/* Customer Search Bar - Matches header nav styling */}
+                  <div className="flex-1 flex items-center justify-center max-w-[500px]">
+                    <div className="relative w-full">
+                      <input
+                        type="text"
+                        placeholder="Search customers..."
+                        value={customerSearchValue}
+                        onChange={(e) => setCustomerSearchValue(e.target.value)}
+                        className="w-full h-[38px] bg-transparent hover:bg-neutral-600/10 rounded-lg placeholder-neutral-400 focus:bg-neutral-600/10 focus:outline-none text-sm text-center placeholder:text-center transition-all duration-200 ease-out text-neutral-400"
+                        style={{ fontFamily: 'Tiempos, serif' }}
+                        autoFocus
+                      />
+                      {/* Search icon */}
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Close button */}
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="text-neutral-400 hover:text-white transition-all duration-300 p-2 hover:bg-white/10 rounded-lg"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               
               <div className={`flex flex-col overflow-hidden ${showIDScanner ? 'h-auto' : 'max-h-[45rem]'}`}>
@@ -1146,23 +1211,31 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                         <button
                           key={customer.id}
                           onClick={() => handleCustomerSelect(customer)}
-                          className={`w-full px-5 py-3.5 text-left transition-all flex items-center justify-between group ${
+                          className={`w-full px-6 py-4 text-left transition-all flex items-center justify-between group ${
                             selectedCustomer?.id === customer.id
-                              ? 'bg-neutral-600/10 text-neutral-200'
-                              : 'text-neutral-300 hover:bg-neutral-600/5 hover:text-neutral-100'
+                              ? 'bg-white/10 text-white border-l-2 border-l-white/40'
+                              : 'text-neutral-400 hover:bg-white/5 hover:text-neutral-300'
                           }`}
+                          style={{ fontFamily: 'Tiempos, serif' }}
                         >
-                          <div className="flex-1">
-                            <div className="text-base font-medium mb-1 flex items-center gap-2">
-                              {customer.display_name || customer.name || customer.username}
-                              <CustomerPoints customerId={customer.id} />
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-neutral-800/60 rounded-full flex items-center justify-center border border-white/10">
+                              <svg className="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
                             </div>
-                            <div className="text-sm text-neutral-400">
-                              {customer.email}
+                            <div className="flex-1">
+                              <div className="text-base font-medium mb-1 flex items-center gap-3">
+                                {customer.display_name || customer.name || customer.username}
+                                <CustomerPoints customerId={customer.id} />
+                              </div>
+                              <div className="text-sm text-neutral-500">
+                                {customer.email}
+                              </div>
                             </div>
                           </div>
                           {selectedCustomer?.id === customer.id && (
-                            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                           )}
@@ -1660,17 +1733,18 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           )}
 
           {/* No results */}
-          {filteredCustomers.length === 0 && filteredProducts.length === 0 && (!isCustomerMode && !isProductMode && !productOnlyMode ? filteredCategories.length === 0 : true) && debouncedSearchValue && (
+          {filteredCustomers.length === 0 && filteredProducts.length === 0 && (!isCustomerMode && !isProductMode && !productOnlyMode ? filteredCategories.length === 0 : true) && (isCustomerMode ? customerSearchValue : debouncedSearchValue) && (
             <div className="px-4 py-6 text-sm text-neutral-500 text-center">
               {isCustomerMode 
-                ? `No customers found for "${debouncedSearchValue}"`
+                ? `No customers found for "${customerSearchValue}"`
                 : isProductMode || productOnlyMode
                 ? `No products found for "${debouncedSearchValue}"`
                 : `No customers, products, or categories found for "${debouncedSearchValue}"`
               }
             </div>
           )}
-        </div>
+              </div>
+            </>
           );
         })(),
         document.body

@@ -4,8 +4,6 @@ import { AnimatedLogo } from './AnimatedLogo';
 interface LoadingSpinnerProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
-  text?: string;
-  subText?: string;
   centered?: boolean;
   overlay?: boolean;
   fullHeight?: boolean;
@@ -14,22 +12,14 @@ interface LoadingSpinnerProps {
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   size = 'lg', 
   className = '',
-  text,
-  subText,
   centered = true,
   overlay = false,
   fullHeight = true
 }) => {
 
   const content = (
-    <div className="text-center space-y-4">
+    <div className="text-center">
       <AnimatedLogo size={size} className="mx-auto" />
-      {text && (
-        <div className="space-y-2">
-          <p className="text-neutral-300 text-xl font-light">{text}</p>
-          {subText && <p className="text-neutral-500 text-base">{subText}</p>}
-        </div>
-      )}
     </div>
   );
 

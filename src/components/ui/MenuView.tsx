@@ -934,7 +934,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   };
 
   if (loading) {
-    return <LoadingSpinner size="lg" text="Loading Menu Products" subText="Preparing TV display data..." />;
+    return <LoadingSpinner size="lg" />;
   }
 
   if (error) {

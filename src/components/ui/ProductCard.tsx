@@ -48,6 +48,10 @@ const ProductCard = memo<ProductCardProps>(({
   onInventoryAdjustment,
   onProductSelection,
 }) => {
+  
+  // State for pricing tier selection
+  const [selectedPricingTier, setSelectedPricingTier] = useState<string | null>(null);
+  const [showPricingDropdown, setShowPricingDropdown] = useState(false);
   // Stock display logic that accounts for selected variants
   let stockDisplay = 0;
   let totalStock = product.total_stock || 0;
@@ -102,8 +106,40 @@ const ProductCard = memo<ProductCardProps>(({
     return isNaN(numPrice) ? '$0.00' : `$${numPrice.toFixed(2)}`;
   }, []);
 
+  // Check if product has multiple pricing tiers
+  const hasMultiplePricingTiers = product.blueprintPricing && product.blueprintPricing.ruleGroups.length > 1;
+  
+  // Get available pricing tiers
+  const availablePricingTiers = hasMultiplePricingTiers 
+    ? product.blueprintPricing!.ruleGroups.map(group => group.ruleName)
+    : [];
+    
+  // Set default selected tier if none selected
+  React.useEffect(() => {
+    if (hasMultiplePricingTiers && !selectedPricingTier) {
+      setSelectedPricingTier(availablePricingTiers[0]);
+    }
+  }, [hasMultiplePricingTiers, selectedPricingTier, availablePricingTiers]);
+
+  // Listen for external clear events (like clicking outside)
+  React.useEffect(() => {
+    const handleClearSelections = () => {
+      setSelectedPricingTier(hasMultiplePricingTiers ? availablePricingTiers[0] : null);
+      setShowPricingDropdown(false);
+    };
+
+    window.addEventListener('clearQuantitySelections', handleClearSelections);
+    return () => {
+      window.removeEventListener('clearQuantitySelections', handleClearSelections);
+    };
+  }, [hasMultiplePricingTiers, availablePricingTiers]);
+
   // Handle click with selection
   const handleCardClick = useCallback((e: React.MouseEvent) => {
+    // Don't trigger card click if clicking dropdown
+    if ((e.target as HTMLElement).closest('.pricing-tier-dropdown')) {
+      return;
+    }
     // Call selection handler if provided
     onProductSelection?.(product, e);
   }, [onProductSelection, product]);
@@ -112,55 +148,100 @@ const ProductCard = memo<ProductCardProps>(({
     <div 
       key={product.id} 
       onClick={handleCardClick}
-      className={`rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-300 ease-out ${
+      className={`p-3 relative cursor-pointer group transition-all duration-300 ease-out ${
         isAuditMode 
           ? isAuditSelected
-            ? 'border-2 border-blue-500/30 bg-gradient-to-br from-blue-950/40 to-neutral-600/60 hover:from-blue-950/50 hover:to-neutral-600/70'
-            : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40'
+            ? 'bg-blue-950/30 border-l-2 border-l-blue-400'
+            : 'bg-transparent hover:bg-neutral-800/20'
           : isSalesView 
             ? isSelected
-              ? 'border-2 border-white/20 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 hover:from-neutral-500/25 hover:to-neutral-600/45'
-              : 'border-2 border-white/40 bg-black hover:bg-neutral-900 hover:border-white/60 backdrop-blur-sm'
-            : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40'
+              ? 'bg-neutral-600/20 border-l-2 border-l-white/40'
+              : 'bg-black hover:bg-neutral-900'
+            : isSelected
+              ? 'bg-gradient-to-br from-neutral-800/25 to-neutral-700/15 border-l-2 border-l-white/60 shadow-lg shadow-black/10'
+              : 'bg-transparent hover:bg-neutral-800/15'
       }`}
     >
-      {/* Product Image and Name Row */}
-      <div className="flex gap-4 items-center mb-4">
-        {/* Product Image */}
-        <div className="w-16 h-16 relative overflow-hidden flex-shrink-0">
-          {product.image ? (
-            <img 
-              src={product.image} 
-              alt={product.name}
-              className="w-full h-full object-contain"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Image 
-                src="/logo123.png" 
-                alt="Flora POS Logo" 
-                width={64}
-                height={64}
-                className="object-contain opacity-30"
-                priority
+      {/* Pricing Tier Dropdown - Top Right */}
+      {hasMultiplePricingTiers && !isAuditMode && (
+        <div className="absolute top-2 right-2 pricing-tier-dropdown z-30">
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowPricingDropdown(!showPricingDropdown);
+              }}
+              className="w-6 h-6 flex items-center justify-center rounded bg-neutral-800/80 border border-white/20 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700/80 transition-all duration-200"
+              title="Select Pricing Tier"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {/* Dropdown Menu */}
+            {showPricingDropdown && (
+              <div className="absolute top-full right-0 mt-1 bg-neutral-900 border border-neutral-600 rounded-lg shadow-xl z-50 min-w-[120px]">
+                {availablePricingTiers.map((tierName) => (
+                  <button
+                    key={tierName}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedPricingTier(tierName);
+                      setShowPricingDropdown(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                      selectedPricingTier === tierName
+                        ? 'bg-neutral-700 text-white'
+                        : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                    }`}
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                  >
+                    {tierName}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+        {/* Product Image and Name Row */}
+        <div className="flex gap-4 items-center mb-4">
+          {/* Product Image */}
+          <div className="w-16 h-16 relative overflow-hidden flex-shrink-0 rounded bg-neutral-800/30 border border-white/10 group-hover:border-white/20 transition-colors duration-200">
+            {product.image ? (
+              <img 
+                src={product.image} 
+                alt={product.name}
+                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                loading="lazy"
               />
-            </div>
-          )}
-        </div>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Image 
+                  src="/logo123.png" 
+                  alt="Flora POS Logo" 
+                  width={64}
+                  height={64}
+                  className="object-contain opacity-30 group-hover:opacity-40 transition-opacity duration-200"
+                  priority
+                />
+              </div>
+            )}
+          </div>
 
-        {/* Product Name and Category - Centered in remaining space */}
-        <div className="flex-1 flex flex-col justify-center items-center text-center">
-          <h3 className="text-neutral-200 font-normal text-base mb-2 line-clamp-2 leading-tight" style={{ fontFamily: 'Tiempos, serif' }}>
-            {product.name}
-          </h3>
-          {product.categories.length > 0 && (
-            <p className="text-neutral-300 text-xs mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
-              {product.categories[0].name}
-            </p>
-          )}
+          {/* Product Name and Category - Centered in remaining space */}
+          <div className="flex-1 flex flex-col justify-center items-center text-center">
+            <h3 className="text-neutral-200 font-normal text-base mb-2 line-clamp-2 leading-tight group-hover:text-white transition-colors duration-200" style={{ fontFamily: 'Tiempos, serif' }}>
+              {product.name}
+            </h3>
+            {product.categories.length > 0 && (
+              <p className="text-neutral-400 text-xs group-hover:text-neutral-300 transition-colors duration-200" style={{ fontFamily: 'Tiempos, serif' }}>
+                {product.categories[0].name}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* Quantity Selector for Non-Variant Products in Adjustment Mode */}
       {isAuditMode && !product.has_variants && (
@@ -332,116 +413,160 @@ const ProductCard = memo<ProductCardProps>(({
           /* Normal Mode - Full Quantity Selector */
           product.has_variants && product.variants ? (
             <div className="space-y-2">
-              {/* Variant options - Clean theme-consistent design */}
-              <div className="grid grid-cols-2 gap-1">
-                {product.variants.slice(0, 6).map((variant) => {
-                  const selectedVariantId = selectedVariants[product.id];
-                  const isVariantSelected = selectedVariantId === variant.id;
-                  const variantStock = userLocationId 
-                    ? variant.inventory.find(inv => inv.location_id === userLocationId)?.quantity || 0
-                    : variant.total_stock;
-                  const variantInStock = variantStock > 0;
-
-                  return (
-                    <button
-                      key={variant.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onVariantSelect(product.id, variant.id);
+              {/* Variant Dropdown - Reserved space, visible when selected */}
+              <div className="min-h-[40px] relative">
+                {isSelected ? (
+                  <div className="animate-in fade-in duration-200 ease-out">
+                    <select
+                      value={selectedVariants[product.id] || ''}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          onVariantSelect(product.id, parseInt(e.target.value));
+                        }
                       }}
-                      disabled={!variantInStock}
-                      className={`w-full px-2 py-2 ${isSalesView ? 'text-sm' : 'text-xs'} rounded transition-colors text-left ${
-                        isVariantSelected
-                          ? 'bg-transparent border border-neutral-400 text-white'
-                          : variantInStock
-                          ? 'bg-transparent border border-neutral-600 text-neutral-200 hover:text-white hover:border-neutral-500 hover:bg-neutral-600/10'
-                          : 'bg-transparent border border-neutral-600/40 text-neutral-400 cursor-not-allowed opacity-50'
-                      }`}
+                      className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-neutral-300 text-sm focus:bg-neutral-800 focus:border-neutral-500 focus:outline-none transition-all duration-200 appearance-none cursor-pointer"
+                      style={{ fontFamily: 'Tiempos, serif' }}
                     >
-                      <div className={`truncate text-xs text-neutral-400`} style={{ fontFamily: 'Tiempos, serif' }}>{variant.name}</div>
-                      <div className="mt-1">
-                        <span className={`text-xs ${variantInStock ? 'text-neutral-500' : 'text-red-400'}`}>
-                          {variantInStock ? `${variantStock} in stock` : 'Out of stock'}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-                {product.variants.length > 6 && (
-                  <div className="text-xs text-neutral-500 text-center py-2 col-span-2 border border-dashed border-neutral-600 rounded" style={{ fontFamily: 'Tiempos, serif' }}>
-                    +{product.variants.length - 6} more variants
+                      <option value="">Select variant...</option>
+                      {product.variants.map((variant) => {
+                        const variantStock = userLocationId 
+                          ? variant.inventory.find(inv => inv.location_id === userLocationId)?.quantity || 0
+                          : variant.total_stock;
+                        const variantInStock = variantStock > 0;
+                        
+                        return (
+                          <option
+                            key={variant.id}
+                            value={variant.id}
+                            disabled={!variantInStock}
+                            className={variantInStock ? 'text-neutral-300' : 'text-neutral-500'}
+                          >
+                            {variant.name} ({variantInStock ? `${variantStock} in stock` : 'Out of stock'})
+                          </option>
+                        );
+                      })}
+                    </select>
+                    
+                    {/* Custom dropdown arrow */}
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
-                )}
+                ) : null}
               </div>
 
-              {/* Show quantity selector ONLY after variant is selected and NOT in audit mode */}
-              {!isAuditMode && selectedVariants[product.id] && (
-                <div className="mt-3 pt-3 border-t border-neutral-600">
-                  <QuantitySelector
-                    productId={selectedVariants[product.id]} // Use variant ID
-                    basePrice={parseFloat(
-                      product.variants.find(v => v.id === selectedVariants[product.id])?.sale_price ||
-                      product.variants.find(v => v.id === selectedVariants[product.id])?.regular_price ||
-                      '0'
-                    )}
-                    blueprintPricing={product.blueprintPricing}
-                    onQuantityChange={(quantity, price, category) => 
-                      onQuantityChange(product.id, quantity, price, category)
-                    }
-                    disabled={false}
-                    hidePrices={isSalesView}
-                  />
-                </div>
-              )}
+              {/* Quantity selector - Reserved space, visible when variant is selected */}
+              <div className="min-h-[60px]">
+                {!isAuditMode && isSelected && selectedVariants[product.id] ? (
+                  <div className="animate-in fade-in duration-200 ease-out delay-100">
+                    <div className="pt-3 border-t border-neutral-600/30">
+                      <QuantitySelector
+                        productId={selectedVariants[product.id]} // Use variant ID
+                        basePrice={parseFloat(
+                          product.variants.find(v => v.id === selectedVariants[product.id])?.sale_price ||
+                          product.variants.find(v => v.id === selectedVariants[product.id])?.regular_price ||
+                          '0'
+                        )}
+                        blueprintPricing={product.blueprintPricing}
+                        onQuantityChange={(quantity, price, category) => 
+                          onQuantityChange(product.id, quantity, price, category)
+                        }
+                        disabled={false}
+                        hidePrices={isSalesView}
+                        selectedPricingTier={selectedPricingTier}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : !isAuditMode ? (
-            <QuantitySelector
-              productId={product.id}
-              basePrice={parseFloat(product.regular_price) || 0}
-              blueprintPricing={product.blueprintPricing}
-              onQuantityChange={(quantity, price, category) => onQuantityChange(product.id, quantity, price, category)}
-              disabled={false}
-              hidePrices={isSalesView}
-            />
+            <div className="min-h-[60px]">
+              {isSelected ? (
+                <div className="animate-in fade-in duration-200 ease-out">
+                  <QuantitySelector
+                    productId={product.id}
+                    basePrice={parseFloat(product.regular_price) || 0}
+                    blueprintPricing={product.blueprintPricing}
+                    onQuantityChange={(quantity, price, category) => onQuantityChange(product.id, quantity, price, category)}
+                    disabled={false}
+                    hidePrices={isSalesView}
+                    selectedPricingTier={selectedPricingTier}
+                  />
+                </div>
+              ) : null}
+            </div>
           ) : null
         )}
       </div>
 
-      {/* Stock Info */}
-      <div className="text-center mb-2 h-4 flex items-center justify-center">
-        {isAuditMode ? (
-          /* Audit Mode - Show current stock only when field is focused */
-          <span className={`text-xs text-neutral-500 transition-opacity duration-200 ${
-            focusedStockFields.has(`${product.id}`) || (product.has_variants && selectedVariants[product.id] && focusedStockFields.has(`${product.id}-${selectedVariants[product.id]}`))
-              ? 'opacity-100' 
-              : 'opacity-0'
-          }`} style={{ fontFamily: 'Tiempos, serif' }}>
-            {product.has_variants && product.variants
-              ? `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`
-              : `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`}
-          </span>
-        ) : (
-          /* Normal Mode - Display Only */
-          <span className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-            {product.has_variants && !selectedVariants[product.id] 
-              ? `${stockDisplay} total stock` 
-              : `${stockDisplay} in stock`}
-          </span>
-        )}
-      </div>
+      {/* Simple Fade Animation Styles */}
+      <style jsx>{`
+        @keyframes smooth-fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        .animate-in {
+          animation-fill-mode: both;
+        }
+        
+        .fade-in {
+          animation: smooth-fade-in forwards;
+        }
+        
+        .duration-200 {
+          animation-duration: 200ms;
+        }
+        
+        .ease-out {
+          animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        .delay-100 {
+          animation-delay: 100ms;
+        }
+      `}</style>
 
-      {/* Selected Price - Bottom Left - Only show in normal mode */}
+       {/* Stock Info */}
+       <div className="text-center mb-3 h-4 flex items-center justify-center">
+         {isAuditMode ? (
+           /* Audit Mode - Show current stock only when field is focused */
+           <span className={`text-xs text-neutral-500 transition-opacity duration-200 ${
+             focusedStockFields.has(`${product.id}`) || (product.has_variants && selectedVariants[product.id] && focusedStockFields.has(`${product.id}-${selectedVariants[product.id]}`))
+               ? 'opacity-100' 
+               : 'opacity-0'
+           }`} style={{ fontFamily: 'Tiempos, serif' }}>
+             {product.has_variants && product.variants
+               ? `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`
+               : `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`}
+           </span>
+         ) : null}
+       </div>
+
+       {/* Stock Info - Bottom Center - Normal Mode Only */}
+       {!isAuditMode && (
+         <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
+           {product.has_variants && !selectedVariants[product.id] 
+             ? `${stockDisplay} total stock` 
+             : `${stockDisplay} in stock`}
+         </div>
+       )}
+
+      {/* Selected Price - Bottom Left - Only show when option is selected */}
       {!isAuditMode && (
         <div className="absolute bottom-2 left-2 text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
           {product.has_variants && selectedVariants[product.id] ? (
-            product.selected_price ? formatPrice(product.selected_price) : (
-              <span className="text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>Select quantity</span>
-            )
+            product.selected_price ? formatPrice(product.selected_price) : null
           ) : product.selected_price ? (
             formatPrice(product.selected_price)
-          ) : (
-            formatPrice(displayPrice)
-          )}
+          ) : null}
         </div>
       )}
 
@@ -456,10 +581,10 @@ const ProductCard = memo<ProductCardProps>(({
               onAddToCartWithVariant(product);
             }}
             disabled={!isInStock}
-            className="absolute bottom-2 right-2 text-neutral-200 hover:text-white transition-colors disabled:opacity-50"
+            className="absolute bottom-2 right-2 w-6 h-6 rounded bg-white/20 hover:bg-white/30 disabled:bg-neutral-600 text-white transition-colors duration-200 flex items-center justify-center"
             title={isInStock ? 'Add to Cart' : 'Out of Stock'}
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>

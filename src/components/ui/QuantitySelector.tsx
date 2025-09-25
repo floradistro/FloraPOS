@@ -10,6 +10,7 @@ interface QuantitySelectorProps {
   onQuantityChange: (quantity: number, price: number, category?: string) => void;
   disabled?: boolean;
   hidePrices?: boolean; // New prop to hide prices in sales view
+  selectedPricingTier?: string | null; // New prop to filter by selected pricing tier
 }
 
 export function QuantitySelector({
@@ -18,7 +19,8 @@ export function QuantitySelector({
   blueprintPricing,
   onQuantityChange,
   disabled = false,
-  hidePrices = false
+  hidePrices = false,
+  selectedPricingTier = null
 }: QuantitySelectorProps) {
   const [selectedQuantity, setSelectedQuantity] = useState<number | null>(null);
   const [selectedPrice, setSelectedPrice] = useState<number | null>(null);
@@ -30,6 +32,20 @@ export function QuantitySelector({
     setSelectedPrice(null);
     setSelectedCategory(null);
   }, [blueprintPricing]);
+
+  // Listen for external clear events (like clicking outside)
+  useEffect(() => {
+    const handleClearSelections = () => {
+      setSelectedQuantity(null);
+      setSelectedPrice(null);
+      setSelectedCategory(null);
+    };
+
+    window.addEventListener('clearQuantitySelections', handleClearSelections);
+    return () => {
+      window.removeEventListener('clearQuantitySelections', handleClearSelections);
+    };
+  }, []);
 
   const handleQuantitySelect = (e: React.MouseEvent, quantity: number, price: number, category?: string) => {
     e.stopPropagation();
@@ -49,21 +65,17 @@ export function QuantitySelector({
   if (basePrice > 0) {
     return (
       <div className="text-center">
-        {!hidePrices && (
-          <div className="text-xs font-medium text-neutral-400">
-            {formatPrice(basePrice)}
-          </div>
-        )}
         <button
           onClick={(e) => handleQuantitySelect(e, 1, basePrice)}
           disabled={disabled}
-          className={`px-3 py-1.5 text-xs transition-all duration-300 ease-out border rounded-lg ${
+          className={`w-16 h-16 rounded-full text-xs transition-all duration-300 ease-out border flex items-center justify-center ${
             selectedQuantity === 1
-              ? 'bg-neutral-600/10 text-neutral-200 font-medium border-neutral-400/60'
-              : 'bg-transparent text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-200 border-neutral-500/20 hover:border-neutral-400/40'
-          } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              ? 'bg-white/10 text-white font-medium border-white/40 shadow-lg shadow-black/20'
+              : 'bg-neutral-800/40 text-neutral-400 hover:bg-neutral-700/60 hover:text-neutral-300 border-neutral-500/30 hover:border-neutral-400/50 hover:shadow-md'
+          } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}`}
+          title="Add to Cart"
         >
-          Add to Cart
+          <div className="font-medium text-xs leading-tight text-center">Add</div>
         </button>
       </div>
     );
@@ -81,9 +93,11 @@ export function QuantitySelector({
   }
 
 
-  // Portal2 style pricing display - show only the first matching rule group for this specific product
-  // This prevents showing all pricing tiers for every product
-  const relevantRuleGroup = blueprintPricing.ruleGroups[0]; // Use the first (most relevant) rule group
+  // Portal2 style pricing display - show only the selected rule group or first matching rule group
+  // Filter by selected pricing tier if provided
+  const relevantRuleGroup = selectedPricingTier 
+    ? blueprintPricing.ruleGroups.find(group => group.ruleName === selectedPricingTier) || blueprintPricing.ruleGroups[0]
+    : blueprintPricing.ruleGroups[0]; // Use the first (most relevant) rule group as fallback
   
   if (!relevantRuleGroup || !relevantRuleGroup.tiers || relevantRuleGroup.tiers.length === 0) {
     return (
@@ -98,29 +112,21 @@ export function QuantitySelector({
   return (
     <div className="space-y-2">
       <div className="space-y-1">
-        {/* Rule Name Label - Only show if there are multiple rule groups */}
-        {blueprintPricing.ruleGroups.length > 1 && (
-          <div className="text-[9px] text-neutral-500 font-medium uppercase tracking-wide text-center">
-            {relevantRuleGroup.ruleName}
-          </div>
-        )}
-        {/* Pricing Tiers for this specific product */}
-        <div className="flex">
+        {/* Pricing Tiers for this specific product - Round Buttons */}
+        <div className="flex flex-wrap gap-2 justify-center">
           {relevantRuleGroup.tiers.map((tier, index) => (
             <Fragment key={`${relevantRuleGroup.ruleId}-${tier.min}`}>
               <button
                 onClick={(e) => handleQuantitySelect(e, tier.min, tier.price, relevantRuleGroup.productType)}
                 disabled={disabled}
-                className={`flex-1 min-w-0 px-2 py-1.5 text-xs transition-all duration-300 ease-out border ${
+                className={`min-w-[50px] h-12 w-12 rounded-full text-xs transition-all duration-300 ease-out border flex items-center justify-center ${
                   selectedQuantity === tier.min && selectedCategory === relevantRuleGroup.productType
-                    ? 'bg-neutral-600/10 text-neutral-200 font-medium border-neutral-400/60'
-                    : 'bg-transparent text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-200 border-neutral-500/20 hover:border-neutral-400/40'
-                } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${index === 0 ? 'rounded-l-lg' : ''} ${index === relevantRuleGroup.tiers.length - 1 ? 'rounded-r-lg' : ''}`}
+                    ? 'bg-white/10 text-white font-medium border-white/40 shadow-lg shadow-black/20'
+                    : 'bg-neutral-800/40 text-neutral-400 hover:bg-neutral-700/60 hover:text-neutral-300 border-neutral-500/30 hover:border-neutral-400/50 hover:shadow-md'
+                } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}`}
+                title={tier.label}
               >
-                <div className="font-medium text-sm leading-tight">{tier.label}</div>
-                {!hidePrices && (
-                  <div className="text-[8px] text-neutral-600">${tier.price.toFixed(2)}</div>
-                )}
+                <div className="font-medium text-xs leading-tight text-center">{tier.label}</div>
               </button>
             </Fragment>
           ))}

@@ -915,9 +915,7 @@ export default function MenuDisplayPage() {
     return (
       <div className="min-h-screen flex items-center justify-center" style={getBackgroundStyle()}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-14 w-14 border-b-3 border-slate-600 mx-auto mb-6"></div>
-          <p className="text-2xl tracking-wide" style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, color: fontColor }}>Loading Menu...</p>
-          <p className="text-sm text-slate-500 mt-3 font-medium">Preparing premium display</p>
+          <img src="/logo123.png" alt="Flora Logo" className="w-20 h-20 mx-auto animate-pulse" />
         </div>
       </div>
     );
@@ -1101,13 +1099,13 @@ export default function MenuDisplayPage() {
             {productsByCategory.length === 0 ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <p className="text-2xl mb-3" style={{ color: fontColor }}>
+                  <p className="text-2xl mb-3" style={{ color: fontColor, fontFamily: 'Tiempo, serif' }}>
                     {selectedCategoryName 
                       ? `No ${selectedCategoryName.toLowerCase()} products currently available`
                       : 'No products currently available'
                     }
                   </p>
-                  <p className="text-lg text-gray-600">Check back soon for updates</p>
+                  <p className="text-lg text-gray-600" style={{ fontFamily: 'Tiempo, serif' }}>Check back soon for updates</p>
                 </div>
               </div>
             ) : (

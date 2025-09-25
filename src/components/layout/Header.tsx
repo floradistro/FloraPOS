@@ -241,6 +241,7 @@ export function Header({
                   value={statusFilter}
                   onChange={(e) => onStatusFilterChange?.(e.target.value)}
                   className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out min-w-[120px]"
+                  style={{ fontFamily: 'Tiempo, serif' }}
                 >
                   <option value="any">All Status</option>
                   <option value="pending">Pending</option>
@@ -263,14 +264,16 @@ export function Header({
                   value={dateFrom}
                   onChange={(e) => onDateFromChange?.(e.target.value)}
                   className="px-2 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out w-28 sm:w-36"
+                  style={{ fontFamily: 'Tiempo, serif' }}
                   title="From Date"
                 />
-                <span className="text-neutral-500 text-xs sm:text-sm">to</span>
+                <span className="text-neutral-500 text-xs sm:text-sm" style={{ fontFamily: 'Tiempo, serif' }}>to</span>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => onDateToChange?.(e.target.value)}
                   className="px-2 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out w-28 sm:w-36"
+                  style={{ fontFamily: 'Tiempo, serif' }}
                   title="To Date"
                 />
               </div>
@@ -283,6 +286,7 @@ export function Header({
                     ? 'bg-neutral-800/90 text-white border-neutral-500' 
                     : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
                 }`}
+                style={{ fontFamily: 'Tiempo, serif' }}
                 title={showSelectedOnly ? 'Show all orders' : 'Show only selected orders'}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,6 +300,7 @@ export function Header({
                 <button
                   onClick={onClearOrderSelection}
                   className="px-3 h-[30px] bg-red-600/20 text-red-300 border border-red-500/30 hover:bg-red-600/30 rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-1 whitespace-nowrap flex-shrink-0"
+                  style={{ fontFamily: 'Tiempo, serif' }}
                   title="Clear Selection"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -332,6 +337,7 @@ export function Header({
                     value={historyDateFilter}
                     onChange={(e) => onHistoryDateFilterChange?.(e.target.value)}
                     className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
+                    style={{ fontFamily: 'Tiempo, serif' }}
                   >
                     <option value="1">Last 24 hours</option>
                     <option value="7">Last 7 days</option>
@@ -345,6 +351,7 @@ export function Header({
                     value={historyActionFilter}
                     onChange={(e) => onHistoryActionFilterChange?.(e.target.value)}
                     className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
+                    style={{ fontFamily: 'Tiempo, serif' }}
                   >
                     <option value="all">All Actions</option>
                     <option value="inventory_update">Inventory Updates</option>

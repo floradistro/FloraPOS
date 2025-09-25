@@ -81,10 +81,10 @@ const CartComponent = function Cart({
                 priority
               />
             </div>
-            <h3 className="text-neutral-400 font-medium mb-2">
+            <h3 className="text-neutral-400 font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
               {isAuditMode ? 'No adjustments pending' : 'Your cart is empty'}
             </h3>
-            <p className="text-sm text-neutral-600 mb-6">
+            <p className="text-sm text-neutral-600 mb-6" style={{ fontFamily: 'Tiempo, serif' }}>
               {isAuditMode ? 'Make inventory adjustments to see them here' : 'Add products to get started'}
             </p>
             
@@ -104,10 +104,10 @@ const CartComponent = function Cart({
                     <span className="text-neutral-400 group-hover:text-neutral-300 text-lg">+</span>
                   </div>
                   <div className="text-left">
-                    <div className="text-neutral-400 group-hover:text-neutral-300 font-medium text-sm transition-colors duration-300">
+                    <div className="text-neutral-400 group-hover:text-neutral-300 font-medium text-sm transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif' }}>
                       Add Customer
                     </div>
-                    <div className="text-neutral-600 group-hover:text-neutral-500 text-xs transition-colors duration-300">
+                    <div className="text-neutral-600 group-hover:text-neutral-500 text-xs transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif' }}>
                       Select a customer to start
                     </div>
                   </div>
@@ -149,8 +149,7 @@ const CartComponent = function Cart({
             {isCheckoutLoading && (
               <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/40"></div>
-                  <span className="text-neutral-300 text-sm font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Processing order...</span>
+                  <img src="/logo123.png" alt="Flora Logo" className="w-8 h-8 animate-pulse" />
                 </div>
               </div>
             )}

@@ -65,15 +65,75 @@ export default function HomePage() {
   
   const [currentTime, setCurrentTime] = useState<string>('');
   const [mounted, setMounted] = useState(false);
+  // View-specific selections state
+  const [viewSelections, setViewSelections] = useState<{
+    [key in ViewType]?: {
+      customer?: WordPressUser | null;
+      product?: Product | null;
+      category?: string | null;
+      searchQuery?: string;
+      auditMode?: boolean;
+      restockMode?: boolean;
+    }
+  }>({});
+  
   const [selectedCustomer, setSelectedCustomer] = useState<WordPressUser | null>(null);
   const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [blueprintProducts, setBlueprintProducts] = useState<Product[]>([]);
   const [blueprintProductsLoading, setBlueprintProductsLoading] = useState(false);
   
+  // Category filter state - moved up to be available for callbacks
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Save current view's selections
+  const saveCurrentViewSelections = useCallback(() => {
+    setViewSelections(prev => ({
+      ...prev,
+      [currentView]: {
+        customer: selectedCustomer,
+        product: selectedProduct,
+        category: selectedCategory,
+        searchQuery: searchQuery,
+        auditMode: isAuditMode,
+        restockMode: isRestockMode,
+      }
+    }));
+  }, [currentView, selectedCustomer, selectedProduct, selectedCategory, searchQuery, isAuditMode, isRestockMode]);
+
+  // Restore selections for a specific view
+  const restoreViewSelections = useCallback((view: ViewType) => {
+    const viewData = viewSelections[view];
+    if (viewData) {
+      setSelectedCustomer(viewData.customer || null);
+      setSelectedProduct(viewData.product || null);
+      setSelectedCategory(viewData.category || null);
+      setSearchQuery(viewData.searchQuery || '');
+      setIsAuditMode(viewData.auditMode || false);
+      setIsRestockMode(viewData.restockMode || false);
+    } else {
+      // Default values for new view
+      setSelectedCustomer(null);
+      setSelectedProduct(null);
+      setSelectedCategory(null);
+      setSearchQuery('');
+      setIsAuditMode(view === 'adjustments'); // Default to audit mode for adjustments
+      setIsRestockMode(false);
+    }
+  }, [viewSelections]);
+
   const handleCustomerSelect = useCallback((customer: WordPressUser | null) => {
     setSelectedCustomer(customer);
-  }, []);
+    // Update the current view's selections
+    setViewSelections(prev => ({
+      ...prev,
+      [currentView]: {
+        ...prev[currentView],
+        customer: customer
+      }
+    }));
+  }, [currentView]);
 
 
   // Function to calculate and update quantities for sold products
@@ -138,13 +198,18 @@ export default function HomePage() {
   
   const handleProductSelect = useCallback((product: Product | null) => {
     setSelectedProduct(product);
-  }, []);
+    // Update the current view's selections
+    setViewSelections(prev => ({
+      ...prev,
+      [currentView]: {
+        ...prev[currentView],
+        product: product
+      }
+    }));
+  }, [currentView]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   
-  // Category filter state
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   // Track filtered products
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -306,11 +371,27 @@ export default function HomePage() {
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-  }, []);
+    // Update the current view's selections
+    setViewSelections(prev => ({
+      ...prev,
+      [currentView]: {
+        ...prev[currentView],
+        searchQuery: query
+      }
+    }));
+  }, [currentView]);
 
   const handleCategoryChange = useCallback((categorySlug: string | null) => {
     setSelectedCategory(categorySlug);
-  }, []);
+    // Update the current view's selections
+    setViewSelections(prev => ({
+      ...prev,
+      [currentView]: {
+        ...prev[currentView],
+        category: categorySlug
+      }
+    }));
+  }, [currentView]);
 
   // Memoized fetch categories function
   const fetchCategories = useCallback(async () => {
@@ -569,9 +650,21 @@ export default function HomePage() {
   const handleAuditModeToggle = () => {
     // Toggle audit mode when in adjustments view
     if (currentView === 'adjustments') {
-      setIsAuditMode(!isAuditMode);
+      const newAuditMode = !isAuditMode;
+      setIsAuditMode(newAuditMode);
       setIsRestockMode(false); // Disable restock mode when audit is active
-      if (!isAuditMode) {
+      
+      // Update the current view's selections
+      setViewSelections(prev => ({
+        ...prev,
+        [currentView]: {
+          ...prev[currentView],
+          auditMode: newAuditMode,
+          restockMode: false
+        }
+      }));
+      
+      if (newAuditMode) {
         setCartItems([]); // Clear cart when entering audit mode
       }
     }
@@ -581,6 +674,16 @@ export default function HomePage() {
     const newRestockMode = !isRestockMode;
     setIsRestockMode(newRestockMode);
     setIsAuditMode(false); // Disable audit mode when restock is active
+    
+    // Update the current view's selections
+    setViewSelections(prev => ({
+      ...prev,
+      [currentView]: {
+        ...prev[currentView],
+        restockMode: newRestockMode,
+        auditMode: false
+      }
+    }));
     console.log('Restock mode toggled:', newRestockMode);
     
     // If entering restock mode and there are pending restock products, open search dropdown in purchase order mode
@@ -602,21 +705,19 @@ export default function HomePage() {
 
 
   const handleViewChange = (view: ViewType) => {
+    // Save current view's selections before switching
+    saveCurrentViewSelections();
+    
+    // Switch to new view
     setCurrentView(view);
-    // Clear selected product when leaving blueprint view
-    if (view !== 'blueprint-fields') {
-      setSelectedProduct(null);
-    }
-    // Set audit mode when entering adjustments view
+    
+    // Restore selections for the new view
+    restoreViewSelections(view);
+    
+    // Clear cart when entering adjustments mode
     if (view === 'adjustments') {
-      setIsAuditMode(true);
-      setIsRestockMode(false);
-      setCartItems([]); // Clear cart when entering adjustments mode
-    } else if (view !== 'history') {
-      setIsAuditMode(false);
-      setIsRestockMode(false);
+      setCartItems([]);
     }
-    // Keep modes when switching between adjustments and history
   };
 
   const handleHistoryBack = () => {
@@ -785,58 +886,78 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-transparent relative overflow-hidden">
-      {/* Subtle 3D Wave Background */}
-      <div className="absolute inset-0 opacity-[0.03]">
-        <div className="absolute inset-0 bg-gradient-to-br from-neutral-600 via-neutral-700 to-neutral-800"></div>
-        <svg 
-          className="absolute inset-0 w-full h-full object-cover"
-          viewBox="0 0 1200 800" 
-          preserveAspectRatio="xMidYMid slice"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <linearGradient id="waveGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#606060" stopOpacity="0.8"/>
-              <stop offset="50%" stopColor="#464646" stopOpacity="0.6"/>
-              <stop offset="100%" stopColor="#373737" stopOpacity="0.4"/>
-            </linearGradient>
-            <linearGradient id="waveGradient2" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#727272" stopOpacity="0.6"/>
-              <stop offset="50%" stopColor="#606060" stopOpacity="0.4"/>
-              <stop offset="100%" stopColor="#464646" stopOpacity="0.2"/>
-            </linearGradient>
-            <filter id="blur">
-              <feGaussianBlur stdDeviation="2"/>
-            </filter>
-          </defs>
-          
-          {/* Background wave layers for 3D depth */}
-          <path 
-            d="M0,400 C300,300 600,500 1200,400 L1200,800 L0,800 Z" 
-            fill="url(#waveGradient1)"
-            filter="url(#blur)"
-            opacity="0.3"
-          />
-          <path 
-            d="M0,500 C400,350 800,550 1200,450 L1200,800 L0,800 Z" 
-            fill="url(#waveGradient2)"
-            opacity="0.4"
-          />
-          <path 
-            d="M0,600 C350,450 650,650 1200,550 L1200,800 L0,800 Z" 
-            fill="url(#waveGradient1)"
-            opacity="0.2"
-          />
-          
-          {/* Subtle top waves */}
-          <path 
-            d="M0,0 C300,100 600,50 1200,80 L1200,0 Z" 
-            fill="url(#waveGradient2)"
-            opacity="0.15"
-          />
-        </svg>
+    <div className="flex flex-col h-screen relative overflow-hidden" style={{ backgroundColor: '#1a1a1a' }}>
+      {/* Storybook-inspired Background */}
+      <div className="absolute inset-0">
+        {/* Parchment-like base gradient */}
+        <div 
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            background: 'radial-gradient(ellipse at center top, rgba(255,248,220,0.08) 0%, rgba(255,248,220,0.02) 40%, transparent 70%), linear-gradient(180deg, rgba(255,248,220,0.03) 0%, rgba(240,230,200,0.015) 50%, rgba(220,210,180,0.02) 100%)'
+          }}
+        />
+        
+        {/* Soft vignette for story framing */}
+        <div 
+          className="absolute inset-0 opacity-[0.015]"
+          style={{
+            background: 'radial-gradient(ellipse 80% 60% at center, transparent 30%, rgba(139,125,107,0.08) 70%, rgba(101,89,73,0.12) 100%)'
+          }}
+        />
+        
+        {/* Subtle paper texture */}
+        <div 
+          className="absolute inset-0 opacity-[0.004]"
+          style={{
+            backgroundImage: `
+              radial-gradient(circle at 25% 25%, rgba(255,248,220,0.3) 0.5px, transparent 1px),
+              radial-gradient(circle at 75% 75%, rgba(240,230,200,0.2) 0.5px, transparent 1px),
+              radial-gradient(circle at 50% 10%, rgba(255,248,220,0.15) 0.3px, transparent 0.8px),
+              radial-gradient(circle at 20% 80%, rgba(240,230,200,0.25) 0.4px, transparent 1px)
+            `,
+            backgroundSize: '40px 40px, 60px 60px, 30px 30px, 50px 50px',
+            backgroundPosition: '0 0, 20px 20px, 10px 10px, 30px 30px'
+          }}
+        />
+        
+        {/* Magical floating elements */}
+        <div 
+          className="absolute inset-0 opacity-[0.006]"
+          style={{
+            backgroundImage: `
+              radial-gradient(circle at 15% 20%, rgba(255,215,0,0.4) 1px, transparent 2px),
+              radial-gradient(circle at 85% 30%, rgba(255,182,193,0.3) 0.8px, transparent 1.5px),
+              radial-gradient(circle at 25% 70%, rgba(173,216,230,0.35) 0.6px, transparent 1.2px),
+              radial-gradient(circle at 70% 80%, rgba(255,215,0,0.25) 0.4px, transparent 1px),
+              radial-gradient(circle at 45% 15%, rgba(255,182,193,0.2) 0.5px, transparent 1px)
+            `,
+            backgroundSize: '200px 200px, 180px 180px, 220px 220px, 160px 160px, 240px 240px',
+            animation: 'storytellFloat 20s ease-in-out infinite'
+          }}
+        />
       </div>
+      
+      {/* CSS Animation for floating elements */}
+      <style jsx>{`
+        @keyframes storytellFloat {
+          0%, 100% {
+            transform: translate(0, 0) rotate(0deg);
+            opacity: 0.006;
+          }
+          25% {
+            transform: translate(5px, -8px) rotate(1deg);
+            opacity: 0.004;
+          }
+          50% {
+            transform: translate(-3px, -12px) rotate(-0.5deg);
+            opacity: 0.008;
+          }
+          75% {
+            transform: translate(8px, -5px) rotate(0.8deg);
+            opacity: 0.003;
+          }
+        }
+      `}</style>
       {/* Main Layout with Sidebar */}
       <div className="flex flex-1 relative z-10 overflow-hidden">
         {/* Sidebar Navigation */}
@@ -912,9 +1033,7 @@ export default function HomePage() {
         {(currentView === 'products' && isProductsLoading && !isRefreshing) && (
           <LoadingSpinner 
             overlay
-            size="lg" 
-            text="Loading Products"
-            subText="Fetching inventory data..."
+            size="lg"
           />
         )}
         
@@ -926,14 +1045,7 @@ export default function HomePage() {
           {isRefreshing && currentView !== 'blueprint-fields' && (
             <LoadingSpinner 
               overlay 
-              size="lg" 
-              text={
-                isRefreshing && currentView === 'products' ? 'Refreshing Products' :
-                isRefreshing && currentView === 'customers' ? 'Refreshing Customers' :
-                isRefreshing && currentView === 'orders' ? 'Refreshing Orders' :
-                'Loading'
-              }
-              subText="Updating data..."
+              size="lg"
             />
           )}
           {currentView === 'products' && (
@@ -993,7 +1105,7 @@ export default function HomePage() {
           {currentView === 'customers' && (
             <div className="h-full">
               <StandardErrorBoundary componentName="CustomersView">
-                <Suspense fallback={<LoadingSpinner size="lg" text="Loading Customers" subText="Preparing view..." />}>
+                <Suspense fallback={<LoadingSpinner size="lg" />}>
                   <CustomersViewLazy 
                     ref={customersViewRef} 
                     hideLoadingOverlay={isRefreshing}
@@ -1006,7 +1118,7 @@ export default function HomePage() {
           {currentView === 'orders' && (
             <div className="h-full overflow-y-auto">
               <StandardErrorBoundary componentName="OrdersView">
-                <Suspense fallback={<LoadingSpinner size="lg" text="Loading Orders" subText="Preparing view..." />}>
+                <Suspense fallback={<LoadingSpinner size="lg" />}>
                   <OrdersViewLazy 
                     ref={ordersViewRef} 
                     hideLoadingOverlay={isRefreshing}
@@ -1072,7 +1184,7 @@ export default function HomePage() {
             />
           ) : (
             <CriticalErrorBoundary componentName="Checkout">
-              <Suspense fallback={<LoadingSpinner size="lg" text="Loading Checkout" subText="Preparing checkout..." />}>
+              <Suspense fallback={<LoadingSpinner size="lg" />}>
                 <CheckoutScreenLazy
                   items={cartItems}
                   selectedCustomer={selectedCustomer}
@@ -1091,14 +1203,10 @@ export default function HomePage() {
       {/* Status Bar */}
       <div className="flex-shrink-0 bg-transparent px-4 py-2 relative z-10">
         <div className="flex items-center justify-between relative">
-          <div className="flex items-center gap-3 text-xs text-neutral-500">
-            <span>Online</span>
-            <span className="text-neutral-600">•</span>
-            <span>Last updated: {mounted ? currentTime : '--:--:--'}</span>
+          <div className="flex items-center gap-3 text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
             {/* Orders Count in Status Bar */}
             {currentView === 'orders' && (
               <>
-                <span className="text-neutral-600">•</span>
                 <span>{totalOrders} total orders</span>
                 {selectedOrdersCount > 0 && (
                   <>
@@ -1110,16 +1218,17 @@ export default function HomePage() {
             )}
           </div>
           
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xs text-neutral-500">
-            {mounted && isAuthenticated && user && (
-              <span>Hello, {user.username}</span>
-            )}
-          </div>
-          
-          <div className="text-xs text-neutral-500">
+          <div className="flex items-center gap-3 text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
             {mounted && isAuthenticated && user && (
               <span>{user.location || 'FloraDistro'}</span>
             )}
+            <span className="text-neutral-600">•</span>
+            <div className="flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>{mounted ? currentTime : '--:--:--'}</span>
+            </div>
           </div>
 
         </div>

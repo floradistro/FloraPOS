@@ -80,16 +80,6 @@ export function Sidebar({
         
         {/* Top section - Main Navigation */}
         <div className="flex flex-col items-center gap-2 w-full">
-          {/* Logo/Home */}
-          <div className="mb-4 w-10 h-10 flex items-center justify-center">
-            <img 
-              src="/logo123.png" 
-              alt="Flora" 
-              className="w-8 h-8 opacity-60 hover:opacity-80 transition-opacity cursor-pointer"
-              onClick={() => onViewChange?.('products')}
-            />
-          </div>
-
           {/* Products */}
           <SidebarButton
             onClick={() => onViewChange?.('products')}

@@ -248,26 +248,28 @@ export function HeaderCustomerSelector({
         </svg>
       </button>
 
-      {isOpen && dropdownPosition && typeof document !== 'undefined' && ReactDOM.createPortal(
+      {isOpen && typeof document !== 'undefined' && ReactDOM.createPortal(
         <div 
           ref={dropdownRef}
-          className="fixed bg-neutral-700/95 backdrop-blur-sm border border-white/[0.08] rounded-lg shadow-2xl overflow-hidden"
+          className="fixed bg-neutral-900/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-2xl overflow-hidden"
           style={{ 
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-            width: dropdownPosition.width,
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '500px',
+            height: '500px',
             zIndex: 99999
           }}
         >
           {/* Header */}
-          <div className="px-4 py-2.5 border-b border-white/[0.08] bg-neutral-800/50">
+          <div className="px-6 py-4 border-b border-white/10 bg-neutral-800/30">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Select Customer</h3>
+              <h3 className="text-sm font-medium text-neutral-300 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Select Customer</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-neutral-500 hover:text-neutral-300 transition-all p-1.5 hover:bg-white/[0.08] rounded-full"
+                className="text-neutral-400 hover:text-white transition-all p-2 hover:bg-white/10 rounded-full"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -275,15 +277,16 @@ export function HeaderCustomerSelector({
           </div>
 
           {/* Customer Options */}
-          <div className="py-1 max-h-[32rem] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
+          <div className="py-2 flex-1 overflow-y-auto" style={{ maxHeight: '420px' }}>
             {/* Clear Selection Option */}
             <button
               onClick={() => handleCustomerSelect(null)}
-              className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between group ${
+              className={`w-full px-6 py-3 text-left text-sm transition-colors flex items-center justify-between group ${
                 !selectedCustomer
-                  ? 'bg-blue-600/20 text-blue-300'
-                  : 'text-neutral-500 hover:bg-white/[0.05] hover:text-neutral-300'
+                  ? 'bg-white/10 text-white border-l-2 border-l-white/40'
+                  : 'text-neutral-400 hover:bg-white/5 hover:text-neutral-300'
               }`}
+              style={{ fontFamily: 'Tiempos, serif' }}
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-neutral-700/50 rounded-full flex items-center justify-center">
@@ -454,15 +457,16 @@ export function HeaderCustomerSelector({
                 <button
                   key={customer.id}
                   onClick={() => handleCustomerSelect(customer)}
-                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between group ${
+                  className={`w-full px-6 py-3 text-left text-sm transition-colors flex items-center justify-between group ${
                     selectedCustomer?.id === customer.id
-                      ? 'bg-blue-600/20 text-blue-300'
-                      : 'text-neutral-500 hover:bg-white/[0.05] hover:text-neutral-300'
+                      ? 'bg-white/10 text-white border-l-2 border-l-white/40'
+                      : 'text-neutral-400 hover:bg-white/5 hover:text-neutral-300'
                   }`}
+                  style={{ fontFamily: 'Tiempos, serif' }}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-600/20 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-neutral-800/60 rounded-full flex items-center justify-center border border-white/10">
+                      <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
