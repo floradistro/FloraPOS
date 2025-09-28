@@ -294,6 +294,92 @@ export default function MenuDisplayPage() {
       }
     }
 
+    // Render tiered pricing for header
+    const renderHeaderPricing = (allProducts: Product[], orientation: 'horizontal' | 'vertical') => {
+      const pricingTiers = new Map<string, { label: string; price: number; ruleName: string }>();
+      
+      allProducts.forEach(product => {
+        if (product.blueprintPricing?.ruleGroups) {
+          product.blueprintPricing.ruleGroups.forEach((ruleGroup: any) => {
+            ruleGroup.tiers.forEach((tier: any) => {
+              const key = `${ruleGroup.ruleName}-${tier.label}`;
+              if (!pricingTiers.has(key)) {
+                pricingTiers.set(key, {
+                  label: tier.label,
+                  price: tier.price,
+                  ruleName: ruleGroup.ruleName
+                });
+              }
+            });
+          });
+        }
+      });
+
+      if (pricingTiers.size === 0) return null;
+
+      const tiersByRule = new Map<string, Array<{ label: string; price: number }>>();
+      pricingTiers.forEach(tier => {
+        if (!tiersByRule.has(tier.ruleName)) {
+          tiersByRule.set(tier.ruleName, []);
+        }
+        tiersByRule.get(tier.ruleName)!.push({ label: tier.label, price: tier.price });
+      });
+
+      tiersByRule.forEach(tiers => {
+        tiers.sort((a, b) => a.price - b.price);
+      });
+
+      return (
+        <div className={`flex justify-center items-center ${
+          orientation === 'vertical' ? 'flex-col gap-1' : 'flex-wrap gap-2'
+        }`}>
+          {Array.from(tiersByRule.entries()).map(([ruleName, tiers], ruleIndex) => (
+            <div key={ruleName} className={`flex items-center gap-1 ${
+              orientation === 'vertical' ? 'flex-col text-center' : ''
+            }`}>
+              <div className={`font-medium uppercase tracking-wider ${
+                orientation === 'vertical' ? 'text-base mb-2' : 'text-sm'
+              }`} style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                {ruleName}
+              </div>
+              <div className={`flex gap-1 ${
+                orientation === 'vertical' ? 'flex-col' : 'items-center'
+              }`}>
+                {tiers.map((tier, tierIndex) => (
+                  <React.Fragment key={`${ruleName}-${tier.label}`}>
+                    <div className={`flex items-center gap-1 ${
+                      orientation === 'vertical' ? 'justify-center' : ''
+                    }`}>
+                      <span className="font-bold" style={{ 
+                        fontSize: orientation === 'vertical' ? '14px' : '13px', 
+                        color: fontColor,
+                        fontFamily: 'Tiempo, serif'
+                      }}>
+                        {tier.label}
+                      </span>
+                      <span style={{ 
+                        fontSize: orientation === 'vertical' ? '13px' : '12px', 
+                        color: fontColor,
+                        fontFamily: 'Tiempo, serif'
+                      }}>
+                        ${tier.price}
+                      </span>
+                    </div>
+                    {tierIndex < tiers.length - 1 && orientation === 'horizontal' && (
+                      <span className="mx-1 text-gray-400" style={{ fontSize: '10px' }}>|</span>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+              {ruleIndex < tiersByRule.size - 1 && orientation === 'horizontal' && (
+                <span className="mx-2 text-gray-500" style={{ fontSize: '12px' }}>•</span>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    };
+
     // Listen for data from parent window
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) {
