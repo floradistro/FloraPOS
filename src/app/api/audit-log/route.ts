@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 interface AuditLogEntry {
+  id?: string | number;
   location_id?: string | number;
   action?: string;
   created_at?: string;
