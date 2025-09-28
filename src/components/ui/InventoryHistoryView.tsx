@@ -199,7 +199,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
       const entries = auditData.data || [];
       
       // Debug: Log the first few entries to see what timestamps we're getting
-      console.log('🕐 Raw audit entries from API:', entries.slice(0, 3).map(entry => ({
+      console.log('🕐 Raw audit entries from API:', entries.slice(0, 3).map((entry: AuditLogEntry) => ({
         id: entry.id,
         created_at: entry.created_at,
         created_at_type: typeof entry.created_at,
