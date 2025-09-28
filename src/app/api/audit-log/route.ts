@@ -81,6 +81,31 @@ export async function GET(request: NextRequest) {
 
     const auditData: AuditLogEntry[] = await response.json();
     console.log(`✅ Retrieved ${auditData?.length || 0} audit log entries from Flora IM`);
+    
+    // Debug: Log first few entries to check timestamps and action types
+    if (auditData && auditData.length > 0) {
+      console.log('🕐 Sample timestamps from Flora IM:', auditData.slice(0, 3).map(entry => ({
+        id: entry.id,
+        created_at: entry.created_at,
+        created_at_type: typeof entry.created_at,
+        parsed: entry.created_at ? new Date(entry.created_at).toISOString() : 'null',
+        year: entry.created_at ? new Date(entry.created_at).getFullYear() : 'null'
+      })));
+      
+      console.log('🏷️ Sample action/details from Flora IM:', auditData.slice(0, 5).map(entry => ({
+        id: entry.id,
+        action: entry.action,
+        details: entry.details,
+        object_type: (entry as any).object_type,
+        user_name: (entry as any).user_name,
+        quantity_change: (entry as any).quantity_change,
+        old_quantity: (entry as any).old_quantity,
+        new_quantity: (entry as any).new_quantity
+      })));
+      
+      // Log full structure of first entry
+      console.log('📦 Full structure of first entry:', JSON.stringify(auditData[0], null, 2));
+    }
 
     // Flora IM returns an array directly, not wrapped in a data object
     let filteredData: AuditLogEntry[] = auditData || [];

@@ -73,7 +73,7 @@ export const BlueprintFieldsGrid = forwardRef<{ refresh: () => Promise<void> }, 
         
         while (hasMore) {
           const response = await fetch(
-            `https://api.floradistro.com/wp-json/wc/v3/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=${page}&status=publish`
+            `https://api.floradistro.com/wp-json/wc/v3/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=100&page=${page}&status=publish`
           );
 
           if (!response.ok) {
@@ -874,8 +874,8 @@ const ProductBlueprintCard: React.FC<ProductBlueprintCardProps> = ({ product, fi
               {/* Label Info */}
               <div>
                 <div className="font-bold text-neutral-800 text-sm mb-2 uppercase tracking-wide">LABEL INFO:</div>
-                <div className="text-neutral-600 text-sm">Generated: {new Date().toLocaleDateString()}</div>
-                <div className="text-neutral-600 text-sm">Time: {new Date().toLocaleTimeString()}</div>
+                <div className="text-neutral-600 text-sm">Generated: {new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York' })}</div>
+                <div className="text-neutral-600 text-sm">Time: {new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York' })}</div>
               </div>
 
               {/* Sealed Fresh For */}

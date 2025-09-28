@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { formatDateTime as formatDateTimeUtil, debugTimezone } from '../../utils/date-utils';
 
 interface AuditLogEntry {
   id: number;
@@ -89,6 +90,11 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
   useEffect(() => {
     fetchAuditLog();
   }, [currentPage, actionFilter, dateFilter, user?.location_id]);
+
+  // Debug timezone information on component mount
+  useEffect(() => {
+    debugTimezone();
+  }, []);
 
   // Debug: Log when productNames changes
   useEffect(() => {
@@ -191,6 +197,16 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
       }
 
       const entries = auditData.data || [];
+      
+      // Debug: Log the first few entries to see what timestamps we're getting
+      console.log('🕐 Raw audit entries from API:', entries.slice(0, 3).map(entry => ({
+        id: entry.id,
+        created_at: entry.created_at,
+        created_at_type: typeof entry.created_at,
+        parsed_date: new Date(entry.created_at),
+        current_year: new Date().getFullYear()
+      })));
+      
       setAuditLog(entries);
       setTotalPages(Math.ceil((auditData.total || 0) / itemsPerPage));
 
@@ -367,13 +383,127 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return formatDateTimeUtil(dateString, { 
+      includeTimezone: false,
+      format: 'medium'
     });
+  };
+
+  // Function to determine the entry type based on action and details
+  const getEntryType = (entry: AuditLogEntry) => {
+    const action = entry.action?.toLowerCase() || '';
+    const quantityChange = parseFloat(entry.quantity_change?.toString() || '0');
+    const userName = entry.user_name?.toLowerCase() || '';
+    
+    // Parse details if it's a JSON string (Flora API returns JSON in details field)
+    let detailsObj: any = {};
+    let detailsStr = '';
+    try {
+      if (entry.details && entry.details.startsWith('{')) {
+        detailsObj = JSON.parse(entry.details);
+        detailsStr = JSON.stringify(detailsObj).toLowerCase();
+      } else {
+        detailsStr = entry.details?.toLowerCase() || '';
+      }
+    } catch {
+      detailsStr = entry.details?.toLowerCase() || '';
+    }
+    
+    // Priority 1: Check for batch audits (highest priority)
+    if (entry.batch_id || detailsStr.includes('batch') || detailsStr.includes('audit batch')) {
+      return {
+        label: 'Audit',
+        color: 'text-neutral-400'
+      };
+    }
+    
+    // Priority 2: Check for restock operations
+    if (action === 'restock' || action === 'purchase_order' || detailsStr.includes('restock') || detailsStr.includes('purchase order')) {
+      return {
+        label: 'Restock',
+        color: 'text-neutral-400'
+      };
+    }
+    
+    // Priority 3: Check for manual adjustments
+    if (action === 'manual_adjustment' || detailsStr.includes('manual')) {
+      return {
+        label: 'Manual',
+        color: 'text-neutral-400'
+      };
+    }
+    
+    // Priority 4: Check for stock transfers
+    if (action === 'stock_transfer' || action === 'transfer' || detailsStr.includes('transfer')) {
+      return {
+        label: 'Transfer',
+        color: 'text-neutral-400'
+      };
+    }
+    
+    // Priority 5: Check for conversions
+    if (action === 'convert' || action === 'conversion' || detailsStr.includes('convert')) {
+      return {
+        label: 'Convert',
+        color: 'text-neutral-400'
+      };
+    }
+    
+    // Priority 6: Handle inventory_update actions (most common from Flora API)
+    if (action === 'inventory_update') {
+      // Sales are typically:
+      // - Negative quantity change
+      // - User is "System" (from POS system) 
+      // - No batch_id
+      if (quantityChange < 0 && userName === 'system' && !entry.batch_id) {
+        return {
+          label: 'Sale',
+          color: 'text-neutral-400'
+        };
+      }
+      
+      // Restocks are positive changes without batch
+      if (quantityChange > 0 && !entry.batch_id) {
+        return {
+          label: 'Restock',
+          color: 'text-neutral-400'
+        };
+      }
+      
+      // If it has a batch_id, it's an audit
+      if (entry.batch_id) {
+        return {
+          label: 'Audit',
+          color: 'text-neutral-400'
+        };
+      }
+    }
+    
+    // Priority 7: Check for explicit sale/order actions
+    if (action === 'order_deduction' || action === 'sale' || detailsStr.includes('order #')) {
+      return {
+        label: 'Sale',
+        color: 'text-neutral-400'
+      };
+    }
+    
+    // Final determination based on quantity change
+    if (quantityChange < 0) {
+      return {
+        label: 'Sale',
+        color: 'text-neutral-400'
+      };
+    } else if (quantityChange > 0) {
+      return {
+        label: 'Restock',
+        color: 'text-neutral-400'
+      };
+    }
+    
+    return {
+      label: 'Other',
+      color: 'text-neutral-400'
+    };
   };
 
   const getProductName = useMemo(() => {
@@ -462,8 +592,8 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
         {error ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
-                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-800/50 flex items-center justify-center">
+                <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
@@ -593,14 +723,14 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
 
                             {/* Type */}
                             <div className="w-20 text-sm text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
-                              <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded">
+                              <span className="text-xs text-neutral-400">
                                 Audit
                               </span>
                             </div>
 
                             {/* Change */}
                             <div className="w-24 text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
-                              {batch.net_change > 0 ? '+' : ''}{parseFloat(batch.net_change.toString()).toFixed(4)}
+                              {batch.net_change > 0 ? '+' : ''}{parseFloat(batch.net_change.toString()).toFixed(2)}
                             </div>
 
                             {/* User */}
@@ -646,7 +776,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                                       
                                       <div className="w-24 text-neutral-500 text-xs">
                                         {entry.quantity_change !== null && entry.quantity_change !== undefined && !isNaN(parseFloat(entry.quantity_change.toString())) 
-                                          ? (parseFloat(entry.quantity_change.toString()) > 0 ? '+' : '') + parseFloat(entry.quantity_change.toString()).toFixed(4)
+                                          ? (parseFloat(entry.quantity_change.toString()) > 0 ? '+' : '') + parseFloat(entry.quantity_change.toString()).toFixed(2)
                                           : '—'}
                                       </div>
                                       
@@ -717,14 +847,14 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
 
                             {/* Type */}
                             <div className="w-20 text-sm text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
-                              <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">
+                              <span className="text-xs text-neutral-400">
                                 Restock
                               </span>
                             </div>
 
                             {/* Change */}
                             <div className="w-24 text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
-                              {batch.net_change > 0 ? '+' : ''}{parseFloat(batch.net_change.toString()).toFixed(4)}
+                              {batch.net_change > 0 ? '+' : ''}{parseFloat(batch.net_change.toString()).toFixed(2)}
                             </div>
 
                             {/* User */}
@@ -770,7 +900,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
                                       
                                       <div className="w-24 text-neutral-500 text-xs">
                                         {entry.quantity_change !== null && entry.quantity_change !== undefined && !isNaN(parseFloat(entry.quantity_change.toString())) 
-                                          ? (parseFloat(entry.quantity_change.toString()) > 0 ? '+' : '') + parseFloat(entry.quantity_change.toString()).toFixed(4)
+                                          ? (parseFloat(entry.quantity_change.toString()) > 0 ? '+' : '') + parseFloat(entry.quantity_change.toString()).toFixed(2)
                                           : '—'}
                                       </div>
                                       
@@ -811,21 +941,20 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
 
                             {/* Type */}
                             <div className="w-20 text-sm text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
-                              {(entry.action === 'restock' || entry.details?.includes('Restock via PO')) ? (
-                                <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">
-                                  Restock
-                                </span>
-                              ) : (
-                                <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded">
-                                  Audit
-                                </span>
-                              )}
+                              {(() => {
+                                const entryType = getEntryType(entry);
+                                return (
+                                  <span className={`text-xs ${entryType.color}`}>
+                                    {entryType.label}
+                                  </span>
+                                );
+                              })()}
                             </div>
 
                             {/* Change */}
                             <div className="w-24 text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempo, serif' }}>
                               {entry.quantity_change !== null && entry.quantity_change !== undefined && !isNaN(parseFloat(entry.quantity_change.toString())) 
-                                ? (parseFloat(entry.quantity_change.toString()) > 0 ? '+' : '') + parseFloat(entry.quantity_change.toString()).toFixed(4)
+                                ? (parseFloat(entry.quantity_change.toString()) > 0 ? '+' : '') + parseFloat(entry.quantity_change.toString()).toFixed(2)
                                 : '—'}
                             </div>
 

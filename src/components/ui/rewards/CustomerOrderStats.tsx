@@ -122,7 +122,9 @@ export const CustomerOrderStats: React.FC<CustomerOrderStatsProps> = ({ userId }
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never';
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString('en-US', {
+      timeZone: 'America/New_York' // Force EST/EDT
+    });
   };
 
   return (

@@ -67,8 +67,11 @@ export async function POST(request: NextRequest) {
       consumer_secret: CONSUMER_SECRET,
     });
 
+    // WooCommerce requires email, so generate one if not provided
+    const email = body.email || `customerdeclinedemail@floradistro.com`;
+    
     const customerData = {
-      email: body.email,
+      email: email,
       first_name: body.first_name || body.name?.split(' ')[0] || '',
       last_name: body.last_name || body.name?.split(' ').slice(1).join(' ') || '',
       username: body.username,
@@ -97,7 +100,7 @@ export async function POST(request: NextRequest) {
       id: newCustomer.id,
       name: `${newCustomer.first_name} ${newCustomer.last_name}`.trim() || newCustomer.username,
       username: newCustomer.username,
-      email: newCustomer.email,
+      email: newCustomer.email || '',
       roles: ['customer'],
       display_name: `${newCustomer.first_name} ${newCustomer.last_name}`.trim() || newCustomer.username
     };

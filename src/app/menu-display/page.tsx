@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { BlueprintPricingService } from '../../services/blueprint-pricing-service';
 import { ProductBlueprintFields } from '../../services/blueprint-fields-service';
 import { Product, Category } from '../../types';
+import { SharedMenuDisplay } from '../../components/ui/SharedMenuDisplay';
 
 export default function MenuDisplayPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -23,6 +24,11 @@ export default function MenuDisplayPage() {
   const [rightMenuCategory2, setRightMenuCategory2] = useState<string | null>(null);
   const [leftMenuImages2, setLeftMenuImages2] = useState<boolean>(true);
   const [rightMenuImages2, setRightMenuImages2] = useState<boolean>(true);
+  const [leftMenuViewMode, setLeftMenuViewMode] = useState<'table' | 'card' | 'auto'>('auto');
+  const [rightMenuViewMode, setRightMenuViewMode] = useState<'table' | 'card' | 'auto'>('auto');
+  const [leftMenuViewMode2, setLeftMenuViewMode2] = useState<'table' | 'card' | 'auto'>('auto');
+  const [rightMenuViewMode2, setRightMenuViewMode2] = useState<'table' | 'card' | 'auto'>('auto');
+  const [selectedMenuSection, setSelectedMenuSection] = useState<string | null>(null);
   const [enableLeftStacking, setEnableLeftStacking] = useState<boolean>(false);
   const [enableRightStacking, setEnableRightStacking] = useState<boolean>(false);
   const [backgroundColor, setBackgroundColor] = useState<string>('#f5f5f4');
@@ -40,13 +46,41 @@ export default function MenuDisplayPage() {
   // Per-category column selection state
   const [categoryColumnConfigs, setCategoryColumnConfigs] = useState<Map<string, string[]>>(new Map());
   const [categoryBlueprintFields, setCategoryBlueprintFields] = useState<Map<string, ProductBlueprintFields[]>>(new Map());
+  // Separate column configs for dual menu left and right sides
+  const [leftColumnConfigs, setLeftColumnConfigs] = useState<Map<string, string[]>>(new Map());
+  const [rightColumnConfigs, setRightColumnConfigs] = useState<Map<string, string[]>>(new Map());
 
   // Get columns for a specific category or default
-  const getCategoryColumns = (categorySlug?: string): string[] => {
+  const getCategoryColumns = (categorySlug?: string, isLeftSide?: boolean): string[] => {
     if (!categorySlug) return ['name'];
     
-    // Get the configured columns for this category
-    const configuredColumns = categoryColumnConfigs.get(categorySlug);
+    // In dual menu mode, use separate configs for left and right
+    let configuredColumns;
+    if (isDualMenu) {
+      // In dual menu, we MUST know which side we're rendering for
+      // If isLeftSide is undefined in dual mode, try to determine it from the category
+      if (isLeftSide === undefined) {
+        // Check if this category matches left or right menu categories
+        if (categorySlug === leftMenuCategory || categorySlug === leftMenuCategory2) {
+          isLeftSide = true;
+        } else if (categorySlug === rightMenuCategory || categorySlug === rightMenuCategory2) {
+          isLeftSide = false;
+        } else {
+          console.warn(`⚠️ Unable to determine side for category '${categorySlug}' in dual menu mode`);
+          return ['name'];
+        }
+      }
+      
+      const configMap = isLeftSide ? leftColumnConfigs : rightColumnConfigs;
+      configuredColumns = configMap.get(categorySlug);
+      
+      // Debug logging for dual menu
+      console.log(`🔍 Getting columns for ${isLeftSide ? 'LEFT' : 'RIGHT'} category '${categorySlug}':`);
+      console.log('  - Config map:', Array.from(configMap.entries()));
+      console.log('  - Found columns:', configuredColumns);
+    } else {
+      configuredColumns = categoryColumnConfigs.get(categorySlug);
+    }
     
     if (configuredColumns && configuredColumns.length > 0) {
       return configuredColumns;
@@ -86,6 +120,10 @@ export default function MenuDisplayPage() {
     const urlTableBorderRadius = urlParams.get('tableBorderRadius');
     const urlTablePadding = urlParams.get('tablePadding');
     const urlCategoryColumnConfigs = urlParams.get('categoryColumnConfigs');
+    const urlLeftColumns = urlParams.get('leftColumns');
+    const urlRightColumns = urlParams.get('rightColumns');
+    const urlLeftViewMode = urlParams.get('leftViewMode');
+    const urlRightViewMode = urlParams.get('rightViewMode');
     
     if (urlOrientation === 'vertical' || urlOrientation === 'horizontal') {
       setOrientation(urlOrientation);
@@ -98,11 +136,18 @@ export default function MenuDisplayPage() {
     if (urlShowImages === 'true' || urlShowImages === 'false') {
       setShowImages(urlShowImages === 'true');
     } else if (urlShowImages === 'dual') {
+      console.log('🖼️ DUAL MODE - Image settings from URL:');
+      console.log('  - urlLeftImages:', urlLeftImages);
+      console.log('  - urlRightImages:', urlRightImages);
       if (urlLeftImages === 'true' || urlLeftImages === 'false') {
-        setLeftMenuImages(urlLeftImages === 'true');
+        const leftVal = urlLeftImages === 'true';
+        console.log('  - Setting leftMenuImages to:', leftVal);
+        setLeftMenuImages(leftVal);
       }
       if (urlRightImages === 'true' || urlRightImages === 'false') {
-        setRightMenuImages(urlRightImages === 'true');
+        const rightVal = urlRightImages === 'true';
+        console.log('  - Setting rightMenuImages to:', rightVal);
+        setRightMenuImages(rightVal);
       }
     }
     
@@ -111,6 +156,9 @@ export default function MenuDisplayPage() {
     }
     
     if (urlDualMenu === 'true') {
+      console.log('🔍 DUAL MENU MODE DETECTED');
+      console.log('  - leftCategory:', urlLeftCategory);
+      console.log('  - rightCategory:', urlRightCategory);
       setIsDualMenu(true);
       setLeftMenuCategory(urlLeftCategory);
       setRightMenuCategory(urlRightCategory);
@@ -182,12 +230,89 @@ export default function MenuDisplayPage() {
         console.warn('Failed to parse categoryColumnConfigs from URL:', error);
       }
     }
+    
+    // Handle dual menu column configurations
+    if (urlDualMenu === 'true') {
+      console.log('🔍 DUAL MENU DEBUG - Starting column configuration parsing');
+      console.log('🔍 leftColumns param:', urlLeftColumns);
+      console.log('🔍 rightColumns param:', urlRightColumns);
+      
+      // Parse left columns into leftColumnConfigs
+      if (urlLeftColumns) {
+        try {
+          const leftConfigs = JSON.parse(decodeURIComponent(urlLeftColumns));
+          console.log('🔍 Parsed leftConfigs:', leftConfigs);
+          if (typeof leftConfigs === 'object' && leftConfigs !== null) {
+            const newMap = new Map<string, string[]>();
+            Object.entries(leftConfigs).forEach(([categorySlug, columns]) => {
+              if (Array.isArray(columns)) {
+                console.log(`🔍 Setting columns for LEFT category ${categorySlug}:`, columns);
+                newMap.set(categorySlug, columns);
+              }
+            });
+            setLeftColumnConfigs(newMap);
+            console.log('🔍 Set leftColumnConfigs:', Array.from(newMap.entries()));
+          }
+        } catch (error) {
+          console.warn('Failed to parse leftColumns from URL:', error);
+        }
+      } else {
+        console.log('🔍 No leftColumns param found');
+        // If no columns specified, initialize with default columns for the selected categories
+        if (urlLeftCategory) {
+          console.log('🔍 Initializing default LEFT columns for:', urlLeftCategory);
+          setLeftColumnConfigs(new Map([[urlLeftCategory, ['name']]]));
+        }
+      }
+      
+      // Parse right columns into rightColumnConfigs
+      if (urlRightColumns) {
+        try {
+          const rightConfigs = JSON.parse(decodeURIComponent(urlRightColumns));
+          console.log('🔍 Parsed rightConfigs:', rightConfigs);
+          if (typeof rightConfigs === 'object' && rightConfigs !== null) {
+            const newMap = new Map<string, string[]>();
+            Object.entries(rightConfigs).forEach(([categorySlug, columns]) => {
+              if (Array.isArray(columns)) {
+                console.log(`🔍 Setting columns for RIGHT category ${categorySlug}:`, columns);
+                newMap.set(categorySlug, columns);
+              }
+            });
+            setRightColumnConfigs(newMap);
+            console.log('🔍 Set rightColumnConfigs:', Array.from(newMap.entries()));
+          }
+        } catch (error) {
+          console.warn('Failed to parse rightColumns from URL:', error);
+        }
+      } else {
+        console.log('🔍 No rightColumns param found');
+        // If no columns specified, initialize with default columns for the selected categories
+        if (urlRightCategory) {
+          console.log('🔍 Initializing default RIGHT columns for:', urlRightCategory);
+          setRightColumnConfigs(new Map([[urlRightCategory, ['name']]]));
+        }
+      }
+    }
 
     // Listen for data from parent window
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
+      if (event.origin !== window.location.origin) {
+        console.log('🔒 [Menu Display] Ignoring message from different origin:', event.origin);
+        return;
+      }
       
       if (event.data.type === 'MENU_DATA') {
+        console.log('📨 [Menu Display] Received MENU_DATA message:', { 
+          productsCount: event.data.products?.length, 
+          categoriesCount: event.data.categories?.length,
+          leftMenuViewMode2: event.data.leftMenuViewMode2,
+          rightMenuViewMode2: event.data.rightMenuViewMode2,
+          selectedMenuSection: event.data.selectedMenuSection,
+          isDual: event.data.isDual,
+          categoryFilter: event.data.categoryFilter,
+          leftMenuCategory: event.data.leftMenuCategory,
+          rightMenuCategory: event.data.rightMenuCategory
+        });
         setProducts(event.data.products || []);
         setCategories(event.data.categories || []);
         if (event.data.orientation) {
@@ -224,6 +349,30 @@ export default function MenuDisplayPage() {
         }
         if (event.data.rightMenuCategory2) {
           setRightMenuCategory2(event.data.rightMenuCategory2);
+        }
+        
+        // Handle quadrant-specific view modes
+        if (event.data.leftMenuViewMode) {
+          console.log('🔧 Setting leftMenuViewMode to:', event.data.leftMenuViewMode);
+          setLeftMenuViewMode(event.data.leftMenuViewMode);
+        }
+        if (event.data.rightMenuViewMode) {
+          console.log('🔧 Setting rightMenuViewMode to:', event.data.rightMenuViewMode);
+          setRightMenuViewMode(event.data.rightMenuViewMode);
+        }
+        if (event.data.leftMenuViewMode2 !== undefined) {
+          console.log('🔧 Setting leftMenuViewMode2 to:', event.data.leftMenuViewMode2);
+          setLeftMenuViewMode2(event.data.leftMenuViewMode2);
+        }
+        if (event.data.rightMenuViewMode2 !== undefined) {
+          console.log('🔧 Setting rightMenuViewMode2 to:', event.data.rightMenuViewMode2);
+          setRightMenuViewMode2(event.data.rightMenuViewMode2);
+        }
+        
+        // Handle selected menu section
+        if (event.data.selectedMenuSection) {
+          console.log('🎯 Setting selectedMenuSection to:', event.data.selectedMenuSection);
+          setSelectedMenuSection(event.data.selectedMenuSection);
         }
         
         if (event.data.backgroundColor) {
@@ -273,6 +422,31 @@ export default function MenuDisplayPage() {
           setCategoryColumnConfigs(configMap);
         }
         
+        // Handle dual menu column configurations from message
+        if (event.data.leftColumnConfigs && typeof event.data.leftColumnConfigs === 'object') {
+          console.log('🔍 Received leftColumnConfigs from message:', event.data.leftColumnConfigs);
+          const leftMap = new Map<string, string[]>();
+          Object.entries(event.data.leftColumnConfigs).forEach(([categorySlug, columns]) => {
+            if (Array.isArray(columns)) {
+              console.log(`🔍 Setting LEFT columns for ${categorySlug}:`, columns);
+              leftMap.set(categorySlug, columns as string[]);
+            }
+          });
+          setLeftColumnConfigs(leftMap);
+        }
+        
+        if (event.data.rightColumnConfigs && typeof event.data.rightColumnConfigs === 'object') {
+          console.log('🔍 Received rightColumnConfigs from message:', event.data.rightColumnConfigs);
+          const rightMap = new Map<string, string[]>();
+          Object.entries(event.data.rightColumnConfigs).forEach(([categorySlug, columns]) => {
+            if (Array.isArray(columns)) {
+              console.log(`🔍 Setting RIGHT columns for ${categorySlug}:`, columns);
+              rightMap.set(categorySlug, columns as string[]);
+            }
+          });
+          setRightColumnConfigs(rightMap);
+        }
+        
         // Handle blueprint fields data
         if (event.data.categoryBlueprintFields) {
           const fieldsMap = new Map<string, ProductBlueprintFields[]>();
@@ -285,6 +459,23 @@ export default function MenuDisplayPage() {
         if (event.data.categoryFilter) {
           setCategoryFilter(event.data.categoryFilter);
         }
+        
+        // Handle dual menu flag
+        if (typeof event.data.isDual === 'boolean') {
+          console.log('🔍 Setting dual menu mode from message:', event.data.isDual);
+          setIsDualMenu(event.data.isDual);
+          
+          // Also set the left and right menu categories if in dual mode
+          if (event.data.isDual) {
+            if (event.data.leftMenuCategory) {
+              setLeftMenuCategory(event.data.leftMenuCategory);
+            }
+            if (event.data.rightMenuCategory) {
+              setRightMenuCategory(event.data.rightMenuCategory);
+            }
+          }
+        }
+        
         setLoading(false);
       }
     };
@@ -293,18 +484,34 @@ export default function MenuDisplayPage() {
     
     const fallbackTimeout = setTimeout(() => {
       if (loading) {
+        console.log('⏰ Fallback timeout triggered - fetching menu data directly');
         fetchMenuData();
       }
-    }, 2000);
+    }, 1000); // Reduced timeout to 1 second for faster fallback
 
     return () => {
       window.removeEventListener('message', handleMessage);
       clearTimeout(fallbackTimeout);
     };
   }, [loading]);
+  
+  // Debug function to check column configurations
+  useEffect(() => {
+    if (isDualMenu) {
+      console.log('🔍 DUAL MENU STATE CHECK:');
+      console.log('  - leftMenuCategory:', leftMenuCategory);
+      console.log('  - rightMenuCategory:', rightMenuCategory);
+      console.log('  - leftColumnConfigs Map:', Array.from(leftColumnConfigs.entries()));
+      console.log('  - rightColumnConfigs Map:', Array.from(rightColumnConfigs.entries()));
+      console.log('  - categoryBlueprintFields Map size:', categoryBlueprintFields.size);
+      console.log('  - categories loaded:', categories.map(c => c.slug));
+    }
+  }, [isDualMenu, leftMenuCategory, rightMenuCategory, leftColumnConfigs, rightColumnConfigs, categoryBlueprintFields, categories]);
 
   const fetchMenuData = async () => {
     try {
+      console.log('🔄 [Menu Display] Starting data fetch...');
+      
       // Build URL with location ID for stock filtering
       const params = new URLSearchParams({
         per_page: '1000',
@@ -315,13 +522,19 @@ export default function MenuDisplayPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const locationId = urlParams.get('location') || '1'; // Default to location 1
       params.append('location_id', locationId);
+      
+      console.log('🔄 [Menu Display] Fetching from API with params:', params.toString());
 
       const response = await fetch(`/api/proxy/flora-im/products?${params}`, {
         headers: { 'Cache-Control': 'no-cache' }
       });
 
+      console.log('🔄 [Menu Display] API Response status:', response.status);
+
       if (response.ok) {
         const result = await response.json();
+        console.log('🔄 [Menu Display] API Response:', { success: result.success, dataLength: result.data?.length });
+        
         if (result.success && result.data) {
           // Products are already filtered by stock at API level
           const availableProducts = result.data;
@@ -358,10 +571,17 @@ export default function MenuDisplayPage() {
             });
           });
           setCategories(Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name)));
+          console.log('✅ [Menu Display] Data loaded successfully:', { products: availableProducts.length, categories: Array.from(categoryMap.values()).length });
+        } else {
+          console.error('❌ [Menu Display] API response missing data:', result);
         }
+      } else {
+        console.error('❌ [Menu Display] API request failed:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('❌ [Menu Display] Error details:', errorText);
       }
     } catch (error) {
-      console.error('Failed to fetch menu data:', error);
+      console.error('❌ [Menu Display] Failed to fetch menu data:', error);
     } finally {
       setLoading(false);
     }
@@ -459,13 +679,17 @@ export default function MenuDisplayPage() {
     if (isDualMenu) {
       if (isLeftSide) {
         if (enableLeftStacking && categorySlug === leftMenuCategory2) {
+          console.log(`🖼️ getImageSetting for LEFT stacked category '${categorySlug}': ${leftMenuImages2}`);
           return leftMenuImages2;
         }
+        console.log(`🖼️ getImageSetting for LEFT category '${categorySlug}': ${leftMenuImages}`);
         return leftMenuImages;
       } else {
         if (enableRightStacking && categorySlug === rightMenuCategory2) {
+          console.log(`🖼️ getImageSetting for RIGHT stacked category '${categorySlug}': ${rightMenuImages2}`);
           return rightMenuImages2;
         }
+        console.log(`🖼️ getImageSetting for RIGHT category '${categorySlug}': ${rightMenuImages}`);
         return rightMenuImages;
       }
     }
@@ -544,344 +768,6 @@ export default function MenuDisplayPage() {
     color: fontColor
   });
 
-  // Render tiered pricing for header
-  const renderHeaderPricing = (allProducts: Product[], orientation: 'horizontal' | 'vertical') => {
-    const pricingTiers = new Map<string, { label: string; price: number; ruleName: string }>();
-    
-    allProducts.forEach(product => {
-      if (product.blueprintPricing?.ruleGroups) {
-        product.blueprintPricing.ruleGroups.forEach((ruleGroup: any) => {
-          ruleGroup.tiers.forEach((tier: any) => {
-            const key = `${ruleGroup.ruleName}-${tier.label}`;
-            if (!pricingTiers.has(key)) {
-              pricingTiers.set(key, {
-                label: tier.label,
-                price: tier.price,
-                ruleName: ruleGroup.ruleName
-              });
-            }
-          });
-        });
-      }
-    });
-
-    if (pricingTiers.size === 0) return null;
-
-    const tiersByRule = new Map<string, Array<{ label: string; price: number }>>();
-    pricingTiers.forEach(tier => {
-      if (!tiersByRule.has(tier.ruleName)) {
-        tiersByRule.set(tier.ruleName, []);
-      }
-      tiersByRule.get(tier.ruleName)!.push({ label: tier.label, price: tier.price });
-    });
-
-    tiersByRule.forEach(tiers => {
-      tiers.sort((a, b) => a.price - b.price);
-    });
-
-    return (
-      <div className={`flex justify-center items-center ${
-        orientation === 'vertical' ? 'flex-col gap-1' : 'flex-wrap gap-2'
-      }`}>
-        {Array.from(tiersByRule.entries()).map(([ruleName, tiers], ruleIndex) => (
-          <div key={ruleName} className={`flex items-center gap-1 ${
-            orientation === 'vertical' ? 'flex-col text-center' : ''
-          }`}>
-            <div className={`font-medium uppercase tracking-wider ${
-              orientation === 'vertical' ? 'text-base mb-2' : 'text-sm'
-            }`} style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
-              {ruleName}
-            </div>
-            <div className={`flex gap-1 ${
-              orientation === 'vertical' ? 'flex-wrap justify-center' : ''
-            }`}>
-              {tiers.map((tier, index) => (
-                <div
-                  key={`${ruleName}-${index}`}
-                  className={`relative rounded-2xl px-4 py-3 transition-all duration-500 ease-out cursor-pointer border backdrop-blur-md hover:scale-105 shadow-lg hover:shadow-2xl group ${
-                    orientation === 'vertical' ? 'text-sm' : 'text-xs'
-                  }`}
-                  style={{
-                    ...getContainerStyle(),
-                    boxShadow: pandaMode 
-                      ? '0 8px 25px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.2)'
-                      : '0 8px 25px rgba(0,0,0,0.1), inset 0 1px 0 rgba(156,163,175,0.2)'
-                  }}
-                >
-                  <div className="font-semibold text-center relative z-10 tracking-wide transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
-                    {tier.label}
-                  </div>
-                  <div className="font-bold text-center mt-1 relative z-10 transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
-                    ${tier.price.toFixed(2)}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {ruleIndex < Array.from(tiersByRule.entries()).length - 1 && (
-              <div className={`${
-                orientation === 'vertical' 
-                  ? 'w-16 h-px bg-gray-300 my-2' 
-                  : 'w-px h-6 bg-gray-300 mx-2'
-              }`} />
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // Render a single menu section
-  const renderMenuSection = (categorySlug: string | null, sectionTitle?: string, isLeftSide: boolean = false) => {
-    const displayProducts = categorySlug 
-      ? products.filter(product => 
-          product.categories?.some(cat => cat.slug === categorySlug)
-        )
-      : products;
-
-    const displayCategories = categorySlug
-      ? categories.filter(cat => cat.slug === categorySlug)
-      : categories;
-
-    const productsByCategory = displayCategories.map(category => ({
-      category,
-      products: displayProducts.filter(product => 
-        product.categories?.some(cat => cat.id === category.id)
-      )
-    })).filter(group => group.products.length > 0);
-
-    const currentShowImages = getImageSetting(isLeftSide, categorySlug);
-
-    return (
-      <div className="flex-1 h-full overflow-y-auto pb-8" style={getBackgroundStyle()}>
-        {sectionTitle && (
-          <div className="backdrop-blur-md px-8 py-4 border-b relative shadow-sm" style={getHeaderStyle()}>
-            <h2 className="uppercase tracking-widest relative z-10 text-xl text-center" 
-                style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, letterSpacing: '0.15em', color: fontColor }}>
-              {sectionTitle}
-            </h2>
-            <div className="w-28 h-px mt-3 mx-auto" 
-                 style={{ background: `linear-gradient(to right, transparent, ${fontColor}70, transparent)` }}>
-            </div>
-          </div>
-        )}
-        
-        {productsByCategory.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <p className="text-2xl mb-3" style={{ color: fontColor }}>
-                {sectionTitle 
-                  ? `No ${sectionTitle.toLowerCase()} products currently available`
-                  : 'No products currently available'
-                }
-              </p>
-              <p className="text-lg text-slate-500 font-medium">Check back soon for updates</p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6 p-4 pb-8 pt-4" style={getBackgroundStyle()}>
-            {productsByCategory.map(({ category, products: categoryProducts }) => (
-              <div key={category.id}>
-                {(!isDualMenu || productsByCategory.length > 1) && (
-                  <div className="backdrop-blur-md px-8 py-4 border-b relative mb-4 rounded-t-xl shadow-sm" 
-                       style={getHeaderStyle()}>
-                    <h3 className="uppercase tracking-widest relative z-10 text-lg" 
-                        style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, letterSpacing: '0.15em', color: fontColor }}>
-                      {category.name}
-                    </h3>
-                    <div className="w-28 h-px mt-3" 
-                         style={{ background: `linear-gradient(to right, transparent, ${fontColor}70, transparent)` }}>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Products Display */}
-                {getActualViewMode(category.name) === 'table' ? (
-                  /* Table Layout - Single column if ≤ 13 products, 2-column if 14+ */
-                  (() => {
-                    const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);
-                    const useSingleColumn = rightColumn.length === 0;
-                    return (
-                      <div className={`grid gap-6 pt-4 pb-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`} 
-                           style={getBackgroundStyle()}>
-                        {/* Left Column */}
-                        <div className="space-y-2">
-                          {leftColumn.map((product, index) => {
-                            return (
-                              <div key={product.id} 
-                                   className="overflow-visible cursor-pointer transition-all duration-200 ease-out hover:shadow-md"
-                                   style={getTableRowStyle(false, index % 2 === 1)}
-                                   onMouseEnter={(e) => {
-                                     const hoverStyle = getTableRowStyle(true, index % 2 === 1);
-                                     Object.assign(e.currentTarget.style, hoverStyle);
-                                   }}
-                                   onMouseLeave={(e) => {
-                                     const normalStyle = getTableRowStyle(false, index % 2 === 1);
-                                     Object.assign(e.currentTarget.style, normalStyle);
-                                   }}>
-                                <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(categorySlug || undefined).length}, 1fr)` }}>
-                                  {getCategoryColumns(categorySlug || undefined).map((columnName, colIndex) => {
-                                    const value = getColumnValue(product, columnName, categorySlug || undefined);
-                                    const isFirstColumn = colIndex === 0;
-                                    return (
-                                      <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
-                                        {isFirstColumn && currentShowImages && (
-                                          <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
-                                            {product.image ? (
-                                              <img src={product.image} alt={product.name}
-                                                   className="w-full h-full object-contain rounded" loading="lazy" />
-                                            ) : (
-                                              <div className="w-full h-full flex items-center justify-center rounded" 
-                                                   style={getContainerStyle()}>
-                                                <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-                                        <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
-                                          <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} text-sm leading-tight ${
-                                            isFirstColumn ? 'block truncate' : ''
-                                          }`} style={{ 
-                                            fontFamily: 'Tiempo, serif', 
-                                            textShadow: isFirstColumn ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                                            color: isFirstColumn ? fontColor : `${fontColor}dd` 
-                                          }}>
-                                            {value || 'N/A'}
-                                          </span>
-                                          {isFirstColumn && columnName === 'name' && product.sku && (
-                                            <p className="text-xs mt-1" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                              {product.sku}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        
-                        {/* Right Column - Only render if not single column */}
-                        {!useSingleColumn && (
-                          <div className="space-y-2">
-                            {rightColumn.map((product, index) => {
-                              return (
-                                <div key={product.id} 
-                                     className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
-                                     style={getContainerStyle()}>
-                                  <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(categorySlug || undefined).length}, 1fr)` }}>
-                                    {getCategoryColumns(categorySlug || undefined).map((columnName, colIndex) => {
-                                      const value = getColumnValue(product, columnName, categorySlug || undefined);
-                                      const isFirstColumn = colIndex === 0;
-                                      return (
-                                        <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
-                                          {isFirstColumn && currentShowImages && (
-                                            <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
-                                              {product.image ? (
-                                                <img src={product.image} alt={product.name}
-                                                     className="w-full h-full object-contain rounded" loading="lazy" />
-                                              ) : (
-                                                <div className="w-full h-full flex items-center justify-center rounded" 
-                                                     style={getContainerStyle()}>
-                                                  <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                                  </svg>
-                                                </div>
-                                              )}
-                                            </div>
-                                          )}
-                                          <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
-                                            <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} text-sm leading-tight ${
-                                              isFirstColumn ? 'block truncate' : ''
-                                            }`} style={{ 
-                                              fontFamily: 'Tiempo, serif', 
-                                              textShadow: isFirstColumn ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                                              color: isFirstColumn ? fontColor : `${fontColor}dd` 
-                                            }}>
-                                              {value || 'N/A'}
-                                            </span>
-                                            {isFirstColumn && columnName === 'name' && product.sku && (
-                                              <p className="text-xs mt-1" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                                {product.sku}
-                                              </p>
-                                            )}
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()
-                ) : (
-                  /* Grid Layout for Non-Flower Products */
-                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-4 pb-4" style={getBackgroundStyle()}>
-                    {categoryProducts.map(product => {
-                      return (
-                        <div key={product.id} 
-                             className="rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
-                             style={getContainerStyle()}>
-                          
-                          {/* Product Image - Show based on user preference and view mode */}
-                          {currentShowImages && (getActualViewMode(category.name) === 'card' || shouldShowImages(category.name)) && (
-                            <div className="flex justify-center mb-3 relative z-10">
-                              <div className="w-20 h-20 relative overflow-hidden rounded-lg">
-                                {product.image ? (
-                                  <img src={product.image} alt={product.name}
-                                       className="w-full h-full object-contain rounded-lg" loading="lazy" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center rounded-lg" 
-                                       style={getContainerStyle()}>
-                                    <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Product Name - Center */}
-                          <h4 className="font-medium leading-relaxed mb-5 relative z-10 text-xl text-center tracking-wide" 
-                              style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.05)', color: fontColor }}>
-                            {product.name}
-                          </h4>
-                          
-                          {/* Product Details - Bottom Centered */}
-                          <div className="space-y-3 relative z-10 text-sm">
-                            {product.sku && (
-                              <div className="text-center pt-3 border-t" 
-                                   style={{ borderTopColor: pandaMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(203, 213, 225, 0.6)' }}>
-                                <div className="mb-1 font-medium tracking-wide" 
-                                     style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>SKU</div>
-                                <div className="font-mono text-xs" style={{ color: fontColor }}>{product.sku}</div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // Filter products and categories based on category filter
   const displayProducts = categoryFilter 
@@ -922,36 +808,67 @@ export default function MenuDisplayPage() {
   }
 
   return (
-    <div className="h-screen text-slate-900 overflow-hidden flex flex-col relative" 
+    <div className="h-screen w-screen text-slate-900 overflow-hidden flex flex-col relative group" 
          style={{ background: `linear-gradient(to bottom right, ${backgroundColor}, ${backgroundColor}dd, ${backgroundColor}bb)`, color: fontColor }}>
+      
+      {/* Hidden Close Button - Shows on hover/touch */}
+      <button
+        onClick={() => window.close()}
+        className="fixed top-4 right-4 z-50 w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white opacity-0 group-hover:opacity-100 hover:opacity-100 hover:bg-red-600/80 transition-all duration-300 ease-out flex items-center justify-center touch-manipulation"
+        style={{ 
+          touchAction: 'manipulation',
+          WebkitTouchCallout: 'none',
+          WebkitUserSelect: 'none',
+          userSelect: 'none'
+        }}
+        title="Close Menu"
+        onTouchStart={(e) => {
+          // Show button on touch for tablets
+          e.currentTarget.style.opacity = '1';
+        }}
+        onTouchEnd={(e) => {
+          // Keep button visible for a moment after touch
+          setTimeout(() => {
+            if (!e.currentTarget.matches(':hover')) {
+              e.currentTarget.style.opacity = '0';
+            }
+          }, 3000);
+        }}
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
       
       {/* Header - Hide in dual menu mode */}
       {!isDualMenu && (
-        <div className={`backdrop-blur-md border-b px-8 flex-shrink-0 relative z-10 shadow-lg ${
-          orientation === 'vertical' ? 'py-4' : 'py-3'
+        <div className={`backdrop-blur-md border-b px-2 sm:px-4 md:px-8 flex-shrink-0 relative z-10 shadow-lg ${
+          orientation === 'vertical' ? 'py-2 sm:py-4' : 'py-1 sm:py-3'
         }`} style={getHeaderStyle()}>
           <div className={`flex flex-col items-center relative z-10 ${
             orientation === 'vertical' ? 'gap-1' : 'gap-0'
           }`}>
-            {/* Title - Centered */}
+            {/* Title - Centered with responsive sizing */}
             <div className="text-center">
               <h1 className={`tracking-wide ${
-                orientation === 'vertical' ? 'text-8xl' : 'text-7xl'
+                orientation === 'vertical' 
+                  ? 'text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl' 
+                  : 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl'
               }`} style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                 {selectedCategoryName ? `${selectedCategoryName} Menu` : 'Flora Menu'}
               </h1>
               {/* Premium title underline effect */}
-              <div className="w-40 h-px mx-auto mt-4 opacity-80" 
+              <div className="w-20 sm:w-32 md:w-40 h-px mx-auto mt-2 md:mt-4 opacity-80" 
                    style={{ background: `linear-gradient(to right, transparent, ${fontColor}80, transparent)` }}>
               </div>
               {/* Elegant shimmer effect */}
-              <div className="w-24 h-px mx-auto mt-1 opacity-40 animate-pulse" 
+              <div className="w-12 sm:w-20 md:w-24 h-px mx-auto mt-1 opacity-40 animate-pulse" 
                    style={{ background: `linear-gradient(to right, transparent, ${fontColor}60, transparent)`, animationDuration: '3s' }}>
               </div>
             </div>
             
             {/* Tiered Pricing in Header - Centered */}
-            <div className="w-full flex justify-center">
+            <div className="w-full flex justify-center px-2">
               {renderHeaderPricing(displayProducts, orientation)}
             </div>
           </div>
@@ -960,169 +877,74 @@ export default function MenuDisplayPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        {isDualMenu && orientation === 'horizontal' ? (
-          /* Dual Menu Layout - Side by Side with Optional Stacking */
-          <div className="flex h-full">
-            {/* Left Side */}
-            <div className="w-1/2 flex flex-col border border-slate-200/40 border-r-1 shadow-xl rounded-l-xl overflow-hidden">
-              {enableLeftStacking ? (
-                /* Left Side - Stacked Layout */
-                <div className="flex flex-col h-full">
-                  {/* Top Left Menu */}
-                  <div className="flex-1 flex flex-col border-b border-slate-200/40">
-                    <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
-                      <h1 className="text-center relative z-10 tracking-wide text-6xl" 
-                          style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
-                        {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Top Left' : 'Top Left'}
-                      </h1>
-                      <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                      <div className="w-full flex justify-center mt-1">
-                        {renderHeaderPricing(leftMenuCategory ? displayProducts.filter(product => 
-                          product.categories?.some(cat => cat.slug === leftMenuCategory)
-                        ) : [], orientation)}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      {renderMenuSection(leftMenuCategory, undefined, true)}
-                    </div>
-                  </div>
-                  
-                  {/* Bottom Left Menu */}
-                  <div className="flex-1 flex flex-col">
-                    <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
-                      <h1 className="text-center relative z-10 tracking-wide text-6xl" 
-                          style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
-                        {leftMenuCategory2 ? categories.find(c => c.slug === leftMenuCategory2)?.name || 'Bottom Left' : 'Bottom Left'}
-                      </h1>
-                      <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                      <div className="w-full flex justify-center mt-1">
-                        {renderHeaderPricing(leftMenuCategory2 ? displayProducts.filter(product => 
-                          product.categories?.some(cat => cat.slug === leftMenuCategory2)
-                        ) : [], orientation)}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      {renderMenuSection(leftMenuCategory2, undefined, true)}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Left Side - Single Layout */
-                <>
-                  <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
-                    <h1 className="text-center relative z-10 tracking-wide text-6xl" 
-                        style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
-                      {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Left Menu' : 'Left Menu'}
-                    </h1>
-                    <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                    <div className="w-full flex justify-center mt-1">
-                      {renderHeaderPricing(leftMenuCategory ? displayProducts.filter(product => 
-                        product.categories?.some(cat => cat.slug === leftMenuCategory)
-                      ) : [], orientation)}
-                    </div>
-                  </div>
-                  <div className="flex-1" style={getBackgroundStyle()}>
-                    {renderMenuSection(leftMenuCategory, undefined, true)}
-                  </div>
-                </>
-              )}
-            </div>
-            
-            {/* Right Side */}
-            <div className="w-1/2 flex flex-col border border-slate-200/40 border-l-1 shadow-xl rounded-r-xl overflow-hidden">
-              {enableRightStacking ? (
-                /* Right Side - Stacked Layout */
-                <div className="flex flex-col h-full">
-                  {/* Top Right Menu */}
-                  <div className="flex-1 flex flex-col border-b border-slate-200/40">
-                    <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
-                      <h1 className="text-center relative z-10 tracking-wide text-6xl" 
-                          style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
-                        {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Top Right' : 'Top Right'}
-                      </h1>
-                      <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                      <div className="w-full flex justify-center mt-1">
-                        {renderHeaderPricing(rightMenuCategory ? displayProducts.filter(product => 
-                          product.categories?.some(cat => cat.slug === rightMenuCategory)
-                        ) : [], orientation)}
-                      </div>
-                    </div>
-                    <div className="flex-1" style={getBackgroundStyle()}>
-                      {renderMenuSection(rightMenuCategory, undefined, false)}
-                    </div>
-                  </div>
-                  
-                  {/* Bottom Right Menu */}
-                  <div className="flex-1 flex flex-col">
-                    <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
-                      <h1 className="text-center relative z-10 tracking-wide text-6xl" 
-                          style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
-                        {rightMenuCategory2 ? categories.find(c => c.slug === rightMenuCategory2)?.name || 'Bottom Right' : 'Bottom Right'}
-                      </h1>
-                      <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                      <div className="w-full flex justify-center mt-1">
-                        {renderHeaderPricing(rightMenuCategory2 ? displayProducts.filter(product => 
-                          product.categories?.some(cat => cat.slug === rightMenuCategory2)
-                        ) : [], orientation)}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      {renderMenuSection(rightMenuCategory2, undefined, false)}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Right Side - Single Layout */
-                <>
-                  <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
-                    <h1 className="text-center relative z-10 tracking-wide text-6xl" 
-                        style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
-                      {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Right Menu' : 'Right Menu'}
-                    </h1>
-                    <div className="w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-3 opacity-70"></div>
-                    <div className="w-full flex justify-center mt-1">
-                      {renderHeaderPricing(rightMenuCategory ? displayProducts.filter(product => 
-                        product.categories?.some(cat => cat.slug === rightMenuCategory)
-                      ) : [], orientation)}
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    {renderMenuSection(rightMenuCategory, undefined, false)}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+        {(() => {
+          console.log(`🖼️ RENDERING MODE - isDualMenu: ${isDualMenu}, orientation: ${orientation}`);
+          console.log(`🖼️ Image settings - leftMenuImages: ${leftMenuImages}, rightMenuImages: ${rightMenuImages}, showImages: ${showImages}`);
+          return null;
+        })()}
+        {isDualMenu ? (
+          <SharedMenuDisplay
+            products={displayProducts}
+            categories={displayCategories}
+            orientation={orientation}
+            viewMode={viewMode}
+            showImages={showImages}
+            leftMenuImages={leftMenuImages}
+            rightMenuImages={rightMenuImages}
+            categoryFilter={categoryFilter}
+            selectedCategoryName={selectedCategoryName}
+            isDualMenu={isDualMenu}
+            leftMenuCategory={leftMenuCategory}
+            rightMenuCategory={rightMenuCategory}
+            leftMenuCategory2={leftMenuCategory2}
+            rightMenuCategory2={rightMenuCategory2}
+            leftMenuImages2={leftMenuImages2}
+            rightMenuImages2={rightMenuImages2}
+            leftMenuViewMode={leftMenuViewMode}
+            rightMenuViewMode={rightMenuViewMode}
+            leftMenuViewMode2={leftMenuViewMode2}
+            rightMenuViewMode2={rightMenuViewMode2}
+            selectedMenuSection={selectedMenuSection}
+            enableLeftStacking={enableLeftStacking}
+            enableRightStacking={enableRightStacking}
+            backgroundColor={backgroundColor}
+            fontColor={fontColor}
+            containerColor={containerColor}
+            pandaMode={pandaMode}
+            categoryColumnConfigs={categoryColumnConfigs}
+            categoryBlueprintFields={categoryBlueprintFields}
+          />
         ) : (
           /* Single Menu Layout */
-          <div className="flex-1 overflow-y-auto pb-8" style={getBackgroundStyle()}>
+          <div className="flex-1 overflow-y-auto pb-4 md:pb-8 px-4 md:px-8 lg:px-16 xl:px-24" style={getBackgroundStyle()}>
             {productsByCategory.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <p className="text-2xl mb-3" style={{ color: fontColor, fontFamily: 'Tiempo, serif' }}>
+                <div className="text-center px-4">
+                  <p className="text-lg sm:text-xl md:text-2xl mb-3" style={{ color: fontColor, fontFamily: 'Tiempo, serif' }}>
                     {selectedCategoryName 
                       ? `No ${selectedCategoryName.toLowerCase()} products currently available`
                       : 'No products currently available'
                     }
                   </p>
-                  <p className="text-lg text-gray-600" style={{ fontFamily: 'Tiempo, serif' }}>Check back soon for updates</p>
+                  <p className="text-sm sm:text-base md:text-lg text-gray-600" style={{ fontFamily: 'Tiempo, serif' }}>Check back soon for updates</p>
                 </div>
               </div>
             ) : (
-              <div className={`${orientation === 'vertical' ? 'space-y-6' : 'space-y-8'} pb-6 pt-4`} 
-                   style={getBackgroundStyle()}>
+              <div className="max-w-6xl mx-auto">
+                <div className={`${orientation === 'vertical' ? 'space-y-4 md:space-y-6' : 'space-y-6 md:space-y-8'} pb-4 md:pb-6 pt-2 md:pt-4`} 
+                     style={getBackgroundStyle()}>
                 {productsByCategory.map(({ category, products: categoryProducts }) => (
                   <div key={category.id}>
                     {/* Category Header - Only show if not filtered to single category */}
                     {!selectedCategoryName && (
-                      <div className="backdrop-blur-md px-8 py-4 border-b relative rounded-t-xl shadow-lg" 
+                      <div className="backdrop-blur-md px-4 md:px-8 py-2 md:py-4 border-b relative rounded-t-xl shadow-lg" 
                            style={getHeaderStyle()}>
                         <h2 className={`font-medium uppercase tracking-widest relative z-10 ${
-                          orientation === 'vertical' ? 'text-lg' : 'text-xl'
+                          orientation === 'vertical' ? 'text-base md:text-lg' : 'text-lg md:text-xl'
                         }`} style={{ fontFamily: 'Tiempo, serif', letterSpacing: '0.15em', color: fontColor }}>
                           {category.name}
                         </h2>
-                        <div className="w-28 h-px mt-3" 
+                        <div className="w-20 md:w-28 h-px mt-2 md:mt-3" 
                              style={{ background: `linear-gradient(to right, transparent, ${fontColor}70, transparent)` }}>
                         </div>
                       </div>
@@ -1135,7 +957,7 @@ export default function MenuDisplayPage() {
                         const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);
                         const useSingleColumn = rightColumn.length === 0;
                         return (
-                          <div className={`grid gap-6 pt-4 pb-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`} 
+                          <div className={`grid gap-3 md:gap-6 pt-2 md:pt-4 pb-2 md:pb-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-1 lg:grid-cols-2'}`} 
                                style={getBackgroundStyle()}>
                             {/* Left Column */}
                             <div className="space-y-2">
@@ -1144,9 +966,9 @@ export default function MenuDisplayPage() {
                                   <div key={product.id} 
                                        className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
                                        style={getContainerStyle()}>
-                                    <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(categoryFilter || undefined).length}, 1fr)` }}>
-                                      {getCategoryColumns(categoryFilter || undefined).map((columnName, colIndex) => {
-                                        const value = getColumnValue(product, columnName, categoryFilter || undefined);
+                                    <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(category.slug, false).length}, 1fr)` }}>
+                                      {getCategoryColumns(category.slug, false).map((columnName, colIndex) => {
+                                        const value = getColumnValue(product, columnName, category.slug);
                                         const isFirstColumn = colIndex === 0;
                                         return (
                                           <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
@@ -1168,7 +990,7 @@ export default function MenuDisplayPage() {
                                             )}
                                             <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
                                               <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} leading-tight ${
-                                                isFirstColumn ? 'block truncate' : ''
+                                                isFirstColumn ? 'block' : ''
                                               } ${
                                                 orientation === 'vertical' ? 'text-base' : 'text-sm'
                                               }`} style={{ 
@@ -1201,9 +1023,9 @@ export default function MenuDisplayPage() {
                                     <div key={product.id} 
                                          className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
                                          style={getContainerStyle()}>
-                                      <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(categoryFilter || undefined).length}, 1fr)` }}>
-                                        {getCategoryColumns(categoryFilter || undefined).map((columnName, colIndex) => {
-                                          const value = getColumnValue(product, columnName, categoryFilter || undefined);
+                                      <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(category.slug, false).length}, 1fr)` }}>
+                                        {getCategoryColumns(category.slug, false).map((columnName, colIndex) => {
+                                          const value = getColumnValue(product, columnName, category.slug);
                                           const isFirstColumn = colIndex === 0;
                                           return (
                                             <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
@@ -1225,7 +1047,7 @@ export default function MenuDisplayPage() {
                                               )}
                                               <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
                                                 <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} leading-tight ${
-                                                  isFirstColumn ? 'block truncate' : ''
+                                                  isFirstColumn ? 'block' : ''
                                                 } ${
                                                   orientation === 'vertical' ? 'text-base' : 'text-sm'
                                                 }`} style={{ 
@@ -1255,25 +1077,25 @@ export default function MenuDisplayPage() {
                       })()
                     ) : (
                       /* Grid Layout for Non-Flower Products */
-                      <div className={`grid gap-2 px-6 pt-4 pb-4 ${
+                      <div className={`grid gap-2 px-2 sm:px-4 md:px-6 pt-2 md:pt-4 pb-2 md:pb-4 ${
                         orientation === 'vertical' 
                           ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
-                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
                       }`} style={getBackgroundStyle()}>
                         {categoryProducts.map(product => (
                           <div key={product.id} 
                                className="rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
                                style={getContainerStyle()}>
                             
-                            {/* Product Image and Name Row */}
-                            <div className="flex gap-4 items-center mb-4">
+                            {/* Product Image - Top Center */}
+                            <div className="flex justify-center mb-3">
                               {/* Product Image */}
-                              <div className="w-16 h-16 relative overflow-hidden flex-shrink-0">
+                              <div className="w-20 h-20 relative overflow-hidden rounded-lg">
                                 {product.image ? (
                                   <img src={product.image} alt={product.name}
-                                       className="w-full h-full object-contain" loading="lazy" />
+                                       className="w-full h-full object-contain rounded-lg" loading="lazy" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center rounded" 
+                                  <div className="w-full h-full flex items-center justify-center rounded-lg" 
                                        style={getContainerStyle()}>
                                     <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
@@ -1282,18 +1104,20 @@ export default function MenuDisplayPage() {
                                   </div>
                                 )}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className={`font-semibold leading-tight mb-1 truncate ${
-                                  orientation === 'vertical' ? 'text-base' : 'text-sm'
-                                }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
-                                  {product.name}
-                                </h3>
-                                {product.sku && (
-                                  <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                    {product.sku}
-                                  </p>
-                                )}
-                              </div>
+                            </div>
+                            
+                            {/* Product Name and Info - Below Image */}
+                            <div className="text-center">
+                              <h3 className={`font-semibold leading-tight mb-1 ${
+                                orientation === 'vertical' ? 'text-base' : 'text-sm'
+                              }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
+                                {product.name}
+                              </h3>
+                              {product.sku && (
+                                <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
+                                  {product.sku}
+                                </p>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -1301,6 +1125,7 @@ export default function MenuDisplayPage() {
                     )}
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </div>

@@ -143,19 +143,30 @@ export function HeaderCustomerSelector({
   };
 
   const handleCreateCustomer = async () => {
-    if (!newCustomerData.firstName.trim() || !newCustomerData.email.trim()) {
+    if (!newCustomerData.firstName.trim()) {
+      return;
+    }
+    
+    if (!newCustomerData.email.trim() && !newCustomerData.phone.trim()) {
       return;
     }
 
     setIsCreatingCustomer(true);
     try {
-      const username = newCustomerData.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+      let username = '';
+      if (newCustomerData.email.trim()) {
+        username = newCustomerData.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+      } else if (newCustomerData.phone.trim()) {
+        username = `user_${newCustomerData.phone.replace(/[^0-9]/g, '')}`;
+      } else {
+        username = `user_${Date.now()}`;
+      }
       
       const billingAddress = {
         first_name: newCustomerData.firstName.trim(),
         last_name: newCustomerData.lastName.trim(),
-        email: newCustomerData.email.trim(),
-        phone: newCustomerData.phone,
+        ...(newCustomerData.email.trim() && { email: newCustomerData.email.trim() }),
+        ...(newCustomerData.phone.trim() && { phone: newCustomerData.phone.trim() }),
         address_1: newCustomerData.address,
         city: newCustomerData.city,
         state: newCustomerData.state,
@@ -164,7 +175,7 @@ export function HeaderCustomerSelector({
       };
 
       const customerData = {
-        email: newCustomerData.email.trim(),
+        ...(newCustomerData.email.trim() && { email: newCustomerData.email.trim() }),
         first_name: newCustomerData.firstName.trim(),
         last_name: newCustomerData.lastName.trim(),
         username: username,
@@ -326,8 +337,8 @@ export function HeaderCustomerSelector({
                     />
                   </div>
                   <input
-                    type="email"
-                    placeholder="Email"
+                    type="text"
+                    placeholder="Email (optional)"
                     value={newCustomerData.email}
                     onChange={(e) => setNewCustomerData(prev => ({ ...prev, email: e.target.value }))}
                     className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -335,12 +346,15 @@ export function HeaderCustomerSelector({
                   />
                   <input
                     type="tel"
-                    placeholder="Phone (optional)"
+                    placeholder="Phone"
                     value={newCustomerData.phone}
                     onChange={(e) => setNewCustomerData(prev => ({ ...prev, phone: e.target.value }))}
                     className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                     style={{ fontFamily: 'Tiempos, serif' }}
                   />
+                  <div className="text-xs text-neutral-400 mb-2">
+                    * Either email or phone required
+                  </div>
                   <input
                     type="text"
                     placeholder="Address"
@@ -385,7 +399,7 @@ export function HeaderCustomerSelector({
                     </button>
                     <button
                       onClick={handleCreateCustomer}
-                      disabled={isCreatingCustomer || !newCustomerData.firstName.trim() || !newCustomerData.email.trim()}
+                      disabled={isCreatingCustomer || !newCustomerData.firstName.trim() || (!newCustomerData.email.trim() && !newCustomerData.phone.trim())}
                       className="flex-1 px-2 py-1 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
                     >
                       {isCreatingCustomer ? (

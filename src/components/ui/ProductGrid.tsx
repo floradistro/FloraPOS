@@ -7,17 +7,15 @@ import { BlueprintPricingService, BlueprintPricingData } from '../../services/bl
 import ProductCard from './ProductCard';
 // import { inventoryEventBus } from '../../utils/inventoryEventBus'; // Disabled to prevent automatic refresh
 
-// Category Header Component
+// Category Header Component with smooth animations
 const CategoryHeader = ({ categoryName, productCount }: { categoryName: string; productCount: number }) => (
-  <div className="col-span-full bg-neutral-900/40 border-b border-neutral-700/50 px-6 py-4 sticky top-0 z-10 backdrop-blur-sm">
-    <div className="flex items-center justify-between">
-      <h2 className="text-lg font-medium text-white tracking-wide">
+  <div className="col-span-full bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-700/50 px-6 py-4 sticky top-0 z-20 shadow-lg category-header-animate">
+    <div className="flex items-center justify-center">
+      <h2 className="text-4xl font-dongraffiti font-thin text-neutral-300 tracking-widest text-center category-title-animate transform transition-all duration-700 ease-out hover:scale-105 hover:text-neutral-100 hover:tracking-wider">
         {categoryName}
       </h2>
-      <span className="text-sm text-neutral-400 bg-neutral-800/60 px-3 py-1 rounded-full">
-        {productCount} {productCount === 1 ? 'product' : 'products'}
-      </span>
     </div>
+    <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-neutral-400/30 to-transparent transform scale-x-0 category-underline-animate"></div>
   </div>
 );
 
@@ -432,56 +430,52 @@ export const ProductGrid = forwardRef<{
               // Continue without pricing
             }
 
-      // Process products with variants - Load variants normally
-      const normalizedProducts: Product[] = await Promise.all(
-        baseProducts.map(async (baseProduct: Product) => {
-          try {
-            // Check if this is a variable product and load variants
-            if (baseProduct.type === 'variable') {
-              try {
-                console.log(`🔍 [POSV1] Loading variants for variable product ${baseProduct.id}`);
-                const variants = await loadVariantsForProduct(baseProduct.id);
-                
-                if (variants && variants.length > 0) {
-                  baseProduct.has_variants = true;
-                  baseProduct.variants = variants;
-                  console.log(`✅ [POSV1] Loaded ${variants.length} variants for product ${baseProduct.id}`);
-                } else {
-                  console.warn(`⚠️ [POSV1] No variants found for variable product ${baseProduct.id}`);
-                }
-              } catch (variantError) {
-                console.error(`❌ [POSV1] Failed to load variants for product ${baseProduct.id}:`, variantError instanceof Error ? variantError.message : 'Unknown error');
-                // Continue without variants
-              }
+      // Process products - PRE-LOAD variants for immediate display
+      const normalizedProducts: Product[] = [];
+      
+      for (const baseProduct of baseProducts) {
+        try {
+          // Pre-load variants for variable products
+          if (baseProduct.type === 'variable') {
+            console.log(`🔄 [POSV1] Pre-loading variants for variable product ${baseProduct.id}`);
+            baseProduct.has_variants = true;
+            
+            try {
+              const variants = await loadVariantsForProduct(baseProduct.id);
+              baseProduct.variants = variants || [];
+              console.log(`✅ Pre-loaded ${baseProduct.variants.length} variants for product ${baseProduct.id}`);
+            } catch (variantError) {
+              console.warn(`⚠️ Failed to pre-load variants for product ${baseProduct.id}:`, variantError);
+              baseProduct.variants = [];
             }
-
-            return baseProduct;
-          } catch (productError) {
-            console.error(`❌ Failed to process product ${baseProduct.id}:`, productError);
-            // Return minimal product structure to prevent complete failure
-            return {
-              id: baseProduct.id,
-              name: baseProduct.name || 'Unknown Product',
-              sku: baseProduct.sku || '',
-              type: baseProduct.type || 'simple',
-              status: baseProduct.status || 'publish',
-              regular_price: baseProduct.regular_price || '0',
-              sale_price: baseProduct.sale_price,
-              image: baseProduct.image,
-              categories: baseProduct.categories || [],
-              inventory: baseProduct.inventory || [],
-              total_stock: baseProduct.total_stock || 0,
-              meta_data: baseProduct.meta_data || [],
-              selected_quantity: undefined,
-              selected_price: undefined,
-              selected_category: undefined,
-              blueprintPricing: null,
-              has_variants: false,
-              variants: undefined
-            };
           }
-        })
-      );
+
+          normalizedProducts.push(baseProduct);
+        } catch (productError) {
+          console.error(`❌ Failed to process product ${baseProduct.id}:`, productError);
+          // Add minimal product structure to prevent complete failure
+          normalizedProducts.push({
+            id: baseProduct.id,
+            name: baseProduct.name || 'Unknown Product',
+            sku: baseProduct.sku || '',
+            type: baseProduct.type || 'simple',
+            status: baseProduct.status || 'publish',
+            regular_price: baseProduct.regular_price || '0',
+            sale_price: baseProduct.sale_price,
+            image: baseProduct.image,
+            categories: baseProduct.categories || [],
+            inventory: baseProduct.inventory || [],
+            total_stock: baseProduct.total_stock || 0,
+            meta_data: baseProduct.meta_data || [],
+            selected_quantity: undefined,
+            selected_price: undefined,
+            selected_category: undefined,
+            blueprintPricing: null,
+            has_variants: baseProduct.type === 'variable',
+            variants: []
+          });
+        }
+      }
       
 
       const loadTime = Date.now() - startTime;
@@ -555,58 +549,8 @@ export const ProductGrid = forwardRef<{
     );
   }, []);
 
-
-  // Handle product selection for highlighting
-  const handleProductSelection = useCallback((product: Product) => {
-    if (selectedProduct === product.id) {
-      // Deselect if clicking the same product
-      setSelectedProduct(null);
-    } else {
-      // Select new product
-      setSelectedProduct(product.id);
-    }
-  }, [selectedProduct]);
-
-  // Enhanced add to cart that handles variants
-  const handleAddToCartWithVariant = (product: Product) => {
-    if (product.has_variants && product.variants) {
-      const selectedVariantId = selectedVariants[product.id];
-      const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
-      
-      if (!selectedVariant) {
-        // No variant selected yet, do nothing
-        return;
-      }
-
-      // Create a product object with variant data
-      const variantProduct: Product = {
-        ...product,
-        id: selectedVariant.id, // Use variant ID
-        name: `${product.name} - ${selectedVariant.name}`,
-        sku: selectedVariant.sku,
-        regular_price: selectedVariant.regular_price,
-        sale_price: selectedVariant.sale_price,
-        // Use variant inventory instead of parent inventory
-        inventory: selectedVariant.inventory.map(inv => ({
-          location_id: inv.location_id.toString(),
-          location_name: `Location ${inv.location_id}`,
-          stock: inv.quantity,
-          manage_stock: true
-        })),
-        total_stock: selectedVariant.total_stock,
-        // Keep parent product info for reference
-        parent_id: product.id
-      };
-
-      handleAddToCart(variantProduct);
-    } else {
-      // Simple product - use existing logic
-      handleAddToCart(product);
-    }
-  };
-
   // Load variants for a variable product
-  const loadVariantsForProduct = async (productId: number): Promise<Array<{
+  const loadVariantsForProduct = useCallback(async (productId: number): Promise<Array<{
     id: number;
     name: string;
     sku: string;
@@ -641,64 +585,122 @@ export const ProductGrid = forwardRef<{
         return null;
       }
 
-      // Process variants and get inventory for each
-      const processedVariants = await Promise.all(
-        variants.map(async (variant: any) => {
-          let inventory: Array<{location_id: number; quantity: number}> = [];
-          
-          // Get inventory for this variant
-          try {
-            const inventoryParams = new URLSearchParams({
-              product_id: productId.toString(),
-              variation_id: variant.id.toString(),
-              _t: Date.now().toString()
-            });
+      // OPTIMIZATION: Batch fetch inventory for all variants at once
+      console.log(`📦 Batch fetching inventory for ${variants.length} variants of product ${productId}`);
+      const inventoryItems = variants.map((v: any) => ({
+        product_id: productId,
+        variation_id: v.id
+      }));
 
-            if (user?.location_id) {
-              inventoryParams.append('location_id', user.location_id);
-            }
-
-            const inventoryResponse = await fetch(`/api/proxy/flora-im/inventory?${inventoryParams}`, {
-              method: 'GET',
-              headers: { 
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-              }
-            });
-
-            if (inventoryResponse.ok) {
-              const inventoryData = await inventoryResponse.json();
-              if (Array.isArray(inventoryData)) {
-                inventory = inventoryData.map((record: any) => ({
-                  location_id: parseInt(record.location_id),
-                  quantity: parseFloat(record.quantity) || parseFloat(record.available_quantity) || 0
-                }));
-              }
-            }
-          } catch (error) {
-            console.error(`Failed to load inventory for variant ${variant.id}:`, error);
-          }
-
-          const total_stock = inventory.reduce((sum, inv) => sum + inv.quantity, 0);
-
-          return {
-            id: variant.id,
-            name: variant.attributes?.map((attr: any) => attr.option).filter(Boolean).join(', ') || `Variant #${variant.id}`,
-            sku: variant.sku || '',
-            regular_price: variant.regular_price || '0',
-            sale_price: variant.sale_price,
-            inventory,
-            total_stock
-          };
+      const batchInventoryResponse = await fetch('/api/inventory/batch', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        },
+        body: JSON.stringify({
+          items: inventoryItems,
+          location_id: user?.location_id ? parseInt(user.location_id) : undefined
         })
-      );
-      
-      console.log(`✅ Loaded ${processedVariants.length} variants for product ${productId}`);
-      return processedVariants;
+      });
+
+      let inventoryMap: Record<string, any> = {};
+      if (batchInventoryResponse.ok) {
+        const batchResult = await batchInventoryResponse.json();
+        if (batchResult.success && batchResult.data) {
+          // Handle both array and object responses
+          if (Array.isArray(batchResult.data)) {
+            inventoryMap = batchResult.data.reduce((map: Record<string, any>, item: any) => {
+              const key = `${item.product_id}_${item.variation_id}`;
+              map[key] = item;
+              return map;
+            }, {});
+          } else {
+            // If data is already a keyed object, use it directly
+            inventoryMap = batchResult.data;
+          }
+        }
+      }
+
+      // Transform variants with inventory data
+      const transformedVariants = variants.map((variant: any) => {
+        const inventoryKey = `${productId}_${variant.id}`;
+        const inventoryData = inventoryMap[inventoryKey];
+        
+        // Extract variant name from attributes
+        const variantName = variant.attributes?.map((attr: any) => attr.option).filter(Boolean).join(', ') || 
+                           variant.name || 
+                           `Variant #${variant.id}`;
+        
+        
+        return {
+          id: variant.id,
+          name: variantName,
+          sku: variant.sku || '',
+          regular_price: variant.regular_price || '0',
+          sale_price: variant.sale_price || undefined,
+          inventory: inventoryData?.inventory || [],
+          total_stock: inventoryData?.total_stock || 0
+        };
+      });
+
+      console.log(`✅ Loaded ${transformedVariants.length} variants for product ${productId}`);
+      return transformedVariants;
+
     } catch (error) {
       console.error(`❌ Error loading variants for product ${productId}:`, error);
       return null;
+    }
+  }, [user?.location_id]);
+
+  // Handle product selection for highlighting
+  const handleProductSelection = useCallback((product: Product) => {
+    if (selectedProduct === product.id) {
+      // Deselect if clicking the same product
+      setSelectedProduct(null);
+    } else {
+      // Select new product (variants are already pre-loaded)
+      setSelectedProduct(product.id);
+    }
+  }, [selectedProduct]);
+
+  // Enhanced add to cart that handles variants (now pre-loaded)
+  const handleAddToCartWithVariant = (product: Product) => {
+    if (product.has_variants) {
+      // Variants are already pre-loaded during initial fetch
+      
+      const selectedVariantId = selectedVariants[product.id];
+      const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
+      
+      if (!selectedVariant) {
+        // No variant selected yet, do nothing
+        return;
+      }
+
+      // Create a product object with variant data
+      const variantProduct: Product = {
+        ...product,
+        id: selectedVariant.id, // Use variant ID
+        name: `${product.name} - ${selectedVariant.name}`,
+        sku: selectedVariant.sku,
+        regular_price: selectedVariant.regular_price,
+        sale_price: selectedVariant.sale_price,
+        // Use variant inventory instead of parent inventory
+        inventory: selectedVariant.inventory.map(inv => ({
+          location_id: inv.location_id.toString(),
+          location_name: `Location ${inv.location_id}`,
+          stock: inv.quantity,
+          manage_stock: true
+        })),
+        total_stock: selectedVariant.total_stock,
+        // Keep parent product info for reference
+        parent_id: product.id
+      };
+
+      handleAddToCart(variantProduct);
+    } else {
+      // Simple product - use existing logic
+      handleAddToCart(product);
     }
   };
 
@@ -753,9 +755,9 @@ export const ProductGrid = forwardRef<{
   }
 
   return (
-    <div className="relative">
+    <div className="relative smooth-scroll">
       {/* Organized Grid View by Category */}
-      <div ref={gridRef} className="grid grid-cols-3 max-[1024px]:grid-cols-2 product-grid">
+      <div ref={gridRef} className="grid grid-cols-3 max-[1024px]:grid-cols-2 product-grid scrollable-container">
         {groupedByCategory.map((categoryGroup, groupIndex) => {
           const userLocationId = user?.location_id ? parseInt(user.location_id) : undefined;
           
@@ -774,12 +776,19 @@ export const ProductGrid = forwardRef<{
                   .slice(0, groupIndex)
                   .reduce((sum, group) => sum + group.products.length, 0) + productIndex;
                 
+                // Calculate grid column position within this category
+                const columnPosition = productIndex % 3; // 0, 1, 2 for 3-column grid
+                const columnPositionMobile = productIndex % 2; // 0, 1 for 2-column grid
+                
                 return (
                   <div 
                     key={product.id} 
-                    className="product-grid-cell border-r border-b border-neutral-500/20 last:border-r-0 [&:nth-child(3n)]:border-r-0 max-[1024px]:[&:nth-child(2n)]:border-r-0 max-[1024px]:[&:nth-child(3n)]:border-r relative group hover:bg-neutral-800/10 transition-colors duration-300"
+                    className={`product-grid-cell border-b border-neutral-500/20 relative group hover:bg-neutral-800/10 apple-smooth card-hover${
+                      columnPosition !== 0 ? ' border-l border-neutral-500/20' : ''
+                    }${columnPositionMobile !== 0 ? ' max-[1024px]:border-l' : ''}`}
                     style={{
-                      animation: `fadeInUp 0.3s ease-out ${globalIndex * 0.03}s both`,
+                      animation: `fadeInUpEnhanced 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${globalIndex * 0.05}s both`,
+                      animationFillMode: 'both',
                     }}
                   >
                     <ProductCard
@@ -807,11 +816,105 @@ export const ProductGrid = forwardRef<{
         @keyframes fadeInUp {
           from {
             opacity: 0;
-            transform: translateY(15px);
+            transform: translateY(20px) scale(0.98);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes categoryHeaderSlideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+            backdrop-filter: blur(0px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            backdrop-filter: blur(8px);
+          }
+        }
+
+        @keyframes categoryTitleFloat {
+          0%, 100% {
+            transform: translateY(0) scale(1);
+          }
+          50% {
+            transform: translateY(-1px) scale(1.01);
+          }
+        }
+
+        @keyframes underlineExpand {
+          from {
+            transform: scaleX(0);
+            opacity: 0;
+          }
+          to {
+            transform: scaleX(1);
+            opacity: 1;
+          }
+        }
+
+        .category-header-animate {
+          animation: categoryHeaderSlideIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+          will-change: transform, opacity, backdrop-filter;
+        }
+
+        .category-title-animate {
+          animation: categoryTitleFloat 4s ease-in-out infinite;
+          will-change: transform;
+        }
+
+        .category-underline-animate {
+          animation: underlineExpand 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s forwards;
+          will-change: transform, opacity;
+        }
+
+        .product-grid {
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .product-grid::-webkit-scrollbar {
+          display: none;
+        }
+
+        .product-grid-cell {
+          will-change: transform, opacity;
+          backface-visibility: hidden;
+          transform: translateZ(0);
+        }
+
+        .product-grid-cell:hover {
+          transform: translateY(-2px) translateZ(0);
+          transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* Apple-style smooth scrolling momentum */
+        @supports (scroll-behavior: smooth) {
+          .scrollable-container {
+            scroll-behavior: smooth;
+            scroll-snap-type: y proximity;
+          }
+        }
+
+        /* Enhanced stagger animation with better easing */
+        @keyframes fadeInUpEnhanced {
+          0% {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95) rotateX(10deg);
+          }
+          50% {
+            opacity: 0.7;
+            transform: translateY(15px) scale(0.98) rotateX(5deg);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1) rotateX(0deg);
           }
         }
       `}</style>

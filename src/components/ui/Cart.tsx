@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { WordPressUser } from '../../services/users-service';
 import { CartItem } from '../../types';
 import { CATEGORY_DISPLAY_NAMES } from '../../constants';
+import { UnifiedPopout } from './UnifiedPopout';
 
 interface CartProps {
   items?: CartItem[];
@@ -81,12 +82,18 @@ const CartComponent = function Cart({
                 priority
               />
             </div>
-            <h3 className="text-neutral-400 font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
-              {isAuditMode ? 'No adjustments pending' : 'Your cart is empty'}
-            </h3>
-            <p className="text-sm text-neutral-600 mb-6" style={{ fontFamily: 'Tiempo, serif' }}>
-              {isAuditMode ? 'Make inventory adjustments to see them here' : 'Add products to get started'}
-            </p>
+            
+            {/* Only show messages in audit mode */}
+            {isAuditMode && (
+              <>
+                <h3 className="text-neutral-400 font-medium mb-2" style={{ fontFamily: 'Tiempo, serif' }}>
+                  No adjustments pending
+                </h3>
+                <p className="text-sm text-neutral-600 mb-6" style={{ fontFamily: 'Tiempo, serif' }}>
+                  Make inventory adjustments to see them here
+                </p>
+              </>
+            )}
             
             {/* Add Customer Button - Only show in normal mode */}
             {!isAuditMode && (
@@ -94,27 +101,9 @@ const CartComponent = function Cart({
                 onClick={() => {
                   onOpenCustomerSelector?.();
                 }}
-                className="group relative px-6 py-3 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] rounded-lg transition-all duration-300 ease-out cursor-pointer"
-                style={{
-                  animation: 'fade-in-up 0.6s ease-out 0.3s both'
-                }}
+                className="px-3 py-2 text-sm bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 text-neutral-300 hover:text-neutral-200 rounded-lg transition-all duration-300 ease-out mt-4"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-neutral-700/30 flex items-center justify-center group-hover:bg-neutral-600/30 transition-colors duration-300">
-                    <span className="text-neutral-400 group-hover:text-neutral-300 text-lg">+</span>
-                  </div>
-                  <div className="text-left">
-                    <div className="text-neutral-400 group-hover:text-neutral-300 font-medium text-sm transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif' }}>
-                      Add Customer
-                    </div>
-                    <div className="text-neutral-600 group-hover:text-neutral-500 text-xs transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif' }}>
-                      Select a customer to start
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Subtle glow effect */}
-                <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gradient-to-r from-transparent via-white/[0.02] to-transparent"></div>
+                Add Customer
               </button>
             )}
 
@@ -436,34 +425,34 @@ const CartComponent = function Cart({
           </button>
 
           {/* Confirmation Dialog */}
-          {showEmptyConfirm && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowEmptyConfirm(false)}>
-              <div className="bg-neutral-700/95 border border-white/[0.08] rounded-lg shadow-2xl max-w-md mx-4 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
-                {/* Header */}
-                <div className="px-4 py-3 border-b border-neutral-500/20 flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-neutral-300">Burn List?</h3>
+          <UnifiedPopout isOpen={showEmptyConfirm} onClose={() => setShowEmptyConfirm(false)} width="min(90vw, 500px)" height="auto">
+            <div className="flex flex-col">
+              {/* Header */}
+              <div className="px-4 py-3 border-b border-neutral-500/20 flex items-center justify-between">
+                <h3 className="text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
+                  Burn List?
+                </h3>
+                <button
+                  onClick={() => setShowEmptyConfirm(false)}
+                  className="text-neutral-400 hover:text-neutral-300 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Content */}
+              <div className="p-4">
+                <p className="text-neutral-200 mb-6 text-sm">
+                  Remove all {itemCount} item{itemCount !== 1 ? 's' : ''} from cart?
+                </p>
+                
+                {/* Form Actions */}
+                <div className="flex items-center justify-end space-x-3 pt-2">
                   <button
                     onClick={() => setShowEmptyConfirm(false)}
-                    className="text-neutral-400 hover:text-neutral-300 transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                
-                {/* Content */}
-                <div className="px-4 py-4">
-                  <p className="text-sm text-neutral-400 mb-6">
-                    Remove all {itemCount} item{itemCount !== 1 ? 's' : ''} from cart?
-                  </p>
-                </div>
-                
-                {/* Actions */}
-                <div className="px-4 py-3 border-t border-neutral-500/20 flex justify-end gap-3">
-                  <button
-                    onClick={() => setShowEmptyConfirm(false)}
-                    className="px-3 py-1.5 text-sm text-neutral-400 hover:text-neutral-300 hover:bg-neutral-600/5 border border-transparent hover:border-white/[0.06] rounded transition-all"
+                    className="px-4 py-2 text-sm bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-neutral-300 hover:text-white rounded-md transition-colors duration-200"
                   >
                     Cancel
                   </button>
@@ -472,14 +461,14 @@ const CartComponent = function Cart({
                       onClearCart?.();
                       setShowEmptyConfirm(false);
                     }}
-                    className="px-3 py-1.5 text-sm bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 hover:text-neutral-300 rounded transition-all"
+                    className="px-6 py-2 text-sm bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-neutral-800"
                   >
                     Burn List
                   </button>
                 </div>
               </div>
             </div>
-          )}
+          </UnifiedPopout>
 
           {isAuditMode ? (
             /* Apply Adjustments Section */

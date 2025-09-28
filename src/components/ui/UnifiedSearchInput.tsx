@@ -155,6 +155,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const [customerSearchValue, setCustomerSearchValue] = useState(''); // Separate search for customer modal
   const [isCustomerMode, setIsCustomerMode] = useState(customerOnlyMode);
   const [isProductMode, setIsProductMode] = useState(productOnlyMode);
+  const [selectedIndex, setSelectedIndex] = useState(-1); // For keyboard navigation
   const [isEditingProduct, setIsEditingProduct] = useState(false);
   const [lastSearchValue, setLastSearchValue] = useState('');
   const [isAuditDropdownMode, setIsAuditDropdownMode] = useState(false);
@@ -187,7 +188,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Debounce search for performance
-  const debouncedSearchValue = useDebounce(internalValue, 300);
+  const debouncedSearchValue = useDebounce(internalValue, 100);
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
@@ -367,12 +368,6 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     setIsCustomerMode(true); // Ensure we're in customer mode
   };
 
-  const handleIDScannerClick = () => {
-    setShowIDScanner(true);
-    setShowNewCustomerForm(false);
-    setIsOpen(true); // Ensure dropdown stays open during scanning
-    setIsCustomerMode(true); // Ensure we're in customer mode
-  };
 
   // Function to find matching customer based on ID scan results
   const findMatchingCustomer = (result: IDScanResult): WordPressUser | null => {
@@ -495,19 +490,30 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   };
 
   const handleCreateCustomer = async () => {
-    if (!newCustomerData.firstName.trim() || !newCustomerData.email.trim()) {
+    if (!newCustomerData.firstName.trim()) {
+      return;
+    }
+    
+    if (!newCustomerData.email.trim() && !newCustomerData.phone.trim()) {
       return;
     }
 
     setIsCreatingCustomer(true);
     try {
-      const username = newCustomerData.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+      let username = '';
+      if (newCustomerData.email.trim()) {
+        username = newCustomerData.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+      } else if (newCustomerData.phone.trim()) {
+        username = `user_${newCustomerData.phone.replace(/[^0-9]/g, '')}`;
+      } else {
+        username = `user_${Date.now()}`;
+      }
       
       const billingAddress = {
         first_name: newCustomerData.firstName.trim(),
         last_name: newCustomerData.lastName.trim(),
-        email: newCustomerData.email.trim(),
-        phone: newCustomerData.phone,
+        ...(newCustomerData.email.trim() && { email: newCustomerData.email.trim() }),
+        ...(newCustomerData.phone.trim() && { phone: newCustomerData.phone.trim() }),
         address_1: newCustomerData.address,
         city: newCustomerData.city,
         state: newCustomerData.state,
@@ -516,7 +522,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       };
 
       const customerData = {
-        email: newCustomerData.email.trim(),
+        ...(newCustomerData.email.trim() && { email: newCustomerData.email.trim() }),
         first_name: newCustomerData.firstName.trim(),
         last_name: newCustomerData.lastName.trim(),
         username: username,
@@ -628,7 +634,9 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     if (!customerSearchValue) return customers; // Show all customers when no search
     
     const query = customerSearchValue.toLowerCase();
-    return customers.filter(customer => {
+    
+    // Filter and rank customers
+    const matches = customers.filter(customer => {
       const name = (customer.display_name || customer.name || '').toLowerCase();
       const email = customer.email?.toLowerCase() || '';
       const username = customer.username?.toLowerCase() || '';
@@ -644,8 +652,62 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         username.includes(word) ||
         customerId.includes(word)
       );
-    }); // No limit - show all matching results
+    });
+
+    // Sort by relevance: exact matches first, then partial matches
+    return matches.sort((a, b) => {
+      const aName = (a.display_name || a.name || '').toLowerCase();
+      const bName = (b.display_name || b.name || '').toLowerCase();
+      const aEmail = a.email?.toLowerCase() || '';
+      const bEmail = b.email?.toLowerCase() || '';
+
+      // Exact name match gets highest priority
+      if (aName === query && bName !== query) return -1;
+      if (bName === query && aName !== query) return 1;
+      
+      // Name starts with query gets second priority
+      if (aName.startsWith(query) && !bName.startsWith(query)) return -1;
+      if (bName.startsWith(query) && !aName.startsWith(query)) return 1;
+      
+      // Email exact match
+      if (aEmail === query && bEmail !== query) return -1;
+      if (bEmail === query && aEmail !== query) return 1;
+      
+      // Alphabetical fallback
+      return aName.localeCompare(bName);
+    });
   }, [customers, customerSearchValue, customerEnabled]);
+
+  // Auto-select single customer result (Google-style)
+  useEffect(() => {
+    if (isCustomerMode && filteredCustomers.length === 1 && customerSearchValue.length > 2) {
+      const singleCustomer = filteredCustomers[0];
+      const customerName = (singleCustomer.display_name || singleCustomer.name || '').toLowerCase();
+      const query = customerSearchValue.toLowerCase();
+      
+      // Auto-select if it's an exact match or very close match
+      if (customerName === query || customerName.startsWith(query)) {
+        setTimeout(() => {
+          handleCustomerSelect(singleCustomer);
+        }, 300); // Small delay to prevent accidental selection while typing
+      }
+    }
+  }, [filteredCustomers, customerSearchValue, isCustomerMode, handleCustomerSelect]);
+
+  // Reset selected index when results change
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [filteredCustomers]);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (selectedIndex >= 0) {
+      const selectedElement = document.querySelector(`[data-customer-index="${selectedIndex}"]`);
+      if (selectedElement) {
+        selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [selectedIndex]);
 
   // Filter products based on search
   const filteredProducts = useMemo(() => {
@@ -932,12 +994,14 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         (() => {
           return (
             <>
-              {/* Transparent Blur Overlay */}
+              {/* Enhanced Glass Overlay */}
               <div 
-                className="fixed inset-0 backdrop-blur-sm transition-all duration-500"
+                className="fixed inset-0 transition-all duration-500"
                 style={{ 
                   zIndex: 99998,
-                  background: 'transparent'
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  backdropFilter: 'blur(8px) saturate(120%)',
+                  WebkitBackdropFilter: 'blur(8px) saturate(120%)'
                 }}
                 onClick={() => setIsOpen(false)}
               />
@@ -945,7 +1009,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               {/* Subtle Customer Modal */}
               <div 
                 ref={dropdownRef}
-                className="fixed border border-white/20 rounded-2xl overflow-hidden backdrop-blur-xl shadow-2xl"
+                className="fixed rounded-2xl overflow-hidden shadow-2xl"
                 style={{ 
                   top: '50%',
                   left: '50%',
@@ -953,15 +1017,30 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                   width: 'min(90vw, 800px)',
                   height: 'min(80vh, 700px)',
                   zIndex: 99999,
-                  background: 'transparent',
-                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                  background: 'rgba(23, 23, 23, 0.85)',
+                  backdropFilter: 'blur(20px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                  boxShadow: '0 32px 64px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                  filter: 'contrast(1.1) brightness(1.1)'
                 }}
               >
                 {/* Customers Section - Only show if not in product-only mode */}
-          {!productOnlyMode && filteredCustomers.length > 0 && (
+          {!productOnlyMode && (isCustomerMode || filteredCustomers.length > 0) && (
             <>
-              <div className="px-6 py-4 border-b border-white/10">
-                <div className="flex items-center justify-center gap-2 relative">
+              <div className="px-4 py-4 border-b border-white/5 relative" style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+                {/* Close button - Top left corner */}
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="absolute top-1/2 -translate-y-1/2 w-12 h-12 rounded-full border border-neutral-600/50 hover:border-neutral-400/70 bg-transparent hover:bg-neutral-600/10 text-neutral-400 hover:text-neutral-200 transition-all duration-300 flex items-center justify-center"
+                  title="Close"
+                  style={{ left: '8px' }}
+                >
+                  <span className="text-lg font-medium tracking-wide" style={{ fontFamily: 'Tiempos, serif' }}>
+                    ×
+                  </span>
+                </button>
+                
+                <div className="flex items-center justify-center gap-2">
                   {/* Customer Search Bar - Matches header nav styling */}
                   <div className="flex-1 flex items-center justify-center max-w-[500px]">
                     <div className="relative w-full">
@@ -970,29 +1049,48 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                         placeholder="Search customers..."
                         value={customerSearchValue}
                         onChange={(e) => setCustomerSearchValue(e.target.value)}
-                        className="w-full h-[38px] bg-transparent hover:bg-neutral-600/10 rounded-lg placeholder-neutral-400 focus:bg-neutral-600/10 focus:outline-none text-sm text-center placeholder:text-center transition-all duration-200 ease-out text-neutral-400"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            setIsOpen(false);
+                          } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setSelectedIndex(prev => Math.min(prev + 1, filteredCustomers.length - 1));
+                          } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setSelectedIndex(prev => Math.max(prev - 1, -1));
+                          } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (selectedIndex >= 0 && selectedIndex < filteredCustomers.length) {
+                              handleCustomerSelect(filteredCustomers[selectedIndex]);
+                            } else if (filteredCustomers.length === 1) {
+                              handleCustomerSelect(filteredCustomers[0]);
+                            }
+                          }
+                        }}
+                        className="w-full h-[38px] bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg placeholder-neutral-500 focus:placeholder-transparent focus:bg-neutral-600/15 focus:outline-none text-sm text-center placeholder:text-center transition-all duration-200 ease-out text-neutral-400"
                         style={{ fontFamily: 'Tiempos, serif' }}
                         autoFocus
                       />
-                      {/* Search icon */}
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                      </div>
                     </div>
                   </div>
-                  
-                  {/* Close button */}
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="text-neutral-400 hover:text-white transition-all duration-300 p-2 hover:bg-white/10 rounded-lg"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
                 </div>
+                
+                {/* Scan ID button - Thin circle with SCAN text */}
+                <button
+                  onClick={() => {
+                    setShowIDScanner(true);
+                    setShowNewCustomerForm(false);
+                    setIsOpen(true);
+                    setIsCustomerMode(true);
+                  }}
+                  className="absolute top-1/2 -translate-y-1/2 w-12 h-12 rounded-full border border-neutral-600/50 hover:border-neutral-400/70 bg-transparent hover:bg-neutral-600/10 text-neutral-400 hover:text-neutral-200 transition-all duration-300 flex items-center justify-center"
+                  title="Scan ID"
+                  style={{ right: '8px' }}
+                >
+                  <span className="text-xs font-medium tracking-wide" style={{ fontFamily: 'Tiempos, serif' }}>
+                    SCAN
+                  </span>
+                </button>
               </div>
               
               <div className={`flex flex-col overflow-hidden ${showIDScanner ? 'h-auto' : 'max-h-[45rem]'}`}>
@@ -1000,14 +1098,14 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 {(showIDScanner || showNewCustomerForm) && (
                   <div className="flex-shrink-0">
                     {showIDScanner ? (
-                      <div className="px-4 py-3 border-b border-neutral-500/20">
+                      <div className="px-4 py-4 border-b border-neutral-500/20">
                         <ScanditIDScanner
                           onScanResult={handleIDScanResult}
                           onCancel={handleCancelIDScanner}
                         />
                       </div>
                     ) : (
-                      <div className="px-4 py-3 border-b border-neutral-500/20">
+                      <div className="px-4 py-4 border-b border-neutral-500/20">
                         <div className="space-y-3">
                           <div className="grid grid-cols-2 gap-2">
                             <input
@@ -1015,7 +1113,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                               placeholder="First Name"
                               value={newCustomerData.firstName}
                               onChange={(e) => setNewCustomerData(prev => ({ ...prev, firstName: e.target.value }))}
-                              className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
                               style={{ fontFamily: 'Tiempos, serif' }}
                             />
                             <input
@@ -1023,32 +1121,35 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                               placeholder="Last Name"
                               value={newCustomerData.lastName}
                               onChange={(e) => setNewCustomerData(prev => ({ ...prev, lastName: e.target.value }))}
-                              className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
                               style={{ fontFamily: 'Tiempos, serif' }}
                             />
                           </div>
                           <input
-                            type="email"
-                            placeholder="Email"
+                            type="text"
+                            placeholder="Email (optional)"
                             value={newCustomerData.email}
                             onChange={(e) => setNewCustomerData(prev => ({ ...prev, email: e.target.value }))}
-                            className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
                             style={{ fontFamily: 'Tiempos, serif' }}
                           />
                           <input
                             type="tel"
-                            placeholder="Phone (optional)"
+                            placeholder="Phone"
                             value={newCustomerData.phone}
                             onChange={(e) => setNewCustomerData(prev => ({ ...prev, phone: e.target.value }))}
-                            className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
                             style={{ fontFamily: 'Tiempos, serif' }}
                           />
+                          <div className="text-xs text-neutral-400/70 mb-2 text-center">
+                            * Either email or phone required
+                          </div>
                           <input
                             type="text"
                             placeholder="Address"
                             value={newCustomerData.address}
                             onChange={(e) => setNewCustomerData(prev => ({ ...prev, address: e.target.value }))}
-                            className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
                             style={{ fontFamily: 'Tiempos, serif' }}
                           />
                           <div className="grid grid-cols-3 gap-2">
@@ -1057,7 +1158,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                               placeholder="City"
                               value={newCustomerData.city}
                               onChange={(e) => setNewCustomerData(prev => ({ ...prev, city: e.target.value }))}
-                              className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
                               style={{ fontFamily: 'Tiempos, serif' }}
                             />
                             <input
@@ -1065,7 +1166,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                               placeholder="State"
                               value={newCustomerData.state}
                               onChange={(e) => setNewCustomerData(prev => ({ ...prev, state: e.target.value }))}
-                              className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
                               style={{ fontFamily: 'Tiempos, serif' }}
                             />
                             <input
@@ -1073,7 +1174,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                               placeholder="ZIP"
                               value={newCustomerData.zipCode}
                               onChange={(e) => setNewCustomerData(prev => ({ ...prev, zipCode: e.target.value }))}
-                              className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
                               style={{ fontFamily: 'Tiempos, serif' }}
                             />
                           </div>
@@ -1083,7 +1184,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                               placeholder="Date of Birth"
                               value={newCustomerData.dateOfBirth}
                               onChange={(e) => setNewCustomerData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-                              className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
                               style={{ fontFamily: 'Tiempos, serif' }}
                             />
                             <input
@@ -1091,7 +1192,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                               placeholder="License Number"
                               value={newCustomerData.licenseNumber}
                               onChange={(e) => setNewCustomerData(prev => ({ ...prev, licenseNumber: e.target.value }))}
-                              className="px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
                               style={{ fontFamily: 'Tiempos, serif' }}
                             />
                           </div>
@@ -1099,25 +1200,16 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                             <button
                               onClick={handleCancelNewCustomer}
                               disabled={isCreatingCustomer}
-                              className="flex-1 px-2 py-1 bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-neutral-300 hover:text-white rounded text-xs transition-colors disabled:opacity-50"
+                              className="flex-1 px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 text-neutral-400 hover:text-neutral-200 rounded-lg text-xs transition-all duration-200 ease-out backdrop-blur-sm disabled:opacity-50"
                             >
                               Cancel
                             </button>
                             <button
                               onClick={handleCreateCustomer}
-                              disabled={isCreatingCustomer || !newCustomerData.firstName.trim() || !newCustomerData.email.trim()}
-                              className="flex-1 px-2 py-1 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white rounded text-xs transition-colors flex items-center justify-center gap-1"
+                              disabled={isCreatingCustomer || !newCustomerData.firstName.trim() || (!newCustomerData.email.trim() && !newCustomerData.phone.trim())}
+                              className="flex-1 px-3 py-2 bg-red-600/80 hover:bg-red-600 disabled:bg-red-600/30 text-white rounded-lg text-xs transition-all duration-200 ease-out backdrop-blur-sm flex items-center justify-center"
                             >
-                              {isCreatingCustomer ? (
-                                <>
-                                  <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                  </svg>
-                                  Creating...
-                                </>
-                              ) : (
-                                'Create'
-                              )}
+                              {isCreatingCustomer ? 'Creating...' : 'Create'}
                             </button>
                           </div>
                         </div>
@@ -1129,101 +1221,51 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 {/* Fixed Header Options */}
                 {!showIDScanner && !showNewCustomerForm && (
                   <div className="flex-shrink-0 border-b border-neutral-500/20">
-                    {/* New Customer and Scan ID Buttons in One Row */}
-                    <div className="flex gap-2 p-2">
+                    {/* New Customer and Guest Customer Buttons in One Row */}
+                    <div className="flex gap-2 p-4">
                       {/* New Customer Button */}
                       <button
                         onClick={handleNewCustomerClick}
-                        className="flex-1 px-3 py-2.5 text-left text-sm transition-all flex items-center justify-center gap-2 group text-neutral-300 hover:bg-white/[0.05] hover:text-neutral-200 rounded-md border border-neutral-600/50 hover:border-neutral-500"
+                        className="flex-1 px-4 py-3 text-sm transition-all flex items-center justify-center group text-neutral-400 bg-neutral-600/10 hover:bg-neutral-600/15 hover:text-neutral-200 rounded-lg"
                       >
-                        <div className="w-6 h-6 bg-neutral-700/50 rounded-full flex items-center justify-center group-hover:bg-neutral-600/50 transition-colors">
-                          <svg className="w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium">New Customer</div>
-                        </div>
+                        <div className="font-medium">New Customer</div>
                       </button>
 
-                      {/* ID Scanner Button */}
+                      {/* Guest Customer Button */}
                       <button
-                        onClick={handleIDScannerClick}
-                        className="flex-1 px-3 py-2.5 text-left text-sm transition-all flex items-center justify-center gap-2 group text-neutral-300 hover:bg-white/[0.05] hover:text-neutral-200 rounded-md border border-neutral-600/50 hover:border-neutral-500"
+                        onClick={() => handleCustomerSelect({ id: 0, name: 'Guest Customer', email: 'guest@pos.local', username: 'guest', display_name: 'Guest Customer', roles: ['customer'] } as WordPressUser)}
+                        className="flex-1 px-4 py-3 text-sm transition-all flex items-center justify-center group text-neutral-400 bg-neutral-600/10 hover:bg-neutral-600/15 hover:text-neutral-200 rounded-lg"
                       >
-                        <div className="w-6 h-6 bg-blue-700/50 rounded-full flex items-center justify-center group-hover:bg-blue-600/50 transition-colors">
-                          <svg className="w-3.5 h-3.5 text-blue-400 group-hover:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                          </svg>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium">Scan ID</div>
-                        </div>
+                        <div className="font-medium">Guest Customer</div>
                       </button>
                     </div>
 
-                    {/* Clear Customer Selection */}
-                    <button
-                      onClick={() => handleCustomerSelect(null)}
-                      className={`w-full px-4 py-2.5 text-left text-sm transition-all flex items-center justify-between group ${
-                        !selectedCustomer
-                          ? 'bg-neutral-600/5 text-neutral-300'
-                          : 'text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300'
-                      }`}
-                    >
-                      <span>No Customer</span>
-                      {!selectedCustomer && <span className="text-xs">✓</span>}
-                    </button>
 
-                    {/* Guest Customer */}
-                    <button
-                      onClick={() => handleCustomerSelect({ id: 0, name: 'Guest Customer', email: 'guest@pos.local', username: 'guest', display_name: 'Guest Customer', roles: ['customer'] } as WordPressUser)}
-                      className={`w-full px-4 py-2.5 text-left text-sm transition-all flex items-center justify-between group ${
-                        selectedCustomer?.id === 0
-                          ? 'bg-neutral-600/5 text-neutral-300'
-                          : 'text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300'
-                      }`}
-                    >
-                      <div>
-                        <div className="font-medium">Guest Customer</div>
-                        <div className="text-xs text-neutral-500">Walk-in customer</div>
-                      </div>
-                      {selectedCustomer?.id === 0 && <span className="text-xs">✓</span>}
-                    </button>
                   </div>
                 )}
 
                 {/* Scrollable Customer List - Hide when scanner is active */}
                 {!showIDScanner && (
-                  <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800">
+                  <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-neutral-800 p-2">
                     {filteredCustomers.length > 0 ? (
                       <>
-                        {/* Customer Count Header */}
-                        <div className="sticky top-0 px-4 py-2 bg-neutral-700/95 backdrop-blur-sm text-xs text-neutral-400 border-b border-neutral-600/20">
-                          {debouncedSearchValue ? 
-                            `Found ${filteredCustomers.length} customer${filteredCustomers.length !== 1 ? 's' : ''}` :
-                            `${filteredCustomers.length} customer${filteredCustomers.length !== 1 ? 's' : ''}`
-                          }
-                        </div>
 
                       {/* Customer List */}
-                      {filteredCustomers.map((customer) => (
+                      {filteredCustomers.map((customer, index) => (
                         <button
                           key={customer.id}
+                          data-customer-index={index}
                           onClick={() => handleCustomerSelect(customer)}
-                          className={`w-full px-6 py-4 text-left transition-all flex items-center justify-between group ${
+                          className={`w-full px-4 py-4 text-left transition-all flex items-center justify-between group rounded-lg mb-2 ${
                             selectedCustomer?.id === customer.id
-                              ? 'bg-white/10 text-white border-l-2 border-l-white/40'
-                              : 'text-neutral-400 hover:bg-white/5 hover:text-neutral-300'
+                              ? 'bg-neutral-600/20 text-white'
+                              : index === selectedIndex
+                              ? 'bg-blue-600/15 text-white'
+                              : 'bg-neutral-600/10 text-neutral-400 hover:bg-neutral-600/15 hover:text-neutral-300'
                           }`}
                           style={{ fontFamily: 'Tiempos, serif' }}
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-neutral-800/60 rounded-full flex items-center justify-center border border-white/10">
-                              <svg className="w-6 h-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                            </div>
+                          <div className="flex items-center">
                             <div className="flex-1">
                               <div className="text-base font-medium mb-1 flex items-center gap-3">
                                 {customer.display_name || customer.name || customer.username}
@@ -1235,16 +1277,14 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                             </div>
                           </div>
                           {selectedCustomer?.id === customer.id && (
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
+                            <span className="text-xs text-white">✓</span>
                           )}
                         </button>
                       ))}
                       </>
                     ) : (
                       <div className="px-4 py-8 text-center text-neutral-500 text-sm">
-                        {debouncedSearchValue ? 'No customers found matching your search' : 'No customers available'}
+                        {(isCustomerMode ? customerSearchValue : debouncedSearchValue) ? 'No customers found matching your search' : 'No customers available'}
                       </div>
                     )}
                   </div>
@@ -1317,40 +1357,32 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 <div className="h-px bg-neutral-500/20 mx-2" />
               )}
               
-              <div className="px-4 py-2.5 border-b border-neutral-500/20 bg-transparent">
-                <h3 className="text-xs font-medium text-neutral-300 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+              <div className="px-4 py-2.5 border-b border-neutral-700 bg-transparent">
+                <h3 className="text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
                   Create Purchase Order ({pendingRestockProducts.size} products)
                 </h3>
               </div>
               
-              <div className="p-4 space-y-3 bg-transparent">
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
-                    Supplier Name
-                  </label>
-                  <input
-                    type="text"
-                    value={supplierName}
-                    onChange={(e) => setSupplierName(e.target.value)}
-                    placeholder="Enter supplier name..."
-                    className="w-full px-3 py-2 bg-neutral-600/50 border border-neutral-500/30 rounded text-sm text-white placeholder-neutral-400 focus:border-green-500/50 focus:outline-none"
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  />
-                </div>
+              {/* Purchase Order Details Form - Glassmorphic Style */}
+              <div className="px-4 py-4 space-y-3">
+                <input
+                  type="text"
+                  value={supplierName}
+                  onChange={(e) => setSupplierName(e.target.value)}
+                  placeholder="Supplier Name *"
+                  className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  required
+                />
                 
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
-                    Notes (Optional)
-                  </label>
-                  <textarea
-                    value={poNotes}
-                    onChange={(e) => setPONotes(e.target.value)}
-                    placeholder="Purchase order notes..."
-                    rows={2}
-                    className="w-full px-3 py-2 bg-neutral-600/50 border border-neutral-500/30 rounded text-sm text-white placeholder-neutral-400 focus:border-green-500/50 focus:outline-none resize-none"
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  />
-                </div>
+                <textarea
+                  value={poNotes}
+                  onChange={(e) => setPONotes(e.target.value)}
+                  placeholder="Purchase order notes (optional)"
+                  className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm resize-none"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  rows={2}
+                />
 
                 {/* Pending restock products list */}
                 <div className="space-y-2">
@@ -1410,14 +1442,18 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                                   className="text-neutral-400 hover:text-neutral-200 transition-colors"
                                   title="Edit quantity"
                                 >
-                                  ✏️
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  </svg>
                                 </button>
                                 <button
                                   onClick={() => onRemoveRestockProduct?.(key)}
-                                  className="text-neutral-400 hover:text-red-400 transition-colors"
+                                  className="text-neutral-400 hover:text-neutral-300 transition-colors"
                                   title="Remove from purchase order"
                                 >
-                                  ✕
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
                                 </button>
                               </>
                             )}
@@ -1430,18 +1466,21 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 
                 <div className="flex gap-2 pt-2">
                   <button
+                    type="button"
                     onClick={() => {
                       setIsPurchaseOrderMode(false);
                       setIsOpen(false);
                       setSupplierName('');
                       setPONotes('');
                     }}
-                    className="flex-1 px-3 py-2 bg-neutral-600 hover:bg-neutral-500 text-white text-sm rounded transition-colors"
+                    disabled={isCreatingPO}
+                    className="flex-1 px-3 py-2 text-xs bg-neutral-600/10 hover:bg-neutral-600/15 text-neutral-400 hover:text-neutral-300 rounded-lg transition-all duration-200 ease-out backdrop-blur-sm disabled:opacity-50"
                     style={{ fontFamily: 'Tiempos, serif' }}
                   >
                     Cancel
                   </button>
                   <button
+                    type="button"
                     onClick={() => {
                       if (supplierName.trim()) {
                         onCreatePurchaseOrderWithDetails?.(supplierName.trim(), poNotes.trim() || undefined);
@@ -1452,10 +1491,20 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                       }
                     }}
                     disabled={!supplierName.trim() || isCreatingPO}
-                    className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+                    className={`flex-1 px-3 py-2 text-xs rounded-lg transition-all duration-200 ease-out backdrop-blur-sm flex items-center justify-center gap-2 ${
+                      !supplierName.trim() || isCreatingPO
+                        ? 'bg-neutral-600/10 text-neutral-500 cursor-not-allowed'
+                        : 'bg-neutral-600/20 hover:bg-neutral-600/30 text-neutral-400'
+                    }`}
                     style={{ fontFamily: 'Tiempos, serif' }}
                   >
-                    {isCreatingPO ? 'Creating...' : 'Create PO'}
+                    {isCreatingPO && (
+                      <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    {isCreatingPO ? 'Creating...' : 'Create Purchase Order'}
                   </button>
                 </div>
               </div>
@@ -1469,8 +1518,8 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 <div className="h-px bg-neutral-500/20 mx-2" />
               )}
               
-              <div className="px-4 py-2.5 border-b border-neutral-500/20 bg-transparent">
-                <h3 className="text-xs font-medium text-neutral-300 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+              <div className="px-4 py-2.5 border-b border-neutral-700 bg-transparent">
+                <h3 className="text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
                   Create Audit ({pendingAdjustments.size} adjustments)
                 </h3>
               </div>
@@ -1508,7 +1557,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                                 type="number"
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
-                                className="w-16 px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-16 px-2 py-1 bg-neutral-900/80 border-0 rounded text-white text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 autoFocus
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') {
@@ -1598,49 +1647,44 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 })}
               </div>
 
-              <div className="p-4 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
-                    Audit Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={auditName}
-                    onChange={(e) => setAuditName(e.target.value)}
-                    placeholder="e.g., Monthly Inventory Count"
-                    className="w-full px-3 py-2 bg-neutral-700/50 border border-neutral-600/50 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 text-sm"
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  />
-                </div>
+              {/* Audit Details Form - Glassmorphic Style */}
+              <div className="px-4 py-4 space-y-3">
+                <input
+                  type="text"
+                  value={auditName}
+                  onChange={(e) => setAuditName(e.target.value)}
+                  placeholder="Audit Name *"
+                  className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  required
+                />
                 
-                <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
-                    Description (Optional)
-                  </label>
-                  <textarea
-                    value={auditDescription}
-                    onChange={(e) => setAuditDescription(e.target.value)}
-                    placeholder="Additional notes about this audit..."
-                    rows={2}
-                    className="w-full px-3 py-2 bg-neutral-700/50 border border-neutral-600/50 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none text-sm"
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  />
-                </div>
+                <textarea
+                  value={auditDescription}
+                  onChange={(e) => setAuditDescription(e.target.value)}
+                  placeholder="Description (optional)"
+                  className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm resize-none"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                  rows={2}
+                />
                 
-                <div className="flex gap-3">
+                <div className="flex gap-2 pt-2">
                   <button
+                    type="button"
                     onClick={() => {
                       setIsAuditDropdownMode(false);
                       setIsOpen(false);
                       setAuditName('');
                       setAuditDescription('');
                     }}
-                    className="flex-1 px-4 py-2 bg-neutral-600/50 hover:bg-neutral-600/70 text-white rounded-lg transition-colors text-sm"
+                    disabled={isApplying}
+                    className="flex-1 px-3 py-2 text-xs bg-neutral-600/10 hover:bg-neutral-600/15 text-neutral-400 hover:text-neutral-300 rounded-lg transition-all duration-200 ease-out backdrop-blur-sm disabled:opacity-50"
                     style={{ fontFamily: 'Tiempos, serif' }}
                   >
                     Cancel
                   </button>
                   <button
+                    type="button"
                     onClick={async () => {
                       if (auditName.trim()) {
                         try {
@@ -1659,15 +1703,15 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                       }
                     }}
                     disabled={!auditName.trim() || isApplying}
-                    className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors text-sm flex items-center justify-center gap-2 ${
+                    className={`flex-1 px-3 py-2 text-xs rounded-lg transition-all duration-200 ease-out backdrop-blur-sm flex items-center justify-center gap-2 ${
                       !auditName.trim() || isApplying
-                        ? 'bg-neutral-600/50 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700'
+                        ? 'bg-neutral-600/10 text-neutral-500 cursor-not-allowed'
+                        : 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
                     }`}
                     style={{ fontFamily: 'Tiempos, serif' }}
                   >
                     {isApplying && (
-                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -1735,12 +1779,20 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           {/* No results */}
           {filteredCustomers.length === 0 && filteredProducts.length === 0 && (!isCustomerMode && !isProductMode && !productOnlyMode ? filteredCategories.length === 0 : true) && (isCustomerMode ? customerSearchValue : debouncedSearchValue) && (
             <div className="px-4 py-6 text-sm text-neutral-500 text-center">
-              {isCustomerMode 
-                ? `No customers found for "${customerSearchValue}"`
-                : isProductMode || productOnlyMode
-                ? `No products found for "${debouncedSearchValue}"`
-                : `No customers, products, or categories found for "${debouncedSearchValue}"`
-              }
+              <div className="mb-4">
+                {isCustomerMode 
+                  ? `No customers found for "${customerSearchValue}"`
+                  : isProductMode || productOnlyMode
+                  ? `No products found for "${debouncedSearchValue}"`
+                  : `No customers, products, or categories found for "${debouncedSearchValue}"`
+                }
+              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="px-4 py-2 bg-neutral-600/20 hover:bg-neutral-600/40 text-neutral-300 rounded-lg text-xs transition-colors"
+              >
+                Close Search
+              </button>
             </div>
           )}
               </div>

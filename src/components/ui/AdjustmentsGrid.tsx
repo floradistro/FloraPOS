@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ProductAuditTable } from './ProductAuditTable';
 import { BlueprintPricingService, BlueprintPricingData } from '../../services/blueprint-pricing-service';
 import { PurchaseOrdersService, type RestockProduct } from '../../services/purchase-orders-service';
+import { UnifiedPopout } from './UnifiedPopout';
 
 export interface Product {
   id: number;
@@ -52,6 +53,10 @@ interface AdjustmentsGridProps {
   onLoadingChange?: (loading: boolean, hasProducts: boolean) => void;
   isAuditMode?: boolean;
   isRestockMode?: boolean;
+  showOnlySelected?: boolean;
+  onShowOnlySelectedChange?: (show: boolean) => void;
+  sortAlphabetically?: boolean;
+  onSortAlphabeticallyChange?: (sort: boolean) => void;
 }
 
 export interface AdjustmentsGridRef {
@@ -73,7 +78,17 @@ export interface AdjustmentsGridRef {
 }
 
 export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridProps>(
-  ({ searchQuery, categoryFilter, onLoadingChange, isAuditMode = false, isRestockMode = false }, ref) => {
+  ({ 
+    searchQuery, 
+    categoryFilter, 
+    onLoadingChange, 
+    isAuditMode = false, 
+    isRestockMode = false,
+    showOnlySelected = false,
+    onShowOnlySelectedChange,
+    sortAlphabetically = true,
+    onSortAlphabeticallyChange
+  }, ref) => {
     const { user } = useAuth();
     
     // Debug mode states
@@ -103,14 +118,22 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
     const [poNotes, setPONotes] = useState('');
     const [isCreatingPO, setIsCreatingPO] = useState(false);
     
-    // Filtering and sorting states
-    const [showOnlySelected, setShowOnlySelected] = useState(false);
-    const [sortAlphabetically, setSortAlphabetically] = useState(true);
+    // Note: showOnlySelected and sortAlphabetically are now controlled by props
 
     // Notify parent of loading state changes
     useEffect(() => {
       onLoadingChange?.(loading, products.length > 0);
     }, [loading, products.length, onLoadingChange]);
+
+    // Auto-dismiss status messages after 3.5 seconds
+    useEffect(() => {
+      if (adjustmentStatus.type) {
+        const timer = setTimeout(() => {
+          setAdjustmentStatus({ type: null, message: '' });
+        }, 3500);
+        return () => clearTimeout(timer);
+      }
+    }, [adjustmentStatus]);
 
     // Memoized filtered products
     const filteredProducts = useMemo(() => {
@@ -414,7 +437,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       total_stock: number;
     }> | null> => {
       try {
-        const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=1000&_t=${Date.now()}`;
+        const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=100&_t=${Date.now()}`;
         const variantsResponse = await fetch(variantsUrl, {
           method: 'GET',
           headers: {
@@ -432,54 +455,61 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           return null;
         }
 
-        // Process variants and get inventory for each
-        const processedVariants = await Promise.all(
-          variants.map(async (variant: any) => {
-            let inventory: Array<{location_id: number; quantity: number}> = [];
-            
-            // Get inventory for this variant
-            try {
-              const inventoryParams = new URLSearchParams({
-                product_id: productId.toString(),
-                variation_id: variant.id.toString(),
-                _t: Date.now().toString()
-              });
+        // OPTIMIZATION: Batch fetch inventory for all variants at once
+        console.log(`📦 Batch fetching inventory for ${variants.length} variants of product ${productId}`);
+        const inventoryItems = variants.map((v: any) => ({
+          product_id: productId,
+          variation_id: v.id
+        }));
 
-              if (user?.location_id) {
-                inventoryParams.append('location_id', user.location_id);
-              }
-
-              const inventoryResponse = await fetch(`/api/proxy/flora-im/inventory?${inventoryParams}`, {
-                method: 'GET',
-                headers: { 'Cache-Control': 'no-cache' }
-              });
-
-              if (inventoryResponse.ok) {
-                const inventoryData = await inventoryResponse.json();
-                if (Array.isArray(inventoryData)) {
-                  inventory = inventoryData.map((record: any) => ({
-                    location_id: parseInt(record.location_id),
-                    quantity: parseFloat(record.quantity) || parseFloat(record.available_quantity) || 0
-                  }));
-                }
-              }
-            } catch (error) {
-              console.error(`Failed to load inventory for variant ${variant.id}:`, error);
-            }
-
-            const total_stock = inventory.reduce((sum, inv) => sum + inv.quantity, 0);
-
-            return {
-              id: variant.id,
-              name: variant.attributes?.map((attr: any) => attr.option).filter(Boolean).join(', ') || `Variant #${variant.id}`,
-              sku: variant.sku || '',
-              regular_price: variant.regular_price || '0',
-              sale_price: variant.sale_price,
-              inventory,
-              total_stock
-            };
+        const batchInventoryResponse = await fetch('/api/inventory/batch', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+          },
+          body: JSON.stringify({
+            items: inventoryItems,
+            location_id: user?.location_id ? parseInt(user.location_id) : undefined
           })
-        );
+        });
+
+        let inventoryMap: Record<string, any> = {};
+        if (batchInventoryResponse.ok) {
+          const batchResult = await batchInventoryResponse.json();
+          if (batchResult.success && batchResult.data) {
+            inventoryMap = batchResult.data;
+          }
+        } else {
+          console.warn('Batch inventory fetch failed, falling back to empty inventory');
+        }
+
+        // Process variants with batch inventory data
+        const processedVariants = variants.map((variant: any) => {
+          const inventoryKey = `${productId}_${variant.id}`;
+          const inventoryData = inventoryMap[inventoryKey];
+          
+          let inventory: Array<{location_id: number; quantity: number}> = [];
+          
+          if (inventoryData && inventoryData.success && inventoryData.inventory) {
+            inventory = inventoryData.inventory.map((record: any) => ({
+              location_id: parseInt(record.location_id),
+              quantity: parseFloat(record.quantity) || parseFloat(record.available_quantity) || 0
+            }));
+          }
+
+          const total_stock = inventory.reduce((sum, inv) => sum + inv.quantity, 0);
+
+          return {
+            id: variant.id,
+            name: variant.attributes?.map((attr: any) => attr.option).filter(Boolean).join(', ') || `Variant #${variant.id}`,
+            sku: variant.sku || '',
+            regular_price: variant.regular_price || '0',
+            sale_price: variant.sale_price,
+            inventory,
+            total_stock
+          };
+        });
         
         return processedVariants;
       } catch (error) {
@@ -589,7 +619,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           tax_amount: totals.tax_amount,
           shipping_cost: totals.shipping_cost,
           total_amount: totals.total_amount,
-          notes: notes || `Purchase order "${supplierName}" created from restock on ${new Date().toLocaleDateString()}`,
+          notes: notes || `Purchase order "${supplierName}" created from restock on ${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York' })}`,
           supplier_name: supplierName,
           items: poItems
         });
@@ -647,7 +677,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
               
               setAdjustmentStatus({
                 type: 'success',
-                message: `Purchase order ${result.data?.po_number || 'Unknown'} created and stock updated for ${restockProducts.length} items`
+                message: `Success, purchase order ${result.data?.po_number || ''} created`
               });
 
               // Trigger inventory refresh to show updated stock levels
@@ -656,14 +686,14 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
               console.warn('PO created but stock update failed');
               setAdjustmentStatus({
                 type: 'error',
-                message: `Purchase order ${result.data?.po_number || 'Unknown'} created but stock update failed. Please manually adjust inventory.`
+                message: `Error: Purchase order created but stock update failed`
               });
             }
           } catch (stockError) {
             console.error('Error updating stock after PO creation:', stockError);
             setAdjustmentStatus({
               type: 'error',
-              message: `Purchase order ${result.data?.po_number || 'Unknown'} created but stock update failed. Please manually adjust inventory.`
+              message: `Error: Purchase order created but stock update failed`
             });
           }
           
@@ -820,7 +850,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           },
           body: JSON.stringify({
             batch_name: finalAuditName,
-            batch_description: finalAuditDescription || `Audit created on ${new Date().toLocaleDateString()}`,
+            batch_description: finalAuditDescription || `Audit created on ${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York' })}`,
             location_id: user?.location_id ? parseInt(user.location_id) : 20,
             user_id: user?.id ? parseInt(user.id) : 1,
             user_name: user?.username || 'System',
@@ -899,13 +929,13 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
 
           setAdjustmentStatus({
             type: 'success',
-            message: `✅ Audit "${finalAuditName}" completed successfully! Audit #${result.audit_number} - ${result.summary.successful} items processed`
+            message: `Success, audit ${result.audit_number} created`
           });
         } else {
           console.error('❌ Audit adjustment failed:', result);
           setAdjustmentStatus({
             type: 'error',
-            message: `Failed to apply audit adjustments: ${result.error}`
+            message: `Error: Failed to create audit`
           });
         }
         
@@ -923,7 +953,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         console.error('❌ Error applying audit adjustments:', error);
         setAdjustmentStatus({
           type: 'error',
-          message: `Error applying audit adjustments: ${error instanceof Error ? error.message : 'Unknown error'}`
+          message: `Error: Failed to create audit`
         });
       } finally {
         setIsApplying(false);
@@ -1036,7 +1066,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           } else {
             setAdjustmentStatus({
               type: 'success',
-              message: `Successfully applied ${successful.length} adjustment${successful.length > 1 ? 's' : ''}`
+              message: `Success, ${successful.length} adjustment${successful.length > 1 ? 's' : ''} applied`
             });
           }
         }
@@ -1143,96 +1173,139 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
             isRestockMode={isRestockMode}
             isAuditMode={isAuditMode}
             showOnlySelected={showOnlySelected}
-            onShowOnlySelectedChange={setShowOnlySelected}
+            onShowOnlySelectedChange={onShowOnlySelectedChange}
             sortAlphabetically={sortAlphabetically}
-            onSortAlphabeticallyChange={setSortAlphabetically}
+            onSortAlphabeticallyChange={onSortAlphabeticallyChange}
           />
         </div>
         
-        {/* Status Messages Only */}
+        {/* Status Messages - Animated Notification */}
         {adjustmentStatus.type && (
-          <div className="border-t border-white/[0.08] bg-neutral-900/95 backdrop-blur-sm p-4">
-            <div className={`text-sm font-medium flex items-center gap-2 ${
-              adjustmentStatus.type === 'success' ? 'text-green-400' : 'text-red-400'
-            }`}>
-              {adjustmentStatus.type === 'success' ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              )}
-              {adjustmentStatus.message}
+          <div 
+            className={`fixed bottom-4 left-4 z-50 transition-all duration-500 ease-out ${
+              adjustmentStatus.type ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}
+            style={{
+              animation: 'slideInUp 0.3s ease-out, fadeOut 0.5s ease-out 3s forwards'
+            }}
+          >
+            <div className="bg-neutral-900/90 backdrop-blur-md border border-white/[0.08] rounded-lg px-4 py-2 shadow-lg">
+              <div className={`text-xs flex items-center gap-2 ${
+                adjustmentStatus.type === 'success' ? 'text-neutral-400' : 'text-neutral-500'
+              }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                {adjustmentStatus.type === 'success' ? (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+                {adjustmentStatus.message}
+              </div>
             </div>
           </div>
         )}
         
         {/* Audit Dialog */}
-        {showAuditDialog && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-neutral-800 rounded-lg p-6 w-full max-w-md mx-4">
-              <h3 className="text-base font-normal text-neutral-200 mb-4" style={{ fontFamily: 'Tiempos, serif' }}>Create Audit</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
-                    Audit Name *
-                  </label>
+        <UnifiedPopout 
+          isOpen={showAuditDialog} 
+          onClose={() => {
+            setShowAuditDialog(false);
+            setAuditName('');
+            setAuditDescription('');
+          }}
+        >
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <div className="px-4 py-3 border-b border-neutral-500/20 flex items-center justify-between">
+              <h3 className="text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
+                Create Audit
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAuditDialog(false);
+                  setAuditName('');
+                  setAuditDescription('');
+                }}
+                className="text-neutral-400 hover:text-neutral-300 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (auditName.trim()) {
+                applyAuditAdjustments();
+              }
+            }} className="flex-1 overflow-y-auto px-4 py-4">
+                <div className="space-y-3">
                   <input
                     type="text"
                     value={auditName}
                     onChange={(e) => setAuditName(e.target.value)}
-                    placeholder="e.g., Monthly Inventory Count"
-                    className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-neutral-200 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Audit Name *"
+                    className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                    required
+                    autoFocus
                   />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
-                    Description (Optional)
-                  </label>
+                  
                   <textarea
                     value={auditDescription}
                     onChange={(e) => setAuditDescription(e.target.value)}
-                    placeholder="Additional notes about this audit..."
+                    placeholder="Description (optional)"
+                    className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm resize-none"
+                    style={{ fontFamily: 'Tiempos, serif' }}
                     rows={3}
-                    className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
+                  
+                  <div className="text-xs text-neutral-400/70 text-center">
+                    Creating audit with <span className="text-green-400 font-medium">{pendingAdjustments.size}</span> adjustment{pendingAdjustments.size !== 1 ? 's' : ''}
+                  </div>
+
+                  {/* Form Actions */}
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAuditDialog(false);
+                        setAuditName('');
+                        setAuditDescription('');
+                      }}
+                      disabled={isApplying}
+                      className="flex-1 px-3 py-2 text-xs bg-neutral-600/10 hover:bg-neutral-600/15 text-neutral-400 hover:text-neutral-300 rounded-lg transition-all duration-200 ease-out backdrop-blur-sm disabled:opacity-50"
+                      style={{ fontFamily: 'Tiempos, serif' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!auditName.trim() || isApplying}
+                      className={`flex-1 px-3 py-2 text-xs rounded-lg transition-all duration-200 ease-out backdrop-blur-sm flex items-center justify-center gap-2 ${
+                        !auditName.trim() || isApplying
+                          ? 'bg-neutral-600/10 text-neutral-500 cursor-not-allowed'
+                          : 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
+                      }`}
+                      style={{ fontFamily: 'Tiempos, serif' }}
+                    >
+                      {isApplying && (
+                        <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      )}
+                      {isApplying ? 'Creating...' : 'Create Audit'}
+                    </button>
+                  </div>
                 </div>
-                
-                <div className="text-xs text-neutral-500">
-                  This will create an audit with {pendingAdjustments.size} adjustment{pendingAdjustments.size !== 1 ? 's' : ''} and generate a unique audit number for tracking.
-                </div>
-              </div>
-              
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowAuditDialog(false);
-                    setAuditName('');
-                    setAuditDescription('');
-                  }}
-                  className="flex-1 px-4 py-2 bg-neutral-600 hover:bg-neutral-700 text-white rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => applyAuditAdjustments()}
-                  disabled={!auditName.trim() || isApplying}
-                  className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors ${
-                    !auditName.trim() || isApplying
-                      ? 'bg-neutral-600 cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700'
-                  }`}
-                >
-                  {isApplying ? 'Creating...' : 'Create Audit'}
-                </button>
-              </div>
+              </form>
             </div>
-          </div>
-        )}
+          </UnifiedPopout>
       </div>
     );
   }

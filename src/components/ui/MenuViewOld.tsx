@@ -7,7 +7,6 @@ import { BlueprintPricingService } from '../../services/blueprint-pricing-servic
 import { BlueprintFieldsService, ProductBlueprintFields } from '../../services/blueprint-fields-service';
 import { ColumnSelector } from './ColumnSelector';
 import { Product, Category } from '../../types';
-import { SharedMenuDisplay } from './SharedMenuDisplay';
 
 // VSCode-style Dropdown Component
 const ToolbarDropdown = ({ 
@@ -175,37 +174,34 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   const [enableLeftStacking, setEnableLeftStacking] = useState<boolean>(false);
   const [enableRightStacking, setEnableRightStacking] = useState<boolean>(false);
   
-  // Dual menu configuration mode - NO DEFAULT SELECTION
-  const [selectedSide, setSelectedSide] = useState<string>('');
-  const [selectedMenuSection, setSelectedMenuSection] = useState<string | null>(null); // 'L', 'R', 'L2', 'R2' for highlighting
+  // Dual menu configuration mode
+  const [dualMenuConfigSide, setDualMenuConfigSide] = useState<'left' | 'right' | null>(null);
   
-  // Simple click handler - no complex logic
-  const handlePreviewSectionClick = (section: string) => {
-    // Determine which side was clicked
-    const clickedSide = (section === 'left' || section === 'left-bottom') ? 'left' : 'right';
-    
-    // Simple toggle: if already selected, deselect; otherwise select
-    if (selectedSide === clickedSide) {
-      setSelectedSide(''); // Deselect
-    } else {
-      setSelectedSide(clickedSide); // Select new side
+  // Preview section selection for editing - Canva-style interaction
+  const handlePreviewSectionClick = (section: 'left' | 'right' | 'left-bottom' | 'right-bottom') => {
+    switch (section) {
+      case 'left':
+      case 'left-bottom':
+        setDualMenuConfigSide('left');
+        break;
+      case 'right':
+      case 'right-bottom':
+        setDualMenuConfigSide('right');
+        break;
     }
   };
   
-  // Independent configurations for each side and quadrant
+  // Independent configurations for each side
   const [leftMenuViewMode, setLeftMenuViewMode] = useState<'table' | 'card' | 'auto'>('auto');
   const [rightMenuViewMode, setRightMenuViewMode] = useState<'table' | 'card' | 'auto'>('auto');
-  const [leftMenuViewMode2, setLeftMenuViewMode2] = useState<'table' | 'card' | 'auto'>('auto');
-  const [rightMenuViewMode2, setRightMenuViewMode2] = useState<'table' | 'card' | 'auto'>('auto');
   const [leftMenuColumns, setLeftMenuColumns] = useState<Map<string, string[]>>(new Map());
   const [rightMenuColumns, setRightMenuColumns] = useState<Map<string, string[]>>(new Map());
-  // Color customization - Default to dark theme
-  const [backgroundColor, setBackgroundColor] = useState<string>('#000000'); // Pure Black
-  const [fontColor, setFontColor] = useState<string>('#ffffff'); // Pure White
-  const [containerColor, setContainerColor] = useState<string>('#000000'); // Pure Black containers
-  const [pandaMode, setPandaMode] = useState<boolean>(true); // Panda mode enabled by default
+  // Color customization
+  const [backgroundColor, setBackgroundColor] = useState<string>('#f5f5f4'); // stone-100
+  const [fontColor, setFontColor] = useState<string>('#1f2937'); // gray-800
+  const [containerColor, setContainerColor] = useState<string>('#d1d5db'); // gray-300
+  const [pandaMode, setPandaMode] = useState<boolean>(false); // Panda mode for white font/black background
   const [openWindows, setOpenWindows] = useState<Map<string, Window>>(new Map());
-  const [refreshingWindows, setRefreshingWindows] = useState<Set<string>>(new Set());
   // Per-category column selection state
   const [categoryColumnConfigs, setCategoryColumnConfigs] = useState<Map<string, string[]>>(new Map());
   const [categoryBlueprintFields, setCategoryBlueprintFields] = useState<Map<string, ProductBlueprintFields[]>>(new Map());
@@ -244,13 +240,6 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   };
 
   const openPopoutMenu = useCallback((categorySlug?: string, isDual = false) => {
-    // Check window limit (max 8 windows)
-    const activeWindows = Array.from(openWindows.values()).filter(w => !w.closed);
-    if (activeWindows.length >= 8) {
-      alert('Maximum of 8 menu windows allowed. Please close some windows before opening new ones.');
-      return;
-    }
-    
     // Generate unique window name based on timestamp and content
     const windowId = `MenuDisplay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const windowTitle = categorySlug 
@@ -278,40 +267,12 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
         dual: 'true',
         leftCategory: leftMenuCategory || '',
         rightCategory: rightMenuCategory || '',
-        leftImages: (() => {
-          console.log('🖼️ SENDING leftImages:', leftMenuImages);
-          return leftMenuImages.toString();
-        })(),
-        rightImages: (() => {
-          console.log('🖼️ SENDING rightImages:', rightMenuImages);
-          return rightMenuImages.toString();
-        })(),
+        leftImages: leftMenuImages.toString(),
+        rightImages: rightMenuImages.toString(),
         leftViewMode: leftMenuViewMode,
         rightViewMode: rightMenuViewMode,
-        leftColumns: (() => {
-          // Merge main categoryColumnConfigs with left-specific configs
-          const mergedLeft = new Map(categoryColumnConfigs);
-          leftMenuColumns.forEach((cols, cat) => {
-            mergedLeft.set(cat, cols);
-          });
-          const leftCols = Object.fromEntries(mergedLeft);
-          console.log('🔍 SENDING leftColumns to dual menu (merged):', leftCols);
-          console.log('🔍 categoryColumnConfigs:', Array.from(categoryColumnConfigs.entries()));
-          console.log('🔍 leftMenuColumns:', Array.from(leftMenuColumns.entries()));
-          return encodeURIComponent(JSON.stringify(leftCols));
-        })(),
-        rightColumns: (() => {
-          // Merge main categoryColumnConfigs with right-specific configs
-          const mergedRight = new Map(categoryColumnConfigs);
-          rightMenuColumns.forEach((cols, cat) => {
-            mergedRight.set(cat, cols);
-          });
-          const rightCols = Object.fromEntries(mergedRight);
-          console.log('🔍 SENDING rightColumns to dual menu (merged):', rightCols);
-          console.log('🔍 categoryColumnConfigs:', Array.from(categoryColumnConfigs.entries()));
-          console.log('🔍 rightMenuColumns:', Array.from(rightMenuColumns.entries()));
-          return encodeURIComponent(JSON.stringify(rightCols));
-        })(),
+        leftColumns: encodeURIComponent(JSON.stringify(Object.fromEntries(leftMenuColumns))),
+        rightColumns: encodeURIComponent(JSON.stringify(Object.fromEntries(rightMenuColumns))),
         leftCategory2: enableLeftStacking ? (leftMenuCategory2 || '') : '',
         rightCategory2: enableRightStacking ? (rightMenuCategory2 || '') : '',
         leftImages2: enableLeftStacking ? leftMenuImages2.toString() : 'false',
@@ -340,7 +301,6 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           setOpenWindows(prev => {
             const newMap = new Map(prev);
             newMap.delete(windowId);
-            console.log(`🗑️ Removed closed window from tracking: ${windowId}. Active windows: ${newMap.size}`);
             return newMap;
           });
           clearInterval(checkClosed);
@@ -348,7 +308,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
       }, 1000);
       
       // Pass the products data to the popout window
-      const sendDataToPopup = () => {
+      popoutWindow.addEventListener('load', () => {
         // Prepare blueprint fields data for the category
         const blueprintFieldsData: Record<string, ProductBlueprintFields[]> = {};
         if (categorySlug && categoryBlueprintFields.has(categorySlug)) {
@@ -360,7 +320,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           });
         }
 
-        const messageData = {
+        popoutWindow.postMessage({
           type: 'MENU_DATA',
           products: products,
           categories: getUniqueCategories(),
@@ -377,11 +337,6 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           rightMenuImages: rightMenuImages,
           leftMenuImages2: leftMenuImages2,
           rightMenuImages2: rightMenuImages2,
-          leftMenuViewMode: leftMenuViewMode,
-          rightMenuViewMode: rightMenuViewMode,
-          leftMenuViewMode2: leftMenuViewMode2,
-          rightMenuViewMode2: rightMenuViewMode2,
-          selectedMenuSection: selectedMenuSection,
           categoryFilter: categorySlug,
           isDual: isDual,
           leftMenuCategory: leftMenuCategory,
@@ -390,115 +345,16 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           rightMenuCategory2: enableRightStacking ? rightMenuCategory2 : null,
           enableLeftStacking: enableLeftStacking,
           enableRightStacking: enableRightStacking,
-          leftColumnConfigs: isDual ? Object.fromEntries(leftMenuColumns) : null,
-          rightColumnConfigs: isDual ? Object.fromEntries(rightMenuColumns) : null,
           windowId: windowId
-        };
-
-        console.log('📤 Sending MENU_DATA to popup:', { 
-          productsCount: products.length, 
-          categoriesCount: getUniqueCategories().length,
-          isDual,
-          categorySlug,
-          leftMenuCategory,
-          rightMenuCategory
-        });
-
-        popoutWindow.postMessage(messageData, window.location.origin);
-      };
-
-      // Try multiple approaches to ensure data is sent
-      popoutWindow.addEventListener('load', sendDataToPopup);
-      
-      // Also try after a short delay in case load event doesn't fire
-      setTimeout(() => {
-        if (!popoutWindow.closed) {
-          sendDataToPopup();
-        }
-      }, 500);
+        }, window.location.origin);
+      });
     } else {
       alert('Please allow popups for this site to open the TV menu display.');
     }
-  }, [products, orientation, viewMode, showImages, backgroundColor, fontColor, containerColor, pandaMode, categoryColumnConfigs, categoryBlueprintFields, leftMenuColumns, rightMenuColumns, leftMenuImages, rightMenuImages, leftMenuImages2, rightMenuImages2, leftMenuCategory, rightMenuCategory, leftMenuCategory2, rightMenuCategory2, enableLeftStacking, enableRightStacking, leftMenuViewMode, rightMenuViewMode, leftMenuViewMode2, rightMenuViewMode2, selectedMenuSection, openWindows]);
+  }, [products, orientation, viewMode, showImages, backgroundColor, fontColor, containerColor, pandaMode, leftMenuImages, rightMenuImages, leftMenuImages2, rightMenuImages2, leftMenuCategory, rightMenuCategory, leftMenuCategory2, rightMenuCategory2, enableLeftStacking, enableRightStacking]);
 
-  // Function to update all open popup windows with current data
-  const updateAllPopups = useCallback(() => {
-    const activeWindows = Array.from(openWindows.values()).filter(w => !w.closed);
-    
-    if (activeWindows.length === 0) return;
-    
-    // Prepare blueprint fields data
-    const blueprintFieldsData: Record<string, ProductBlueprintFields[]> = {};
-    categoryBlueprintFields.forEach((fields, slug) => {
-      blueprintFieldsData[slug] = fields;
-    });
-
-    const messageData = {
-      type: 'MENU_DATA',
-      products: products,
-      categories: getUniqueCategories(),
-      orientation: orientation,
-      viewMode: viewMode,
-      showImages: (leftMenuCategory && rightMenuCategory) ? 'dual' : showImages,
-      backgroundColor: backgroundColor,
-      fontColor: fontColor,
-      containerColor: containerColor,
-      pandaMode: pandaMode,
-      categoryColumnConfigs: Object.fromEntries(categoryColumnConfigs),
-      categoryBlueprintFields: blueprintFieldsData,
-      leftMenuImages: leftMenuImages,
-      rightMenuImages: rightMenuImages,
-      leftMenuImages2: leftMenuImages2,
-      rightMenuImages2: rightMenuImages2,
-      leftMenuViewMode: leftMenuViewMode,
-      rightMenuViewMode: rightMenuViewMode,
-      leftMenuViewMode2: leftMenuViewMode2,
-      rightMenuViewMode2: rightMenuViewMode2,
-      selectedMenuSection: selectedMenuSection,
-      isDual: (leftMenuCategory && rightMenuCategory),
-      leftMenuCategory: leftMenuCategory,
-      rightMenuCategory: rightMenuCategory,
-      leftMenuCategory2: enableLeftStacking ? leftMenuCategory2 : null,
-      rightMenuCategory2: enableRightStacking ? rightMenuCategory2 : null,
-      enableLeftStacking: enableLeftStacking,
-      enableRightStacking: enableRightStacking,
-      leftColumnConfigs: (leftMenuCategory && rightMenuCategory) ? Object.fromEntries(leftMenuColumns) : null,
-      rightColumnConfigs: (leftMenuCategory && rightMenuCategory) ? Object.fromEntries(rightMenuColumns) : null
-    };
-
-    console.log('🔄 Updating all popup windows with new data:', {
-      activeWindowsCount: activeWindows.length,
-      selectedMenuSection,
-      leftMenuViewMode2,
-      rightMenuViewMode2
-    });
-    
-    activeWindows.forEach(window => {
-      if (!window.closed) {
-        window.postMessage(messageData, window.location.origin);
-      }
-    });
-  }, [products, orientation, viewMode, showImages, backgroundColor, fontColor, containerColor, pandaMode, leftMenuImages, rightMenuImages, leftMenuImages2, rightMenuImages2, leftMenuViewMode, rightMenuViewMode, leftMenuViewMode2, rightMenuViewMode2, selectedMenuSection, leftMenuCategory, rightMenuCategory, leftMenuCategory2, rightMenuCategory2, enableLeftStacking, enableRightStacking, categoryColumnConfigs, categoryBlueprintFields, leftMenuColumns, rightMenuColumns, openWindows]);
-
-  // Update popups when view mode settings change
-  useEffect(() => {
-    console.log('📊 VIEW MODE STATE CHANGE DETECTED:', {
-      leftMenuViewMode,
-      rightMenuViewMode,
-      leftMenuViewMode2,
-      rightMenuViewMode2,
-      selectedMenuSection
-    });
-    updateAllPopups();
-  }, [leftMenuViewMode, rightMenuViewMode, leftMenuViewMode2, rightMenuViewMode2, selectedMenuSection, updateAllPopups]);
 
   const launchDualMenu = () => {
-    console.log('🔍 LAUNCHING DUAL MENU:');
-    console.log('  - leftMenuCategory:', leftMenuCategory);
-    console.log('  - rightMenuCategory:', rightMenuCategory);
-    console.log('  - leftMenuColumns:', Array.from(leftMenuColumns.entries()));
-    console.log('  - rightMenuColumns:', Array.from(rightMenuColumns.entries()));
-    
     if (!leftMenuCategory || !rightMenuCategory) {
       alert('Please select categories for both left and right menus.');
       return;
@@ -543,129 +399,8 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     });
   }, [openWindows]);
 
-  const refreshWindow = useCallback((windowId: string) => {
-    const popoutWindow = openWindows.get(windowId);
-    if (!popoutWindow || popoutWindow.closed) {
-      console.warn('Cannot refresh - window is closed');
-      return;
-    }
-
-    // Set refreshing state
-    setRefreshingWindows(prev => new Set(prev).add(windowId));
-
-    // Get window parameters to determine what type of menu it is
-    const urlParams = new URLSearchParams(popoutWindow.location?.search || '');
-    const categorySlug = urlParams.get('category');
-    const isDual = urlParams.get('dual') === 'true';
-
-    console.log('🔄 Refreshing window:', windowId, { categorySlug, isDual });
-
-    // Prepare blueprint fields data
-    const blueprintFieldsData: Record<string, ProductBlueprintFields[]> = {};
-    if (categorySlug && categoryBlueprintFields.has(categorySlug)) {
-      blueprintFieldsData[categorySlug] = categoryBlueprintFields.get(categorySlug)!;
-    } else {
-      categoryBlueprintFields.forEach((fields, slug) => {
-        blueprintFieldsData[slug] = fields;
-      });
-    }
-
-    // Get unique categories inline to avoid dependency issues
-    const categoryMap = new Map();
-    products.forEach(product => {
-      product.categories?.forEach(cat => {
-        if (!categoryMap.has(cat.id)) {
-          categoryMap.set(cat.id, cat);
-        }
-      });
-    });
-    const uniqueCategories = Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-
-    // Send fresh data to the window
-    const messageData = {
-      type: 'MENU_DATA',
-      products: products,
-      categories: uniqueCategories,
-      orientation: orientation,
-      viewMode: viewMode,
-      showImages: isDual ? 'dual' : showImages,
-      backgroundColor: backgroundColor,
-      fontColor: fontColor,
-      containerColor: containerColor,
-      pandaMode: pandaMode,
-      categoryColumnConfigs: Object.fromEntries(categoryColumnConfigs),
-      categoryBlueprintFields: blueprintFieldsData,
-      leftMenuImages: leftMenuImages,
-      rightMenuImages: rightMenuImages,
-      leftMenuImages2: leftMenuImages2,
-      rightMenuImages2: rightMenuImages2,
-      categoryFilter: categorySlug,
-      isDual: isDual,
-      leftMenuCategory: leftMenuCategory,
-      rightMenuCategory: rightMenuCategory,
-      leftMenuCategory2: enableLeftStacking ? leftMenuCategory2 : null,
-      rightMenuCategory2: enableRightStacking ? rightMenuCategory2 : null,
-      enableLeftStacking: enableLeftStacking,
-      enableRightStacking: enableRightStacking,
-      leftColumnConfigs: isDual ? Object.fromEntries(leftMenuColumns) : null,
-      rightColumnConfigs: isDual ? Object.fromEntries(rightMenuColumns) : null,
-      windowId: windowId
-    };
-
-    popoutWindow.postMessage(messageData, window.location.origin);
-    console.log('✅ Sent refresh data to window:', windowId);
-    
-    // Clear refreshing state after a short delay
-    setTimeout(() => {
-      setRefreshingWindows(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(windowId);
-        return newSet;
-      });
-    }, 1000);
-  }, [openWindows, products, orientation, viewMode, showImages, backgroundColor, fontColor, containerColor, pandaMode, categoryColumnConfigs, categoryBlueprintFields, leftMenuImages, rightMenuImages, leftMenuImages2, rightMenuImages2, leftMenuCategory, rightMenuCategory, leftMenuCategory2, rightMenuCategory2, enableLeftStacking, enableRightStacking, leftMenuColumns, rightMenuColumns]);
-
-  const editWindow = useCallback((windowId: string) => {
-    const popoutWindow = openWindows.get(windowId);
-    if (!popoutWindow || popoutWindow.closed) {
-      console.warn('Cannot edit - window is closed');
-      return;
-    }
-
-    // Get window parameters
-    const urlParams = new URLSearchParams(popoutWindow.location?.search || '');
-    const categorySlug = urlParams.get('category');
-    const isDual = urlParams.get('dual') === 'true';
-    const windowOrientation = urlParams.get('orientation') || 'horizontal';
-
-    console.log('✏️ Editing window:', windowId, { categorySlug, isDual, windowOrientation });
-
-    // Set the current configuration to match the window being edited
-    if (categorySlug) {
-      setSelectedMenuCategory(categorySlug);
-    }
-    
-    if (isDual) {
-      const leftCat = urlParams.get('leftCategory');
-      const rightCat = urlParams.get('rightCategory');
-      if (leftCat) setLeftMenuCategory(leftCat);
-      if (rightCat) setRightMenuCategory(rightCat);
-      
-      // Update orientation to match the dual menu
-      if (windowOrientation !== orientation) {
-        setOrientation(windowOrientation as 'horizontal' | 'vertical');
-      }
-    }
-
-    // Focus the window so user can see what they're editing
-    popoutWindow.focus();
-    
-    // Show a notification
-    console.log('✅ Window configuration loaded for editing. Make changes in the controls above and use Refresh to apply them.');
-  }, [openWindows, orientation, setSelectedMenuCategory, setLeftMenuCategory, setRightMenuCategory, setOrientation]);
-
   // Live Preview Component
-  const LiveMenuPreview = ({ products: previewProducts, categories: previewCategories, orientation: previewOrient, viewMode: previewViewMode, showImages: previewShowImages, backgroundColor: previewBg, fontColor: previewFont, containerColor: previewContainer, pandaMode: previewPanda, categoryFilter, hideHeaders = false, isDualMenuEmpty = false }: {
+  const LiveMenuPreview = ({ products: previewProducts, categories: previewCategories, orientation: previewOrient, viewMode: previewViewMode, showImages: previewShowImages, backgroundColor: previewBg, fontColor: previewFont, containerColor: previewContainer, pandaMode: previewPanda, categoryFilter, hideHeaders = false }: {
     products: Product[];
     categories: Category[];
     orientation: 'horizontal' | 'vertical';
@@ -677,7 +412,6 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     pandaMode: boolean;
     categoryFilter?: string;
     hideHeaders?: boolean;
-    isDualMenuEmpty?: boolean;
   }) => {
     const displayProducts = categoryFilter 
       ? previewProducts.filter(product => 
@@ -754,23 +488,8 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           {productsByCategory.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                {isDualMenuEmpty ? (
-                  <>
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-lg border-2 border-dashed flex items-center justify-center opacity-40" 
-                         style={{ borderColor: previewFont }}>
-                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: previewFont }}>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </div>
-                    <p className="text-lg mb-2 opacity-60" style={{ color: previewFont, fontFamily: 'Tiempo, serif' }}>Add Category</p>
-                    <p className="text-sm opacity-40" style={{ color: previewFont, fontFamily: 'Tiempo, serif' }}>Select a category to display</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-2xl mb-3" style={{ color: previewFont }}>No products currently available</p>
-                    <p className="text-lg text-gray-600">Check back soon for updates</p>
-                  </>
-                )}
+                <p className="text-2xl mb-3" style={{ color: previewFont }}>No products currently available</p>
+                <p className="text-lg text-gray-600">Check back soon for updates</p>
               </div>
             </div>
           ) : (
@@ -1159,17 +878,6 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     return Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   };
 
-  // Get product counts for categories
-  const getProductCounts = (): Map<string, number> => {
-    const counts = new Map<string, number>();
-    filteredProducts.forEach(product => {
-      product.categories?.forEach(cat => {
-        counts.set(cat.slug, (counts.get(cat.slug) || 0) + 1);
-      });
-    });
-    return counts;
-  };
-
   const getMetaValue = (product: Product, key: string): string => {
     const meta = product.meta_data?.find(m => m.key === key);
     return meta?.value || '';
@@ -1368,7 +1076,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           <p className="text-lg font-medium mb-2">Failed to load products</p>
           <p className="text-sm text-white mb-4">{error}</p>
           <button
-            onClick={() => fetchProducts()}
+            onClick={fetchProducts}
             className="px-4 py-2 bg-neutral-600 hover:bg-neutral-600/10 hover:border-neutral-400/40 rounded-lg text-white transition-colors"
           >
             Retry
@@ -1379,12 +1087,12 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-transparent min-h-0 max-h-screen overflow-hidden">
+    <div className="flex-1 flex flex-col p-6 bg-transparent">
       {/* VSCode-Style Toolbar */}
-      <div className="mb-2 relative z-50 pt-2 px-2 flex-shrink-0 w-full">
-        <div className="flex items-center justify-between bg-neutral-900/40 backdrop-blur-sm border border-neutral-700/50 rounded-lg px-2 py-2 w-full">
+      <div className="mb-6 relative z-50">
+        <div className="flex items-center justify-between bg-neutral-900/40 backdrop-blur-sm border border-neutral-700/50 rounded-lg px-4 py-3">
           {/* Left Side - Dropdown Menus */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3">
             
             {/* Layout Dropdown */}
             <ToolbarDropdown
@@ -1410,9 +1118,31 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 isActive={orientation === 'vertical'}
                 onClick={() => setOrientation('vertical')}
               />
+              <DropdownSeparator />
+              <DropdownItem
+                icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+                label="Auto View"
+                description="Smart view based on content"
+                isActive={viewMode === 'auto'}
+                onClick={() => setViewMode('auto')}
+              />
+              <DropdownItem
+                icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18m-9 8h9m-9 4h9m-18-8v8a2 2 0 002 2h16a2 2 0 002-2v-8M5 6V4a2 2 0 012-2h10a2 2 0 012 2v2" /></svg>}
+                label="Table View"
+                description="Structured data layout"
+                isActive={viewMode === 'table'}
+                onClick={() => setViewMode('table')}
+              />
+              <DropdownItem
+                icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
+                label="Card View"
+                description="Visual card layout"
+                isActive={viewMode === 'card'}
+                onClick={() => setViewMode('card')}
+              />
             </ToolbarDropdown>
 
-            {/* Display Dropdown - Works on Selected Menu */}
+            {/* Display Dropdown */}
             <ToolbarDropdown
               label="Display"
               icon={
@@ -1420,257 +1150,22 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
                 </svg>
               }
-              isActive={(() => {
-                // Check if images are shown for the current selection
-                if (leftMenuCategory || rightMenuCategory) {
-                  // Dual mode - check selected side
-                  if (selectedSide === 'left') return leftMenuImages;
-                  if (selectedSide === 'right') return rightMenuImages;
-                  return false;
-                }
-                // Single mode
-                return showImages || pandaMode;
-              })()}
+              isActive={showImages || pandaMode}
             >
               <DropdownItem
                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" /></svg>}
                 label="Show Images"
                 description="Display product images"
-                isActive={(() => {
-                  if (leftMenuCategory || rightMenuCategory) {
-                    // Check specific quadrant selection
-                    if (selectedMenuSection === 'L') return leftMenuImages;
-                    if (selectedMenuSection === 'L2') return leftMenuImages2;
-                    if (selectedMenuSection === 'R') return rightMenuImages;
-                    if (selectedMenuSection === 'R2') return rightMenuImages2;
-                    // Fallback to side selection
-                    if (selectedSide === 'left') return leftMenuImages;
-                    if (selectedSide === 'right') return rightMenuImages;
-                    return false;
-                  }
-                  return showImages;
-                })()}
-                onClick={() => {
-                  // Apply to selected menu
-                  if (leftMenuCategory || rightMenuCategory) {
-                    // Dual mode - apply to specific quadrant if selected
-                    if (selectedMenuSection === 'L') {
-                      setLeftMenuImages(true);
-                    } else if (selectedMenuSection === 'L2') {
-                      setLeftMenuImages2(true);
-                    } else if (selectedMenuSection === 'R') {
-                      setRightMenuImages(true);
-                    } else if (selectedMenuSection === 'R2') {
-                      setRightMenuImages2(true);
-                    } else if (selectedSide === 'left') {
-                      // Fallback to entire left side
-                      setLeftMenuImages(true);
-                      if (enableLeftStacking) setLeftMenuImages2(true);
-                    } else if (selectedSide === 'right') {
-                      // Fallback to entire right side
-                      setRightMenuImages(true);
-                      if (enableRightStacking) setRightMenuImages2(true);
-                    }
-                  } else {
-                    // Single mode
-                    setShowImages(true);
-                  }
-                }}
+                isActive={showImages}
+                onClick={() => setShowImages(true)}
               />
               <DropdownItem
                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" /></svg>}
                 label="Hide Images"
                 description="Text-only display"
-                isActive={(() => {
-                  if (leftMenuCategory || rightMenuCategory) {
-                    // Check specific quadrant selection
-                    if (selectedMenuSection === 'L') return !leftMenuImages;
-                    if (selectedMenuSection === 'L2') return !leftMenuImages2;
-                    if (selectedMenuSection === 'R') return !rightMenuImages;
-                    if (selectedMenuSection === 'R2') return !rightMenuImages2;
-                    // Fallback to side selection
-                    if (selectedSide === 'left') return !leftMenuImages;
-                    if (selectedSide === 'right') return !rightMenuImages;
-                    return false;
-                  }
-                  return !showImages;
-                })()}
-                onClick={() => {
-                  // Apply to selected menu
-                  if (leftMenuCategory || rightMenuCategory) {
-                    // Dual mode - apply to specific quadrant if selected
-                    if (selectedMenuSection === 'L') {
-                      setLeftMenuImages(false);
-                    } else if (selectedMenuSection === 'L2') {
-                      setLeftMenuImages2(false);
-                    } else if (selectedMenuSection === 'R') {
-                      setRightMenuImages(false);
-                    } else if (selectedMenuSection === 'R2') {
-                      setRightMenuImages2(false);
-                    } else if (selectedSide === 'left') {
-                      // Fallback to entire left side
-                      setLeftMenuImages(false);
-                      if (enableLeftStacking) setLeftMenuImages2(false);
-                    } else if (selectedSide === 'right') {
-                      // Fallback to entire right side
-                      setRightMenuImages(false);
-                      if (enableRightStacking) setRightMenuImages2(false);
-                    }
-                  } else {
-                    // Single mode
-                    setShowImages(false);
-                  }
-                }}
+                isActive={!showImages}
+                onClick={() => setShowImages(false)}
               />
-              
-              {/* View Mode - Works on Selected Menu */}
-              <DropdownSeparator />
-              <div className="px-3 py-1 text-xs text-neutral-400 font-medium">VIEW MODE</div>
-              <DropdownItem
-                icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
-                label="Auto"
-                description="Smart view based on content"
-                isActive={(() => {
-                  if (leftMenuCategory || rightMenuCategory) {
-                    // Check specific quadrant selection
-                    if (selectedMenuSection === 'L') return leftMenuViewMode === 'auto';
-                    if (selectedMenuSection === 'L2') return leftMenuViewMode2 === 'auto';
-                    if (selectedMenuSection === 'R') return rightMenuViewMode === 'auto';
-                    if (selectedMenuSection === 'R2') return rightMenuViewMode2 === 'auto';
-                    // Fallback to side selection
-                    if (selectedSide === 'left') return leftMenuViewMode === 'auto';
-                    if (selectedSide === 'right') return rightMenuViewMode === 'auto';
-                    return false;
-                  }
-                  return viewMode === 'auto';
-                })()}
-                onClick={() => {
-                  if (leftMenuCategory || rightMenuCategory) {
-                    // Apply to specific quadrant if selected
-                    if (selectedMenuSection === 'L') {
-                      setLeftMenuViewMode('auto');
-                    } else if (selectedMenuSection === 'L2') {
-                      setLeftMenuViewMode2('auto');
-                    } else if (selectedMenuSection === 'R') {
-                      setRightMenuViewMode('auto');
-                    } else if (selectedMenuSection === 'R2') {
-                      setRightMenuViewMode2('auto');
-                    } else if (selectedSide === 'left') {
-                      // Fallback to entire left side
-                      setLeftMenuViewMode('auto');
-                      if (enableLeftStacking) setLeftMenuViewMode2('auto');
-                    } else if (selectedSide === 'right') {
-                      // Fallback to entire right side
-                      setRightMenuViewMode('auto');
-                      if (enableRightStacking) setRightMenuViewMode2('auto');
-                    }
-                  } else {
-                    setViewMode('auto');
-                  }
-                }}
-              />
-              <DropdownItem
-                icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18m-9 8h9m-9 4h9m-18-8v8a2 2 0 002 2h16a2 2 0 002-2v-8M5 6V4a2 2 0 012-2h10a2 2 0 012 2v2" /></svg>}
-                label="Table"
-                description="Compact table view"
-                isActive={(() => {
-                  if (leftMenuCategory || rightMenuCategory) {
-                    // Check specific quadrant selection
-                    if (selectedMenuSection === 'L') return leftMenuViewMode === 'table';
-                    if (selectedMenuSection === 'L2') return leftMenuViewMode2 === 'table';
-                    if (selectedMenuSection === 'R') return rightMenuViewMode === 'table';
-                    if (selectedMenuSection === 'R2') return rightMenuViewMode2 === 'table';
-                    // Fallback to side selection
-                    if (selectedSide === 'left') return leftMenuViewMode === 'table';
-                    if (selectedSide === 'right') return rightMenuViewMode === 'table';
-                    return false;
-                  }
-                  return viewMode === 'table';
-                })()}
-                onClick={() => {
-                  console.log('🔧 TABLE VIEW CLICKED - selectedMenuSection:', selectedMenuSection, 'selectedSide:', selectedSide);
-                  if (leftMenuCategory || rightMenuCategory) {
-                    // Apply to specific quadrant if selected
-                    if (selectedMenuSection === 'L') {
-                      console.log('🔧 Setting leftMenuViewMode to table');
-                      setLeftMenuViewMode('table');
-                    } else if (selectedMenuSection === 'L2') {
-                      console.log('🔧 Setting leftMenuViewMode2 to table - BEFORE:', leftMenuViewMode2);
-                      setLeftMenuViewMode2('table');
-                      console.log('🔧 Called setLeftMenuViewMode2(table)');
-                    } else if (selectedMenuSection === 'R') {
-                      console.log('🔧 Setting rightMenuViewMode to table');
-                      setRightMenuViewMode('table');
-                    } else if (selectedMenuSection === 'R2') {
-                      console.log('🔧 Setting rightMenuViewMode2 to table');
-                      setRightMenuViewMode2('table');
-                    } else if (selectedSide === 'left') {
-                      // Fallback to entire left side
-                      console.log('🔧 Setting entire left side to table');
-                      setLeftMenuViewMode('table');
-                      if (enableLeftStacking) setLeftMenuViewMode2('table');
-                    } else if (selectedSide === 'right') {
-                      // Fallback to entire right side
-                      console.log('🔧 Setting entire right side to table');
-                      setRightMenuViewMode('table');
-                      if (enableRightStacking) setRightMenuViewMode2('table');
-                    }
-                  } else {
-                    setViewMode('table');
-                  }
-                }}
-              />
-              <DropdownItem
-                icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
-                label="Card"
-                description="Visual cards"
-                isActive={(() => {
-                  if (leftMenuCategory || rightMenuCategory) {
-                    // Check specific quadrant selection
-                    if (selectedMenuSection === 'L') return leftMenuViewMode === 'card';
-                    if (selectedMenuSection === 'L2') return leftMenuViewMode2 === 'card';
-                    if (selectedMenuSection === 'R') return rightMenuViewMode === 'card';
-                    if (selectedMenuSection === 'R2') return rightMenuViewMode2 === 'card';
-                    // Fallback to side selection
-                    if (selectedSide === 'left') return leftMenuViewMode === 'card';
-                    if (selectedSide === 'right') return rightMenuViewMode === 'card';
-                    return false;
-                  }
-                  return viewMode === 'card';
-                })()}
-                onClick={() => {
-                  console.log('🔧 CARD VIEW CLICKED - selectedMenuSection:', selectedMenuSection, 'selectedSide:', selectedSide);
-                  if (leftMenuCategory || rightMenuCategory) {
-                    // Apply to specific quadrant if selected
-                    if (selectedMenuSection === 'L') {
-                      console.log('🔧 Setting leftMenuViewMode to card');
-                      setLeftMenuViewMode('card');
-                    } else if (selectedMenuSection === 'L2') {
-                      console.log('🔧 Setting leftMenuViewMode2 to card');
-                      setLeftMenuViewMode2('card');
-                    } else if (selectedMenuSection === 'R') {
-                      console.log('🔧 Setting rightMenuViewMode to card');
-                      setRightMenuViewMode('card');
-                    } else if (selectedMenuSection === 'R2') {
-                      console.log('🔧 Setting rightMenuViewMode2 to card');
-                      setRightMenuViewMode2('card');
-                    } else if (selectedSide === 'left') {
-                      // Fallback to entire left side
-                      console.log('🔧 Setting entire left side to card');
-                      setLeftMenuViewMode('card');
-                      if (enableLeftStacking) setLeftMenuViewMode2('card');
-                    } else if (selectedSide === 'right') {
-                      // Fallback to entire right side
-                      console.log('🔧 Setting entire right side to card');
-                      setRightMenuViewMode('card');
-                      if (enableRightStacking) setRightMenuViewMode2('card');
-                    }
-                  } else {
-                    setViewMode('card');
-                  }
-                }}
-              />
-              
               <DropdownSeparator />
               <DropdownItem
                 icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>}
@@ -1711,72 +1206,132 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               />
             </ToolbarDropdown>
 
-            {/* Mode Selection - Single or Dual */}
-            <ToolbarDropdown
-              label="Menu Mode"
-              icon={
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            {/* Dual Menu Config Dropdown - Only show when horizontal */}
+            {orientation === 'horizontal' && (
+              <ToolbarDropdown
+                label="Dual Config"
+                icon={
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
                 </svg>
-              }
-              isActive={true}
-            >
-                {/* Mode Selection */}
+                }
+                isActive={!!dualMenuConfigSide}
+              >
+                {/* Side Selection */}
                 <div className="px-4 py-2 border-b border-neutral-600/30">
-                  <div className="text-xs text-neutral-400 font-medium mb-2">MENU MODE</div>
+                  <div className="text-xs text-neutral-400 font-medium mb-2">CONFIGURE SIDE</div>
                   <DropdownItem
-                    icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>}
-                    label="Single Menu"
-                    description="One category display"
-                    isActive={!leftMenuCategory && !rightMenuCategory}
-                    onClick={() => {
-                      setLeftMenuCategory(null);
-                      setRightMenuCategory(null);
-                      setSelectedSide('');
-                    }}
+                    icon={<svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" /></svg>}
+                    label="Configure Left Menu"
+                    description="Set left side options"
+                    isActive={dualMenuConfigSide === 'left'}
+                    onClick={() => setDualMenuConfigSide('left')}
                   />
                   <DropdownItem
-                    icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12" /></svg>}
-                    label="Dual Menu"
-                    description="Side-by-side categories"
-                    isActive={!!(leftMenuCategory || rightMenuCategory)}
-                    onClick={() => {
-                      // Clear single menu selection
-                      setSelectedMenuCategory(null);
-                      // Set default categories for dual menu if none selected
-                      if (!leftMenuCategory && !rightMenuCategory) {
-                        const categories = getUniqueCategories();
-                        if (categories.length >= 2) {
-                          setLeftMenuCategory(categories[0].slug);
-                          setRightMenuCategory(categories[1].slug);
-                        } else if (categories.length === 1) {
-                          setLeftMenuCategory(categories[0].slug);
-                        }
-                        setSelectedSide('left');
-                      }
-                    }}
+                    icon={<svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" /></svg>}
+                    label="Configure Right Menu"
+                    description="Set right side options"
+                    isActive={dualMenuConfigSide === 'right'}
+                    onClick={() => setDualMenuConfigSide('right')}
                   />
-                </div>
+                  <DropdownItem
+                    icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>}
+                    label="Clear Selection"
+                    description="Deselect all preview sections"
+                    isActive={!dualMenuConfigSide}
+                    onClick={() => setDualMenuConfigSide(null)}
+                  />
+            </div>
 
-                {/* Side Selection for Dual Mode */}
-                {(leftMenuCategory || rightMenuCategory) && (
+                {/* View Mode Configuration for Selected Side */}
+                {dualMenuConfigSide && (
                   <div className="px-4 py-2 border-b border-neutral-600/30">
-                    <div className="text-xs text-neutral-400 font-medium mb-2">SELECT SIDE TO CONFIGURE</div>
+                    <div className={`text-xs font-medium mb-2 ${
+                      dualMenuConfigSide === 'left' ? 'text-green-400' : 'text-blue-400'
+                    }`}>
+                      {dualMenuConfigSide.toUpperCase()} MENU VIEW MODE
+                    </div>
                     <DropdownItem
-                      icon={<div className="w-3 h-3 rounded bg-green-500" />}
-                      label="Left Side"
-                      description="Configure left menu"
-                      isActive={selectedSide === 'left'}
-                      onClick={() => setSelectedSide('left')}
+                      icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+                      label="Auto View"
+                      description="Smart view based on content"
+                      isActive={dualMenuConfigSide === 'left' ? leftMenuViewMode === 'auto' : rightMenuViewMode === 'auto'}
+                onClick={() => {
+                    if (dualMenuConfigSide === 'left') {
+                      setLeftMenuViewMode('auto');
+                    } else {
+                      setRightMenuViewMode('auto');
+                        }
+                      }}
                     />
                     <DropdownItem
-                      icon={<div className="w-3 h-3 rounded bg-blue-500" />}
-                      label="Right Side"
-                      description="Configure right menu"
-                      isActive={selectedSide === 'right'}
-                      onClick={() => setSelectedSide('right')}
+                      icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 6h18m-9 8h9m-9 4h9m-18-8v8a2 2 0 002 2h16a2 2 0 002-2v-8M5 6V4a2 2 0 012-2h10a2 2 0 012 2v2" /></svg>}
+                      label="Table View"
+                      description="Structured data layout"
+                      isActive={dualMenuConfigSide === 'left' ? leftMenuViewMode === 'table' : rightMenuViewMode === 'table'}
+                onClick={() => {
+                    if (dualMenuConfigSide === 'left') {
+                      setLeftMenuViewMode('table');
+                    } else {
+                      setRightMenuViewMode('table');
+                        }
+                      }}
                     />
-                  </div>
+                    <DropdownItem
+                      icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
+                      label="Card View"
+                      description="Visual card layout"
+                      isActive={dualMenuConfigSide === 'left' ? leftMenuViewMode === 'card' : rightMenuViewMode === 'card'}
+                onClick={() => {
+                    if (dualMenuConfigSide === 'left') {
+                      setLeftMenuViewMode('card');
+                    } else {
+                      setRightMenuViewMode('card');
+                        }
+                      }}
+                    />
+            </div>
+                )}
+
+                {/* Image Configuration for Selected Side */}
+                {dualMenuConfigSide && (
+                  <div className="px-4 py-2 border-b border-neutral-600/30">
+                    <div className={`text-xs font-medium mb-2 ${
+                      dualMenuConfigSide === 'left' ? 'text-green-400' : 'text-blue-400'
+                    }`}>
+                      {dualMenuConfigSide.toUpperCase()} MENU IMAGES
+                    </div>
+                    <DropdownItem
+                      icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" /></svg>}
+                      label="Show Images"
+                      description="Display product images"
+                      isActive={dualMenuConfigSide === 'left' ? leftMenuImages : rightMenuImages}
+                onClick={() => {
+                    if (dualMenuConfigSide === 'left') {
+                      setLeftMenuImages(true);
+                      if (enableLeftStacking) setLeftMenuImages2(true);
+                    } else {
+                      setRightMenuImages(true);
+                      if (enableRightStacking) setRightMenuImages2(true);
+                        }
+                      }}
+                    />
+                    <DropdownItem
+                      icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" /></svg>}
+                      label="Hide Images"
+                      description="Text-only display"
+                      isActive={dualMenuConfigSide === 'left' ? !leftMenuImages : !rightMenuImages}
+                onClick={() => {
+                    if (dualMenuConfigSide === 'left') {
+                      setLeftMenuImages(false);
+                      if (enableLeftStacking) setLeftMenuImages2(false);
+                    } else {
+                      setRightMenuImages(false);
+                      if (enableRightStacking) setRightMenuImages2(false);
+                        }
+                      }}
+                    />
+            </div>
                 )}
 
                 {/* Launch Dual Menu */}
@@ -1803,11 +1358,12 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                   />
             </div>
               </ToolbarDropdown>
-            
+            )}
+
             </div>
 
-          {/* Right Side - Categories, Columns & Launch */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Right Side - Categories Dropdown */}
+          <div className="flex items-center gap-3">
             
             {/* Categories Dropdown */}
             <ToolbarDropdown
@@ -1817,296 +1373,180 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
               }
-              isActive={!!(selectedMenuCategory || leftMenuCategory || rightMenuCategory || leftMenuCategory2 || rightMenuCategory2)}
+              isActive={!!(selectedMenuCategory || leftMenuCategory || rightMenuCategory)}
               className="dropdown-right"
             >
-              {/* Check if dual menu mode is active */}
-              {(() => {
-                const isDualMenuActive = !!(leftMenuCategory || rightMenuCategory || leftMenuCategory2 || rightMenuCategory2);
-                
-                return (
-                  <>
-                    {/* Only show Single Menu options if dual menu is NOT active */}
-                    {!isDualMenuActive && (
-                      <div className="px-3 py-2 border-b border-neutral-700/50">
-                        <div className="text-xs text-neutral-500 mb-1">SINGLE</div>
+              {/* Main Category Selection */}
+              <div className="px-4 py-2 border-b border-neutral-600/30">
+                <div className="text-xs text-neutral-400 font-medium mb-2">SINGLE MENU</div>
+                <DropdownItem
+                  icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
+                  label="All Categories"
+                  description="Show all products"
+                  isActive={!selectedMenuCategory}
+                  onClick={() => setSelectedMenuCategory(null)}
+                />
+                {getUniqueCategories().map(category => (
+                  <DropdownItem
+                    key={category.id}
+                    icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
+                    label={category.name}
+                    description={`${filteredProducts.filter(p => p.categories?.some(c => c.slug === category.slug)).length} products`}
+                    isActive={selectedMenuCategory === category.slug}
+                    onClick={() => setSelectedMenuCategory(category.slug)}
+                  />
+                ))}
+          </div>
+
+            {/* Dual Menu Configuration - Only show when horizontal */}
+            {orientation === 'horizontal' && (
+                <div className="px-4 py-2">
+                  <div className="text-xs text-neutral-400 font-medium mb-2">DUAL MENU SETUP</div>
+
+                {/* Left Menu Category */}
+                  <div className="mb-3">
+                    <div className="text-xs text-green-400 font-medium mb-1">Left Menu</div>
+                    <DropdownItem
+                      icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" /></svg>}
+                      label="None Selected"
+                      description="Choose left category"
+                      isActive={!leftMenuCategory}
+                      onClick={() => setLeftMenuCategory(null)}
+                    />
+                  {getUniqueCategories().map(category => (
+                      <DropdownItem
+                        key={`left-${category.id}`}
+                        icon={<svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
+                        label={category.name}
+                        description="Left menu category"
+                        isActive={leftMenuCategory === category.slug}
+                        onClick={() => setLeftMenuCategory(category.slug)}
+                      />
+                    ))}
+                  </div>
+
+                {/* Right Menu Category */}
+                  <div className="mb-3">
+                    <div className="text-xs text-blue-400 font-medium mb-1">Right Menu</div>
+                    <DropdownItem
+                      icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" /></svg>}
+                      label="None Selected"
+                      description="Choose right category"
+                      isActive={!rightMenuCategory}
+                      onClick={() => setRightMenuCategory(null)}
+                    />
+                  {getUniqueCategories().map(category => (
+                      <DropdownItem
+                        key={`right-${category.id}`}
+                        icon={<svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
+                        label={category.name}
+                        description="Right menu category"
+                        isActive={rightMenuCategory === category.slug}
+                        onClick={() => setRightMenuCategory(category.slug)}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Stacking Options */}
+                  <DropdownSeparator />
+                  <div className="text-xs text-neutral-400 font-medium mb-2">STACKING OPTIONS</div>
+                  <DropdownItem
+                    icon={<svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h7M4 12h7M4 18h7M15 9l3-3 3 3M15 15l3 3 3-3" /></svg>}
+                    label="Enable Left Stacking"
+                    description="Stack two categories on left"
+                    isActive={enableLeftStacking}
+                  onClick={() => setEnableLeftStacking(!enableLeftStacking)}
+                  />
+                  <DropdownItem
+                    icon={<svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 6h7M13 12h7M13 18h7M6 9l-3-3-3 3M6 15l-3 3-3-3" /></svg>}
+                    label="Enable Right Stacking"
+                    description="Stack two categories on right"
+                    isActive={enableRightStacking}
+                  onClick={() => setEnableRightStacking(!enableRightStacking)}
+                  />
+
+                  {/* Secondary Categories */}
+                {enableLeftStacking && (
+                    <div className="mt-3">
+                      <div className="text-xs text-green-400 font-medium mb-1">Left Bottom Category</div>
+                    {getUniqueCategories().map(category => (
                         <DropdownItem
-                          icon={null}
-                          label="All"
-                          description=""
-                          isActive={!selectedMenuCategory}
-                          onClick={() => {
-                            setSelectedMenuCategory(null);
-                            setLeftMenuCategory(null);
-                            setRightMenuCategory(null);
-                            setLeftMenuCategory2(null);
-                            setRightMenuCategory2(null);
-                          }}
+                          key={`left2-${category.id}`}
+                          icon={<svg className="w-4 h-4 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
+                          label={category.name}
+                          description="Left bottom category"
+                          isActive={leftMenuCategory2 === category.slug}
+                          onClick={() => setLeftMenuCategory2(category.slug)}
                         />
-                        {getUniqueCategories().map(category => (
-                          <DropdownItem
-                            key={category.id}
-                            icon={null}
-                            label={category.name}
-                            description=""
-                            isActive={selectedMenuCategory === category.slug}
-                            onClick={() => {
-                              setSelectedMenuCategory(category.slug);
-                              setLeftMenuCategory(null);
-                              setRightMenuCategory(null);
-                              setLeftMenuCategory2(null);
-                              setRightMenuCategory2(null);
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Dual Menu Configuration - All 4 Menus Equal */}
-                    {orientation === 'horizontal' && (
-                <div className="px-3 py-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs text-neutral-500">
-                      DUAL
-                      {isDualMenuActive && (
-                        <span className="ml-1 text-neutral-400">•</span>
-                      )}
-                      {selectedMenuSection && (
-                        <span className="ml-2 px-1 py-0.5 bg-neutral-700 rounded text-xs text-neutral-300">
-                          {selectedMenuSection}
-                        </span>
-                      )}
+                      ))}
                     </div>
-                    {isDualMenuActive && (
-                      <button
-                        onClick={() => {
-                          setLeftMenuCategory(null);
-                          setRightMenuCategory(null);
-                          setLeftMenuCategory2(null);
-                          setRightMenuCategory2(null);
-                          setEnableLeftStacking(false);
-                          setEnableRightStacking(false);
-                          setSelectedMenuSection(null);
-                        }}
-                        className="text-xs text-neutral-500 hover:text-neutral-300"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                  
-                    {/* All 4 Menu Selects - Equal and Independent */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* L - Top Left */}
-                    <select 
-                      value={leftMenuCategory || ''} 
-                      onChange={(e) => {
-                        setLeftMenuCategory(e.target.value || null);
-                        if (e.target.value) {
-                          setSelectedMenuCategory(null);
-                          setSelectedMenuSection('L');
-                        } else {
-                          if (selectedMenuSection === 'L') setSelectedMenuSection(null);
-                        }
-                      }}
-                      className={`px-2 py-1 rounded text-xs focus:outline-none transition-all ${
-                        selectedMenuSection === 'L' 
-                          ? 'bg-neutral-600 border-neutral-300 text-neutral-100 shadow-lg' 
-                          : 'bg-neutral-900 border-neutral-700 text-neutral-400'
-                      } border focus:border-neutral-500`}
-                    >
-                      <option value="">L</option>
-                      {getUniqueCategories().map(category => (
-                        <option key={`left-${category.id}`} value={category.slug}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                    
-                    {/* R - Top Right */}
-                    <select 
-                      value={rightMenuCategory || ''} 
-                      onChange={(e) => {
-                        setRightMenuCategory(e.target.value || null);
-                        if (e.target.value) {
-                          setSelectedMenuCategory(null);
-                          setSelectedMenuSection('R');
-                        } else {
-                          if (selectedMenuSection === 'R') setSelectedMenuSection(null);
-                        }
-                      }}
-                      className={`px-2 py-1 rounded text-xs focus:outline-none transition-all ${
-                        selectedMenuSection === 'R' 
-                          ? 'bg-neutral-600 border-neutral-300 text-neutral-100 shadow-lg' 
-                          : 'bg-neutral-900 border-neutral-700 text-neutral-400'
-                      } border focus:border-neutral-500`}
-                    >
-                      <option value="">R</option>
-                      {getUniqueCategories().map(category => (
-                        <option key={`right-${category.id}`} value={category.slug}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
+                  )}
 
-                    {/* L2 - Bottom Left */}
-                    <select 
-                      value={leftMenuCategory2 || ''} 
-                      onChange={(e) => {
-                        const value = e.target.value || null;
-                        setLeftMenuCategory2(value);
-                        setEnableLeftStacking(!!value);
-                        if (value) {
-                          setSelectedMenuCategory(null);
-                          setSelectedMenuSection('L2');
-                        } else {
-                          if (selectedMenuSection === 'L2') setSelectedMenuSection(null);
-                        }
-                      }}
-                      className={`px-2 py-1 rounded text-xs focus:outline-none transition-all ${
-                        selectedMenuSection === 'L2' 
-                          ? 'bg-neutral-600 border-neutral-300 text-neutral-100 shadow-lg' 
-                          : 'bg-neutral-900 border-neutral-700 text-neutral-400'
-                      } border focus:border-neutral-500`}
-                    >
-                      <option value="">L2</option>
-                      {getUniqueCategories().map(category => (
-                        <option key={`left2-${category.id}`} value={category.slug}>
-                          {category.name}
-                        </option>
+                {enableRightStacking && (
+                    <div className="mt-3">
+                      <div className="text-xs text-blue-400 font-medium mb-1">Right Bottom Category</div>
+                    {getUniqueCategories().map(category => (
+                        <DropdownItem
+                          key={`right2-${category.id}`}
+                          icon={<svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>}
+                          label={category.name}
+                          description="Right bottom category"
+                          isActive={rightMenuCategory2 === category.slug}
+                          onClick={() => setRightMenuCategory2(category.slug)}
+                        />
                       ))}
-                    </select>
-
-                    {/* R2 - Bottom Right */}
-                    <select 
-                      value={rightMenuCategory2 || ''} 
-                      onChange={(e) => {
-                        const value = e.target.value || null;
-                        setRightMenuCategory2(value);
-                        setEnableRightStacking(!!value);
-                        if (value) {
-                          setSelectedMenuCategory(null);
-                          setSelectedMenuSection('R2');
-                        } else {
-                          if (selectedMenuSection === 'R2') setSelectedMenuSection(null);
-                        }
-                      }}
-                      className={`px-2 py-1 rounded text-xs focus:outline-none transition-all ${
-                        selectedMenuSection === 'R2' 
-                          ? 'bg-neutral-600 border-neutral-300 text-neutral-100 shadow-lg' 
-                          : 'bg-neutral-900 border-neutral-700 text-neutral-400'
-                      } border focus:border-neutral-500`}
-                    >
-                      <option value="">R2</option>
-                      {getUniqueCategories().map(category => (
-                        <option key={`right2-${category.id}`} value={category.slug}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
-                  </>
-                );
-              })()}
             </ToolbarDropdown>
             
             {/* Column Selector - Context Aware for Dual Menu */}
             <ColumnSelector
               categories={
-                // If we have a selected side AND we're configuring for dual menu (at least one category set)
-                (selectedSide && (leftMenuCategory || rightMenuCategory))
+                orientation === 'horizontal' && dualMenuConfigSide
                   ? getUniqueCategories().filter(c => 
-                      c.slug === (selectedSide === 'left' 
+                      c.slug === (dualMenuConfigSide === 'left' 
                         ? (enableLeftStacking && leftMenuCategory2 ? leftMenuCategory2 : leftMenuCategory)
                         : (enableRightStacking && rightMenuCategory2 ? rightMenuCategory2 : rightMenuCategory))
                     )
                   : getUniqueCategories()
               }
-              selectedCategory={(() => {
-                // If we have a selected side AND we're configuring for dual menu
-                const selected = (selectedSide && (leftMenuCategory || rightMenuCategory))
-                  ? (selectedSide === 'left' 
+              selectedCategory={
+                orientation === 'horizontal' && dualMenuConfigSide
+                  ? (dualMenuConfigSide === 'left' 
                       ? (leftMenuCategory || undefined)
                       : (rightMenuCategory || undefined))
-                  : (selectedMenuCategory || undefined);
-                console.log('🔍 ColumnSelector state:');
-                console.log('  - selectedCategory:', selected);
-                console.log('  - leftMenuCategory:', leftMenuCategory);
-                console.log('  - rightMenuCategory:', rightMenuCategory);
-                console.log('  - selectedSide:', selectedSide);
-                return selected;
-              })()}
+                  : (selectedMenuCategory || undefined)
+              }
               categoryColumnConfigs={
-                // If we have a selected side AND we're configuring for dual menu
-                (selectedSide && (leftMenuCategory || rightMenuCategory))
-                  ? (selectedSide === 'left' ? leftMenuColumns : rightMenuColumns)
+                orientation === 'horizontal' && dualMenuConfigSide
+                  ? (dualMenuConfigSide === 'left' ? leftMenuColumns : rightMenuColumns)
                   : categoryColumnConfigs
               }
               onColumnsChange={(categorySlug: string, columns: string[]) => {
-                console.log('🔍 COLUMN CHANGE EVENT:');
-                console.log('  - categorySlug:', categorySlug);
-                console.log('  - columns:', columns);
-                console.log('  - leftMenuCategory:', leftMenuCategory);
-                console.log('  - rightMenuCategory:', rightMenuCategory);
-                console.log('  - selectedSide:', selectedSide);
-                
-                // ALWAYS save to the main categoryColumnConfigs
-                console.log('  - Saving to MAIN categoryColumnConfigs for', categorySlug);
-                setCategoryColumnConfigs(prev => {
-                  const newMap = new Map(prev).set(categorySlug, columns);
-                  console.log('  - Updated categoryColumnConfigs:', Array.from(newMap.entries()));
-                  return newMap;
-                });
-                
-                // ALSO save to side-specific maps if in dual menu mode
-                if (selectedSide && (leftMenuCategory || rightMenuCategory)) {
-                  if (selectedSide === 'left') {
-                    console.log('  - ALSO setting LEFT columns for', categorySlug);
-                    setLeftMenuColumns(prev => {
-                      const newMap = new Map(prev).set(categorySlug, columns);
-                      console.log('  - New leftMenuColumns:', Array.from(newMap.entries()));
-                      return newMap;
-                    });
+                if (orientation === 'horizontal' && dualMenuConfigSide) {
+                  if (dualMenuConfigSide === 'left') {
+                    setLeftMenuColumns(prev => new Map(prev).set(categorySlug, columns));
                   } else {
-                    console.log('  - ALSO setting RIGHT columns for', categorySlug);
-                    setRightMenuColumns(prev => {
-                      const newMap = new Map(prev).set(categorySlug, columns);
-                      console.log('  - New rightMenuColumns:', Array.from(newMap.entries()));
-                      return newMap;
-                    });
+                    setRightMenuColumns(prev => new Map(prev).set(categorySlug, columns));
                   }
+                } else {
+                  setCategoryColumnConfigs(prev => new Map(prev).set(categorySlug, columns));
                 }
               }}
             />
             
             {/* Launch Button */}
             <button
-              onClick={() => {
-                const isDualMenuActive = orientation === 'horizontal' && leftMenuCategory && rightMenuCategory;
-                if (isDualMenuActive) {
-                  launchDualMenu();
-                } else {
-                  openPopoutMenu(selectedMenuCategory || undefined);
-                }
-              }}
-              disabled={Array.from(openWindows.values()).filter(w => !w.closed).length >= 8}
-              className="flex items-center gap-1.5 px-2 h-[28px] text-xs transition-all duration-200 ease-out rounded border bg-transparent text-white border-neutral-600/50 hover:bg-neutral-600/10 hover:border-neutral-500/70 disabled:opacity-50 disabled:cursor-not-allowed"
-              title={
-                Array.from(openWindows.values()).filter(w => !w.closed).length >= 8
-                  ? "Maximum of 8 windows reached. Close some windows first."
-                  : orientation === 'horizontal' && leftMenuCategory && rightMenuCategory
-                  ? `Launch dual menu layout (${Array.from(openWindows.values()).filter(w => !w.closed).length}/8 windows)`
-                  : `Launch ${orientation} ${viewMode} menu ${showImages ? 'with' : 'without'} images (${Array.from(openWindows.values()).filter(w => !w.closed).length}/8 windows)`
-              }
+              onClick={() => openPopoutMenu(selectedMenuCategory || undefined)}
+              className="flex items-center gap-1.5 px-2 h-[28px] text-xs transition-all duration-200 ease-out rounded border bg-transparent text-white border-neutral-600/50 hover:bg-neutral-600/10 hover:border-neutral-500/70"
+              title={`Launch ${orientation} ${viewMode} menu ${showImages ? 'with' : 'without'} images`}
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
-              {Array.from(openWindows.values()).filter(w => !w.closed).length >= 8 
-                ? 'Max Reached' 
-                : orientation === 'horizontal' && leftMenuCategory && rightMenuCategory ? 'Launch Dual' : 'Launch'}
+              Launch
             </button>
           </div>
         </div>
@@ -2117,20 +1557,10 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
       {openWindows.size > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <h3 className="text-lg font-semibold text-white" style={{ fontFamily: 'Tiempo, serif' }}>Open Menu Windows</h3>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-300">({openWindows.size}/8)</span>
-                {openWindows.size >= 6 && (
-                  <span className="text-xs px-2 py-1 rounded bg-orange-600/20 text-orange-300 border border-orange-500/30">
-                    {openWindows.size >= 8 ? 'Max Reached' : `${8 - openWindows.size} left`}
-                  </span>
-                )}
-              </div>
-            </div>
+            <h3 className="text-lg font-semibold text-white" style={{ fontFamily: 'Tiempo, serif' }}>Open Menu Windows ({openWindows.size})</h3>
             <button
               onClick={closeAllWindows}
-              className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-neutral-400 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-300"
+              className="flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap bg-transparent text-red-400 border-red-500/30 hover:bg-red-600/10 hover:border-red-400/50 hover:text-red-300"
               style={{ fontFamily: 'Tiempo, serif' }}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2145,61 +1575,6 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               const category = urlParams.get('category');
               const isDual = urlParams.get('dual') === 'true';
               const orientation = urlParams.get('orientation') || 'horizontal';
-              const leftCategory = urlParams.get('leftCategory');
-              const rightCategory = urlParams.get('rightCategory');
-              const leftCategory2 = urlParams.get('leftCategory2');
-              const rightCategory2 = urlParams.get('rightCategory2');
-              const leftStacking = urlParams.get('leftStacking') === 'true';
-              const rightStacking = urlParams.get('rightStacking') === 'true';
-
-              // Get unique categories inline to avoid dependency issues
-              const categoryMap = new Map();
-              products.forEach(product => {
-                product.categories?.forEach(cat => {
-                  if (!categoryMap.has(cat.id)) {
-                    categoryMap.set(cat.id, cat);
-                  }
-                });
-              });
-              const uniqueCategories = Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-
-              // Build display name based on menu type
-              const getDisplayName = () => {
-                if (isDual) {
-                  const leftNames = [];
-                  const rightNames = [];
-                  
-                  // Left side categories
-                  if (leftCategory) {
-                    const leftCat = uniqueCategories.find(c => c.slug === leftCategory);
-                    leftNames.push(leftCat?.name || leftCategory);
-                  }
-                  if (leftStacking && leftCategory2) {
-                    const leftCat2 = uniqueCategories.find(c => c.slug === leftCategory2);
-                    leftNames.push(leftCat2?.name || leftCategory2);
-                  }
-                  
-                  // Right side categories
-                  if (rightCategory) {
-                    const rightCat = uniqueCategories.find(c => c.slug === rightCategory);
-                    rightNames.push(rightCat?.name || rightCategory);
-                  }
-                  if (rightStacking && rightCategory2) {
-                    const rightCat2 = uniqueCategories.find(c => c.slug === rightCategory2);
-                    rightNames.push(rightCat2?.name || rightCategory2);
-                  }
-                  
-                  const leftDisplay = leftNames.length > 0 ? leftNames.join(' + ') : 'Left';
-                  const rightDisplay = rightNames.length > 0 ? rightNames.join(' + ') : 'Right';
-                  
-                  return `${leftDisplay} | ${rightDisplay}`;
-                } else if (category) {
-                  const cat = uniqueCategories.find(c => c.slug === category);
-                  return cat?.name || category;
-                } else {
-                  return 'All Categories';
-                }
-              };
               
               return (
                 <div
@@ -2208,28 +1583,12 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-white" style={{ fontFamily: 'Tiempo, serif' }}>
-                      {getDisplayName()}
+                      {category 
+                        ? `${getUniqueCategories().find(c => c.slug === category)?.name || category}`
+                        : 'All Categories'
+                      }
                     </h4>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => refreshWindow(windowId)}
-                        disabled={refreshingWindows.has(windowId)}
-                        className="p-1 text-neutral-300 hover:text-white transition-all duration-200 ease-out disabled:opacity-50"
-                        title={refreshingWindows.has(windowId) ? "Refreshing..." : "Refresh Window Data"}
-                      >
-                        <svg className={`w-4 h-4 ${refreshingWindows.has(windowId) ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => editWindow(windowId)}
-                        className="p-1 text-neutral-300 hover:text-white transition-all duration-200 ease-out"
-                        title="Edit Window Settings"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
                       <button
                         onClick={() => focusWindow(windowId)}
                         className="p-1 text-white hover:text-white transition-all duration-200 ease-out"
@@ -2242,7 +1601,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                       </button>
                       <button
                         onClick={() => closeWindow(windowId)}
-                        className="p-1 text-neutral-400 hover:text-neutral-300 transition-all duration-200 ease-out"
+                        className="p-1 text-red-400 hover:text-red-300 transition-all duration-200 ease-out"
                         title="Close Window"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2252,16 +1611,18 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-white">
-                    <span className="px-2 py-1 rounded text-xs bg-neutral-600/20 text-neutral-300">
+                    <span className={`px-2 py-1 rounded text-xs ${
+                      orientation === 'vertical' ? 'bg-purple-600/20 text-purple-300' : 'bg-blue-600/20 text-blue-300'
+                    }`}>
                       {orientation}
                     </span>
                     {isDual && (
-                      <span className="px-2 py-1 rounded text-xs bg-neutral-600/20 text-neutral-300">
+                      <span className="px-2 py-1 rounded text-xs bg-green-600/20 text-green-300">
                         Dual
                       </span>
                     )}
                     <span className={`px-2 py-1 rounded text-xs ${
-                      window.closed ? 'bg-neutral-700/30 text-neutral-400' : 'bg-neutral-600/20 text-neutral-300'
+                      window.closed ? 'bg-red-600/20 text-red-300' : 'bg-green-600/20 text-green-300'
                     }`}>
                       {window.closed ? 'Closed' : 'Active'}
                     </span>
@@ -2273,60 +1634,38 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
         </div>
       )}
 
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="rounded-lg p-4 border bg-transparent border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 transition-all duration-200 ease-out">
+          <div className="text-2xl font-bold text-white" style={{ fontFamily: 'Tiempo, serif' }}>
+            {selectedMenuCategory 
+              ? filteredProducts.filter(p => p.categories?.some(c => c.slug === selectedMenuCategory)).length
+              : filteredProducts.length
+            }
+          </div>
+          <div className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>
+            {selectedMenuCategory ? 'Category Products' : 'Available Products'}
+          </div>
+        </div>
+        <div className="rounded-lg p-4 border bg-transparent border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 transition-all duration-200 ease-out">
+          <div className="text-2xl font-bold text-white" style={{ fontFamily: 'Tiempo, serif' }}>{productsByCategory.length}</div>
+          <div className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Categories</div>
+        </div>
+        <div className="rounded-lg p-4 border bg-transparent border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 transition-all duration-200 ease-out">
+          <div className="text-2xl font-bold text-white capitalize" style={{ fontFamily: 'Tiempo, serif' }}>{orientation}</div>
+          <div className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Display Mode</div>
+        </div>
+        <div className="rounded-lg p-4 border bg-transparent border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 transition-all duration-200 ease-out">
+          <div className="text-2xl font-bold text-white" style={{ fontFamily: 'Tiempo, serif' }}>{user?.location || 'Unknown'}</div>
+          <div className="text-sm text-white" style={{ fontFamily: 'Tiempo, serif' }}>Location</div>
+        </div>
+      </div>
 
-      {/* 
-        ===============================================
-        STABLE LAYOUT SYSTEM - DO NOT MODIFY
-        ===============================================
+      {/* Live Preview */}
+      <div className="flex-1 rounded-lg overflow-hidden border border-neutral-500/30 bg-transparent relative z-0">
         
-        This layout system ensures content NEVER overflows:
-        
-        1. Main container: overflow-hidden prevents any content from escaping
-        2. Toolbar: flex-shrink-0 keeps it always visible at top
-        3. Preview area: flex-1 takes remaining space, never exceeds viewport
-        4. Preview calculations: 
-           - Uses min() with multiple constraints to prevent overflow
-           - Fallback max dimensions (1200x675) for extreme cases
-           - Always includes maxWidth/maxHeight: 100% as final safeguard
-        5. Content scaling: transform scale(0.5) with 200% container for crisp display
-        
-        CRITICAL: Any changes must maintain these principles or layout will break
-        ===============================================
-      */}
-      {/* Live Preview - STABLE CONTAINER */}
-      <div className="flex-1 min-h-0 overflow-hidden w-full">
-        
-        <div className="relative bg-transparent h-full w-full max-w-full max-h-full">
-          {/* Show default state with logo and grid when no menu is selected */}
-          {!leftMenuCategory && !rightMenuCategory && !selectedMenuCategory ? (
-            <div className="min-h-screen w-full flex items-center justify-center relative">
-              {/* Subtle grid background pattern */}
-              <div 
-                className="absolute inset-0 opacity-10"
-                style={{
-                  backgroundImage: `
-                    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-                  `,
-                  backgroundSize: '50px 50px'
-                }}
-              />
-              
-              {/* Logo - Perfectly centered */}
-              <div className="relative z-10 flex flex-col items-center justify-center text-center">
-                <div className="flex items-center justify-center mb-8">
-                  <img 
-                    src="/logo123.png" 
-                    alt="Flora Logo" 
-                    className="w-32 h-32 opacity-80 filter drop-shadow-lg" 
-                  />
-                </div>
-                <p className="text-white/60 text-lg" style={{ fontFamily: 'Tiempo, serif' }}>
-                  Select a menu type to preview
-                </p>
-              </div>
-            </div>
-          ) : productsByCategory.length === 0 ? (
+        <div className="relative bg-transparent p-6">
+          {productsByCategory.length === 0 ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <p className="text-white" style={{ fontFamily: 'Tiempo, serif' }}>No products available for preview</p>
@@ -2334,66 +1673,56 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               </div>
             </div>
           ) : (
-            <div className="h-full w-full p-4 overflow-hidden">
-              <div className="h-full w-full flex items-center justify-center max-w-full max-h-full">
-                {/* STABLE PREVIEW CONTAINER - Never breaks layout */}
-                <div className="relative flex items-center justify-center" style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  maxWidth: '100%', 
-                  maxHeight: '100%' 
-                }}>
-                  {orientation === 'horizontal' && leftMenuCategory && rightMenuCategory ? (
-                    /* Dual Menu - 85" TV Scale Preview */
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div 
-                        className="relative overflow-hidden"
-                        style={{
-                          width: 'min(calc(100vw - 100px), calc((100vh - 150px) * 16/9), 1200px)',
-                          height: 'min(calc(100vh - 150px), calc((100vw - 100px) * 9/16), 675px)',
-                          aspectRatio: '16/9',
-                          maxWidth: '100%',
-                          maxHeight: '100%'
-                        }}
-                      >
-                        <div 
-                          className="origin-top-left absolute inset-0"
-                          style={{
-                            transform: 'scale(0.5)',
-                            width: '200%',
-                            height: '200%'
-                          }}
-                        >
-                        {/* Dual Menu Preview */}
-                        <div className="w-full h-full text-slate-900 overflow-hidden flex flex-col relative rounded-lg" 
+            <div className="space-y-6">
+              <div className="flex justify-center">
+                {/* Single Preview - Switches to Dual Menu when configured */}
+                <div className="relative group">
+                  <button
+                    onClick={() => {
+                      // For single menu, set it as "left" configuration for consistency
+                      // For dual menu setup, this will show the dual menu preview
+                      setDualMenuConfigSide('left');
+                    }}
+                    className={`relative bg-neutral-800/40 rounded-lg border overflow-hidden transition-all duration-200 cursor-pointer ${
+                      dualMenuConfigSide === 'left'
+                        ? 'border-green-500/50 ring-2 ring-green-400/50 bg-green-50/5'
+                        : 'border-neutral-500/30 hover:border-green-400/40 hover:bg-green-50/5 hover:ring-1 hover:ring-green-400/30'
+                    }`}
+                    style={orientation === 'horizontal' ? { width: '1200px', height: '675px' } : { width: '540px', height: '960px' }}
+                    title="Click to select and configure this menu preview"
+                  >
+                    <div 
+                      className="origin-top-left pointer-events-none"
+                      style={orientation === 'horizontal' ? {
+                        transform: 'scale(0.625)',
+                        width: '1920px',
+                        height: '1080px',
+                      } : {
+                        transform: 'scale(0.5)',
+                        width: '1080px',
+                        height: '1920px',
+                      }}
+                    >
+                      {orientation === 'horizontal' && leftMenuCategory && rightMenuCategory ? (
+                        /* Dual Menu Preview - Exact TV Menu Layout */
+                        <div className="h-screen text-slate-900 overflow-hidden flex flex-col relative" 
                              style={{ background: `linear-gradient(to bottom right, ${backgroundColor}, ${backgroundColor}dd, ${backgroundColor}bb)`, color: fontColor }}>
                           
                           {/* Dual Menu Content */}
-                          <div className="flex-1 overflow-hidden min-h-0">
+                          <div className="flex-1 overflow-hidden">
                             <div className="flex h-full">
-                              {/* Left Side - Individual Quadrants Clickable */}
-                              <div className="w-1/2 flex flex-col shadow-xl rounded-l-xl overflow-hidden relative border-r-2 border-r-slate-300/30">
+                              {/* Left Side */}
+                              <div className="w-1/2 flex flex-col border border-slate-200/40 border-r-1 shadow-xl rounded-l-xl overflow-hidden">
                                 {enableLeftStacking ? (
                                   /* Left Side - Stacked Layout */
                                   <div className="flex flex-col h-full">
-                                    {/* Top Left Menu - Full Quadrant Selectable */}
-                                      <div 
-                                        key={`left-top-${selectedMenuSection}`}
-                                        className="flex-1 flex flex-col cursor-pointer transition-all duration-300 hover:bg-white/5 relative"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedMenuSection('L');
-                                        setSelectedSide('left');  // Also set the side
-                                        console.log('L quadrant clicked - selectedMenuSection set to: L, selectedSide set to: left');
-                                      }}
-                                      style={{
-                                        border: selectedMenuSection === 'L' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                                        backgroundColor: selectedMenuSection === 'L' ? 'rgba(255,255,255,0.05)' : 'transparent',
-                                        borderRadius: '6px',
-                                        margin: '2px',
-                                        zIndex: selectedMenuSection === 'L' ? 10 : 1
-                                      }}
-                                      title="Click to configure L (top-left) menu"
+                                    {/* Top Left Menu */}
+                                    <div 
+                                      className={`flex-1 flex flex-col border-b border-slate-200/40 cursor-pointer transition-all duration-200 hover:bg-black/5 ${
+                                        dualMenuConfigSide === 'left' ? 'ring-2 ring-green-400/50 bg-green-50/10' : ''
+                                      }`}
+                                      onClick={() => handlePreviewSectionClick('left')}
+                                      title="Click to configure left menu"
                                     >
                                       <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={{
                                         background: pandaMode 
@@ -2496,30 +1825,17 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                           pandaMode={pandaMode}
                                           categoryFilter={leftMenuCategory}
                                           hideHeaders={true}
-                                          isDualMenuEmpty={!leftMenuCategory}
                                         />
                                       </div>
                                     </div>
                                     
-                                    {/* Bottom Left Menu - Full Quadrant Selectable */}
+                                    {/* Bottom Left Menu */}
                                     <div 
-                                      key={`left-bottom-${selectedMenuSection}`}
-                                      className="flex-1 flex flex-col cursor-pointer transition-all duration-300 hover:bg-white/5 relative"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedMenuSection('L2');
-                                        setSelectedSide('left');  // Also set the side
-                                        console.log('L2 quadrant clicked - selectedMenuSection set to: L2, selectedSide set to: left');
-                                      }}
-                                      style={{
-                                        border: selectedMenuSection === 'L2' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                                        backgroundColor: selectedMenuSection === 'L2' ? 'rgba(255,255,255,0.05)' : 'transparent',
-                                        borderRadius: '6px',
-                                        margin: '2px',
-                                        marginTop: '0px',
-                                        zIndex: selectedMenuSection === 'L2' ? 10 : 1
-                                      }}
-                                      title="Click to configure L2 (bottom-left) menu"
+                                      className={`flex-1 flex flex-col cursor-pointer transition-all duration-200 hover:bg-black/5 ${
+                                        dualMenuConfigSide === 'left' ? 'ring-2 ring-green-400/50 bg-green-50/10' : ''
+                                      }`}
+                                      onClick={() => handlePreviewSectionClick('left-bottom')}
+                                      title="Click to configure left bottom menu"
                                     >
                                       <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={{
                                         background: pandaMode 
@@ -2617,7 +1933,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                             products={filteredProducts.filter(p => p.categories?.some(c => c.slug === leftMenuCategory2))}
                                             categories={getUniqueCategories().filter(c => c.slug === leftMenuCategory2)}
                                             orientation={orientation}
-                                            viewMode={leftMenuViewMode2}
+                                            viewMode={leftMenuViewMode}
                                             showImages={leftMenuImages2}
                                             backgroundColor={backgroundColor}
                                             fontColor={fontColor}
@@ -2625,45 +1941,26 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                             pandaMode={pandaMode}
                                             categoryFilter={leftMenuCategory2}
                                             hideHeaders={true}
-                                            isDualMenuEmpty={!leftMenuCategory2}
                                           />
                                         ) : (
-                                          <LiveMenuPreview 
-                                            products={[]}
-                                            categories={[]}
-                                            orientation={orientation}
-                                            viewMode={leftMenuViewMode2}
-                                            showImages={leftMenuImages2}
-                                            backgroundColor={backgroundColor}
-                                            fontColor={fontColor}
-                                            containerColor={containerColor}
-                                            pandaMode={pandaMode}
-                                            categoryFilter=""
-                                            hideHeaders={true}
-                                            isDualMenuEmpty={true}
-                                          />
+                                          <div className="flex items-center justify-center h-full">
+                                            <div className="text-center">
+                                              <p className="text-xl mb-3" style={{ color: fontColor }}>No category selected</p>
+                                              <p className="text-sm text-gray-500">Select a bottom category for stacking</p>
+                                            </div>
+                                          </div>
                                         )}
                                       </div>
                                     </div>
                                   </div>
                                 ) : (
-                                  /* Left Side - Single Layout - Full Quadrant Selectable */
-                                  <div
-                                    key={`left-single-${selectedMenuSection}`}
-                                    className="cursor-pointer transition-all duration-300 hover:bg-white/5 relative h-full flex flex-col"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedMenuSection('L');
-                                      console.log('L single quadrant clicked');
-                                    }}
-                                    style={{
-                                      border: selectedMenuSection === 'L' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                                      backgroundColor: selectedMenuSection === 'L' ? 'rgba(255,255,255,0.05)' : 'transparent',
-                                      borderRadius: '6px',
-                                      margin: '2px',
-                                      zIndex: selectedMenuSection === 'L' ? 10 : 1
-                                    }}
-                                    title="Click to configure L (left) menu"
+                                  /* Left Side - Single Layout */
+                                  <div 
+                                    className={`cursor-pointer transition-all duration-200 hover:bg-black/5 ${
+                                      dualMenuConfigSide === 'left' ? 'ring-2 ring-green-400/50 bg-green-50/10' : ''
+                                    }`}
+                                    onClick={() => handlePreviewSectionClick('left')}
+                                    title="Click to configure left menu"
                                   >
                                     <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={{
                                       background: pandaMode 
@@ -2766,36 +2063,24 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                         pandaMode={pandaMode}
                                         categoryFilter={leftMenuCategory}
                                         hideHeaders={true}
-                                        isDualMenuEmpty={!leftMenuCategory}
                                       />
                                     </div>
                                   </div>
                                 )}
                               </div>
                               
-                              {/* Right Side - Individual Quadrants Clickable */}
-                              <div className="w-1/2 flex flex-col shadow-xl rounded-r-xl overflow-hidden relative border-l-2 border-l-slate-300/30">
+                              {/* Right Side - Similar structure with right category pricing */}
+                              <div className="w-1/2 flex flex-col border border-slate-200/40 border-l-1 shadow-xl rounded-r-xl overflow-hidden">
                                 {enableRightStacking ? (
                                   /* Right Side - Stacked Layout */
                                   <div className="flex flex-col h-full">
-                                    {/* Top Right Menu - Full Quadrant Selectable */}
-                                      <div 
-                                        key={`right-top-${selectedMenuSection}`}
-                                        className="flex-1 flex flex-col cursor-pointer transition-all duration-300 hover:bg-white/5 relative"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedMenuSection('R');
-                                        setSelectedSide('right');  // Also set the side
-                                        console.log('R quadrant clicked - selectedMenuSection set to: R, selectedSide set to: right');
-                                      }}
-                                      style={{
-                                        border: selectedMenuSection === 'R' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                                        backgroundColor: selectedMenuSection === 'R' ? 'rgba(255,255,255,0.05)' : 'transparent',
-                                        borderRadius: '6px',
-                                        margin: '2px',
-                                        zIndex: selectedMenuSection === 'R' ? 10 : 1
-                                      }}
-                                      title="Click to configure R (top-right) menu"
+                                    {/* Top Right Menu */}
+                                    <div 
+                                      className={`flex-1 flex flex-col border-b border-slate-200/40 cursor-pointer transition-all duration-200 hover:bg-black/5 ${
+                                        dualMenuConfigSide === 'right' ? 'ring-2 ring-blue-400/50 bg-blue-50/10' : ''
+                                      }`}
+                                      onClick={() => handlePreviewSectionClick('right')}
+                                      title="Click to configure right menu"
                                     >
                                       <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={{
                                         background: pandaMode 
@@ -2898,30 +2183,17 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                           pandaMode={pandaMode}
                                           categoryFilter={rightMenuCategory}
                                           hideHeaders={true}
-                                          isDualMenuEmpty={!rightMenuCategory}
                                         />
                                       </div>
                                     </div>
                                     
-                                    {/* Bottom Right Menu - Full Quadrant Selectable */}
+                                    {/* Bottom Right Menu */}
                                     <div 
-                                      key={`right-bottom-${selectedMenuSection}`}
-                                      className="flex-1 flex flex-col cursor-pointer transition-all duration-300 hover:bg-white/5 relative"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedMenuSection('R2');
-                                        setSelectedSide('right');  // Also set the side
-                                        console.log('R2 quadrant clicked - selectedMenuSection set to: R2, selectedSide set to: right');
-                                      }}
-                                      style={{
-                                        border: selectedMenuSection === 'R2' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                                        backgroundColor: selectedMenuSection === 'R2' ? 'rgba(255,255,255,0.05)' : 'transparent',
-                                        borderRadius: '6px',
-                                        margin: '2px',
-                                        marginTop: '0px',
-                                        zIndex: selectedMenuSection === 'R2' ? 10 : 1
-                                      }}
-                                      title="Click to configure R2 (bottom-right) menu"
+                                      className={`flex-1 flex flex-col cursor-pointer transition-all duration-200 hover:bg-black/5 ${
+                                        dualMenuConfigSide === 'right' ? 'ring-2 ring-blue-400/50 bg-blue-50/10' : ''
+                                      }`}
+                                      onClick={() => handlePreviewSectionClick('right-bottom')}
+                                      title="Click to configure right bottom menu"
                                     >
                                       <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={{
                                         background: pandaMode 
@@ -3019,7 +2291,7 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                             products={filteredProducts.filter(p => p.categories?.some(c => c.slug === rightMenuCategory2))}
                                             categories={getUniqueCategories().filter(c => c.slug === rightMenuCategory2)}
                                             orientation={orientation}
-                                            viewMode={rightMenuViewMode2}
+                                            viewMode={rightMenuViewMode}
                                             showImages={rightMenuImages2}
                                             backgroundColor={backgroundColor}
                                             fontColor={fontColor}
@@ -3027,45 +2299,26 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                             pandaMode={pandaMode}
                                             categoryFilter={rightMenuCategory2}
                                             hideHeaders={true}
-                                            isDualMenuEmpty={!rightMenuCategory2}
                                           />
                                         ) : (
-                                          <LiveMenuPreview 
-                                            products={[]}
-                                            categories={[]}
-                                            orientation={orientation}
-                                            viewMode={rightMenuViewMode2}
-                                            showImages={rightMenuImages2}
-                                            backgroundColor={backgroundColor}
-                                            fontColor={fontColor}
-                                            containerColor={containerColor}
-                                            pandaMode={pandaMode}
-                                            categoryFilter=""
-                                            hideHeaders={true}
-                                            isDualMenuEmpty={true}
-                                          />
+                                          <div className="flex items-center justify-center h-full">
+                                            <div className="text-center">
+                                              <p className="text-xl mb-3" style={{ color: fontColor }}>No category selected</p>
+                                              <p className="text-sm text-gray-500">Select a bottom category for stacking</p>
+                                            </div>
+                                          </div>
                                         )}
                                       </div>
                                     </div>
                                   </div>
                                 ) : (
-                                  /* Right Side - Single Layout - Full Quadrant Selectable */
+                                  /* Right Side - Single Layout */
                                   <div 
-                                    key={`right-single-${selectedMenuSection}`}
-                                    className="cursor-pointer transition-all duration-300 hover:bg-white/5 relative h-full flex flex-col"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedMenuSection('R');
-                                      console.log('R single quadrant clicked');
-                                    }}
-                                    style={{
-                                      border: selectedMenuSection === 'R' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                                      backgroundColor: selectedMenuSection === 'R' ? 'rgba(255,255,255,0.05)' : 'transparent',
-                                      borderRadius: '6px',
-                                      margin: '2px',
-                                      zIndex: selectedMenuSection === 'R' ? 10 : 1
-                                    }}
-                                    title="Click to configure R (right) menu"
+                                    className={`cursor-pointer transition-all duration-200 hover:bg-black/5 ${
+                                      dualMenuConfigSide === 'right' ? 'ring-2 ring-blue-400/50 bg-blue-50/10' : ''
+                                    }`}
+                                    onClick={() => handlePreviewSectionClick('right')}
+                                    title="Click to configure right menu"
                                   >
                                     <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={{
                                       background: pandaMode 
@@ -3168,7 +2421,6 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                         pandaMode={pandaMode}
                                         categoryFilter={rightMenuCategory}
                                         hideHeaders={true}
-                                        isDualMenuEmpty={!rightMenuCategory}
                                       />
                                     </div>
                                   </div>
@@ -3177,79 +2429,61 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             </div>
                           </div>
                         </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    /* Single Menu - 85" TV Scale Preview */
-                    <button
-                      onClick={() => {
-                        setSelectedSide('left');
-                      }}
-                      className="relative transition-all duration-200 cursor-pointer overflow-hidden"
-                      style={{ 
-                        width: orientation === 'horizontal' 
-                          ? 'min(calc(100vw - 100px), calc((100vh - 150px) * 16/9), 1200px)'
-                          : 'min(calc(100vw - 100px), calc((100vh - 150px) * 9/16), 675px)',
-                        height: orientation === 'horizontal'
-                          ? 'min(calc(100vh - 150px), calc((100vw - 100px) * 9/16), 675px)'
-                          : 'min(calc(100vh - 150px), calc((100vw - 100px) * 16/9), 1200px)',
-                        aspectRatio: orientation === 'horizontal' ? '16/9' : '9/16',
-                        maxWidth: '100%',
-                        maxHeight: '100%'
-                      }}
-                      title="Click to select and configure this menu preview"
-                    >
-                      <div 
-                        className="origin-top-left absolute inset-0"
-                        style={{
-                          transform: 'scale(0.5)',
-                          width: '200%',
-                          height: '200%',
-                          overflow: 'hidden'
-                        }}
-                      >
-                        <SharedMenuDisplay 
+                      ) : (
+                        /* Single Menu Preview */
+                        <LiveMenuPreview 
                           products={filteredProducts}
                           categories={getUniqueCategories()}
                           orientation={orientation}
                           viewMode={viewMode}
                           showImages={showImages}
-                          leftMenuImages={leftMenuImages}
-                          rightMenuImages={rightMenuImages}
-                          categoryFilter={selectedMenuCategory || undefined}
-                          selectedCategoryName={selectedMenuCategory ? getUniqueCategories().find(c => c.slug === selectedMenuCategory)?.name : undefined}
-                          isDualMenu={false}
-                          selectedMenuSection={selectedMenuSection}
-                          onSectionClick={(section) => {
-                            setSelectedMenuSection(section);
-                            console.log('Quadrant selected:', section);
-                            // Auto-scroll to the relevant dropdown if needed
-                          }}
-                          leftMenuCategory={null}
-                          rightMenuCategory={null}
-                          leftMenuCategory2={null}
-                          rightMenuCategory2={null}
-                          leftMenuImages2={leftMenuImages2}
-                          rightMenuImages2={rightMenuImages2}
-                          enableLeftStacking={false}
-                          enableRightStacking={false}
                           backgroundColor={backgroundColor}
                           fontColor={fontColor}
                           containerColor={containerColor}
                           pandaMode={pandaMode}
-                          categoryColumnConfigs={categoryColumnConfigs}
-                          categoryBlueprintFields={categoryBlueprintFields}
-                          selectedSide={selectedSide}
-                          onSideClick={(side) => handlePreviewSectionClick(side)}
+                          categoryFilter={selectedMenuCategory || undefined}
                         />
+                      )}
+                    </div>
+                    {/* Launch Overlay */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                      <div className={`opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-sm rounded-lg px-4 py-2 flex items-center gap-2 ${
+                        orientation === 'horizontal' && leftMenuCategory && rightMenuCategory
+                          ? 'bg-green-500/90'
+                          : 'bg-white/90'
+                      }`}>
+                        <svg className={`w-5 h-5 ${orientation === 'horizontal' && leftMenuCategory && rightMenuCategory ? 'text-white' : 'text-black'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          {orientation === 'horizontal' && leftMenuCategory && rightMenuCategory ? (
+                            <>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12" />
+                            </>
+                          ) : (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          )}
+                        </svg>
+                        <span className={`font-medium text-sm ${orientation === 'horizontal' && leftMenuCategory && rightMenuCategory ? 'text-white' : 'text-black'}`} style={{ fontFamily: 'Tiempo, serif' }}>
+                          {orientation === 'horizontal' && leftMenuCategory && rightMenuCategory
+                            ? 'Launch Dual Menu'
+                            : `Launch ${selectedMenuCategory 
+                                ? getUniqueCategories().find(c => c.slug === selectedMenuCategory)?.name || 'Category'
+                                : 'Menu'
+                              }`
+                          }
+                        </span>
                       </div>
-                    </button>
-                  )}
+                    </div>
+                  </button>
                 </div>
               </div>
             </div>
           )}
+        </div>
+        
+        <div className="p-3 border-t border-neutral-500/30">
+          <div className="text-xs text-white text-center" style={{ fontFamily: 'Tiempo, serif' }}>
+            Interactive menu preview • Click preview to launch TV menu • Updates automatically
+          </div>
         </div>
       </div>
 

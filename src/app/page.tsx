@@ -238,6 +238,10 @@ export default function HomePage() {
   const [pendingRestockProducts, setPendingRestockProducts] = useState<Map<string, number>>(new Map());
   const [isCreatingPO, setIsCreatingPO] = useState(false);
   
+  // Adjustments grid controls state
+  const [showOnlySelectedAdjustments, setShowOnlySelectedAdjustments] = useState(false);
+  const [sortAlphabetically, setSortAlphabetically] = useState(true);
+  
   // Function to handle audit creation from header (legacy modal)
   const handleCreateAudit = useCallback(() => {
     if (adjustmentsGridRef.current) {
@@ -866,6 +870,7 @@ export default function HomePage() {
 
   const handleCloseCheckout = () => {
     setShowCheckout(false);
+    setIsCheckoutLoading(false);
   };
 
   // Show loading spinner while checking authentication
@@ -1024,6 +1029,10 @@ export default function HomePage() {
             onRemoveRestockProduct={handleRemoveRestockProduct}
             onUpdateRestockQuantity={handleUpdateRestockQuantity}
             isCreatingPO={isCreatingPO}
+            showOnlySelectedAdjustments={showOnlySelectedAdjustments}
+            onShowOnlySelectedAdjustmentsChange={setShowOnlySelectedAdjustments}
+            sortAlphabetically={sortAlphabetically}
+            onSortAlphabeticallyChange={setSortAlphabetically}
             unifiedSearchRef={unifiedSearchRef}
           />
           
@@ -1069,6 +1078,10 @@ export default function HomePage() {
                 onLoadingChange={handleProductsLoadingChange}
                 isAuditMode={isAuditMode}
                 isRestockMode={isRestockMode}
+                showOnlySelected={showOnlySelectedAdjustments}
+                onShowOnlySelectedChange={setShowOnlySelectedAdjustments}
+                sortAlphabetically={sortAlphabetically}
+                onSortAlphabeticallyChange={setSortAlphabetically}
               />
             </div>
           )}

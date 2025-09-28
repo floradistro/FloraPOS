@@ -16,7 +16,9 @@ interface OrderItemProps {
 const OrderCard: React.FC<OrderItemProps> = ({ order }) => {
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString('en-US', {
+      timeZone: 'America/New_York' // Force EST/EDT
+    });
   };
 
   const formatTotal = (total: string, currency: string) => {
@@ -25,7 +27,13 @@ const OrderCard: React.FC<OrderItemProps> = ({ order }) => {
 
   // Generate items summary
   const itemsSummary = order.line_items.length > 0 
-    ? order.line_items.slice(0, 2).map(item => `${item.quantity}x ${item.name}`).join(', ') +
+    ? order.line_items.slice(0, 2).map(item => {
+        // Fix quantity display - divide by 1000 if it appears to be in thousands
+        const displayQuantity = item.quantity >= 1000 && item.quantity % 1000 === 0 
+          ? item.quantity / 1000 
+          : item.quantity;
+        return `${displayQuantity}x ${item.name}`;
+      }).join(', ') +
       (order.line_items.length > 2 ? `, +${order.line_items.length - 2} more` : '')
     : 'No items';
 

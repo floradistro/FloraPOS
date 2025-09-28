@@ -71,6 +71,11 @@ interface HeaderProps {
   onRemoveRestockProduct?: (key: string) => void;
   onUpdateRestockQuantity?: (key: string, newQuantity: number) => void;
   isCreatingPO?: boolean;
+  // Adjustments view controls
+  showOnlySelectedAdjustments?: boolean;
+  onShowOnlySelectedAdjustmentsChange?: (show: boolean) => void;
+  sortAlphabetically?: boolean;
+  onSortAlphabeticallyChange?: (sort: boolean) => void;
   // Search ref
   unifiedSearchRef?: React.RefObject<UnifiedSearchInputRef>;
 }
@@ -125,6 +130,10 @@ export function Header({
   onRemoveRestockProduct,
   onUpdateRestockQuantity,
   isCreatingPO = false,
+  showOnlySelectedAdjustments = false,
+  onShowOnlySelectedAdjustmentsChange,
+  sortAlphabetically = true,
+  onSortAlphabeticallyChange,
   unifiedSearchRef
 }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -188,8 +197,71 @@ export function Header({
   return (
     <div className="header-nav bg-transparent flex-shrink-0 relative z-40">
       <div className="flex items-center h-full py-4 px-2 sm:px-4 relative gap-2">
+        {/* Back Button for History View */}
+        {currentView === 'history' && (
+          <button
+            onClick={() => onViewChange?.('adjustments')}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-transparent hover:bg-neutral-800/50 text-neutral-300 hover:text-neutral-100 rounded-lg transition-all duration-200 border border-neutral-500/30 hover:border-neutral-400/50"
+            style={{ fontFamily: 'Tiempo, serif' }}
+          >
+            <svg 
+              className="w-4 h-4" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M15 19l-7-7 7-7" 
+              />
+            </svg>
+            Back to Audit
+          </button>
+        )}
+
+        {/* Left Controls - A-Z and Show Selected for adjustments view */}
+        {currentView === 'adjustments' && (
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* A-Z Sort Toggle */}
+            <button
+              onClick={() => onSortAlphabeticallyChange?.(!sortAlphabetically)}
+              className={`px-3 h-[30px] rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-2 whitespace-nowrap border flex-shrink-0 ${
+                sortAlphabetically 
+                  ? 'bg-neutral-800/90 text-white border-neutral-500' 
+                  : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+              }`}
+              title={sortAlphabetically ? 'Disable alphabetical sorting' : 'Enable alphabetical sorting'}
+              style={{ fontFamily: 'Tiempo, serif' }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+              </svg>
+              A-Z
+            </button>
+
+            {/* Show Selected Toggle */}
+            <button
+              onClick={() => onShowOnlySelectedAdjustmentsChange?.(!showOnlySelectedAdjustments)}
+              className={`px-3 h-[30px] rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-2 whitespace-nowrap border flex-shrink-0 ${
+                showOnlySelectedAdjustments 
+                  ? 'bg-neutral-800/90 text-white border-neutral-500' 
+                  : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
+              }`}
+              title={showOnlySelectedAdjustments ? 'Show all products' : 'Show only selected products'}
+              style={{ fontFamily: 'Tiempo, serif' }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+              </svg>
+              {showOnlySelectedAdjustments ? `Selected (${selectedCount})` : 'Selected'}
+            </button>
+          </div>
+        )}
+
         {/* Fixed Search Bar Container - Same position as adjustments view */}
-        <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0" style={{ marginLeft: '30px' }}>
+        <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0" style={{ marginLeft: (currentView === 'adjustments' || currentView === 'history') ? '0px' : '30px' }}>
           <UnifiedSearchInput
             ref={unifiedSearchRef}
             searchValue={searchQuery}
@@ -315,18 +387,19 @@ export function Header({
           {/* Adjustments view navigation buttons */}
           {(currentView === 'adjustments' || currentView === 'history') && (
             <>
-              {/* History Button */}
+              {/* History Button - Icon Only */}
               <button
                 onClick={() => onViewChange?.('history')}
-                className={`flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap ${
+                className={`flex items-center justify-center w-[30px] h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border ${
                   currentView === 'history'
                     ? 'bg-neutral-800/90 text-white border-neutral-500' 
                     : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-300'
                 }`}
-                style={{ fontFamily: 'Tiempo, serif' }}
                 title="View Adjustment History"
               >
-                <span>History</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </button>
 
               {/* History Filters - Only show in history view */}

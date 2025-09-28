@@ -358,8 +358,8 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
   // Save user
   const saveUser = async () => {
-    if (!editForm.email) {
-      setError('Email is required');
+    if (!editForm.email && !editForm.billing?.phone) {
+      setError('Either email or phone number is required');
       return;
     }
 
@@ -632,7 +632,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
         {/* Add Customer Form */}
         {showAddForm && (
-          <div className="border-b border-white/[0.08] px-6 py-4 bg-transparent">
+          <div className="border-b border-white/[0.08] p-4 bg-transparent">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-normal text-neutral-200" style={{ fontFamily: 'Tiempos, serif' }}>Add New Customer</h3>
               <IconButton
@@ -658,12 +658,12 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                   placeholder="Username *"
                 />
                 <input
-                  type="email"
+                  type="text"
                   value={editForm.email || ''}
                   onChange={(e) => updateField('email', e.target.value)}
                   className="w-full px-3 py-2 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-sm placeholder:text-neutral-500"
                   style={{ fontFamily: 'Tiempo, serif' }}
-                  placeholder="Email *"
+                  placeholder="Email (optional)"
                 />
               </div>
               <div className="space-y-3">
@@ -720,7 +720,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
         {/* Table View */}
         <div className="w-full">
           {/* Table Header */}
-          <div className="sticky top-0 bg-transparent backdrop-blur border-b border-white/[0.08] px-6 py-3 z-10">
+          <div className="sticky top-0 bg-transparent backdrop-blur border-b border-white/[0.08] p-4 z-10">
                          <div className="flex items-center gap-3 text-xs font-medium text-neutral-400 relative">
               <div className="w-6"></div> {/* Space for expand icon */}
               {columns.find(c => c.id === 'customer')?.visible && (
@@ -806,7 +806,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
           </div>
 
           {/* Table Rows */}
-          <div>
+          <div className="p-4">
           {users.map((user) => (
             <div
               key={user.id}
@@ -822,7 +822,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
             >
               {/* Customer Row - Single Line */}
               <div 
-                className="flex items-center gap-3 px-6 py-3 cursor-pointer select-none relative bg-inherit"
+                className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none relative bg-inherit"
                 style={{ zIndex: 2 }}
                 onClick={(e) => {
                   const target = e.target as HTMLElement;
@@ -1012,11 +1012,12 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                               <div className="bg-transparent border border-neutral-600/40 rounded p-2">
                                 <div className="text-neutral-400 text-xs mb-1" style={{ fontFamily: 'Tiempo, serif' }}>Email:</div>
                                 <input
-                                  type="email"
+                                  type="text"
                                   value={editForm.email || ''}
                                   onChange={(e) => updateField('email', e.target.value)}
                                   className="w-full px-2 py-1 bg-transparent border border-neutral-600/40 rounded text-neutral-300 focus:border-neutral-400/60 focus:outline-none text-xs placeholder:text-neutral-500"
                                   style={{ fontFamily: 'Tiempo, serif' }}
+                                  placeholder="Email (optional)"
                                 />
                               </div>
                               <div className="bg-transparent border border-neutral-600/40 rounded p-2">

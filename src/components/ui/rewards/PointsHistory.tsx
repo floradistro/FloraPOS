@@ -15,7 +15,9 @@ interface HistoryEventItemProps {
 
 const HistoryEventCard: React.FC<HistoryEventItemProps> = ({ event }) => {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString('en-US', {
+      timeZone: 'America/New_York' // Force EST/EDT
+    });
   };
 
   const formatEventType = (type: string) => {

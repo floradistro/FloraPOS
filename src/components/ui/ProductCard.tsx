@@ -24,7 +24,7 @@ interface ProductCardProps {
   onStockValueChange?: (productId: number, variantId: number | null, newStock: number | string) => void;
   onStockValueApply?: (productId: number, variantId: number | null, newStock: number, currentStock: number) => void;
   onInventoryAdjustment?: (productId: number, variantId: number | null, adjustment: number, reason?: string) => void;
-  onProductSelection?: (product: Product, event?: React.MouseEvent) => void;
+  onProductSelection?: (product: Product) => void;
 }
 
 const ProductCard = memo<ProductCardProps>(({
@@ -58,32 +58,39 @@ const ProductCard = memo<ProductCardProps>(({
   let displayPrice = product.regular_price;
   let isInStock = false;
 
-  if (product.has_variants && product.variants) {
-    const selectedVariantId = selectedVariants[product.id];
-    const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
-    
-    if (selectedVariant) {
-      // Show selected variant stock and price
-      if (userLocationId) {
-        const locationInventory = selectedVariant.inventory.find(inv => 
-          inv.location_id === userLocationId
-        );
-        stockDisplay = locationInventory?.quantity || 0;
+  // Handle variant products (with or without loaded variants)
+  if (product.has_variants) {
+    // If variants are loaded
+    if (product.variants) {
+      const selectedVariantId = selectedVariants[product.id];
+      const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
+      
+      if (selectedVariant) {
+        // Show selected variant stock and price
+        // When location is selected, inventory is already filtered to that location by the API
+        stockDisplay = Number(selectedVariant.total_stock) || 0;
+        displayPrice = selectedVariant.sale_price || selectedVariant.regular_price;
+        isInStock = !isNaN(stockDisplay) && stockDisplay > 0;
       } else {
-        stockDisplay = selectedVariant.total_stock;
+        // No variant selected, show aggregate info
+        // Sum all variant stocks (already filtered by location if applicable)
+        stockDisplay = product.variants.reduce((sum, variant) => {
+          const variantStock = Number(variant.total_stock) || 0;
+          return sum + variantStock;
+        }, 0);
+        isInStock = !isNaN(stockDisplay) && stockDisplay > 0;
       }
-      displayPrice = selectedVariant.sale_price || selectedVariant.regular_price;
-      isInStock = stockDisplay > 0;
     } else {
-      // No variant selected, show aggregate info
-      stockDisplay = product.variants.reduce((sum, variant) => {
-        if (userLocationId) {
-          const locationInventory = variant.inventory.find(inv => inv.location_id === userLocationId);
-          return sum + (locationInventory?.quantity || 0);
-        } else {
-          return sum + variant.total_stock;
-        }
-      }, 0);
+      // Variants not loaded yet (lazy loading)
+      // Use parent product stock as placeholder
+      if (userLocationId) {
+        const locationInventory = product.inventory?.find(inv => 
+          parseInt(inv.location_id) === userLocationId
+        );
+        stockDisplay = locationInventory?.stock || 0;
+      } else {
+        stockDisplay = product.total_stock || 0;
+      }
       isInStock = stockDisplay > 0;
     }
   } else {
@@ -136,19 +143,20 @@ const ProductCard = memo<ProductCardProps>(({
 
   // Handle click with selection
   const handleCardClick = useCallback((e: React.MouseEvent) => {
-    // Don't trigger card click if clicking dropdown
-    if ((e.target as HTMLElement).closest('.pricing-tier-dropdown')) {
+    // Don't trigger card click if clicking dropdown or variant selector
+    if ((e.target as HTMLElement).closest('.pricing-tier-dropdown') || 
+        (e.target as HTMLElement).closest('select')) {
       return;
     }
     // Call selection handler if provided
-    onProductSelection?.(product, e);
+    onProductSelection?.(product);
   }, [onProductSelection, product]);
 
   return (
     <div 
       key={product.id} 
       onClick={handleCardClick}
-      className={`p-3 relative cursor-pointer group transition-all duration-300 ease-out ${
+      className={`p-2 relative cursor-pointer group apple-smooth min-h-[160px] flex flex-col ${
         isAuditMode 
           ? isAuditSelected
             ? 'bg-blue-950/30'
@@ -171,7 +179,7 @@ const ProductCard = memo<ProductCardProps>(({
                 e.stopPropagation();
                 setShowPricingDropdown(!showPricingDropdown);
               }}
-              className="w-6 h-6 flex items-center justify-center rounded bg-neutral-800/80 border border-white/20 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700/80 transition-all duration-200"
+              className="w-6 h-6 flex items-center justify-center rounded bg-neutral-800/80 border border-white/20 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700/80 apple-smooth-fast button-hover"
               title="Select Pricing Tier"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,7 +198,7 @@ const ProductCard = memo<ProductCardProps>(({
                       setSelectedPricingTier(tierName);
                       setShowPricingDropdown(false);
                     }}
-                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                    className={`w-full px-3 py-2 text-left text-sm apple-smooth-fast ${
                       selectedPricingTier === tierName
                         ? 'bg-neutral-700 text-white'
                         : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
@@ -206,9 +214,9 @@ const ProductCard = memo<ProductCardProps>(({
         </div>
       )}
         {/* Product Image and Name Row */}
-        <div className="flex gap-4 items-center mb-4">
+        <div className="flex gap-2 items-center mb-2">
           {/* Product Image */}
-          <div className="w-16 h-16 relative overflow-hidden flex-shrink-0 rounded bg-neutral-800/30 border border-white/10 group-hover:border-white/20 transition-colors duration-200">
+          <div className="w-12 h-12 relative overflow-hidden flex-shrink-0 rounded bg-neutral-800/30 border border-white/10 group-hover:border-white/20 apple-smooth">
             {product.image ? (
               <img 
                 src={product.image} 
@@ -221,8 +229,8 @@ const ProductCard = memo<ProductCardProps>(({
                 <Image 
                   src="/logo123.png" 
                   alt="Flora POS Logo" 
-                  width={64}
-                  height={64}
+                  width={48}
+                  height={48}
                   className="object-contain opacity-30 group-hover:opacity-40 transition-opacity duration-200"
                   priority
                 />
@@ -232,7 +240,7 @@ const ProductCard = memo<ProductCardProps>(({
 
           {/* Product Name and Category - Centered in remaining space */}
           <div className="flex-1 flex flex-col justify-center items-center text-center">
-            <h3 className="text-neutral-200 font-normal text-base mb-2 line-clamp-2 leading-tight group-hover:text-white transition-colors duration-200" style={{ fontFamily: 'Tiempos, serif' }}>
+            <h3 className="text-neutral-200 font-normal text-sm mb-1 line-clamp-2 leading-tight group-hover:text-white transition-colors duration-200" style={{ fontFamily: 'Tiempos, serif' }}>
               {product.name}
             </h3>
             {product.categories.length > 0 && (
@@ -314,8 +322,8 @@ const ProductCard = memo<ProductCardProps>(({
         </div>
       )}
 
-      {/* Variant Selector and Quantity Selector / Audit Controls */}
-      <div className="mb-4">
+      {/* Variant Selector and Quantity Selector / Audit Controls - Flexible space */}
+      <div className="flex-1">
         {isAuditMode ? (
           <div className="space-y-2">
             {product.has_variants && product.variants ? (
@@ -413,26 +421,39 @@ const ProductCard = memo<ProductCardProps>(({
           /* Normal Mode - Full Quantity Selector */
           product.has_variants && product.variants ? (
             <div className="space-y-2">
-              {/* Variant Dropdown - Reserved space, visible when selected */}
-              <div className="min-h-[40px] relative">
-                {isSelected ? (
-                  <div className="animate-in fade-in duration-200 ease-out">
+              {/* Variant Dropdown - Always visible when product is selected */}
+              {isSelected ? (
+                <div 
+                  className="space-y-1"
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  {/* Variant Dropdown */}
+                  <div className="animate-in fade-in duration-200 ease-out relative">
                     <select
                       value={selectedVariants[product.id] || ''}
                       onChange={(e) => {
+                        e.stopPropagation();
                         if (e.target.value) {
                           onVariantSelect(product.id, parseInt(e.target.value));
                         }
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
                       }}
                       className="w-full px-3 py-2 bg-neutral-900 border border-neutral-600 rounded-lg text-neutral-300 text-sm focus:bg-neutral-800 focus:border-neutral-500 focus:outline-none transition-all duration-200 appearance-none cursor-pointer"
                       style={{ fontFamily: 'Tiempos, serif' }}
                     >
                       <option value="">Select variant...</option>
                       {product.variants.map((variant) => {
-                        const variantStock = userLocationId 
-                          ? variant.inventory.find(inv => inv.location_id === userLocationId)?.quantity || 0
-                          : variant.total_stock;
-                        const variantInStock = variantStock > 0;
+                        // Inventory is already filtered by location if one is selected
+                        const variantStock = Number(variant.total_stock) || 0;
+                        const variantInStock = !isNaN(variantStock) && variantStock > 0;
+                        // Format stock to 2 decimal places if it's a decimal, otherwise show as integer
+                        const formattedStock = isNaN(variantStock) ? '0' : (Number.isInteger(variantStock) ? variantStock.toString() : variantStock.toFixed(2));
                         
                         return (
                           <option
@@ -441,49 +462,61 @@ const ProductCard = memo<ProductCardProps>(({
                             disabled={!variantInStock}
                             className={variantInStock ? 'text-neutral-300' : 'text-neutral-500'}
                           >
-                            {variant.name} ({variantInStock ? `${variantStock} in stock` : 'Out of stock'})
+                            {variant.name} - Stock: {formattedStock}
                           </option>
                         );
                       })}
                     </select>
                     
                     {/* Custom dropdown arrow */}
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none flex items-center justify-center">
                       <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
+                    
                   </div>
-                ) : null}
-              </div>
-
-              {/* Quantity selector - Reserved space, visible when variant is selected */}
-              <div className="min-h-[60px]">
-                {!isAuditMode && isSelected && selectedVariants[product.id] ? (
-                  <div className="animate-in fade-in duration-200 ease-out delay-100">
-                    <div className="pt-3 border-t border-neutral-600/30">
-                      <QuantitySelector
-                        productId={selectedVariants[product.id]} // Use variant ID
-                        basePrice={parseFloat(
-                          product.variants.find(v => v.id === selectedVariants[product.id])?.sale_price ||
-                          product.variants.find(v => v.id === selectedVariants[product.id])?.regular_price ||
-                          '0'
-                        )}
-                        blueprintPricing={product.blueprintPricing}
-                        onQuantityChange={(quantity, price, category) => 
-                          onQuantityChange(product.id, quantity, price, category)
-                        }
-                        disabled={false}
-                        hidePrices={isSalesView}
-                        selectedPricingTier={selectedPricingTier}
-                      />
+                  
+                  {/* Quantity selector - visible when variant is selected */}
+                  {!isAuditMode && selectedVariants[product.id] ? (
+                    <div className="animate-in fade-in duration-200 ease-out">
+                      <div className="pt-1">
+                        {(() => {
+                          const selectedVariant = product.variants.find(v => v.id === selectedVariants[product.id]);
+                          if (!selectedVariant) return null;
+                          // When location is selected, inventory is already filtered to that location
+                          const stock = Number(selectedVariant.total_stock) || 0;
+                          // Format stock to 2 decimal places if it's a decimal, otherwise show as integer
+                          const formattedStock = isNaN(stock) ? '0' : (Number.isInteger(stock) ? stock.toString() : stock.toFixed(2));
+                          
+                          return (
+                            <QuantitySelector
+                              productId={selectedVariants[product.id]} // Use variant ID
+                              basePrice={parseFloat(
+                                selectedVariant.sale_price || selectedVariant.regular_price || '0'
+                              )}
+                              blueprintPricing={product.blueprintPricing}
+                              onQuantityChange={(quantity, price, category) => 
+                                onQuantityChange(product.id, quantity, price, category)
+                              }
+                              disabled={false}
+                              hidePrices={isSalesView}
+                              selectedPricingTier={selectedPricingTier}
+                            />
+                          );
+                        })()}
+                      </div>
                     </div>
-                  </div>
-                ) : null}
-              </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="min-h-[40px] flex items-center justify-center text-neutral-500 text-sm text-center px-2">
+                  Click to select variant
+                </div>
+              )}
             </div>
           ) : !isAuditMode ? (
-            <div className="min-h-[60px]">
+            <div className="min-h-[40px]">
               {isSelected ? (
                 <div className="animate-in fade-in duration-200 ease-out">
                   <QuantitySelector
@@ -543,9 +576,9 @@ const ProductCard = memo<ProductCardProps>(({
                ? 'opacity-100' 
                : 'opacity-0'
            }`} style={{ fontFamily: 'Tiempos, serif' }}>
-             {product.has_variants && product.variants
-               ? `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`
-               : `${typeof stockDisplay === 'number' ? (product.blueprintPricing ? stockDisplay.toFixed(2) : Math.floor(stockDisplay)) : stockDisplay} current stock`}
+             {typeof stockDisplay === 'number' 
+               ? `${isNaN(Number(stockDisplay)) ? '0' : (Number.isInteger(Number(stockDisplay)) ? Number(stockDisplay) : Number(stockDisplay).toFixed(2))} current stock`
+               : `${stockDisplay} current stock`}
            </span>
          ) : null}
        </div>
@@ -553,9 +586,19 @@ const ProductCard = memo<ProductCardProps>(({
        {/* Stock Info - Bottom Center - Normal Mode Only */}
        {!isAuditMode && (
          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-           {product.has_variants && !selectedVariants[product.id] 
-             ? `${stockDisplay} total stock` 
-             : `${stockDisplay} in stock`}
+           {product.has_variants && selectedVariants[product.id] 
+             ? (() => {
+                 const selectedVariant = product.variants?.find(v => v.id === selectedVariants[product.id]);
+                 if (selectedVariant) {
+                   const stock = Number(selectedVariant.total_stock) || 0;
+                   const formattedStock = isNaN(stock) ? '0' : (Number.isInteger(stock) ? stock.toString() : stock.toFixed(2));
+                   return `${formattedStock} units`;
+                 }
+                 return `${isNaN(Number(stockDisplay)) ? '0' : (Number.isInteger(Number(stockDisplay)) ? Number(stockDisplay) : Number(stockDisplay).toFixed(2))} in stock`;
+               })()
+             : product.has_variants && !selectedVariants[product.id] 
+               ? `${isNaN(Number(stockDisplay)) ? '0' : (Number.isInteger(Number(stockDisplay)) ? Number(stockDisplay) : Number(stockDisplay).toFixed(2))} total stock` 
+               : `${isNaN(Number(stockDisplay)) ? '0' : (Number.isInteger(Number(stockDisplay)) ? Number(stockDisplay) : Number(stockDisplay).toFixed(2))} in stock`}
          </div>
        )}
 

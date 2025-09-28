@@ -794,7 +794,7 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
             stopScanning();
             onCancel();
           }}
-          className="w-full px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-neutral-300 rounded text-xs transition-colors"
+          className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 text-neutral-400 hover:text-neutral-200 rounded-lg text-xs transition-all duration-200 ease-out backdrop-blur-sm"
         >
           Cancel
         </button>

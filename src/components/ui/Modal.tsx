@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Button } from './Button';
+import { UnifiedPopout } from './UnifiedPopout';
 
 interface ModalProps {
   isOpen: boolean;
@@ -12,22 +13,29 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, className = '' }: ModalProps) {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
-      <div 
-        className={`bg-neutral-900/80 border border-neutral-700/50 rounded-lg p-6 max-w-md w-full mx-4 backdrop-blur-sm ${className}`}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <UnifiedPopout isOpen={isOpen} onClose={onClose} width="min(90vw, 600px)" height="auto">
+      <div className={`flex flex-col ${className}`}>
         {title && (
-          <h3 className="text-lg font-medium text-neutral-200 mb-4">{title}</h3>
+          <div className="px-4 py-3 border-b border-neutral-500/20 flex items-center justify-between">
+            <h3 className="text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
+              {title}
+            </h3>
+            <button
+              onClick={onClose}
+              className="text-neutral-400 hover:text-neutral-300 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         )}
-        <div className="text-neutral-200">
+        <div className="p-4 text-neutral-200">
           {children}
         </div>
       </div>
-    </div>
+    </UnifiedPopout>
   );
 }
 
@@ -60,13 +68,23 @@ export function ConfirmModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <p className="mb-6">{message}</p>
-      <div className="flex gap-3 justify-end">
-        <Button variant="ghost" onClick={onClose}>
+      <div className="flex items-center justify-end space-x-3 pt-2">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 text-sm bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-neutral-300 hover:text-white rounded-md transition-colors duration-200"
+        >
           {cancelText}
-        </Button>
-        <Button variant={variant} onClick={handleConfirm}>
+        </button>
+        <button
+          onClick={handleConfirm}
+          className={`px-6 py-2 text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neutral-800 ${
+            variant === 'danger' 
+              ? 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500' 
+              : 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500'
+          }`}
+        >
           {confirmText}
-        </Button>
+        </button>
       </div>
     </Modal>
   );
@@ -90,10 +108,13 @@ export function AlertModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <p className="mb-6">{message}</p>
-      <div className="flex justify-end">
-        <Button variant="primary" onClick={onClose}>
+      <div className="flex items-center justify-end space-x-3 pt-2">
+        <button
+          onClick={onClose}
+          className="px-6 py-2 text-sm bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-neutral-800"
+        >
           OK
-        </Button>
+        </button>
       </div>
     </Modal>
   );
