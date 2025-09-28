@@ -112,8 +112,9 @@ export async function POST(request: NextRequest) {
     }
     
     // 5. Award points using WC Points & Rewards Manager logic
+    // Use direct API call instead of going through proxy for server-side calls
     const adjustResponse = await fetch(
-      `http://localhost:3000/api/proxy/wc-points-rewards/user/${order.customer_id}/adjust`,
+      `${WOOCOMMERCE_API_URL}/wp-json/wc-points-rewards/v1/user/${order.customer_id}/adjust?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
