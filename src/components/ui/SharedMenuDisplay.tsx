@@ -934,7 +934,7 @@ export function SharedMenuDisplay({
                     )}
                     
                     {/* Conditional Layout: Table for Flower, Grid for Others */}
-                    {getActualViewMode(category.name, isLeftSide, categorySlug, quadrant) === 'table' ? (
+                    {getActualViewMode(category.name, false, null, undefined) === 'table' ? (
                       /* Table Layout - Single column if ≤ 13 products, 2-column if 14+ */
                       (() => {
                         const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);

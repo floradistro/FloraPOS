@@ -670,7 +670,7 @@ export const ProductGrid = forwardRef<{
       // Variants are already pre-loaded during initial fetch
       
       const selectedVariantId = selectedVariants[product.id];
-      const selectedVariant = product.variants.find(v => v.id === selectedVariantId);
+      const selectedVariant = product.variants?.find(v => v.id === selectedVariantId);
       
       if (!selectedVariant) {
         // No variant selected yet, do nothing
