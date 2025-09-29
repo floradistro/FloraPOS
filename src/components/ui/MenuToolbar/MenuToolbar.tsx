@@ -48,9 +48,9 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
       case 'right':
         return dualMenu.right;
       case 'leftBottom':
-        return dualMenu.leftBottom;
+        return dualMenu.leftBottom || { category: null, viewMode: 'auto', showImages: false };
       case 'rightBottom':
-        return dualMenu.rightBottom;
+        return dualMenu.rightBottom || { category: null, viewMode: 'auto', showImages: false };
       default:
         return dualMenu.left; // Default fallback
     }

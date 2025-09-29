@@ -125,9 +125,9 @@ export function SharedMenuDisplay({
     const allTiers: Array<{label: string, price: string, sortOrder: number}> = [];
 
     // Collect all tiers from all rule groups
-    product.blueprintPricing.ruleGroups.forEach(ruleGroup => {
+    product.blueprintPricing.ruleGroups.forEach((ruleGroup: any) => {
       if (ruleGroup.tiers && ruleGroup.tiers.length > 0) {
-        ruleGroup.tiers.forEach(tier => {
+        ruleGroup.tiers.forEach((tier: any) => {
           // Create a display label that combines tier info
           const label = tier.label || `${tier.min}${tier.unit || ''}`;
           const price = `$${tier.price.toFixed(2)}`;

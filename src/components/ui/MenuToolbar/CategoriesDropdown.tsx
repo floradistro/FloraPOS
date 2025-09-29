@@ -32,8 +32,8 @@ export const CategoriesDropdown: React.FC<CategoriesDropdownProps> = ({
         ...dualMenu,
         left: { ...dualMenu.left, category: null },
         right: { ...dualMenu.right, category: null },
-        leftBottom: { ...dualMenu.leftBottom, category: null },
-        rightBottom: { ...dualMenu.rightBottom, category: null },
+        leftBottom: { ...(dualMenu.leftBottom || { viewMode: 'auto', showImages: false }), category: null },
+        rightBottom: { ...(dualMenu.rightBottom || { viewMode: 'auto', showImages: false }), category: null },
         enableLeftStacking: false,
         enableRightStacking: false
       });
@@ -50,10 +50,10 @@ export const CategoriesDropdown: React.FC<CategoriesDropdownProps> = ({
     const updates: Partial<DualMenuConfig> = {};
     
     if (position === 'leftBottom') {
-      updates.leftBottom = { ...dualMenu.leftBottom, category: categorySlug };
+      updates.leftBottom = { ...(dualMenu.leftBottom || { viewMode: 'auto', showImages: false }), category: categorySlug };
       updates.enableLeftStacking = !!categorySlug;
     } else if (position === 'rightBottom') {
-      updates.rightBottom = { ...dualMenu.rightBottom, category: categorySlug };
+      updates.rightBottom = { ...(dualMenu.rightBottom || { viewMode: 'auto', showImages: false }), category: categorySlug };
       updates.enableRightStacking = !!categorySlug;
     } else {
       updates[position] = { ...dualMenu[position], category: categorySlug };

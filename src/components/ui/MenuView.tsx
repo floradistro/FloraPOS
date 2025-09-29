@@ -86,7 +86,8 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           const productsWithPricing = await Promise.all(
             result.data.map(async (product: Product) => {
               try {
-                const pricing = await BlueprintPricingService.getProductPricing(product.id);
+                const categoryIds = product.categories?.map(cat => cat.id) || [];
+                const pricing = await BlueprintPricingService.getBlueprintPricing(product.id, categoryIds);
                 return { ...product, blueprintPricing: pricing };
               } catch (err) {
                 console.warn(`Failed to load pricing for product ${product.id}:`, err);

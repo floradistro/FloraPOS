@@ -181,12 +181,12 @@ export function PrintSettingsPanel({ selectedCustomer, selectedProduct, onCustom
       customerPhone: '', // Add phone field to WordPressUser if available
       productName: selectedProduct.name,
       productSku: selectedProduct.sku || '',
-      qrCode: selectedProduct.permalink || `${window.location.origin}/product/${selectedProduct.id}`,
+      qrCode: `${window.location.origin}/product/${selectedProduct.id}`,
       logoUrl: '/logo123.png',
       timestamp: new Date().toISOString(),
       customText: printSettings.includeDisclaimer ? 'Terms and conditions apply' : '',
       price: selectedProduct.regular_price ? `$${selectedProduct.regular_price}` : '',
-      quantity: selectedProduct.stock_quantity?.toString() || ''
+      quantity: selectedProduct.total_stock?.toString() || ''
     };
     
     // Create array for multiple copies
@@ -577,7 +577,7 @@ export function PrintSettingsPanel({ selectedCustomer, selectedProduct, onCustom
       <div className="border-t border-white/[0.06] px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-            {printSettings.copies} cop{printSettings.copies !== 1 ? 'ies' : 'y'} • {printSettings.useAveryTemplate ? `Avery ${printSettings.averyLabelSize}` : printSettings.labelSize.replace('x', '" × ')}"} • {printSettings.orientation}
+            {printSettings.copies} cop{printSettings.copies !== 1 ? 'ies' : 'y'} • {printSettings.useAveryTemplate ? `Avery ${printSettings.averyLabelSize}` : printSettings.labelSize.replace('x', '" × "')} • {printSettings.orientation}
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
