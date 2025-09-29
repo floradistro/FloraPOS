@@ -677,7 +677,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       return;
     }
     
-    // Only require either email OR phone (not both)
+    // Only require phone number if no email is provided (email will use default)
     if (!newCustomerData.email.trim() && !newCustomerData.phone.trim()) {
       return;
     }
@@ -706,7 +706,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       };
 
       const customerData = {
-        ...(newCustomerData.email.trim() && { email: newCustomerData.email.trim() }),
+        email: newCustomerData.email.trim() || 'declinedemail@floradistro.com',
         first_name: newCustomerData.firstName.trim(),
         last_name: newCustomerData.lastName.trim(),
         username: username,

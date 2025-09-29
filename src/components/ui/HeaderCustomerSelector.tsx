@@ -175,7 +175,7 @@ export function HeaderCustomerSelector({
       };
 
       const customerData = {
-        ...(newCustomerData.email.trim() && { email: newCustomerData.email.trim() }),
+        email: newCustomerData.email.trim() || 'declinedemail@floradistro.com',
         first_name: newCustomerData.firstName.trim(),
         last_name: newCustomerData.lastName.trim(),
         username: username,

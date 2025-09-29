@@ -124,7 +124,7 @@ export function NewCustomerForm({ isOpen, onClose, onCustomerCreated }: NewCusto
       } : formData.shipping;
 
       const customerData = {
-        ...(formData.email.trim() && { email: formData.email.trim() }),
+        email: formData.email.trim() || 'declinedemail@floradistro.com',
         first_name: formData.firstName.trim(),
         last_name: formData.lastName.trim(),
         username: username,

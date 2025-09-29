@@ -397,7 +397,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
       // Prepare data for WordPress - only include supported fields (no username for updates)
       const wpSupportedFields: any = {
-        email: editForm.email,
+        email: editForm.email || 'declinedemail@floradistro.com',
         display_name: editForm.display_name,
         name: editForm.name,
         roles: editForm.roles
