@@ -410,7 +410,12 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     if (autoOpen) {
       setIsOpen(true);
     }
-  }, [autoOpen]);
+    
+    // Auto-enable product mode for productOnlyMode
+    if (productOnlyMode && !isProductMode) {
+      setIsProductMode(true);
+    }
+  }, [autoOpen, productOnlyMode]);
 
   // Update dropdown position when opening
   useEffect(() => {
@@ -481,13 +486,21 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     const newValue = e.target.value;
     setInternalValue(newValue);
     
+    // For product-only mode, always enable product mode and open dropdown
+    if (productOnlyMode) {
+      setIsProductMode(true);
+      if (!isOpen) {
+        setIsOpen(true);
+      }
+    }
+    
     // If we were showing a selected product and user starts typing, enter editing mode
     if (productOnlyMode && selectedProduct && !isEditingProduct) {
       setIsEditingProduct(true);
     }
     
     // Only open dropdown when typing if we're in a specific mode that shows content
-    if (!isOpen && newValue.length > 0 && (isCustomerMode || isProductMode || productOnlyMode)) {
+    if (!isOpen && newValue.length > 0 && (isCustomerMode || isProductMode)) {
       setIsOpen(true);
     }
   };
@@ -507,19 +520,15 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       return;
     }
     
-    // If in product-only mode with selected product, enter editing mode and restore last search
-    if (productOnlyMode && selectedProduct && !internalValue && !isEditingProduct) {
-      setIsEditingProduct(true);
-      // Restore the last search value so user can continue where they left off
-      if (lastSearchValue) {
-        setInternalValue(lastSearchValue);
-      }
+    // For product-only mode (blueprint-fields), always open dropdown to show all products
+    if (productOnlyMode) {
+      setIsProductMode(true);
       setIsOpen(true);
       return;
     }
     
     // Only open dropdown if we're in a specific mode that shows content
-    if (isCustomerMode || isProductMode || productOnlyMode) {
+    if (isCustomerMode || isProductMode) {
       setIsOpen(true);
     }
     // For normal product view, don't open dropdown - use filter button instead
@@ -745,6 +754,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         licenseNumber: ''
       });
       setShowNewCustomerForm(false);
+      setShowIDScanner(false); // Close ID scanner if it was open
       setIsOpen(false);
       
       if (isCustomerMode) {
@@ -778,16 +788,24 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const handleProductSelect = (product: Product | null) => {
     onProductSelect?.(product);
     setIsOpen(false);
-    // Store the current search value before clearing
-    if (internalValue) {
-      setLastSearchValue(internalValue);
+    
+    // For product-only mode, show the selected product name in the input
+    if (productOnlyMode && product) {
+      setInternalValue(product.name);
+      setLastSearchValue(product.name);
+    } else {
+      // Store the current search value before clearing
+      if (internalValue) {
+        setLastSearchValue(internalValue);
+      }
+      // Clear search when product is selected or cleared
+      setInternalValue('');
     }
-    // Clear search when product is selected or cleared
-    setInternalValue('');
+    
     // Exit editing mode when product is selected
     setIsEditingProduct(false);
     // Exit product mode if in explicit product mode (not product-only mode)
-    if (isProductMode) {
+    if (isProductMode && !productOnlyMode) {
       setIsProductMode(false);
     }
   };
@@ -886,6 +904,21 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   // Filter products based on search
   const filteredProducts = useMemo(() => {
     if (!productEnabled) return [];
+    
+    // For product-only mode (blueprint-fields), show more products and don't require search
+    if (productOnlyMode) {
+      if (!debouncedSearchValue) return products.slice(0, 20); // Show first 20 when no search
+      
+      const query = debouncedSearchValue.toLowerCase();
+      return products.filter(product => {
+        const name = product.name.toLowerCase();
+        const sku = product.sku.toLowerCase();
+        const categories = product.categories?.map(cat => cat.name.toLowerCase()).join(' ') || '';
+        return name.includes(query) || sku.includes(query) || categories.includes(query);
+      }).slice(0, 20); // Show more results for product selection
+    }
+    
+    // Default behavior for other modes
     if (!debouncedSearchValue) return products.slice(0, 8); // Show first 8 when no search
     
     const query = debouncedSearchValue.toLowerCase();
@@ -894,7 +927,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       const sku = product.sku.toLowerCase();
       return name.includes(query) || sku.includes(query);
     }).slice(0, 8); // Limit results
-  }, [products, debouncedSearchValue, productEnabled]);
+  }, [products, debouncedSearchValue, productEnabled, productOnlyMode]);
 
   // Filter categories based on search
   const filteredCategories = useMemo(() => {
@@ -1189,7 +1222,68 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         </div>
       </div>
 
-      {isOpen && typeof document !== 'undefined' && ReactDOM.createPortal(
+      {/* Simple Dropdown for Product-Only Mode */}
+      {isOpen && productOnlyMode && dropdownPosition && (
+        <div 
+          className="fixed rounded-lg overflow-hidden shadow-xl z-50"
+          style={{ 
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            width: dropdownPosition.width,
+            maxHeight: '400px',
+            background: 'rgba(23, 23, 23, 0.95)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          }}
+        >
+          {/* Product Search Results */}
+          <div className="max-h-96 overflow-y-auto">
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product, index) => (
+                <button
+                  key={product.id}
+                  onClick={() => handleProductSelect(product)}
+                  className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0"
+                >
+                  <div className="flex items-center gap-3">
+                    {product.image && (
+                      <img 
+                        src={product.image} 
+                        alt={product.name}
+                        className="w-8 h-8 rounded object-cover flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white truncate">
+                        {product.name}
+                      </div>
+                      <div className="text-xs text-neutral-400 flex items-center gap-2">
+                        <span>{product.sku}</span>
+                        {product.categories?.[0] && (
+                          <>
+                            <span>•</span>
+                            <span>{product.categories[0].name}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs text-neutral-500">
+                      ${parseFloat(product.regular_price || '0').toFixed(2)}
+                    </div>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-6 text-center text-neutral-400 text-sm">
+                {productsLoading ? 'Loading products...' : 'No products found'}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Popout for Other Modes */}
+      {isOpen && !productOnlyMode && typeof document !== 'undefined' && ReactDOM.createPortal(
         (() => {
           return (
             <>
