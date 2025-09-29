@@ -8,7 +8,6 @@ import { UnifiedSearchInput, UnifiedSearchInputRef } from '../components/ui/Unif
 import { ProductGrid } from '../components/ui/ProductGrid';
 import { AdjustmentsGrid, AdjustmentsGridRef } from '../components/ui/AdjustmentsGrid';
 import BlueprintFieldsGrid from '../components/ui/BlueprintFieldsGrid';
-import { PrintSettingsPanel, PrintSettings } from '../components/ui/PrintSettingsPanel';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 
@@ -80,7 +79,6 @@ export default function HomePage() {
   }>({});
   
   const [selectedCustomer, setSelectedCustomer] = useState<WordPressUser | null>(null);
-  const [printSettings, setPrintSettings] = useState<PrintSettings | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [blueprintProducts, setBlueprintProducts] = useState<Product[]>([]);
   const [blueprintProductsLoading, setBlueprintProductsLoading] = useState(false);
@@ -1148,7 +1146,7 @@ export default function HomePage() {
                 categoryFilter={selectedCategory || undefined}
                 onLoadingChange={(loading) => setBlueprintProductsLoading(loading)} 
                 selectedCustomer={selectedCustomer}
-                printSettings={printSettings}
+                printSettings={null}
                 selectedProduct={selectedProduct}
                 onProductSelect={handleProductSelect}
                 onProductsLoad={(products) => {
@@ -1234,12 +1232,12 @@ export default function HomePage() {
               />
             </StandardErrorBoundary>
           ) : currentView === 'blueprint-fields' ? (
-            <PrintSettingsPanel
-              selectedCustomer={selectedCustomer}
-              selectedProduct={selectedProduct}
-              onCustomerSelect={handleCustomerSelect}
-              onSettingsChange={setPrintSettings}
-            />
+            <div className="flex items-center justify-center h-64">
+              <div className="text-neutral-400 text-center">
+                <div className="text-lg mb-2">Print View Coming Soon</div>
+                <div className="text-sm">This section will be rebuilt from scratch</div>
+              </div>
+            </div>
           ) : (
             <CriticalErrorBoundary componentName="Checkout">
               <Suspense fallback={<LoadingSpinner size="lg" />}>

@@ -5,7 +5,17 @@ import { useAuth } from '../../contexts/AuthContext';
 import { BlueprintFieldsService, ProductBlueprintFields } from '../../services/blueprint-fields-service';
 import { LoadingSpinner } from './LoadingSpinner';
 import { WordPressUser } from '../../services/users-service';
-import { PrintSettings } from './PrintSettingsPanel';
+// Print settings interface for compatibility
+export interface PrintSettings {
+  includeLogo: boolean;
+  includeQRCode: boolean;
+  includeCustomer: boolean;
+  includeDisclaimer: boolean;
+  includeTimestamp: boolean;
+  labelSize: string;
+  orientation: string;
+  copies: number;
+}
 import QRCode from 'react-qr-code';
 
 export interface Product {
