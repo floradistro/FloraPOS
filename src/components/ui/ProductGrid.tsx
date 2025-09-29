@@ -9,13 +9,15 @@ import ProductCard from './ProductCard';
 
 // Category Header Component with smooth animations
 const CategoryHeader = ({ categoryName, productCount }: { categoryName: string; productCount: number }) => (
-  <div className="col-span-full bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-700/50 px-6 py-4 sticky top-0 z-20 shadow-lg category-header-animate">
-    <div className="flex items-center justify-center">
-      <h2 className="text-4xl font-dongraffiti font-thin text-neutral-300 tracking-widest text-center category-title-animate transform transition-all duration-700 ease-out hover:scale-105 hover:text-neutral-100 hover:tracking-wider">
+  <div className="col-span-full px-6 py-4 sticky top-0 z-20 category-header-animate">
+    <div className="flex items-center justify-start gap-4">
+      <h2 className="text-4xl font-dongraffiti font-thin text-neutral-300 tracking-widest text-left category-title-animate transform transition-all duration-700 ease-out hover:scale-105 hover:text-neutral-100 hover:tracking-wider drop-shadow-lg">
         {categoryName}
       </h2>
+      <span className="text-lg font-medium text-neutral-400 px-3 py-1 rounded-full drop-shadow-md">
+        {productCount}
+      </span>
     </div>
-    <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-neutral-400/30 to-transparent transform scale-x-0 category-underline-animate"></div>
   </div>
 );
 
@@ -69,14 +71,17 @@ interface ProductGridProps {
   onAddToCart?: (product: Product) => void;
   searchQuery?: string;
   categoryFilter?: string;
+  selectedBlueprintField?: string | null;
+  blueprintFieldValue?: string | null;
   onLoadingChange?: (loading: boolean, hasProducts: boolean) => void;
+  onProductsChange?: (products: Product[]) => void;
 }
 
 export const ProductGrid = forwardRef<{ 
   refreshInventory: () => Promise<void>;
   updateProductQuantities: (updates: Array<{ productId: number; variantId?: number; newQuantity: number }>) => void;
 }, ProductGridProps>(
-  ({ onAddToCart, searchQuery, categoryFilter, onLoadingChange }, ref) => {
+  ({ onAddToCart, searchQuery, categoryFilter, selectedBlueprintField, blueprintFieldValue, onLoadingChange, onProductsChange }, ref) => {
     const { user } = useAuth();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -130,6 +135,45 @@ export const ProductGrid = forwardRef<{
     };
   }, []);
 
+  // Store blueprint field data for filtering
+  const [productBlueprintFields, setProductBlueprintFields] = useState<Record<number, any>>({});
+
+  // Fetch blueprint field data when filtering is active
+  useEffect(() => {
+    if (selectedBlueprintField && blueprintFieldValue && products.length > 0) {
+      console.log('🔍 Fetching blueprint fields for filtering...');
+      
+      const fetchBlueprintFields = async () => {
+        const promises = products.map(async (product) => {
+          try {
+            const response = await fetch(
+              `https://api.floradistro.com/wp-json/wc/v3/products/${product.id}?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678`
+            );
+            
+            if (!response.ok) return { productId: product.id, meta_data: [] };
+            
+            const productData = await response.json();
+            return { productId: product.id, meta_data: productData.meta_data || [] };
+          } catch (error) {
+            console.error(`Error fetching blueprint fields for product ${product.id}:`, error);
+            return { productId: product.id, meta_data: [] };
+          }
+        });
+        
+        const results = await Promise.all(promises);
+        const blueprintFieldsMap: Record<number, any> = {};
+        results.forEach(result => {
+          blueprintFieldsMap[result.productId] = result.meta_data;
+        });
+        
+        setProductBlueprintFields(blueprintFieldsMap);
+        console.log('✅ Loaded blueprint fields for filtering');
+      };
+      
+      fetchBlueprintFields();
+    }
+  }, [selectedBlueprintField, blueprintFieldValue, products]);
+
   // Memoized filtered and grouped products for performance
   const { filteredProducts, groupedByCategory } = useMemo(() => {
     const filtered = products.filter((product) => {
@@ -141,7 +185,27 @@ export const ProductGrid = forwardRef<{
       const matchesCategory = !categoryFilter || 
         product.categories.some(cat => cat.slug === categoryFilter);
       
-      return matchesSearch && matchesCategory;
+      // Blueprint field filtering - use fetched blueprint field data
+      const matchesBlueprintField = !selectedBlueprintField || !blueprintFieldValue || (() => {
+        const blueprintMeta = productBlueprintFields[product.id];
+        if (!blueprintMeta || !Array.isArray(blueprintMeta)) return false;
+        
+        const fieldMeta = blueprintMeta.find((meta: any) => {
+          const fieldName = meta.key.startsWith('_') ? meta.key.substring(1) : meta.key;
+          return fieldName === selectedBlueprintField;
+        });
+        
+        if (!fieldMeta || !fieldMeta.value) return false;
+        
+        // Exact match for blueprint field values
+        const matches = fieldMeta.value.toString().trim() === blueprintFieldValue.trim();
+        if (matches) {
+          console.log(`✅ Product ${product.name} matches ${selectedBlueprintField}: ${fieldMeta.value}`);
+        }
+        return matches;
+      })();
+      
+      return matchesSearch && matchesCategory && matchesBlueprintField;
     });
 
     // Group products by category
@@ -225,7 +289,12 @@ export const ProductGrid = forwardRef<{
       filteredProducts: filtered,
       groupedByCategory: groupedArray
     };
-  }, [products, searchQuery, categoryFilter]);
+  }, [products, searchQuery, categoryFilter, selectedBlueprintField, blueprintFieldValue, productBlueprintFields]);
+
+  // Notify parent when filtered products change (for blueprint field extraction)
+  useEffect(() => {
+    onProductsChange?.(filteredProducts);
+  }, [filteredProducts, onProductsChange]);
 
 
   // Simple refresh method - just reload the products
@@ -483,6 +552,9 @@ export const ProductGrid = forwardRef<{
 
       // Always replace products since we're loading all at once
       setProducts(normalizedProducts);
+      
+      // Notify parent of products change for blueprint field extraction
+      onProductsChange?.(normalizedProducts);
 
     } catch (err) {
       const loadTime = Date.now() - startTime;

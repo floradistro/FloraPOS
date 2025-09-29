@@ -74,6 +74,8 @@ export default function HomePage() {
       searchQuery?: string;
       auditMode?: boolean;
       restockMode?: boolean;
+      blueprintField?: string | null;
+      blueprintFieldValue?: string | null;
     }
   }>({});
   
@@ -87,6 +89,13 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
+  // Blueprint field search state
+  const [selectedBlueprintField, setSelectedBlueprintField] = useState<string | null>(null);
+  const [blueprintFieldValue, setBlueprintFieldValue] = useState<string | null>(null);
+  
+  // Products from ProductGrid for blueprint field extraction
+  const [gridProducts, setGridProducts] = useState<Product[]>([]);
+  
   // Save current view's selections
   const saveCurrentViewSelections = useCallback(() => {
     setViewSelections(prev => ({
@@ -98,9 +107,11 @@ export default function HomePage() {
         searchQuery: searchQuery,
         auditMode: isAuditMode,
         restockMode: isRestockMode,
+        blueprintField: selectedBlueprintField,
+        blueprintFieldValue: blueprintFieldValue,
       }
     }));
-  }, [currentView, selectedCustomer, selectedProduct, selectedCategory, searchQuery, isAuditMode, isRestockMode]);
+  }, [currentView, selectedCustomer, selectedProduct, selectedCategory, searchQuery, isAuditMode, isRestockMode, selectedBlueprintField, blueprintFieldValue]);
 
   // Restore selections for a specific view
   const restoreViewSelections = useCallback((view: ViewType) => {
@@ -112,6 +123,8 @@ export default function HomePage() {
       setSearchQuery(viewData.searchQuery || '');
       setIsAuditMode(viewData.auditMode || false);
       setIsRestockMode(viewData.restockMode || false);
+      setSelectedBlueprintField(viewData.blueprintField || null);
+      setBlueprintFieldValue(viewData.blueprintFieldValue || null);
     } else {
       // Default values for new view
       setSelectedCustomer(null);
@@ -120,6 +133,8 @@ export default function HomePage() {
       setSearchQuery('');
       setIsAuditMode(view === 'adjustments'); // Default to audit mode for adjustments
       setIsRestockMode(false);
+      setSelectedBlueprintField(null);
+      setBlueprintFieldValue(null);
     }
   }, [viewSelections]);
 
@@ -396,6 +411,24 @@ export default function HomePage() {
       }
     }));
   }, [currentView]);
+
+  const handleBlueprintFieldChange = useCallback((fieldName: string | null, fieldValue: string | null) => {
+    setSelectedBlueprintField(fieldName);
+    setBlueprintFieldValue(fieldValue);
+    // Update the current view's selections
+    setViewSelections(prev => ({
+      ...prev,
+      [currentView]: {
+        ...prev[currentView],
+        blueprintField: fieldName,
+        blueprintFieldValue: fieldValue
+      }
+    }));
+  }, [currentView]);
+
+  const handleProductsChange = useCallback((products: Product[]) => {
+    setGridProducts(products);
+  }, []);
 
   // Memoized fetch categories function
   const fetchCategories = useCallback(async () => {
@@ -979,6 +1012,7 @@ export default function HomePage() {
           {/* Header Navigation */}
           <Header 
             onSearch={handleSearch}
+            searchValue={searchQuery}
             onRefresh={handleRefresh}
             onSettings={handleSettings}
             onViewChange={handleViewChange}
@@ -987,11 +1021,18 @@ export default function HomePage() {
             selectedCategory={selectedCategory || undefined}
             onCategoryChange={handleCategoryChange}
             categoriesLoading={categoriesLoading}
+            selectedBlueprintField={selectedBlueprintField}
+            onBlueprintFieldChange={handleBlueprintFieldChange}
+            blueprintFieldValue={blueprintFieldValue}
             selectedCustomer={selectedCustomer}
             onCustomerSelect={handleCustomerSelect}
             selectedProduct={selectedProduct}
             onProductSelect={handleProductSelect}
-            products={currentView === 'adjustments' ? adjustmentProducts : blueprintProducts}
+            products={
+              currentView === 'products' ? gridProducts :
+              currentView === 'adjustments' ? adjustmentProducts : 
+              blueprintProducts
+            }
             productsLoading={currentView === 'adjustments' ? false : blueprintProductsLoading}
             isAuditMode={isAuditMode}
             isRestockMode={isRestockMode}
@@ -1064,7 +1105,10 @@ export default function HomePage() {
                 onAddToCart={handleAddToCart}
                 searchQuery={searchQuery}
                 categoryFilter={selectedCategory || undefined}
+                selectedBlueprintField={selectedBlueprintField}
+                blueprintFieldValue={blueprintFieldValue}
                 onLoadingChange={handleProductsLoadingChange}
+                onProductsChange={handleProductsChange}
               />
             </div>
           )}

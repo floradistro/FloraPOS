@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { useUserPointsBalance } from '../../hooks/useRewards';
@@ -78,6 +78,11 @@ interface UnifiedSearchInputProps {
   onUpdateRestockQuantity?: (key: string, newQuantity: number) => void;
   isCreatingPO?: boolean;
   
+  // Blueprint field search props
+  selectedBlueprintField?: string | null;
+  onBlueprintFieldChange?: (fieldName: string | null, fieldValue: string | null) => void;
+  blueprintFieldValue?: string | null;
+  
   // Mode control
   customerOnlyMode?: boolean; // When true, only shows customers, no categories or search
   productOnlyMode?: boolean; // When true, only shows products for blueprint view
@@ -129,6 +134,9 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   selectedCategory,
   onCategoryChange,
   categoriesLoading = false,
+  selectedBlueprintField,
+  onBlueprintFieldChange,
+  blueprintFieldValue,
   isAuditMode = false,
   pendingAdjustments = new Map(),
   onCreateAudit,
@@ -170,6 +178,10 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const [editRestockValue, setEditRestockValue] = useState<string>('');
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [showIDScanner, setShowIDScanner] = useState(false);
+  const [isBlueprintFieldMode, setIsBlueprintFieldMode] = useState(false);
+  const [blueprintFieldSearchValue, setBlueprintFieldSearchValue] = useState('');
+  const [selectedFieldForValues, setSelectedFieldForValues] = useState<string | null>(null);
+  const [availableFieldValues, setAvailableFieldValues] = useState<{[key: string]: string[]}>({});
   const [newCustomerData, setNewCustomerData] = useState({
     firstName: '',
     lastName: '',
@@ -237,16 +249,91 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsEditingProduct(false);
       setIsAuditDropdownMode(false);
       setIsPurchaseOrderMode(false);
+      setIsBlueprintFieldMode(false);
+      setSelectedFieldForValues(null);
       setInternalValue('');
       setAuditName('');
       setAuditDescription('');
+      setBlueprintFieldSearchValue('');
     }
   }));
   
+
   // Load customers on mount
   useEffect(() => {
     loadCustomers();
   }, []);
+  
+  // Load blueprint field data from WooCommerce API for current products
+  const loadBlueprintFieldsForProducts = useCallback(async () => {
+    if (!products || products.length === 0) return;
+    
+    console.log('🔍 Loading blueprint fields from WooCommerce API for', products.length, 'products');
+    
+    const fieldValues: {[key: string]: Set<string>} = {
+      effect: new Set(),
+      lineage: new Set(),
+      nose: new Set(),
+      terpene: new Set(),
+      strain_type: new Set(),
+      thca_percentage: new Set(),
+      supplier: new Set()
+    };
+    
+    let foundBlueprintFields = 0;
+    
+    // Fetch blueprint fields for each product from WooCommerce API
+    const promises = products.slice(0, 20).map(async (product) => { // Limit to first 20 to avoid rate limits
+      try {
+        const response = await fetch(
+          `https://api.floradistro.com/wp-json/wc/v3/products/${product.id}?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678`
+        );
+        
+        if (!response.ok) return null;
+        
+        const productData = await response.json();
+        
+        if (productData.meta_data && Array.isArray(productData.meta_data)) {
+          productData.meta_data.forEach((meta: any) => {
+            let fieldName = meta.key.startsWith('_') ? meta.key.substring(1) : meta.key;
+            
+            if (fieldValues[fieldName] && meta.value && typeof meta.value === 'string' && meta.value.trim() !== '') {
+              fieldValues[fieldName].add(meta.value.trim());
+              foundBlueprintFields++;
+              console.log(`📝 Found ${fieldName}: ${meta.value} (from ${product.name})`);
+            }
+          });
+        }
+        
+        return productData;
+      } catch (error) {
+        console.error(`Error loading blueprint fields for product ${product.id}:`, error);
+        return null;
+      }
+    });
+    
+    await Promise.all(promises);
+    
+    console.log(`📊 Blueprint fields found: ${foundBlueprintFields}`);
+    
+    // Convert Sets to sorted arrays
+    const sortedFieldValues: {[key: string]: string[]} = {};
+    Object.keys(fieldValues).forEach(field => {
+      sortedFieldValues[field] = Array.from(fieldValues[field]).sort();
+      if (sortedFieldValues[field].length > 0) {
+        console.log(`✅ ${field}: ${sortedFieldValues[field].length} values`, sortedFieldValues[field]);
+      }
+    });
+    
+    setAvailableFieldValues(sortedFieldValues);
+  }, [products]);
+
+  // Load blueprint fields when products change
+  useEffect(() => {
+    if (products && products.length > 0) {
+      loadBlueprintFieldsForProducts();
+    }
+  }, [loadBlueprintFieldsForProducts]);
 
   // Update internal value when external value changes
   useEffect(() => {
@@ -1772,6 +1859,113 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                     </div>
                   </button>
                 ))}
+              </div>
+            </>
+          )}
+
+          {/* Blueprint Fields Section - Only show in products view */}
+          {!isCustomerMode && !isProductMode && !productOnlyMode && !isAuditDropdownMode && !isPurchaseOrderMode && (
+            <>
+              <div className="px-2 py-2 border-t border-neutral-600/10">
+                <div className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2 px-2">
+                  Blueprint Fields
+                </div>
+                
+                {/* Show field selection or field values */}
+                {!selectedFieldForValues ? (
+                  /* Blueprint Field Options */
+                  <div className="space-y-1">
+                    {[
+                      { key: 'effect', label: 'Effect' },
+                      { key: 'lineage', label: 'Lineage' },
+                      { key: 'nose', label: 'Nose' },
+                      { key: 'terpene', label: 'Terpene' },
+                      { key: 'strain_type', label: 'Strain Type' },
+                      { key: 'thca_percentage', label: 'THCA %' },
+                      { key: 'supplier', label: 'Supplier' }
+                    ].map((field) => (
+                      <button
+                        key={field.key}
+                        onClick={() => {
+                          setSelectedFieldForValues(field.key);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm transition-all flex items-center justify-between text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300"
+                      >
+                        <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+                          {field.label}
+                          <span className="ml-2 text-xs text-neutral-500">
+                            ({availableFieldValues[field.key]?.length || 0} values)
+                          </span>
+                        </span>
+                        <span className="text-xs">→</span>
+                      </button>
+                    ))}
+                    
+                    {/* Clear Blueprint Field Filter */}
+                    {selectedBlueprintField && (
+                      <button
+                        onClick={() => {
+                          if (onBlueprintFieldChange) {
+                            onBlueprintFieldChange(null, null);
+                          }
+                          setIsOpen(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm transition-all text-neutral-500 hover:bg-neutral-600/5 hover:text-neutral-400 border-t border-neutral-600/10 mt-2 pt-3"
+                      >
+                        <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+                          Clear Blueprint Filter
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  /* Field Values List with Full Height Scrolling */
+                  <div className="flex flex-col" style={{ height: '400px' }}>
+                    {/* Back button - Fixed at top */}
+                    <button
+                      onClick={() => setSelectedFieldForValues(null)}
+                      className="w-full px-4 py-2 text-left text-sm transition-all text-neutral-500 hover:bg-neutral-600/5 hover:text-neutral-400 border-b border-neutral-600/10 mb-2 pb-3 flex-shrink-0"
+                    >
+                      <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+                        ← Back to Fields
+                      </span>
+                    </button>
+                    
+                    {/* Scrollable Field Values Container - Uses full available height */}
+                    <div className="overflow-y-auto flex-1 space-y-1 pr-1 scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600">
+                      {availableFieldValues[selectedFieldForValues]?.length > 0 ? (
+                        availableFieldValues[selectedFieldForValues].map((value, index) => (
+                          <button
+                            key={`${selectedFieldForValues}-${index}`}
+                            onClick={() => {
+                              if (onBlueprintFieldChange) {
+                                onBlueprintFieldChange(selectedFieldForValues, value);
+                              }
+                              setSelectedFieldForValues(null);
+                              setIsOpen(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-sm transition-all flex items-center justify-between ${
+                              selectedBlueprintField === selectedFieldForValues && blueprintFieldValue === value
+                                ? 'bg-neutral-600/5 text-neutral-300'
+                                : 'text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300'
+                            }`}
+                          >
+                            <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }} className="truncate pr-2">
+                              {value}
+                            </span>
+                            {selectedBlueprintField === selectedFieldForValues && blueprintFieldValue === value && (
+                              <span className="text-xs flex-shrink-0">✓</span>
+                            )}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-6 text-sm text-neutral-500 text-center">
+                          No values found for this field
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}

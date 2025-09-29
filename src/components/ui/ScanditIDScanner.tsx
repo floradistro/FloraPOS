@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { MatrixRain } from './MatrixRain';
 
 export interface IDScanResult {
   firstName?: string;
@@ -798,6 +799,17 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
         >
           Cancel
         </button>
+      </div>
+
+      {/* Matrix Rain Bottom Section */}
+      <div className="relative mt-4 h-32 bg-black/20 rounded-lg overflow-hidden">
+        <MatrixRain size="sm" className="opacity-60" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-neutral-400/70">
+            <div className="text-xs font-mono mb-1">SCANNING...</div>
+            <div className="text-[10px] tracking-wider">NEURAL NETWORK ACTIVE</div>
+          </div>
+        </div>
       </div>
     </div>
   );

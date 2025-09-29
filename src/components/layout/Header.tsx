@@ -13,6 +13,7 @@ import { ViewType } from '../../types';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
+  searchValue?: string;
   onRefresh?: () => void;
   onSettings?: () => void;
   onViewChange?: (view: ViewType) => void;
@@ -22,6 +23,10 @@ interface HeaderProps {
   selectedCategory?: string;
   onCategoryChange?: (categorySlug: string | null) => void;
   categoriesLoading?: boolean;
+  // Blueprint field search props
+  selectedBlueprintField?: string | null;
+  onBlueprintFieldChange?: (fieldName: string | null, fieldValue: string | null) => void;
+  blueprintFieldValue?: string | null;
   // Customer selector props
   selectedCustomer?: WordPressUser | null;
   onCustomerSelect?: (customer: WordPressUser | null) => void;
@@ -82,6 +87,7 @@ interface HeaderProps {
 
 export function Header({ 
   onSearch, 
+  searchValue = '',
   onRefresh, 
   onSettings, 
   onViewChange, 
@@ -90,6 +96,9 @@ export function Header({
   selectedCategory,
   onCategoryChange,
   categoriesLoading = false,
+  selectedBlueprintField,
+  onBlueprintFieldChange,
+  blueprintFieldValue,
   selectedCustomer,
   onCustomerSelect,
   selectedProduct,
@@ -136,7 +145,6 @@ export function Header({
   onSortAlphabeticallyChange,
   unifiedSearchRef
 }: HeaderProps) {
-  const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { user, logout } = useAuth();
   
@@ -164,17 +172,8 @@ export function Header({
     }
   }, [isRestockMode, pendingRestockProducts, products]);
   
-  // Debounce search query to reduce API calls - 300ms delay for products
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
-  
-  // Trigger search when debounced value changes
-  useEffect(() => {
-    onSearch?.(debouncedSearchQuery);
-  }, [debouncedSearchQuery, onSearch]);
-
   const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    // Actual search is now triggered by the debounced effect above
+    onSearch?.(query);
   };
 
   const handleCategoryChange = (categorySlug: string | null) => {
@@ -264,7 +263,7 @@ export function Header({
         <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0" style={{ marginLeft: (currentView === 'adjustments' || currentView === 'history') ? '0px' : '30px' }}>
           <UnifiedSearchInput
             ref={unifiedSearchRef}
-            searchValue={searchQuery}
+            searchValue={searchValue}
             onSearchChange={handleSearch}
             className="w-full max-w-[768px] min-w-[180px] sm:min-w-[200px] md:min-w-[300px]"
             placeholder={currentView === 'orders' ? 'Search orders, customers...' : `Search ${currentView.charAt(0).toUpperCase() + currentView.slice(1)}...`}
@@ -278,6 +277,9 @@ export function Header({
             selectedCategory={currentView === 'orders' ? '' : selectedCategory}
             onCategoryChange={currentView === 'orders' ? () => {} : onCategoryChange}
             categoriesLoading={categoriesLoading}
+            selectedBlueprintField={currentView === 'products' ? selectedBlueprintField : null}
+            onBlueprintFieldChange={currentView === 'products' ? onBlueprintFieldChange : undefined}
+            blueprintFieldValue={currentView === 'products' ? blueprintFieldValue : null}
             // Pass mode-specific props
             productOnlyMode={currentView === 'blueprint-fields'}
             isAuditMode={isAuditMode}

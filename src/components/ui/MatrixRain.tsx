@@ -18,10 +18,13 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size to full viewport
+    // Set canvas size to parent container
     const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const parent = canvas.parentElement;
+      if (parent) {
+        canvas.width = parent.clientWidth;
+        canvas.height = parent.clientHeight;
+      }
     };
 
     resizeCanvas();
@@ -35,7 +38,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
     const codeArray = codeSymbols.split('');
     const numArray = numbers.split('');
 
-    const fontSize = 16; // Larger font for better readability
+    const fontSize = 14; // Slightly smaller font for the popup
     const columns = Math.floor(canvas.width / fontSize);
     
     // Array of drops with streak data
@@ -48,7 +51,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
     
     // Initialize drops with streaks - spread them across the screen immediately
     for (let i = 0; i < columns; i++) {
-      const streakLength = Math.floor(Math.random() * 8) + 5; // 5-12 characters long
+      const streakLength = Math.floor(Math.random() * 6) + 3; // 3-8 characters long (shorter for popup)
       const streak: string[] = [];
       
       // Generate a streak of characters
@@ -65,7 +68,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
       
       drops[i] = {
         y: Math.random() * (canvas.height / fontSize),
-        speed: Math.random() * 0.3 + 0.2, // 0.2-0.5 speed (much slower)
+        speed: Math.random() * 0.2 + 0.1, // Slower speed for popup
         streak: streak,
         streakLength: streakLength
       };
@@ -75,8 +78,8 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
       // Clear canvas completely (no background)
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Set text properties - larger, bolder font for readability
-      ctx.font = `bold ${fontSize + 2}px 'Courier New', monospace`;
+      // Set text properties
+      ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
       ctx.textBaseline = 'top';
 
       // Draw character streaks
@@ -92,7 +95,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
           if (charY >= -fontSize && charY < canvas.height + fontSize) {
             // Randomly change characters as they fall (Matrix effect)
             let char = drop.streak[j];
-            if (Math.random() < 0.05) { // 5% chance to change each frame
+            if (Math.random() < 0.03) { // 3% chance to change each frame (less chaotic)
               const rand = Math.random();
               if (rand < 0.3) {
                 char = codeArray[Math.floor(Math.random() * codeArray.length)];
@@ -107,10 +110,10 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
             
             // Calculate opacity based on position in streak (brighter at head)
             let opacity = 1 - (j / drop.streakLength);
-            opacity = Math.max(opacity, 0.3); // Higher minimum opacity for readability
+            opacity = Math.max(opacity, 0.2); // Lower minimum opacity for subtlety
             
-            // All characters are bright white for maximum readability
-            ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+            // Green matrix color with opacity
+            ctx.fillStyle = `rgba(0, 255, 65, ${opacity})`;
             
             ctx.fillText(char, x, charY);
           }
@@ -122,7 +125,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
         // Reset drop when the head goes off screen
         if (drop.y * fontSize > canvas.height + drop.streakLength * fontSize) {
           // Generate new streak
-          const newStreakLength = Math.floor(Math.random() * 8) + 5;
+          const newStreakLength = Math.floor(Math.random() * 6) + 3;
           const newStreak: string[] = [];
           
           for (let j = 0; j < newStreakLength; j++) {
@@ -137,7 +140,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
           }
           
           drop.y = -Math.random() * 10;
-          drop.speed = Math.random() * 0.3 + 0.2;
+          drop.speed = Math.random() * 0.2 + 0.1;
           drop.streak = newStreak;
           drop.streakLength = newStreakLength;
         }
@@ -162,10 +165,11 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
   return (
     <canvas
       ref={canvasRef}
-      className={`fixed inset-0 ${className}`}
+      className={`absolute inset-0 ${className}`}
       style={{
-        zIndex: -1,
-        background: 'transparent'
+        zIndex: 0,
+        background: 'transparent',
+        pointerEvents: 'none'
       }}
     />
   );
