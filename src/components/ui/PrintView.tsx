@@ -247,7 +247,7 @@ export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct
         }))
       );
       
-      const selectedTierData = allTiers.find(tier => tier.tierKey === selectedTier);
+      const selectedTierData = allTiers.find((tier: any) => tier.tierKey === selectedTier);
       
       if (selectedTierData) {
         if (showTierPrice) {
