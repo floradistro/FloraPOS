@@ -5,15 +5,15 @@ import html2canvas from 'html2canvas';
 export const AVERY_LABEL_SIZES = {
   '5160': { // 30 labels per sheet, 3 columns, 10 rows
     width: 2.625,
-    height: 1,
+    height: 1.0,
     marginTop: 0.5,
     marginLeft: 0.1875,
     marginRight: 0.1875,
     marginBottom: 0.5,
     columns: 3,
     rows: 10,
-    gapX: 0.125,
-    gapY: 0
+    gapX: 0.125, // horizontal_pitch - label_width = 2.75 - 2.625 = 0.125
+    gapY: 0      // vertical_pitch - label_height = 1.0 - 1.0 = 0
   },
   '5161': { // 20 labels per sheet, 2 columns, 10 rows
     width: 4,

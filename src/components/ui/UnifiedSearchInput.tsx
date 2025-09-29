@@ -6,6 +6,7 @@ import { WordPressUser, usersService } from '../../services/users-service';
 import { useUserPointsBalance } from '../../hooks/useRewards';
 import { useDebounce } from '../../hooks/useDebounce';
 import { ScanditIDScanner, IDScanResult } from './ScanditIDScanner';
+import { BlueprintFieldsService } from '../../services/blueprint-fields-service';
 
 export interface Category {
   id: number;
@@ -282,11 +283,11 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     loadCustomers();
   }, []);
   
-  // Load blueprint field data from WooCommerce API for current products
+  // Load blueprint field data using optimized approach
   const loadBlueprintFieldsForProducts = useCallback(async () => {
     if (!products || products.length === 0) return;
     
-    console.log('🔍 Loading blueprint fields from WooCommerce API for', products.length, 'products');
+    console.log('🔍 Loading blueprint fields for', products.length, 'products');
     
     const fieldValues: {[key: string]: Set<string>} = {
       effect: new Set(),
@@ -299,40 +300,79 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     };
     
     let foundBlueprintFields = 0;
-    
-    // Fetch blueprint fields for each product from WooCommerce API
-    const promises = products.slice(0, 20).map(async (product) => { // Limit to first 20 to avoid rate limits
-      try {
-        const response = await fetch(
-          `https://api.floradistro.com/wp-json/wc/v3/products/${product.id}?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678`
-        );
-        
-        if (!response.ok) return null;
-        
-        const productData = await response.json();
-        
-        if (productData.meta_data && Array.isArray(productData.meta_data)) {
-          productData.meta_data.forEach((meta: any) => {
-            let fieldName = meta.key.startsWith('_') ? meta.key.substring(1) : meta.key;
-            
-            if (fieldValues[fieldName] && meta.value && typeof meta.value === 'string' && meta.value.trim() !== '') {
-              fieldValues[fieldName].add(meta.value.trim());
-              foundBlueprintFields++;
-              console.log(`📝 Found ${fieldName}: ${meta.value} (from ${product.name})`);
-            }
+
+    // If we have a selected category, use category-based fetching for better efficiency
+    if (selectedCategory && categories.length > 0) {
+      const category = categories.find(cat => cat.slug === selectedCategory);
+      if (category) {
+        console.log(`🎯 Using category-based fetching for category: ${category.name} (ID: ${category.id})`);
+        try {
+          const categoryProducts = await BlueprintFieldsService.getCategoryProductsBlueprintFields(category.id);
+          
+          categoryProducts.forEach(productFields => {
+            productFields.fields.forEach(field => {
+              if (fieldValues[field.field_name] && field.field_value && 
+                  typeof field.field_value === 'string' && field.field_value.trim() !== '') {
+                fieldValues[field.field_name].add(field.field_value.trim());
+                foundBlueprintFields++;
+              }
+            });
           });
+        } catch (error) {
+          console.error('Error fetching category blueprint fields:', error);
+          // Fall back to individual product fetching
         }
-        
-        return productData;
-      } catch (error) {
-        console.error(`Error loading blueprint fields for product ${product.id}:`, error);
-        return null;
       }
-    });
+    }
+
+    // If category-based fetching didn't work or no category selected, fall back to product-based fetching
+    if (foundBlueprintFields === 0) {
+      console.log('🔄 Using product-based fetching');
+      
+      // Process products in smaller batches to avoid overwhelming the API
+      const batchSize = 25;
+      const maxProducts = Math.min(products.length, 100); // Limit total products to avoid long loading times
+      const totalBatches = Math.ceil(maxProducts / batchSize);
+      
+      for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+        const startIndex = batchIndex * batchSize;
+        const endIndex = Math.min(startIndex + batchSize, maxProducts);
+        const batchProducts = products.slice(startIndex, endIndex);
+        
+        console.log(`🔄 Processing batch ${batchIndex + 1}/${totalBatches} (${batchProducts.length} products)`);
+        
+        // Fetch blueprint fields for each product in this batch
+        const promises = batchProducts.map(async (product) => {
+          try {
+            const productFields = await BlueprintFieldsService.getProductBlueprintFields(product.id);
+            
+            if (productFields && productFields.fields) {
+              productFields.fields.forEach(field => {
+                if (fieldValues[field.field_name] && field.field_value && 
+                    typeof field.field_value === 'string' && field.field_value.trim() !== '') {
+                  fieldValues[field.field_name].add(field.field_value.trim());
+                  foundBlueprintFields++;
+                }
+              });
+            }
+            
+            return productFields;
+          } catch (error) {
+            console.error(`Error loading blueprint fields for product ${product.id}:`, error);
+            return null;
+          }
+        });
+        
+        await Promise.all(promises);
+        
+        // Add a small delay between batches to respect rate limits
+        if (batchIndex < totalBatches - 1) {
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
+      }
+    }
     
-    await Promise.all(promises);
-    
-    console.log(`📊 Blueprint fields found: ${foundBlueprintFields}`);
+    console.log(`📊 Blueprint fields found: ${foundBlueprintFields} across ${products.length} products`);
     
     // Convert Sets to sorted arrays
     const sortedFieldValues: {[key: string]: string[]} = {};
@@ -344,7 +384,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     });
     
     setAvailableFieldValues(sortedFieldValues);
-  }, [products]);
+  }, [products, selectedCategory, categories]);
 
   // Load blueprint fields when products change
   useEffect(() => {

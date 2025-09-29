@@ -4,6 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { WordPressUser } from '../../services/users-service';
 import { AveryLabelService, AveryLabelSize, LabelData, AVERY_LABEL_SIZES } from '../../services/averyLabelService';
 import { AveryLabelSheetPreview } from './AveryLabelTemplate';
+import { Avery5160Preview, Avery5160SheetPreview } from './Avery5160Template';
+import { IndustryPrintPreview } from './IndustryPrintPreview';
+import { AveryTemplateService, AVERY_5160_TEMPLATE, AVAILABLE_TEMPLATES } from '../../services/averyTemplateService';
+import { Avery5160PdfService, Avery5160LabelData } from '../../services/avery5160PdfService';
 import { Product } from './ProductGrid';
 
 export interface PrintSettings {
@@ -14,6 +18,7 @@ export interface PrintSettings {
   includeTimestamp: boolean;
   labelSize: string;
   averyLabelSize: AveryLabelSize;
+  averyTemplateName: string;
   orientation: string;
   copies: number;
   useAveryTemplate: boolean;
@@ -38,6 +43,7 @@ export function PrintSettingsPanel({ selectedCustomer, selectedProduct, onCustom
     includeTimestamp: true,
     labelSize: '2x4', // 2x4, 2x3, 4x6
     averyLabelSize: '5160', // Avery label size
+    averyTemplateName: 'Avery_5160_30up', // Avery template name
     orientation: 'landscape', // portrait, landscape
     copies: 1,
     useAveryTemplate: false
@@ -125,47 +131,148 @@ export function PrintSettingsPanel({ selectedCustomer, selectedProduct, onCustom
 
   const handleAveryPrint = async () => {
     try {
-      const labelData = generateLabelData();
-      const labelElement = document.querySelector('.avery-label-preview .avery-label');
-      
-      if (labelElement) {
-        const blob = await AveryLabelService.generateLabelFromHTML(
-          labelElement as HTMLElement,
-          printSettings.averyLabelSize,
-          printSettings.copies
-        );
-        
-        // Create temporary URL and trigger print
-        const url = URL.createObjectURL(blob);
-        const printWindow = window.open(url, '_blank');
-        if (printWindow) {
-          printWindow.onload = () => {
-            printWindow.print();
-          };
+      if (printSettings.averyTemplateName === 'Avery_5160_30up') {
+        // Try direct HTML printing first (more reliable)
+        const success = await handleDirectHTMLPrint();
+        if (!success) {
+          // Fallback to PDF generation
+          console.log('Falling back to PDF generation...');
+          const templateData = generateAvery5160Data();
+          const blob = await Avery5160PdfService.generatePDF(templateData);
+          await Avery5160PdfService.printPDF(blob);
         }
-        URL.revokeObjectURL(url);
+      } else {
+        // Use legacy system
+        const labelData = generateLabelData();
+        const labelElement = document.querySelector('.avery-label-preview .avery-label');
+        
+        if (labelElement) {
+          const blob = await AveryLabelService.generateLabelFromHTML(
+            labelElement as HTMLElement,
+            printSettings.averyLabelSize,
+            printSettings.copies
+          );
+          
+          // Create temporary URL and trigger print
+          const url = URL.createObjectURL(blob);
+          const printWindow = window.open(url, '_blank');
+          if (printWindow) {
+            printWindow.onload = () => {
+              printWindow.print();
+            };
+          }
+          URL.revokeObjectURL(url);
+        }
       }
     } catch (error) {
       console.error('Error generating Avery labels:', error);
+      alert('Print failed. Please try the Export PDF option instead.');
+    }
+  };
+
+  const handleDirectHTMLPrint = async (): Promise<boolean> => {
+    try {
+      // Find the Avery sheet element
+      const sheetElement = document.querySelector('.avery-5160-sheet');
+      if (!sheetElement) {
+        console.log('Sheet element not found');
+        return false;
+      }
+
+      // Create print-specific styles
+      const printStyles = `
+        @media print {
+          @page {
+            size: letter;
+            margin: 0;
+          }
+          
+          body * {
+            visibility: hidden !important;
+          }
+          
+          .print-content,
+          .print-content * {
+            visibility: visible !important;
+          }
+          
+          .print-content {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 8.5in !important;
+            height: 11in !important;
+            transform: none !important;
+            background: white !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+        }
+      `;
+
+      // Create a temporary container for printing
+      const printContainer = document.createElement('div');
+      printContainer.className = 'print-content';
+      printContainer.innerHTML = sheetElement.outerHTML;
+      
+      // Add print styles
+      const styleElement = document.createElement('style');
+      styleElement.textContent = printStyles;
+      
+      // Add elements to DOM
+      document.head.appendChild(styleElement);
+      document.body.appendChild(printContainer);
+      
+      // Trigger print
+      window.print();
+      
+      // Clean up after printing
+      setTimeout(() => {
+        document.head.removeChild(styleElement);
+        document.body.removeChild(printContainer);
+      }, 1000);
+      
+      return true;
+    } catch (error) {
+      console.error('Direct HTML print failed:', error);
+      return false;
     }
   };
 
   const handleAveryExportPDF = async () => {
     try {
-      const labelData = generateLabelData();
+      console.log('Starting PDF export...');
       
-      const blob = await AveryLabelService.generateLabelPDF({
-        labelSize: printSettings.averyLabelSize,
-        data: Array(printSettings.copies).fill(labelData[0]),
-        includeLogo: printSettings.includeLogo,
-        includeQRCode: printSettings.includeQRCode,
-        includeCustomer: printSettings.includeCustomer,
-        includeTimestamp: printSettings.includeTimestamp
-      });
-      
-      AveryLabelService.downloadPDF(blob, `avery-labels-${Date.now()}.pdf`);
+      if (printSettings.averyTemplateName === 'Avery_5160_30up') {
+        // Use new PDF service for Avery 5160
+        console.log('Using Avery 5160 PDF service');
+        const templateData = generateAvery5160Data();
+        console.log('Generated template data:', templateData.length, 'labels');
+        
+        const blob = await Avery5160PdfService.generatePDF(templateData);
+        console.log('PDF generated successfully, size:', blob.size, 'bytes');
+        
+        Avery5160PdfService.downloadPDF(blob, `avery-5160-labels-${Date.now()}.pdf`);
+        console.log('PDF download initiated');
+      } else {
+        // Use legacy system
+        console.log('Using legacy PDF system');
+        const labelData = generateLabelData();
+        
+        const blob = await AveryLabelService.generateLabelPDF({
+          labelSize: printSettings.averyLabelSize,
+          data: Array(printSettings.copies).fill(labelData[0]),
+          includeLogo: printSettings.includeLogo,
+          includeQRCode: printSettings.includeQRCode,
+          includeCustomer: printSettings.includeCustomer,
+          includeTimestamp: printSettings.includeTimestamp
+        });
+        
+        AveryLabelService.downloadPDF(blob, `avery-labels-${Date.now()}.pdf`);
+      }
     } catch (error) {
       console.error('Error exporting Avery labels:', error);
+      alert('PDF export failed. Please check the console for details and try again.');
     }
   };
 
@@ -191,6 +298,45 @@ export function PrintSettingsPanel({ selectedCustomer, selectedProduct, onCustom
     
     // Create array for multiple copies
     return Array(printSettings.copies).fill(data);
+  };
+
+  const generateTemplateData = (): Record<string, string>[] => {
+    // If no product selected, return empty array
+    if (!selectedProduct) {
+      return [];
+    }
+
+    // For Avery 5160 template
+    const templateData: Record<string, string> = {
+      line1: selectedCustomer?.display_name || selectedCustomer?.username || 'Flora Distro',
+      line2: selectedProduct.name || '',
+      line3: selectedProduct.sku ? `SKU: ${selectedProduct.sku}` : (selectedProduct.regular_price ? `$${selectedProduct.regular_price}` : '')
+    };
+    
+    // Create array for multiple copies (fill the sheet)
+    const template = AveryTemplateService.getTemplate(printSettings.averyTemplateName);
+    if (template) {
+      const labelsPerSheet = template.data_mapping.records_per_page;
+      return Array(labelsPerSheet).fill(templateData);
+    }
+    
+    return Array(printSettings.copies).fill(templateData);
+  };
+
+  const generateAvery5160Data = (): Avery5160LabelData[] => {
+    // If no product selected, return empty array
+    if (!selectedProduct) {
+      return [];
+    }
+
+    const labelData: Avery5160LabelData = {
+      line1: selectedCustomer?.display_name || selectedCustomer?.username || 'Flora Distro',
+      line2: selectedProduct.name || '',
+      line3: selectedProduct.sku ? `SKU: ${selectedProduct.sku}` : (selectedProduct.regular_price ? `$${selectedProduct.regular_price}` : '')
+    };
+    
+    // Fill entire sheet (30 labels) with the same data
+    return Array(30).fill(labelData);
   };
 
   return (
@@ -351,6 +497,52 @@ export function PrintSettingsPanel({ selectedCustomer, selectedProduct, onCustom
             </button>
           </div>
         </div>
+
+        {/* Template Settings */}
+        {printSettings.useAveryTemplate && (
+          <div className="mb-4">
+            <div className="px-2 py-2 text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
+              Avery Template
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {Object.values(AVAILABLE_TEMPLATES).map((template) => (
+                <button
+                  key={template.template_name}
+                  onClick={() => setPrintSettings({ 
+                    ...printSettings, 
+                    averyTemplateName: template.template_name,
+                    averyLabelSize: '5160' // Set corresponding label size
+                  })}
+                  className={`w-full transition-all duration-300 ease-out group relative rounded-lg p-3 ${
+                    printSettings.averyTemplateName === template.template_name
+                      ? 'border-2 border-white/30 bg-gradient-to-br from-neutral-500/40 to-neutral-600/80 shadow-lg shadow-white/5 transform scale-[1.02]'
+                      : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-left flex-1">
+                      <div className={`font-medium text-sm transition-colors duration-300 ${
+                        printSettings.averyTemplateName === template.template_name
+                          ? 'text-neutral-200'
+                          : 'text-neutral-300 group-hover:text-neutral-200'
+                      }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                        {template.template_name.replace('_', ' ')}
+                      </div>
+                      <div className={`text-xs transition-colors duration-300 ${
+                        printSettings.averyTemplateName === template.template_name
+                          ? 'text-neutral-500'
+                          : 'text-neutral-600 group-hover:text-neutral-500'
+                      }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                        {template.description}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gradient-to-r from-transparent via-white/[0.02] to-transparent"></div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Size Settings */}
         <div className="mb-4">
@@ -518,13 +710,23 @@ export function PrintSettingsPanel({ selectedCustomer, selectedProduct, onCustom
         </div>
       </div>
 
-      {/* Full Sheet Preview */}
-      {printSettings.useAveryTemplate && selectedProduct && (
+      {/* Industry Standard Print Preview */}
+      {printSettings.useAveryTemplate && selectedProduct && printSettings.averyTemplateName === 'Avery_5160_30up' && (
+        <div className="border-t border-white/[0.06] flex-1 min-h-0">
+          <IndustryPrintPreview
+            labelData={generateTemplateData()}
+            className="h-full"
+          />
+        </div>
+      )}
+
+      {/* Legacy Preview for other templates */}
+      {printSettings.useAveryTemplate && selectedProduct && printSettings.averyTemplateName !== 'Avery_5160_30up' && (
         <div className="border-t border-white/[0.06] px-4 py-3">
           <div className="px-2 py-2 text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
-            Label Sheet Preview
+            PDF Preview
           </div>
-          <div className="flex justify-center">
+          <div className="flex justify-center overflow-hidden">
             <div 
               className="label-preview-container bg-white shadow-2xl border border-gray-200 rounded-lg overflow-hidden"
               style={{ 
@@ -548,7 +750,10 @@ export function PrintSettingsPanel({ selectedCustomer, selectedProduct, onCustom
           </div>
           <div className="text-center mt-2">
             <div className="text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
-              {selectedProduct.name} • {AVERY_LABEL_SIZES[printSettings.averyLabelSize].columns}×{AVERY_LABEL_SIZES[printSettings.averyLabelSize].rows} labels per sheet
+              {selectedProduct.name} • {`${AVERY_LABEL_SIZES[printSettings.averyLabelSize].columns}×${AVERY_LABEL_SIZES[printSettings.averyLabelSize].rows} labels per sheet`}
+            </div>
+            <div className="text-xs text-neutral-500 mt-1" style={{ fontFamily: 'Tiempos, serif' }}>
+              Standard label preview
             </div>
           </div>
         </div>
