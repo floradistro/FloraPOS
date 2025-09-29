@@ -94,6 +94,7 @@ export interface UnifiedSearchInputRef {
   openProductMode: () => void;
   openAuditMode: () => void;
   openPurchaseOrderMode: () => void;
+  openFilterMode: () => void;
   close: () => void;
 }
 
@@ -195,9 +196,12 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
     licenseNumber: ''
   });
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
   
   // Debounce search for performance
   const debouncedSearchValue = useDebounce(internalValue, 100);
@@ -209,6 +213,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsProductMode(false);
       setIsEditingProduct(false);
       setIsAuditDropdownMode(false);
+      setIsFilterOpen(false);
       setIsOpen(true);
       setInternalValue('');
     },
@@ -217,6 +222,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsCustomerMode(false);
       setIsEditingProduct(false);
       setIsAuditDropdownMode(false);
+      setIsFilterOpen(false);
       setIsOpen(true);
       setInternalValue('');
     },
@@ -226,6 +232,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsProductMode(false);
       setIsEditingProduct(false);
       setIsPurchaseOrderMode(false);
+      setIsFilterOpen(false);
       setIsOpen(true);
       setInternalValue('');
       setAuditName('');
@@ -237,13 +244,24 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsCustomerMode(false);
       setIsProductMode(false);
       setIsEditingProduct(false);
+      setIsFilterOpen(false);
       setIsOpen(true);
       setInternalValue('');
       setSupplierName('');
       setPONotes('');
     },
+    openFilterMode: () => {
+      setIsFilterOpen(true);
+      setIsOpen(false);
+      setIsCustomerMode(false);
+      setIsProductMode(false);
+      setIsEditingProduct(false);
+      setIsAuditDropdownMode(false);
+      setIsPurchaseOrderMode(false);
+    },
     close: () => {
       setIsOpen(false);
+      setIsFilterOpen(false);
       setIsCustomerMode(false);
       setIsProductMode(false);
       setIsEditingProduct(false);
@@ -373,6 +391,15 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       if (inputRef.current && !inputRef.current.contains(event.target as Node) &&
           dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        
+        // Clear customer search from main search bar when clicking outside customer modal
+        if (isCustomerMode) {
+          setInternalValue('');
+          setIsCustomerMode(false);
+          setCustomerSearchValue('');
+          // Also clear the main search value
+          onSearchChange('');
+        }
       }
     }
 
@@ -380,7 +407,22 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [isOpen]);
+  }, [isOpen, isCustomerMode, onSearchChange]);
+
+  // Close filter dropdown when clicking outside
+  useEffect(() => {
+    function handleFilterClickOutside(event: MouseEvent) {
+      if (filterButtonRef.current && !filterButtonRef.current.contains(event.target as Node) &&
+          filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    }
+
+    if (isFilterOpen) {
+      document.addEventListener('mousedown', handleFilterClickOutside);
+      return () => document.removeEventListener('mousedown', handleFilterClickOutside);
+    }
+  }, [isFilterOpen]);
 
   const loadCustomers = async () => {
     try {
@@ -404,8 +446,8 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsEditingProduct(true);
     }
     
-    // Open dropdown when typing
-    if (!isOpen && newValue.length > 0) {
+    // Only open dropdown when typing if we're in a specific mode that shows content
+    if (!isOpen && newValue.length > 0 && (isCustomerMode || isProductMode || productOnlyMode)) {
       setIsOpen(true);
     }
   };
@@ -433,9 +475,14 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
         setInternalValue(lastSearchValue);
       }
       setIsOpen(true);
-    } else {
+      return;
+    }
+    
+    // Only open dropdown if we're in a specific mode that shows content
+    if (isCustomerMode || isProductMode || productOnlyMode) {
       setIsOpen(true);
     }
+    // For normal product view, don't open dropdown - use filter button instead
   };
 
   const handleCustomerSelect = (customer: WordPressUser | null) => {
@@ -848,7 +895,29 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
 
   return (
     <>
-      <div className={`relative ${className}`}>
+      <div className={`relative flex items-center gap-2 ${className}`}>
+        {/* Filter Button - Only show in products view */}
+        {!isCustomerMode && !isProductMode && !productOnlyMode && !isAuditDropdownMode && !isPurchaseOrderMode && (
+          <button
+            ref={filterButtonRef}
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className={`h-[38px] px-3 rounded-lg border transition-all duration-200 ease-out flex items-center justify-center ${
+              selectedCategory || selectedBlueprintField
+                ? 'border-pink-500/30 bg-pink-500/10 text-pink-300 hover:bg-pink-500/15'
+                : 'border-neutral-500/30 hover:border-neutral-400/50 text-neutral-400 hover:text-neutral-300 bg-transparent hover:bg-neutral-600/10'
+            }`}
+            title="Filter products by category or blueprint fields"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+            </svg>
+            {(selectedCategory || selectedBlueprintField) && (
+              <div className="ml-1 w-2 h-2 bg-pink-400 rounded-full"></div>
+            )}
+          </button>
+        )}
+        
+        <div className="relative flex-1">
         <input
           ref={inputRef}
           type="text"
@@ -925,7 +994,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
             <button
               onClick={() => {
                 handleCustomerSelect(null);
-                inputRef.current?.focus();
+                // Don't focus input to prevent dropdown from opening
               }}
               className="text-pink-400 hover:text-pink-200 transition-all p-0.5 rounded-full hover:bg-pink-500/10"
               title="Clear customer"
@@ -943,7 +1012,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
             onClick={() => {
               handleProductSelect(null);
               handleCategorySelect(null);
-              inputRef.current?.focus();
+              // Don't focus input to prevent dropdown from opening
             }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors p-1 rounded-full hover:bg-neutral-600/20"
             title="Clear filters"
@@ -961,6 +1030,8 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               setIsCustomerMode(false);
               setIsOpen(false);
               setInternalValue('');
+              setCustomerSearchValue('');
+              onSearchChange('');
             }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors p-1 rounded-full hover:bg-neutral-600/20"
             title="Exit customer mode"
@@ -995,7 +1066,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               handleProductSelect(null);
               setIsEditingProduct(false);
               setLastSearchValue('');
-              inputRef.current?.focus();
+              // Don't focus input to prevent dropdown from opening
             }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors p-1 rounded-full hover:bg-neutral-600/20"
             title="Clear product selection"
@@ -1075,6 +1146,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
             </button>
           </div>
         )}
+        </div>
       </div>
 
       {isOpen && typeof document !== 'undefined' && ReactDOM.createPortal(
@@ -1117,7 +1189,16 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               <div className="px-4 py-4 border-b border-white/5 relative" style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
                 {/* Close button - Top left corner */}
                 <button
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => {
+                    setIsOpen(false);
+                    // Clear customer search from main search bar when closing customer modal
+                    if (isCustomerMode) {
+                      setInternalValue('');
+                      setIsCustomerMode(false);
+                      setCustomerSearchValue('');
+                      onSearchChange('');
+                    }
+                  }}
                   className="absolute top-1/2 -translate-y-1/2 w-12 h-12 rounded-full border border-neutral-600/50 hover:border-neutral-400/70 bg-transparent hover:bg-neutral-600/10 text-neutral-400 hover:text-neutral-200 transition-all duration-300 flex items-center justify-center"
                   title="Close"
                   style={{ left: '8px' }}
@@ -1887,13 +1968,64 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
             </>
           )}
 
-          {/* Categories Section - Only show if not in customer-only or product-only mode */}
-          {!isCustomerMode && !isProductMode && !productOnlyMode && !isAuditDropdownMode && !isPurchaseOrderMode && filteredCategories.length > 0 && (
+
+
+          {/* No results */}
+          {filteredCustomers.length === 0 && filteredProducts.length === 0 && (isCustomerMode ? customerSearchValue : debouncedSearchValue) && (
+            <div className="px-4 py-6 text-sm text-neutral-500 text-center">
+              <div className="mb-4">
+                {isCustomerMode 
+                  ? `No customers found for "${customerSearchValue}"`
+                  : isProductMode || productOnlyMode
+                  ? `No products found for "${debouncedSearchValue}"`
+                  : `No customers or products found for "${debouncedSearchValue}"`
+                }
+              </div>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  // Clear customer search from main search bar when closing
+                  if (isCustomerMode) {
+                    setInternalValue('');
+                    setIsCustomerMode(false);
+                    setCustomerSearchValue('');
+                    onSearchChange('');
+                  }
+                }}
+                className="px-4 py-2 bg-neutral-600/20 hover:bg-neutral-600/40 text-neutral-300 rounded-lg text-xs transition-colors"
+              >
+                Close Search
+              </button>
+            </div>
+          )}
+              </div>
+            </>
+          );
+        })(),
+        document.body
+      )}
+
+      {/* Filter Modal */}
+      {isFilterOpen && typeof document !== 'undefined' && ReactDOM.createPortal(
+        <div 
+          ref={filterDropdownRef}
+          className="fixed rounded-2xl overflow-hidden shadow-2xl"
+          style={{ 
+            top: filterButtonRef.current ? filterButtonRef.current.getBoundingClientRect().bottom + 8 : '50%',
+            left: filterButtonRef.current ? filterButtonRef.current.getBoundingClientRect().left : '50%',
+            width: 'min(90vw, 400px)',
+            maxHeight: 'min(70vh, 600px)',
+            zIndex: 99999,
+            background: 'rgba(23, 23, 23, 0.85)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            boxShadow: '0 32px 64px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            filter: 'contrast(1.1) brightness(1.1)'
+          }}
+        >
+          {/* Categories Section */}
+          {filteredCategories.length > 0 && (
             <>
-              {filteredCustomers.length > 0 && (
-                <div className="h-px bg-neutral-500/20 mx-2" />
-              )}
-              
               <div className="px-4 py-2.5 border-b border-neutral-500/20 bg-transparent">
                 <h3 className="text-xs font-medium text-neutral-300 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>Categories</h3>
               </div>
@@ -1901,7 +2033,10 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
               <div className="py-1 max-h-48 overflow-y-auto">
                 {/* All Categories Option */}
                 <button
-                  onClick={() => handleCategorySelect(null)}
+                  onClick={() => {
+                    handleCategorySelect(null);
+                    setIsFilterOpen(false);
+                  }}
                   className={`w-full px-4 py-2 text-left text-sm transition-all flex items-center justify-between ${
                     !selectedCategory
                       ? 'bg-neutral-600/5 text-neutral-300'
@@ -1916,7 +2051,10 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 {filteredCategories.map((category) => (
                   <button
                     key={category.id}
-                    onClick={() => handleCategorySelect(category.slug)}
+                    onClick={() => {
+                      handleCategorySelect(category.slug);
+                      setIsFilterOpen(false);
+                    }}
                     className={`w-full px-4 py-2 text-left text-sm transition-all flex items-center justify-between ${
                       selectedCategory === category.slug
                         ? 'bg-neutral-600/5 text-neutral-300'
@@ -1940,136 +2078,109 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
             </>
           )}
 
-          {/* Blueprint Fields Section - Only show in products view */}
-          {!isCustomerMode && !isProductMode && !productOnlyMode && !isAuditDropdownMode && !isPurchaseOrderMode && (
-            <>
-              <div className="px-2 py-2 border-t border-neutral-600/10">
-                <div className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2 px-2">
-                  Blueprint Fields
-                </div>
-                
-                {/* Show field selection or field values */}
-                {!selectedFieldForValues ? (
-                  /* Blueprint Field Options */
-                  <div className="space-y-1">
-                    {[
-                      { key: 'effect', label: 'Effect' },
-                      { key: 'lineage', label: 'Lineage' },
-                      { key: 'nose', label: 'Nose' },
-                      { key: 'terpene', label: 'Terpene' },
-                      { key: 'strain_type', label: 'Strain Type' },
-                      { key: 'thca_percentage', label: 'THCA %' },
-                      { key: 'supplier', label: 'Supplier' }
-                    ].map((field) => (
-                      <button
-                        key={field.key}
-                        onClick={() => {
-                          setSelectedFieldForValues(field.key);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm transition-all flex items-center justify-between text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300"
-                      >
-                        <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
-                          {field.label}
-                          <span className="ml-2 text-xs text-neutral-500">
-                            ({availableFieldValues[field.key]?.length || 0} values)
-                          </span>
-                        </span>
-                        <span className="text-xs">→</span>
-                      </button>
-                    ))}
-                    
-                    {/* Clear Blueprint Field Filter */}
-                    {selectedBlueprintField && (
-                      <button
-                        onClick={() => {
-                          if (onBlueprintFieldChange) {
-                            onBlueprintFieldChange(null, null);
-                          }
-                          setIsOpen(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm transition-all text-neutral-500 hover:bg-neutral-600/5 hover:text-neutral-400 border-t border-neutral-600/10 mt-2 pt-3"
-                      >
-                        <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
-                          Clear Blueprint Filter
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  /* Field Values List with Full Height Scrolling */
-                  <div className="flex flex-col" style={{ height: '400px' }}>
-                    {/* Back button - Fixed at top */}
-                    <button
-                      onClick={() => setSelectedFieldForValues(null)}
-                      className="w-full px-4 py-2 text-left text-sm transition-all text-neutral-500 hover:bg-neutral-600/5 hover:text-neutral-400 border-b border-neutral-600/10 mb-2 pb-3 flex-shrink-0"
-                    >
-                      <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
-                        ← Back to Fields
+          {/* Blueprint Fields Section */}
+          <div className="px-2 py-2 border-t border-neutral-600/10">
+            <div className="text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2 px-2">
+              Blueprint Fields
+            </div>
+            
+            {/* Show field selection or field values */}
+            {!selectedFieldForValues ? (
+              /* Blueprint Field Options */
+              <div className="space-y-1">
+                {[
+                  { key: 'effect', label: 'Effect' },
+                  { key: 'lineage', label: 'Lineage' },
+                  { key: 'nose', label: 'Nose' },
+                  { key: 'terpene', label: 'Terpene' },
+                  { key: 'strain_type', label: 'Strain Type' },
+                  { key: 'thca_percentage', label: 'THCA %' },
+                  { key: 'supplier', label: 'Supplier' }
+                ].map((field) => (
+                  <button
+                    key={field.key}
+                    onClick={() => {
+                      setSelectedFieldForValues(field.key);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm transition-all flex items-center justify-between text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300"
+                  >
+                    <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+                      {field.label}
+                      <span className="ml-2 text-xs text-neutral-500">
+                        ({availableFieldValues[field.key]?.length || 0} values)
                       </span>
-                    </button>
-                    
-                    {/* Scrollable Field Values Container - Uses full available height */}
-                    <div className="overflow-y-auto flex-1 space-y-1 pr-1 scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600">
-                      {availableFieldValues[selectedFieldForValues]?.length > 0 ? (
-                        availableFieldValues[selectedFieldForValues].map((value, index) => (
-                          <button
-                            key={`${selectedFieldForValues}-${index}`}
-                            onClick={() => {
-                              if (onBlueprintFieldChange) {
-                                onBlueprintFieldChange(selectedFieldForValues, value);
-                              }
-                              setSelectedFieldForValues(null);
-                              setIsOpen(false);
-                            }}
-                            className={`w-full px-4 py-2 text-left text-sm transition-all flex items-center justify-between ${
-                              selectedBlueprintField === selectedFieldForValues && blueprintFieldValue === value
-                                ? 'bg-neutral-600/5 text-neutral-300'
-                                : 'text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300'
-                            }`}
-                          >
-                            <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }} className="truncate pr-2">
-                              {value}
-                            </span>
-                            {selectedBlueprintField === selectedFieldForValues && blueprintFieldValue === value && (
-                              <span className="text-xs flex-shrink-0">✓</span>
-                            )}
-                          </button>
-                        ))
-                      ) : (
-                        <div className="px-4 py-6 text-sm text-neutral-500 text-center">
-                          No values found for this field
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    </span>
+                    <span className="text-xs">→</span>
+                  </button>
+                ))}
+                
+                {/* Clear Blueprint Field Filter */}
+                {selectedBlueprintField && (
+                  <button
+                    onClick={() => {
+                      if (onBlueprintFieldChange) {
+                        onBlueprintFieldChange(null, null);
+                      }
+                      setIsFilterOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm transition-all text-neutral-500 hover:bg-neutral-600/5 hover:text-neutral-400 border-t border-neutral-600/10 mt-2 pt-3"
+                  >
+                    <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+                      Clear Blueprint Filter
+                    </span>
+                  </button>
                 )}
               </div>
-            </>
-          )}
-
-          {/* No results */}
-          {filteredCustomers.length === 0 && filteredProducts.length === 0 && (!isCustomerMode && !isProductMode && !productOnlyMode ? filteredCategories.length === 0 : true) && (isCustomerMode ? customerSearchValue : debouncedSearchValue) && (
-            <div className="px-4 py-6 text-sm text-neutral-500 text-center">
-              <div className="mb-4">
-                {isCustomerMode 
-                  ? `No customers found for "${customerSearchValue}"`
-                  : isProductMode || productOnlyMode
-                  ? `No products found for "${debouncedSearchValue}"`
-                  : `No customers, products, or categories found for "${debouncedSearchValue}"`
-                }
+            ) : (
+              /* Field Values List with Full Height Scrolling */
+              <div className="flex flex-col" style={{ height: '400px' }}>
+                {/* Back button - Fixed at top */}
+                <button
+                  onClick={() => setSelectedFieldForValues(null)}
+                  className="w-full px-4 py-2 text-left text-sm transition-all text-neutral-500 hover:bg-neutral-600/5 hover:text-neutral-400 border-b border-neutral-600/10 mb-2 pb-3 flex-shrink-0"
+                >
+                  <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+                    ← Back to Fields
+                  </span>
+                </button>
+                
+                {/* Scrollable Field Values Container - Uses full available height */}
+                <div className="overflow-y-auto flex-1 space-y-1 pr-1 scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600">
+                  {availableFieldValues[selectedFieldForValues]?.length > 0 ? (
+                    availableFieldValues[selectedFieldForValues].map((value, index) => (
+                      <button
+                        key={`${selectedFieldForValues}-${index}`}
+                        onClick={() => {
+                          if (onBlueprintFieldChange) {
+                            onBlueprintFieldChange(selectedFieldForValues, value);
+                          }
+                          setSelectedFieldForValues(null);
+                          setIsFilterOpen(false);
+                        }}
+                        className={`w-full px-4 py-2 text-left text-sm transition-all flex items-center justify-between ${
+                          selectedBlueprintField === selectedFieldForValues && blueprintFieldValue === value
+                            ? 'bg-neutral-600/5 text-neutral-300'
+                            : 'text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300'
+                        }`}
+                      >
+                        <span style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }} className="truncate pr-2">
+                          {value}
+                        </span>
+                        {selectedBlueprintField === selectedFieldForValues && blueprintFieldValue === value && (
+                          <span className="text-xs flex-shrink-0">✓</span>
+                        )}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-6 text-sm text-neutral-500 text-center">
+                      No values found for this field
+                    </div>
+                  )}
+                </div>
               </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="px-4 py-2 bg-neutral-600/20 hover:bg-neutral-600/40 text-neutral-300 rounded-lg text-xs transition-colors"
-              >
-                Close Search
-              </button>
-            </div>
-          )}
-              </div>
-            </>
-          );
-        })(),
+            )}
+          </div>
+        </div>,
         document.body
       )}
     </>
