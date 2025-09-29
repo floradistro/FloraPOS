@@ -154,7 +154,7 @@ export class Avery5160PdfService {
       return pdf.output('blob');
     } catch (error) {
       console.error('PDF generation failed:', error);
-      throw new Error(`Failed to generate PDF: ${error.message}`);
+      throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
