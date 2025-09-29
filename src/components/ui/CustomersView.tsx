@@ -724,7 +724,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                 <div className="flex gap-2">
                   <Button
                     onClick={saveUser}
-                    disabled={saving || !editForm.username?.trim() || !editForm.email?.trim()}
+                    disabled={saving || !editForm.username?.trim()}
                     size="sm"
                     className="flex-1 text-xs"
                   >
