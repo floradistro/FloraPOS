@@ -80,6 +80,11 @@ interface Product {
   categories?: Array<{ id: number; name: string; slug: string }>;
   blueprintPricing?: any;
   image?: string;
+  meta_data?: Array<{
+    id: number;
+    key: string;
+    value: any;
+  }>;
 }
 
 interface PrintViewProps {
