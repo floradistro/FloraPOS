@@ -7,7 +7,6 @@ import { Cart } from '../components/ui/Cart';
 import { UnifiedSearchInput, UnifiedSearchInputRef } from '../components/ui/UnifiedSearchInput';
 import { ProductGrid } from '../components/ui/ProductGrid';
 import { AdjustmentsGrid, AdjustmentsGridRef } from '../components/ui/AdjustmentsGrid';
-import BlueprintFieldsGrid from '../components/ui/BlueprintFieldsGrid';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 
@@ -80,8 +79,6 @@ export default function HomePage() {
   
   const [selectedCustomer, setSelectedCustomer] = useState<WordPressUser | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [blueprintProducts, setBlueprintProducts] = useState<Product[]>([]);
-  const [blueprintProductsLoading, setBlueprintProductsLoading] = useState(false);
   
   // Category filter state - moved up to be available for callbacks
   const [categories, setCategories] = useState<Category[]>([]);
@@ -373,7 +370,6 @@ export default function HomePage() {
   }>(null);
   const adjustmentsGridRef = useRef<AdjustmentsGridRef>(null);
   const unifiedSearchRef = useRef<UnifiedSearchInputRef>(null);
-  const blueprintFieldsGridRef = useRef<{ refresh: () => Promise<void> }>(null);
   const customersViewRef = useRef<any>(null);
   const ordersViewRef = useRef<any>(null);
 
@@ -629,9 +625,6 @@ export default function HomePage() {
           await adjustmentsGridRef.current.refreshInventory();
         }
       } else if (currentView === 'blueprint-fields') {
-        if (blueprintFieldsGridRef.current?.refresh) {
-          await blueprintFieldsGridRef.current.refresh();
-        }
       } else if (currentView === 'customers') {
         if (customersViewRef.current?.handleRefresh) {
           await customersViewRef.current.handleRefresh();
@@ -1029,9 +1022,9 @@ export default function HomePage() {
             products={
               currentView === 'products' ? gridProducts :
               currentView === 'adjustments' ? adjustmentProducts : 
-              blueprintProducts
+              []
             }
-            productsLoading={currentView === 'adjustments' ? false : blueprintProductsLoading}
+            productsLoading={currentView === 'adjustments' ? false : false}
             isAuditMode={isAuditMode}
             isRestockMode={isRestockMode}
             selectedCount={selectedProductsCount}
@@ -1139,21 +1132,11 @@ export default function HomePage() {
           )}
 
           {currentView === 'blueprint-fields' && (
-            <div className="h-full overflow-y-auto relative">
-              <BlueprintFieldsGrid
-                ref={blueprintFieldsGridRef}
-                searchQuery={searchQuery}
-                categoryFilter={selectedCategory || undefined}
-                onLoadingChange={(loading) => setBlueprintProductsLoading(loading)} 
-                selectedCustomer={selectedCustomer}
-                printSettings={null}
-                selectedProduct={selectedProduct}
-                onProductSelect={handleProductSelect}
-                onProductsLoad={(products) => {
-                  console.log('Page: Received products from BlueprintFieldsGrid:', products?.length);
-                  setBlueprintProducts(products);
-                }}
-              />
+            <div className="flex items-center justify-center h-64">
+              <div className="text-neutral-400 text-center">
+                <div className="text-lg mb-2">Blueprint Fields View Removed</div>
+                <div className="text-sm">This entire section has been deleted and will be rebuilt from scratch</div>
+              </div>
             </div>
           )}
           
