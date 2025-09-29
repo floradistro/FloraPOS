@@ -344,13 +344,13 @@ export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct
   // Initialize print data with selected product or sample data
   const [printData, setPrintData] = useState(() => {
     if (data) return data;
-    return generateProductLabelData(selectedProduct);
+    return generateProductLabelData(selectedProduct || null);
   });
 
   // Update print data when selected product or field options change
   React.useEffect(() => {
     if (!data) { // Only update if not using custom data
-      setPrintData(generateProductLabelData(selectedProduct));
+      setPrintData(generateProductLabelData(selectedProduct || null));
     }
   }, [selectedProduct, data, showDate, showCategory, showPrice, showSKU, showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier, showMargin, selectedTier, showTierPrice, showTierLabel]);
   const printRef = useRef<HTMLDivElement>(null);
