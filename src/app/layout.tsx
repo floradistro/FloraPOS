@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import '../styles/print.css'
 import { AuthProvider } from '../contexts/AuthContext'
 import { QueryProvider } from '../providers/QueryProvider'
 import { StandardErrorBoundary } from '../components/error/UnifiedErrorBoundary'
