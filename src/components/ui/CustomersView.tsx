@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { Button, IconButton, AlertModal, ConfirmModal, LoadingSpinner } from '../ui';
 import { SimpleRewardsView, EnhancedCustomerOrderHistory } from './rewards';
@@ -14,6 +14,7 @@ interface CustomersViewProps {
   onTotalCustomersChange?: (total: number) => void;
   onAddCustomer?: () => void;
   hideLoadingOverlay?: boolean;
+  searchQuery?: string;
 }
 
 export interface CustomersViewRef {
@@ -123,7 +124,8 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
   onSelectedCustomersChange,
   onTotalCustomersChange,
   onAddCustomer,
-  hideLoadingOverlay = false
+  hideLoadingOverlay = false,
+  searchQuery = ''
 }, ref) => {
   // Use React Query for optimized data fetching
   const {
@@ -208,12 +210,38 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
   // Filter to show only customers
   const customersOnly = users.filter(user => user.roles.includes('customer'));
 
-  // Update parent with total customers count
+  // Filter customers based on search query
+  const filteredCustomers = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return customersOnly;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return customersOnly.filter(customer => {
+      const name = (customer.display_name || customer.name || '').toLowerCase();
+      const email = customer.email?.toLowerCase() || '';
+      const username = customer.username?.toLowerCase() || '';
+      const customerId = customer.id?.toString() || '';
+      
+      // Split query into words for better matching
+      const queryWords = query.split(/\s+/).filter(word => word.length > 0);
+      
+      // Check if all query words match somewhere in customer data
+      return queryWords.every(word => 
+        name.includes(word) || 
+        email.includes(word) || 
+        username.includes(word) ||
+        customerId.includes(word)
+      );
+    });
+  }, [customersOnly, searchQuery]);
+
+  // Update parent with total customers count (use filtered count when searching)
   useEffect(() => {
     if (onTotalCustomersChange) {
-      onTotalCustomersChange(customersOnly.length);
+      onTotalCustomersChange(searchQuery ? filteredCustomers.length : customersOnly.length);
     }
-  }, [customersOnly.length, onTotalCustomersChange]);
+  }, [filteredCustomers.length, customersOnly.length, onTotalCustomersChange, searchQuery]);
 
   // Toggle expand card
   const toggleExpand = (id: number) => {
@@ -807,7 +835,7 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
           {/* Table Rows */}
           <div className="p-4">
-          {users.map((user) => (
+          {filteredCustomers.map((user) => (
             <div
               key={user.id}
               className={`group mb-2 rounded-lg relative overflow-visible transition-all duration-200 ease-out ${

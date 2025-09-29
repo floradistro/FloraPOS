@@ -1260,6 +1260,7 @@ export default function HomePage() {
                   <CustomersViewLazy 
                     ref={customersViewRef} 
                     hideLoadingOverlay={isRefreshing}
+                    searchQuery={searchQuery}
                   />
                 </Suspense>
               </StandardErrorBoundary>
