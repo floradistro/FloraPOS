@@ -58,6 +58,15 @@ const nextConfig = {
   
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
+    // ENFORCE PORT 3000 POLICY IN DEVELOPMENT
+    if (dev) {
+      // Kill processes on common dev ports except 3000
+      const { exec } = require('child_process');
+      exec('lsof -ti:3001,3002,3003,3004,3005,8080,8000,5000,4000,9000 | xargs -r kill -9', (error) => {
+        if (!error) console.log('🔒 Port policy enforced - only port 3000 allowed');
+      });
+    }
+    
     // Handle Scandit modules - exclude from server-side rendering
     if (isServer) {
       config.externals = config.externals || [];

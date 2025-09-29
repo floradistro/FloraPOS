@@ -45,7 +45,7 @@ import { Category } from '../components/ui/CategoryFilter';
 import { CategoriesService } from '../services/categories-service';
 import { CartService } from '../services/cart-service';
 import { ReloadDebugger } from '../lib/debug-reload';
-import { AlertModal, SettingsDropdown, InventoryHistoryView, MenuView } from '../components/ui';
+import { AlertModal, SettingsDropdown, InventoryHistoryView, MenuView, PrintView } from '../components/ui';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function HomePage() {
@@ -90,6 +90,8 @@ export default function HomePage() {
   
   // Products from ProductGrid for blueprint field extraction
   const [gridProducts, setGridProducts] = useState<Product[]>([]);
+  // All products (including zero stock) for blueprint-fields search
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   
   // Save current view's selections
   const saveCurrentViewSelections = useCallback(() => {
@@ -424,6 +426,99 @@ export default function HomePage() {
     setGridProducts(products);
   }, []);
 
+  // Fetch all products for blueprint-fields search (including zero stock)
+  const fetchAllProducts = useCallback(async () => {
+    if (!user?.location_id) return;
+    
+    try {
+      console.log('🔍 Fetching all products for blueprint-fields search...');
+      
+      const params = new URLSearchParams({
+        per_page: '1000',
+        page: '1',
+        _t: Date.now().toString(),
+        include_zero_stock: 'true' // Include products with zero stock
+      });
+
+      if (user?.location_id) {
+        params.append('location_id', user.location_id);
+      }
+
+      const response = await fetch(`/api/proxy/flora-im/products?${params}`, {
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        console.log(`✅ Loaded ${result.data.length} products (including zero stock) for blueprint-fields`);
+        
+        // Process products and fetch meta_data from WooCommerce for blueprint fields
+        const processedProducts = await Promise.all(
+          result.data.map(async (product: any) => {
+            const inventory = product.inventory?.map((inv: any) => ({
+              location_id: inv.location_id?.toString() || '0',
+              location_name: inv.location_name || `Location ${inv.location_id}`,
+              stock: parseFloat(inv.stock) || parseFloat(inv.quantity) || 0,
+              manage_stock: true
+            })) || [];
+
+            // Fetch meta_data from WooCommerce for blueprint fields
+            let metaData = product.meta_data || [];
+            try {
+              const wcResponse = await fetch(`/api/proxy/woocommerce/products/${product.id}`, {
+                headers: { 'Cache-Control': 'no-cache' }
+              });
+              
+              if (wcResponse.ok) {
+                const wcProduct = await wcResponse.json();
+                if (wcProduct.meta_data) {
+                  metaData = wcProduct.meta_data;
+                  console.log(`🔍 Loaded meta_data for ${product.name}:`, metaData.length, 'fields');
+                }
+              }
+            } catch (error) {
+              console.warn(`Failed to load meta_data for product ${product.id}:`, error);
+            }
+
+            // Load blueprint pricing for this product
+            let blueprintPricing = null;
+            try {
+              const categoryIds = product.categories?.map((cat: any) => cat.id) || [];
+              const { BlueprintPricingService } = await import('../services/blueprint-pricing-service');
+              blueprintPricing = await BlueprintPricingService.getBlueprintPricing(product.id, categoryIds);
+              console.log(`🔍 Loaded blueprint pricing for ${product.name}:`, blueprintPricing?.ruleGroups?.length || 0, 'rule groups');
+            } catch (error) {
+              console.warn(`Failed to load blueprint pricing for product ${product.id}:`, error);
+            }
+
+            return {
+              id: product.id,
+              name: product.name,
+              sku: product.sku || '',
+              type: product.type || 'simple',
+              status: product.status || 'publish',
+              regular_price: product.regular_price || '0',
+              sale_price: product.sale_price,
+              image: product.image,
+              categories: product.categories || [],
+              inventory,
+              total_stock: product.total_stock || 0,
+              meta_data: metaData,
+              blueprintPricing: blueprintPricing
+            };
+          })
+        );
+        
+        setAllProducts(processedProducts);
+        console.log('🔍 All products loaded for blueprint-fields with meta_data:', processedProducts.length, 'products');
+      }
+    } catch (error) {
+      console.error('Error fetching all products:', error);
+      setAllProducts([]);
+    }
+  }, [user?.location_id]);
+
   // Memoized fetch categories function
   const fetchCategories = useCallback(async () => {
     try {
@@ -472,6 +567,13 @@ export default function HomePage() {
       // Categories failed to load, continue without them
     });
   }, []);
+
+  // Fetch all products when user is available (for blueprint-fields)
+  useEffect(() => {
+    if (user?.location_id && allProducts.length === 0) {
+      fetchAllProducts();
+    }
+  }, [user?.location_id, fetchAllProducts, allProducts.length]);
 
   const handleAddToCart = (product: Product) => {
     const result = CartService.createCartItemFromProduct(product);
@@ -746,6 +848,11 @@ export default function HomePage() {
     if (view === 'adjustments') {
       setCartItems([]);
     }
+    
+    // Fetch all products when entering blueprint-fields view
+    if (view === 'blueprint-fields' && allProducts.length === 0) {
+      fetchAllProducts();
+    }
   };
 
   const handleHistoryBack = () => {
@@ -1019,11 +1126,18 @@ export default function HomePage() {
             onCustomerSelect={handleCustomerSelect}
             selectedProduct={selectedProduct}
             onProductSelect={handleProductSelect}
-            products={
-              currentView === 'products' ? gridProducts :
-              currentView === 'adjustments' ? adjustmentProducts : 
-              []
-            }
+            products={(() => {
+              const productList = currentView === 'products' ? gridProducts :
+                currentView === 'adjustments' ? adjustmentProducts : 
+                currentView === 'blueprint-fields' ? allProducts :
+                [];
+              
+              if (currentView === 'blueprint-fields') {
+                console.log('🔍 Passing products to Header for blueprint-fields:', productList.length, 'products');
+              }
+              
+              return productList;
+            })()}
             productsLoading={currentView === 'adjustments' ? false : false}
             isAuditMode={isAuditMode}
             isRestockMode={isRestockMode}
@@ -1080,7 +1194,7 @@ export default function HomePage() {
         
             {/* Main Content */}
             <main className={`flex-1 relative transition-all duration-500 ease-in-out ${
-              currentView !== 'products' && currentView !== 'blueprint-fields' ? 'mr-[-320px]' : 'mr-0'
+              currentView !== 'products' ? 'mr-[-320px]' : 'mr-0'
             }`}>
           {/* Loading Overlays - Only show refresh overlays for views without their own loading */}
           {isRefreshing && currentView !== 'blueprint-fields' && (
@@ -1132,11 +1246,10 @@ export default function HomePage() {
           )}
 
           {currentView === 'blueprint-fields' && (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-neutral-400 text-center">
-                <div className="text-lg mb-2">Blueprint Fields View Removed</div>
-                <div className="text-sm">This entire section has been deleted and will be rebuilt from scratch</div>
-              </div>
+            <div className="h-full">
+              <StandardErrorBoundary componentName="PrintView">
+                <PrintView selectedProduct={selectedProduct} />
+              </StandardErrorBoundary>
             </div>
           )}
           
@@ -1190,11 +1303,11 @@ export default function HomePage() {
 
             </main>
 
-        {/* Cart Panel - Only show for products and blueprint-fields views */}
+        {/* Cart Panel - Only show for products view */}
         <div className={`w-80 flex-shrink-0 transition-transform duration-500 ease-in-out ${
-          currentView !== 'products' && currentView !== 'blueprint-fields' ? 'transform translate-x-full' : 'transform translate-x-0'
+          currentView !== 'products' ? 'transform translate-x-full' : 'transform translate-x-0'
         }`}>
-          {!showCheckout && currentView !== 'blueprint-fields' && currentView === 'products' ? (
+          {!showCheckout && currentView === 'products' ? (
             <StandardErrorBoundary componentName="Cart">
               <Cart
                 items={cartItems}
@@ -1214,13 +1327,6 @@ export default function HomePage() {
                 // onUpdateAdjustment={handleUpdateAdjustment} - removed
               />
             </StandardErrorBoundary>
-          ) : currentView === 'blueprint-fields' ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-neutral-400 text-center">
-                <div className="text-lg mb-2">Print View Coming Soon</div>
-                <div className="text-sm">This section will be rebuilt from scratch</div>
-              </div>
-            </div>
           ) : (
             <CriticalErrorBoundary componentName="Checkout">
               <Suspense fallback={<LoadingSpinner size="lg" />}>

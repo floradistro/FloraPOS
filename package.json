@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "bash scripts/enforce-port-3000.sh && PORT=3000 next dev -p 3000",
     "dev:fresh": "rm -rf .next && npm run dev",
     "dev:clear": "node scripts/clear-dev-cache.js",
     "build": "NODE_ENV=production next build",
