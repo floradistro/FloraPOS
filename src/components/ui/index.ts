@@ -19,3 +19,4 @@ export { WarningMessages } from './WarningMessages';
 export { SettingsDropdown } from './SettingsDropdown';
 export { InventoryHistoryView } from './InventoryHistoryView';
 export { MenuView } from './MenuView';
+export { MenuToolbar, useMenuConfig } from './MenuToolbar';

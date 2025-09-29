@@ -1381,58 +1381,135 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           )}
 
           {/* Products Section */}
-          {filteredProducts.length > 0 && (
+          {(isProductMode || filteredProducts.length > 0) && (
             <>
-              {!productOnlyMode && filteredCustomers.length > 0 && (
+              {!productOnlyMode && !isProductMode && filteredCustomers.length > 0 && (
                 <div className="h-px bg-neutral-500/20 mx-2" />
               )}
               
-              <div className="px-4 py-2.5 border-b border-neutral-500/20 bg-transparent">
-                <h3 className="text-xs font-medium text-neutral-300 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
-                  {isProductMode ? 'Select Product' : 'Products'}
-                </h3>
+              {/* Products Header with Search */}
+              <div className="px-4 py-4 border-b border-white/5 relative" style={{ background: 'rgba(255, 255, 255, 0.02)' }}>
+                {/* Close button - Only show if in product-only mode */}
+                {productOnlyMode && (
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="absolute top-1/2 -translate-y-1/2 w-12 h-12 rounded-full border border-neutral-600/50 hover:border-neutral-400/70 bg-transparent hover:bg-neutral-600/10 text-neutral-400 hover:text-neutral-200 transition-all duration-300 flex items-center justify-center"
+                    title="Close"
+                    style={{ left: '8px' }}
+                  >
+                    <span className="text-lg font-medium tracking-wide" style={{ fontFamily: 'Tiempos, serif' }}>
+                      ×
+                    </span>
+                  </button>
+                )}
+                
+                <div className="flex items-center justify-center gap-2">
+                  {/* Product Search Bar - Floating style */}
+                  <div className="flex-1 flex items-center justify-center max-w-[500px]">
+                    <div className="relative w-full">
+                      <input
+                        type="text"
+                        placeholder="Search products..."
+                        value={searchValue}
+                        onChange={(e) => onSearchChange(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            setIsOpen(false);
+                          } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            // Add keyboard navigation for products if needed
+                          } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            // Add keyboard navigation for products if needed
+                          } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (filteredProducts.length === 1) {
+                              handleProductSelect(filteredProducts[0]);
+                            }
+                          }
+                        }}
+                        className="w-full h-[38px] bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg placeholder-neutral-500 focus:placeholder-transparent focus:bg-neutral-600/15 focus:outline-none text-sm text-center placeholder:text-center transition-all duration-200 ease-out text-neutral-400"
+                        style={{ fontFamily: 'Tiempos, serif' }}
+                        autoFocus={productOnlyMode}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
               
-              <div className="py-1 max-h-48 overflow-y-auto">
-                {/* Clear Product Selection */}
-                <button
-                  onClick={() => handleProductSelect(null)}
-                  className={`w-full px-4 py-2.5 text-left text-sm transition-all flex items-center justify-between group ${
-                    !selectedProduct
-                      ? 'bg-neutral-600/5 text-neutral-300'
-                      : 'text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300'
-                  }`}
-                >
-                  <span>No Product</span>
-                  {!selectedProduct && <span className="text-xs">✓</span>}
-                </button>
-
-                {/* Product List */}
-                {filteredProducts.map((product) => (
+              {/* Full Height Products List */}
+              <div className="flex-1 overflow-y-auto" style={{ maxHeight: productOnlyMode ? 'calc(100vh - 200px)' : '400px' }}>
+                <div className="py-2">
+                  {/* Clear Product Selection */}
                   <button
-                    key={product.id}
-                    onClick={() => handleProductSelect(product)}
-                    className={`w-full px-4 py-2.5 text-left text-sm transition-all flex items-center justify-between group ${
-                      selectedProduct?.id === product.id
-                        ? 'bg-neutral-600/5 text-neutral-300'
-                        : 'text-neutral-400 hover:bg-neutral-600/5 hover:text-neutral-300'
+                    onClick={() => handleProductSelect(null)}
+                    className={`w-full px-4 py-3 text-left text-sm transition-all flex items-center justify-between group hover:bg-neutral-600/5 ${
+                      !selectedProduct
+                        ? 'bg-neutral-600/10 text-neutral-200 border-l-2 border-blue-400'
+                        : 'text-neutral-400 hover:text-neutral-300'
                     }`}
                   >
-                    <div className="flex-1">
-                      <div className="font-medium flex items-center gap-2" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
-                        <span>{product.name}</span>
-                        {product.categories && product.categories.length > 0 && (
-                          <span className="text-xs text-neutral-400 font-normal opacity-50">
-                            • {product.categories[0].name}
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-neutral-500"></div>
+                      <span style={{ fontFamily: 'Tiempos, serif' }}>No Product Selected</span>
+                    </div>
+                    {!selectedProduct && <span className="text-xs text-blue-400">✓</span>}
+                  </button>
+
+                  {/* Product List */}
+                  {filteredProducts.map((product, index) => (
+                    <button
+                      key={product.id}
+                      onClick={() => handleProductSelect(product)}
+                      className={`w-full px-4 py-3 text-left text-sm transition-all flex items-center justify-between group hover:bg-neutral-600/5 ${
+                        selectedProduct?.id === product.id
+                          ? 'bg-neutral-600/10 text-neutral-200 border-l-2 border-blue-400'
+                          : 'text-neutral-400 hover:text-neutral-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' }}>
+                            {product.name}
+                          </div>
+                          {product.categories && product.categories.length > 0 && (
+                            <div className="text-xs text-neutral-500 truncate mt-0.5">
+                              {product.categories[0].name}
+                            </div>
+                          )}
+                          {product.sku && (
+                            <div className="text-xs text-neutral-600 truncate mt-0.5">
+                              SKU: {product.sku}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {product.regular_price && (
+                          <span className="text-xs text-neutral-500">
+                            ${product.regular_price}
                           </span>
                         )}
+                        {selectedProduct?.id === product.id && (
+                          <span className="text-xs text-blue-400">✓</span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                  
+                  {/* No products found message */}
+                  {filteredProducts.length === 0 && searchValue && (
+                    <div className="px-4 py-8 text-center text-neutral-500">
+                      <div className="text-sm" style={{ fontFamily: 'Tiempos, serif' }}>
+                        No products found for "{searchValue}"
+                      </div>
+                      <div className="text-xs mt-1 text-neutral-600">
+                        Try adjusting your search terms
                       </div>
                     </div>
-                    {selectedProduct?.id === product.id && (
-                      <span className="text-xs ml-2">✓</span>
-                    )}
-                  </button>
-                ))}
+                  )}
+                </div>
               </div>
             </>
           )}

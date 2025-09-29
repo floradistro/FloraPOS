@@ -1236,6 +1236,7 @@ export default function HomePage() {
           ) : currentView === 'blueprint-fields' ? (
             <PrintSettingsPanel
               selectedCustomer={selectedCustomer}
+              selectedProduct={selectedProduct}
               onCustomerSelect={handleCustomerSelect}
               onSettingsChange={setPrintSettings}
             />

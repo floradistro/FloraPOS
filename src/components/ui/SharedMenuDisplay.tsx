@@ -37,6 +37,7 @@ interface SharedMenuDisplayProps {
   onSideClick?: (side: string) => void;
   selectedMenuSection?: string | null;
   onSectionClick?: (section: string) => void;
+  isPreview?: boolean;
 }
 
 export function SharedMenuDisplay({
@@ -71,7 +72,8 @@ export function SharedMenuDisplay({
   selectedSide = '',
   onSideClick,
   selectedMenuSection = null,
-  onSectionClick
+  onSectionClick,
+  isPreview = false
 }: SharedMenuDisplayProps) {
   console.log('🚨 SharedMenuDisplay RENDERING with:', {
     leftMenuViewMode,
@@ -112,6 +114,55 @@ export function SharedMenuDisplay({
     
     const field = productFields.fields.find(f => f.field_name === fieldName);
     return field?.field_value?.toString() || '';
+  };
+
+  // Format blueprint pricing for display
+  const formatBlueprintPricing = (product: Product): { tiers: Array<{label: string, price: string}>, hasMultipleTiers: boolean } => {
+    if (!product.blueprintPricing || !product.blueprintPricing.ruleGroups || product.blueprintPricing.ruleGroups.length === 0) {
+      return { tiers: [], hasMultipleTiers: false };
+    }
+
+    const allTiers: Array<{label: string, price: string, sortOrder: number}> = [];
+
+    // Collect all tiers from all rule groups
+    product.blueprintPricing.ruleGroups.forEach(ruleGroup => {
+      if (ruleGroup.tiers && ruleGroup.tiers.length > 0) {
+        ruleGroup.tiers.forEach(tier => {
+          // Create a display label that combines tier info
+          const label = tier.label || `${tier.min}${tier.unit || ''}`;
+          const price = `$${tier.price.toFixed(2)}`;
+          
+          // Sort order: prioritize lower minimums, then by price
+          const sortOrder = tier.min * 1000 + tier.price;
+          
+          allTiers.push({
+            label,
+            price,
+            sortOrder
+          });
+        });
+      }
+    });
+
+    // Sort tiers by minimum quantity and price
+    allTiers.sort((a, b) => a.sortOrder - b.sortOrder);
+    
+    // Remove duplicates and limit to most relevant tiers
+    const uniqueTiers = allTiers.reduce((unique, tier) => {
+      const exists = unique.find(t => t.label === tier.label && t.price === tier.price);
+      if (!exists) {
+        unique.push(tier);
+      }
+      return unique;
+    }, [] as Array<{label: string, price: string, sortOrder: number}>);
+
+    // Return up to 2 most relevant tiers
+    const displayTiers = uniqueTiers.slice(0, 2).map(({label, price}) => ({label, price}));
+    
+    return {
+      tiers: displayTiers,
+      hasMultipleTiers: displayTiers.length > 1
+    };
   };
 
   // Get display value for any column
@@ -310,7 +361,7 @@ export function SharedMenuDisplay({
 
     return (
       <div className={`flex justify-center items-center ${
-        orientation === 'vertical' ? 'flex-col gap-1' : 'flex-wrap gap-2'
+        orientation === 'vertical' ? 'flex-col gap-4' : 'flex-wrap gap-6'
       }`}>
         {Array.from(tiersByRule.entries()).map(([ruleName, tiers], ruleIndex) => (
           <div key={ruleName} className={`flex items-center gap-1 ${
@@ -321,26 +372,33 @@ export function SharedMenuDisplay({
             }`} style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
               {ruleName}
             </div>
-            <div className={`flex gap-1 ${
+            <div className={`flex gap-3 ${
               orientation === 'vertical' ? 'flex-wrap justify-center' : ''
             }`}>
               {tiers.map((tier, index) => (
                 <div
                   key={`${ruleName}-${index}`}
-                  className={`relative rounded-2xl px-4 py-3 transition-all duration-500 ease-out cursor-pointer border backdrop-blur-md hover:scale-105 shadow-lg hover:shadow-2xl group ${
-                    orientation === 'vertical' ? 'text-sm' : 'text-xs'
+                  className={`relative rounded-full flex flex-col items-center justify-center transition-all duration-500 ease-out cursor-pointer border backdrop-blur-md hover:scale-105 shadow-lg hover:shadow-2xl group ${
+                    orientation === 'vertical' ? 'w-16 h-16 text-xs' : 'w-12 h-12 text-[10px]'
                   }`}
                   style={{
                     ...getContainerStyle(),
+                    aspectRatio: '1',
+                    minWidth: orientation === 'vertical' ? '64px' : '48px',
+                    minHeight: orientation === 'vertical' ? '64px' : '48px',
                     boxShadow: pandaMode 
                       ? '0 8px 25px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.2)'
                       : '0 8px 25px rgba(0,0,0,0.1), inset 0 1px 0 rgba(156,163,175,0.2)'
                   }}
                 >
-                  <div className="font-semibold text-center relative z-10 tracking-wide transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
+                  <div className={`font-semibold text-center relative z-10 tracking-wide transition-colors duration-300 leading-tight ${
+                    orientation === 'vertical' ? 'text-[10px]' : 'text-[8px]'
+                  }`} style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}dd` }}>
                     {tier.label}
                   </div>
-                  <div className="font-bold text-center mt-1 relative z-10 transition-colors duration-300" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                  <div className={`font-bold text-center relative z-10 transition-colors duration-300 leading-tight ${
+                    orientation === 'vertical' ? 'text-xs' : 'text-[10px]'
+                  }`} style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
                     ${tier.price.toFixed(2)}
                   </div>
                 </div>
@@ -400,8 +458,8 @@ export function SharedMenuDisplay({
       <div className="flex-1 h-full overflow-y-auto pb-8" style={getBackgroundStyle()}>
         {sectionTitle && (
           <div className="backdrop-blur-md px-8 py-4 border-b relative shadow-sm" style={getHeaderStyle()}>
-            <h2 className="uppercase tracking-widest relative z-10 text-xl text-center" 
-                style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, letterSpacing: '0.15em', color: fontColor }}>
+                    <h2 className={`uppercase tracking-widest relative z-10 text-center ${isPreview ? 'text-3xl' : 'text-xl'}`} 
+                        style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, letterSpacing: '0.15em', color: fontColor }}>
               {sectionTitle}
             </h2>
             <div className="w-28 h-px mt-3 mx-auto" 
@@ -453,57 +511,50 @@ export function SharedMenuDisplay({
                           {leftColumn.map((product, index) => {
                             return (
                               <div key={product.id} 
-                                   className="overflow-visible cursor-pointer transition-all duration-200 ease-out hover:shadow-md"
+                                   className="relative cursor-pointer transition-all duration-300 ease-out hover:bg-white/5 group"
                                    style={{
-                                     backgroundColor: pandaMode ? '#000000' : containerColor,
-                                     border: pandaMode ? '1px solid rgba(255, 255, 255, 0.2)' : `1px solid ${containerColor}`,
-                                     borderRadius: '8px',
-                                     padding: '8px',
-                                     color: fontColor,
-                                     transition: 'all 0.2s ease-out'
+                                     padding: '12px 0',
+                                     color: fontColor
                                    }}>
-                                <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(category.slug).length}, 1fr)` }}>
-                                  {getCategoryColumns(category.slug).map((columnName, colIndex) => {
-                                    const value = getColumnValue(product, columnName, category.slug);
-                                    const isFirstColumn = colIndex === 0;
-                                    return (
-                                      <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
-                                        {isFirstColumn && currentShowImages && (
-                                          <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
-                                            {product.image ? (
-                                              <img src={product.image} alt={product.name}
-                                                   className="w-full h-full object-contain rounded" loading="lazy" />
-                                            ) : (
-                                              <div className="w-full h-full flex items-center justify-center rounded" 
-                                                   style={getContainerStyle()}>
-                                                <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-                                        <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
-                                          <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} text-sm leading-tight ${
-                                            isFirstColumn ? 'block' : ''
-                                          }`} style={{ 
-                                            fontFamily: 'Tiempo, serif', 
-                                            textShadow: isFirstColumn ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                                            color: isFirstColumn ? fontColor : `${fontColor}dd` 
-                                          }}>
-                                            {value || 'N/A'}
-                                          </span>
-                                          {isFirstColumn && columnName === 'name' && product.sku && (
-                                            <p className="text-xs mt-1" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                              {product.sku}
-                                            </p>
-                                          )}
+                                {/* Product Content */}
+                                <div className="flex items-center gap-3 relative z-10">
+                                  {currentShowImages && (
+                                    <div className="w-8 h-8 relative overflow-hidden flex-shrink-0">
+                                      {product.image ? (
+                                        <img src={product.image} alt={product.name}
+                                             className="w-full h-full object-contain rounded opacity-70 group-hover:opacity-100 transition-opacity duration-300" loading="lazy" />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                          <svg className="w-5 h-5 text-neutral-600 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                          </svg>
                                         </div>
-                                      </div>
-                                    );
-                                  })}
+                                      )}
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-medium text-sm leading-tight truncate group-hover:text-opacity-90 transition-all duration-300" style={{ 
+                                      fontFamily: 'Tiempo, serif', 
+                                      color: fontColor 
+                                    }}>
+                                      {product.name}
+                                    </h3>
+                                    {product.sku && (
+                                      <p className="text-xs mt-0.5 truncate opacity-60 group-hover:opacity-80 transition-opacity duration-300" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                                        {product.sku}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
+                                
+                                {/* Subtle Fading Divider Line */}
+                                <div 
+                                  className="absolute bottom-0 left-0 right-0 h-px"
+                                  style={{
+                                    background: `linear-gradient(to right, transparent 0%, ${fontColor}20 20%, ${fontColor}40 50%, ${fontColor}20 80%, transparent 100%)`
+                                  }}
+                                />
                               </div>
                             );
                           })}
@@ -515,50 +566,50 @@ export function SharedMenuDisplay({
                             {rightColumn.map((product, index) => {
                               return (
                                 <div key={product.id} 
-                                     className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
-                                     style={getContainerStyle()}>
-                                  <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(category.slug).length}, 1fr)` }}>
-                                    {getCategoryColumns(category.slug).map((columnName, colIndex) => {
-                                      const value = getColumnValue(product, columnName, category.slug);
-                                      const isFirstColumn = colIndex === 0;
-                                      return (
-                                        <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
-                                          {isFirstColumn && currentShowImages && (
-                                            <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
-                                              {product.image ? (
-                                                <img src={product.image} alt={product.name}
-                                                     className="w-full h-full object-contain rounded" loading="lazy" />
-                                              ) : (
-                                                <div className="w-full h-full flex items-center justify-center rounded" 
-                                                     style={getContainerStyle()}>
-                                                  <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                                  </svg>
-                                                </div>
-                                              )}
-                                            </div>
-                                          )}
-                                          <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
-                                            <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} text-sm leading-tight ${
-                                              isFirstColumn ? 'block' : ''
-                                            }`} style={{ 
-                                              fontFamily: 'Tiempo, serif', 
-                                              textShadow: isFirstColumn ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                                              color: isFirstColumn ? fontColor : `${fontColor}dd` 
-                                            }}>
-                                              {value || 'N/A'}
-                                            </span>
-                                            {isFirstColumn && columnName === 'name' && product.sku && (
-                                              <p className="text-xs mt-1" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                                {product.sku}
-                                              </p>
-                                            )}
+                                     className="relative cursor-pointer transition-all duration-300 ease-out hover:bg-white/5 group"
+                                     style={{
+                                       padding: '12px 0',
+                                       color: fontColor
+                                     }}>
+                                  {/* Product Content */}
+                                  <div className="flex items-center gap-3 relative z-10">
+                                    {currentShowImages && (
+                                      <div className="w-8 h-8 relative overflow-hidden flex-shrink-0">
+                                        {product.image ? (
+                                          <img src={product.image} alt={product.name}
+                                               className="w-full h-full object-contain rounded opacity-70 group-hover:opacity-100 transition-opacity duration-300" loading="lazy" />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center">
+                                            <svg className="w-5 h-5 text-neutral-600 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                            </svg>
                                           </div>
-                                        </div>
-                                      );
-                                    })}
+                                        )}
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <h3 className="font-medium text-sm leading-tight truncate group-hover:text-opacity-90 transition-all duration-300" style={{ 
+                                        fontFamily: 'Tiempo, serif', 
+                                        color: fontColor 
+                                      }}>
+                                        {product.name}
+                                      </h3>
+                                      {product.sku && (
+                                        <p className="text-xs mt-0.5 truncate opacity-60 group-hover:opacity-80 transition-opacity duration-300" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                                          {product.sku}
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
+                                  
+                                  {/* Subtle Fading Divider Line */}
+                                  <div 
+                                    className="absolute bottom-0 left-0 right-0 h-px"
+                                    style={{
+                                      background: `linear-gradient(to right, transparent 0%, ${fontColor}20 20%, ${fontColor}40 50%, ${fontColor}20 80%, transparent 100%)`
+                                    }}
+                                  />
                                 </div>
                               );
                             })}
@@ -569,47 +620,57 @@ export function SharedMenuDisplay({
                   })()
                 ) : (
                   /* Grid Layout for Non-Flower Products */
-                  <div className={`grid gap-2 px-6 pt-4 pb-4 ${
+                  <div className={`grid gap-4 px-6 pt-4 pb-4 ${
                     orientation === 'vertical' 
                       ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
                       : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
                   }`} style={getBackgroundStyle()}>
                     {categoryProducts.map(product => (
                       <div key={product.id} 
-                           className="rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
-                           style={getContainerStyle()}>
+                           className="relative cursor-pointer transition-all duration-300 ease-out hover:bg-white/5 group"
+                           style={{
+                             padding: '12px',
+                             color: fontColor
+                           }}>
                         
-                        {/* Product Image - Top Center */}
-                        <div className="flex justify-center mb-3">
-                          <div className="w-20 h-20 relative overflow-hidden rounded-lg">
-                            {product.image ? (
-                              <img src={product.image} alt={product.name}
-                                   className="w-full h-full object-contain rounded-lg" loading="lazy" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center rounded-lg" 
-                                   style={getContainerStyle()}>
-                                <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                </svg>
-                              </div>
+                        {/* Card Layout: Image Above Product Name */}
+                        <div className="flex flex-col items-center text-center relative z-10">
+                          {(isDualMenu ? getImageSetting(isLeftSide, categorySlug) : showImages) && (
+                            <div className="w-16 h-16 relative overflow-hidden flex-shrink-0 mb-3">
+                              {product.image ? (
+                                <img src={product.image} alt={product.name}
+                                     className="w-full h-full object-contain rounded opacity-70 group-hover:opacity-100 transition-opacity duration-300" loading="lazy" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <svg className="w-8 h-8 text-neutral-600 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div className="w-full">
+                            <h3 className={`font-medium leading-tight group-hover:text-opacity-90 transition-all duration-300 ${
+                              orientation === 'vertical' ? 'text-base' : 'text-sm'
+                            }`} style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                              {product.name}
+                            </h3>
+                            {product.sku && (
+                              <p className="text-xs mt-1 opacity-60 group-hover:opacity-80 transition-opacity duration-300" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                                {product.sku}
+                              </p>
                             )}
                           </div>
                         </div>
                         
-                        {/* Product Name and Info - Below Image */}
-                        <div className="text-center">
-                          <h3 className={`font-semibold leading-tight mb-1 ${
-                            orientation === 'vertical' ? 'text-base' : 'text-sm'
-                          }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
-                            {product.name}
-                          </h3>
-                          {product.sku && (
-                            <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                              {product.sku}
-                            </p>
-                          )}
-                        </div>
+                        {/* Subtle Fading Divider Line */}
+                        <div 
+                          className="absolute bottom-0 left-0 right-0 h-px"
+                          style={{
+                            background: `linear-gradient(to right, transparent 0%, ${fontColor}20 20%, ${fontColor}40 50%, ${fontColor}20 80%, transparent 100%)`
+                          }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -640,9 +701,12 @@ export function SharedMenuDisplay({
     )
   })).filter(group => group.products.length > 0);
 
-  return (
-    <div className="h-full w-full text-slate-900 overflow-hidden flex flex-col relative" 
-         style={{ background: `linear-gradient(to bottom right, ${backgroundColor}, ${backgroundColor}dd, ${backgroundColor}bb)`, color: fontColor }}>
+  const menuContent = (
+    <div className={`h-full w-full text-slate-900 flex flex-col relative ${isPreview ? 'preview-mode overflow-hidden' : 'overflow-y-auto'}`} 
+         style={{ 
+           background: `linear-gradient(to bottom right, ${backgroundColor}, ${backgroundColor}dd, ${backgroundColor}bb)`, 
+           color: fontColor
+         }}>
       
       {/* Header - Hide in dual menu mode */}
       {!isDualMenu && (
@@ -655,9 +719,11 @@ export function SharedMenuDisplay({
             {/* Title - Centered with responsive sizing */}
             <div className="text-center">
               <h1 className={`tracking-wide ${
-                orientation === 'vertical' 
-                  ? 'text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl' 
-                  : 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl'
+                isPreview 
+                  ? 'text-3xl' 
+                  : orientation === 'vertical' 
+                    ? 'text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl' 
+                    : 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl'
               }`} style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                 {selectedCategoryName ? `${selectedCategoryName} Menu` : 'Flora Menu'}
               </h1>
@@ -697,17 +763,19 @@ export function SharedMenuDisplay({
                       onSectionClick && onSectionClick('L');
                     }}
                     style={{
-                      border: selectedMenuSection === 'L' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                      backgroundColor: selectedMenuSection === 'L' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                      border: selectedMenuSection === 'L' ? '2px solid rgba(34, 197, 94, 0.8)' : '1px solid rgba(255,255,255,0.1)',
+                      backgroundColor: selectedMenuSection === 'L' ? 'rgba(34, 197, 94, 0.1)' : 'transparent',
                       borderRadius: '6px',
                       margin: '2px',
                       position: 'relative',
-                      zIndex: selectedMenuSection === 'L' ? 10 : 1
+                      zIndex: selectedMenuSection === 'L' ? 10 : 1,
+                      boxShadow: selectedMenuSection === 'L' ? '0 0 20px rgba(34, 197, 94, 0.3)' : 'none'
                     }}
                   >
                     <div className="backdrop-blur-md px-2 sm:px-4 md:px-8 py-1 sm:py-2 md:py-3 border-b border-slate-200/60 relative shadow-lg flex-shrink-0" style={getHeaderStyle()}>
-                      <h1 className="text-center relative z-10 tracking-wide text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl" 
-                          style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
+                      <h1 className={`text-center relative z-10 tracking-wide ${
+                        isPreview ? 'text-3xl' : 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl'
+                      }`} style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                         {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Top Left' : 'Top Left'}
                       </h1>
                       <div className="w-16 sm:w-24 md:w-32 h-px bg-gradient-to-r from-transparent via-slate-400/80 to-transparent mx-auto mt-1 sm:mt-2 md:mt-3 opacity-70"></div>
@@ -730,16 +798,17 @@ export function SharedMenuDisplay({
                       onSectionClick && onSectionClick('L2');
                     }}
                     style={{
-                      border: selectedMenuSection === 'L2' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                      backgroundColor: selectedMenuSection === 'L2' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                      border: selectedMenuSection === 'L2' ? '2px solid rgba(249, 115, 22, 0.8)' : '1px solid rgba(255,255,255,0.1)',
+                      backgroundColor: selectedMenuSection === 'L2' ? 'rgba(249, 115, 22, 0.1)' : 'transparent',
                       borderRadius: '6px',
                       margin: '2px',
                       position: 'relative',
-                      zIndex: selectedMenuSection === 'L2' ? 10 : 1
+                      zIndex: selectedMenuSection === 'L2' ? 10 : 1,
+                      boxShadow: selectedMenuSection === 'L2' ? '0 0 20px rgba(249, 115, 22, 0.3)' : 'none'
                     }}
                   >
                     <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
-                      <h1 className="text-center relative z-10 tracking-wide text-6xl" 
+                      <h1 className={`text-center relative z-10 tracking-wide ${isPreview ? 'text-3xl' : 'text-4xl'}`}
                           style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                         {leftMenuCategory2 ? categories.find(c => c.slug === leftMenuCategory2)?.name || 'Bottom Left' : 'Bottom Left'}
                       </h1>
@@ -764,16 +833,17 @@ export function SharedMenuDisplay({
                     onSectionClick && onSectionClick('L');
                   }}
                   style={{
-                    border: selectedMenuSection === 'L' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                    backgroundColor: selectedMenuSection === 'L' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                    border: selectedMenuSection === 'L' ? '2px solid rgba(34, 197, 94, 0.8)' : '1px solid rgba(255,255,255,0.1)',
+                    backgroundColor: selectedMenuSection === 'L' ? 'rgba(34, 197, 94, 0.1)' : 'transparent',
                     borderRadius: '6px',
                     margin: '2px',
                     position: 'relative',
-                    zIndex: selectedMenuSection === 'L' ? 10 : 1
+                    zIndex: selectedMenuSection === 'L' ? 10 : 1,
+                    boxShadow: selectedMenuSection === 'L' ? '0 0 20px rgba(34, 197, 94, 0.3)' : 'none'
                   }}
                 >
                   <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
-                    <h1 className="text-center relative z-10 tracking-wide text-6xl" 
+                    <h1 className={`text-center relative z-10 tracking-wide ${isPreview ? 'text-3xl' : 'text-4xl'}`}
                         style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                       {leftMenuCategory ? categories.find(c => c.slug === leftMenuCategory)?.name || 'Left Menu' : 'Left Menu'}
                     </h1>
@@ -804,16 +874,17 @@ export function SharedMenuDisplay({
                       onSectionClick && onSectionClick('R');
                     }}
                     style={{
-                      border: selectedMenuSection === 'R' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                      backgroundColor: selectedMenuSection === 'R' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                      border: selectedMenuSection === 'R' ? '2px solid rgba(59, 130, 246, 0.8)' : '1px solid rgba(255,255,255,0.1)',
+                      backgroundColor: selectedMenuSection === 'R' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
                       borderRadius: '6px',
                       margin: '2px',
                       position: 'relative',
-                      zIndex: selectedMenuSection === 'R' ? 10 : 1
+                      zIndex: selectedMenuSection === 'R' ? 10 : 1,
+                      boxShadow: selectedMenuSection === 'R' ? '0 0 20px rgba(59, 130, 246, 0.3)' : 'none'
                     }}
                   >
                     <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
-                      <h1 className="text-center relative z-10 tracking-wide text-6xl" 
+                      <h1 className={`text-center relative z-10 tracking-wide ${isPreview ? 'text-3xl' : 'text-4xl'}`}
                           style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                         {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Top Right' : 'Top Right'}
                       </h1>
@@ -837,16 +908,17 @@ export function SharedMenuDisplay({
                       onSectionClick && onSectionClick('R2');
                     }}
                     style={{
-                      border: selectedMenuSection === 'R2' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                      backgroundColor: selectedMenuSection === 'R2' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                      border: selectedMenuSection === 'R2' ? '2px solid rgba(147, 51, 234, 0.8)' : '1px solid rgba(255,255,255,0.1)',
+                      backgroundColor: selectedMenuSection === 'R2' ? 'rgba(147, 51, 234, 0.1)' : 'transparent',
                       borderRadius: '6px',
                       margin: '2px',
                       position: 'relative',
-                      zIndex: selectedMenuSection === 'R2' ? 10 : 1
+                      zIndex: selectedMenuSection === 'R2' ? 10 : 1,
+                      boxShadow: selectedMenuSection === 'R2' ? '0 0 20px rgba(147, 51, 234, 0.3)' : 'none'
                     }}
                   >
                     <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
-                      <h1 className="text-center relative z-10 tracking-wide text-6xl" 
+                      <h1 className={`text-center relative z-10 tracking-wide ${isPreview ? 'text-3xl' : 'text-4xl'}`}
                           style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                         {rightMenuCategory2 ? categories.find(c => c.slug === rightMenuCategory2)?.name || 'Bottom Right' : 'Bottom Right'}
                       </h1>
@@ -871,16 +943,17 @@ export function SharedMenuDisplay({
                     onSectionClick && onSectionClick('R');
                   }}
                   style={{
-                    border: selectedMenuSection === 'R' ? '1px solid rgba(255,255,255,0.6)' : 'none',
-                    backgroundColor: selectedMenuSection === 'R' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                    border: selectedMenuSection === 'R' ? '2px solid rgba(59, 130, 246, 0.8)' : '1px solid rgba(255,255,255,0.1)',
+                    backgroundColor: selectedMenuSection === 'R' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
                     borderRadius: '6px',
                     margin: '2px',
                     position: 'relative',
-                    zIndex: selectedMenuSection === 'R' ? 10 : 1
+                    zIndex: selectedMenuSection === 'R' ? 10 : 1,
+                    boxShadow: selectedMenuSection === 'R' ? '0 0 20px rgba(59, 130, 246, 0.3)' : 'none'
                   }}
                 >
                   <div className="backdrop-blur-md px-8 py-3 border-b border-slate-200/60 relative shadow-lg" style={getHeaderStyle()}>
-                    <h1 className="text-center relative z-10 tracking-wide text-6xl" 
+                    <h1 className={`text-center relative z-10 tracking-wide ${isPreview ? 'text-3xl' : 'text-4xl'}`}
                         style={{ fontFamily: 'DonGraffiti, sans-serif', fontWeight: 200, textShadow: '0 2px 4px rgba(0,0,0,0.1)', color: fontColor }}>
                       {rightMenuCategory ? categories.find(c => c.slug === rightMenuCategory)?.name || 'Right Menu' : 'Right Menu'}
                     </h1>
@@ -940,59 +1013,59 @@ export function SharedMenuDisplay({
                         const { leftColumn, rightColumn } = balanceTableProducts(categoryProducts);
                         const useSingleColumn = rightColumn.length === 0;
                         return (
-                          <div className={`grid gap-3 md:gap-6 pt-2 md:pt-4 pb-2 md:pb-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-1 lg:grid-cols-2'}`} 
+                          <div className={`grid gap-3 md:gap-6 pt-2 md:pt-4 pb-2 md:pb-4 ${useSingleColumn ? 'grid-cols-1 justify-center' : 'grid-cols-2'}`} 
                                style={getBackgroundStyle()}>
                             {/* Left Column */}
                             <div className="space-y-2">
                               {leftColumn.map((product, index) => {
                                 return (
                                   <div key={product.id} 
-                                       className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
-                                       style={getContainerStyle()}>
-                                    <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(categoryFilter || undefined).length}, 1fr)` }}>
-                                      {getCategoryColumns(categoryFilter || undefined).map((columnName, colIndex) => {
-                                        const value = getColumnValue(product, columnName, categoryFilter || undefined);
-                                        const isFirstColumn = colIndex === 0;
-                                        return (
-                                          <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
-                                            {isFirstColumn && showImages && (
-                                              <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
-                                                {product.image ? (
-                                                  <img src={product.image} alt={product.name}
-                                                       className="w-full h-full object-contain rounded" loading="lazy" />
-                                                ) : (
-                                                  <div className="w-full h-full flex items-center justify-center rounded" 
-                                                       style={getContainerStyle()}>
-                                                    <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                                    </svg>
-                                                  </div>
-                                                )}
-                                              </div>
-                                            )}
-                                            <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
-                                              <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} leading-tight ${
-                                                isFirstColumn ? 'block' : ''
-                                              } ${
-                                                orientation === 'vertical' ? 'text-base' : 'text-sm'
-                                              }`} style={{ 
-                                                fontFamily: 'Tiempo, serif', 
-                                                textShadow: isFirstColumn ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                                                color: isFirstColumn ? fontColor : `${fontColor}dd` 
-                                              }}>
-                                                {value || 'N/A'}
-                                              </span>
-                                              {isFirstColumn && columnName === 'name' && product.sku && (
-                                                <p className="text-xs mt-1" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                                  {product.sku}
-                                                </p>
-                                              )}
+                                       className="relative cursor-pointer transition-all duration-300 ease-out hover:bg-white/5 group"
+                                       style={{
+                                         padding: '8px 0',
+                                         color: fontColor
+                                       }}>
+                                    {/* Product Content */}
+                                    <div className="flex items-center gap-3 relative z-10">
+                                      {showImages && (
+                                        <div className="w-8 h-8 relative overflow-hidden flex-shrink-0">
+                                          {product.image ? (
+                                            <img src={product.image} alt={product.name}
+                                                 className="w-full h-full object-contain rounded opacity-70 group-hover:opacity-100 transition-opacity duration-300" loading="lazy" />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                              <svg className="w-5 h-5 text-neutral-600 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                              </svg>
                                             </div>
-                                          </div>
-                                        );
-                                      })}
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <h3 className={`font-medium leading-tight truncate group-hover:text-opacity-90 transition-all duration-300 ${
+                                          orientation === 'vertical' ? 'text-lg' : 'text-sm'
+                                        }`} style={{ 
+                                          fontFamily: 'Tiempo, serif', 
+                                          color: fontColor 
+                                        }}>
+                                          {product.name}
+                                        </h3>
+                                        {product.sku && (
+                                          <p className="text-xs mt-0.5 truncate opacity-60 group-hover:opacity-80 transition-opacity duration-300" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                                            {product.sku}
+                                          </p>
+                                        )}
+                                      </div>
                                     </div>
+                                    
+                                    {/* Subtle Fading Divider Line */}
+                                    <div 
+                                      className="absolute bottom-0 left-0 right-0 h-px"
+                                      style={{
+                                        background: `linear-gradient(to right, transparent 0%, ${fontColor}20 20%, ${fontColor}40 50%, ${fontColor}20 80%, transparent 100%)`
+                                      }}
+                                    />
                                   </div>
                                 );
                               })}
@@ -1004,52 +1077,52 @@ export function SharedMenuDisplay({
                                 {rightColumn.map((product, index) => {
                                   return (
                                     <div key={product.id} 
-                                         className="rounded-lg overflow-visible p-2 cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
-                                         style={getContainerStyle()}>
-                                      <div className="grid gap-4 items-center" style={{ gridTemplateColumns: `repeat(${getCategoryColumns(categoryFilter || undefined).length}, 1fr)` }}>
-                                        {getCategoryColumns(categoryFilter || undefined).map((columnName, colIndex) => {
-                                          const value = getColumnValue(product, columnName, categoryFilter || undefined);
-                                          const isFirstColumn = colIndex === 0;
-                                          return (
-                                            <div key={columnName} className={`${isFirstColumn ? 'flex items-center gap-4' : 'text-center'}`}>
-                                              {isFirstColumn && showImages && (
-                                                <div className="w-12 h-12 relative overflow-hidden flex-shrink-0">
-                                                  {product.image ? (
-                                                    <img src={product.image} alt={product.name}
-                                                         className="w-full h-full object-contain rounded" loading="lazy" />
-                                                  ) : (
-                                                    <div className="w-full h-full flex items-center justify-center rounded" 
-                                                         style={getContainerStyle()}>
-                                                      <svg className="w-6 h-6 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                                      </svg>
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              )}
-                                              <div className={isFirstColumn ? 'flex-1 min-w-0' : ''}>
-                                                <span className={`${isFirstColumn ? 'font-semibold' : 'font-medium'} leading-tight ${
-                                                  isFirstColumn ? 'block' : ''
-                                                } ${
-                                                  orientation === 'vertical' ? 'text-base' : 'text-sm'
-                                                }`} style={{ 
-                                                  fontFamily: 'Tiempo, serif', 
-                                                  textShadow: isFirstColumn ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                                                  color: isFirstColumn ? fontColor : `${fontColor}dd` 
-                                                }}>
-                                                  {value || 'N/A'}
-                                                </span>
-                                                {isFirstColumn && columnName === 'name' && product.sku && (
-                                                  <p className="text-xs mt-1" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                                    {product.sku}
-                                                  </p>
-                                                )}
+                                         className="relative cursor-pointer transition-all duration-300 ease-out hover:bg-white/5 group"
+                                         style={{
+                                           padding: '12px 0',
+                                           color: fontColor
+                                         }}>
+                                      {/* Product Content */}
+                                      <div className="flex items-center gap-3 relative z-10">
+                                        {showImages && (
+                                          <div className="w-8 h-8 relative overflow-hidden flex-shrink-0">
+                                            {product.image ? (
+                                              <img src={product.image} alt={product.name}
+                                                   className="w-full h-full object-contain rounded opacity-70 group-hover:opacity-100 transition-opacity duration-300" loading="lazy" />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center">
+                                                <svg className="w-5 h-5 text-neutral-600 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                                </svg>
                                               </div>
-                                            </div>
-                                          );
-                                        })}
+                                            )}
+                                          </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                          <h3 className={`font-medium leading-tight truncate group-hover:text-opacity-90 transition-all duration-300 ${
+                                            orientation === 'vertical' ? 'text-lg' : 'text-sm'
+                                          }`} style={{ 
+                                            fontFamily: 'Tiempo, serif', 
+                                            color: fontColor 
+                                          }}>
+                                            {product.name}
+                                          </h3>
+                                          {product.sku && (
+                                            <p className="text-xs mt-0.5 truncate opacity-60 group-hover:opacity-80 transition-opacity duration-300" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                                              {product.sku}
+                                            </p>
+                                          )}
+                                        </div>
                                       </div>
+                                      
+                                      {/* Subtle Fading Divider Line */}
+                                      <div 
+                                        className="absolute bottom-0 left-0 right-0 h-px"
+                                        style={{
+                                          background: `linear-gradient(to right, transparent 0%, ${fontColor}20 20%, ${fontColor}40 50%, ${fontColor}20 80%, transparent 100%)`
+                                        }}
+                                      />
                                     </div>
                                   );
                                 })}
@@ -1060,49 +1133,59 @@ export function SharedMenuDisplay({
                       })()
                     ) : (
                       /* Grid Layout for Non-Flower Products */
-                      <div className={`grid gap-2 px-2 sm:px-4 md:px-6 pt-2 md:pt-4 pb-2 md:pb-4 ${
+                      <div className={`grid gap-4 px-6 pt-4 pb-4 ${
                         orientation === 'vertical' 
                           ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
-                          : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
                       }`} style={getBackgroundStyle()}>
-                        {categoryProducts.map(product => (
-                          <div key={product.id} 
-                               className="rounded-lg overflow-hidden p-2 relative cursor-pointer transition-all duration-200 ease-out border hover:border-slate-400/50 hover:shadow-md"
-                               style={getContainerStyle()}>
-                            
-                            {/* Product Image - Top Center */}
-                            <div className="flex justify-center mb-3">
-                              <div className="w-20 h-20 relative overflow-hidden rounded-lg">
-                                {product.image ? (
-                                  <img src={product.image} alt={product.name}
-                                       className="w-full h-full object-contain rounded-lg" loading="lazy" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center rounded-lg" 
-                                       style={getContainerStyle()}>
-                                    <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {/* Product Name and Info - Below Image */}
-                            <div className="text-center">
-                              <h3 className={`font-semibold leading-tight mb-1 ${
-                                orientation === 'vertical' ? 'text-base' : 'text-sm'
-                              }`} style={{ fontFamily: 'Tiempo, serif', textShadow: '0 1px 2px rgba(0,0,0,0.1)', color: fontColor }}>
-                                {product.name}
-                              </h3>
-                              {product.sku && (
-                                <p className="text-xs" style={{ fontFamily: 'Tiempo, serif', color: `${fontColor}cc` }}>
-                                  {product.sku}
-                                </p>
+                    {categoryProducts.map(product => (
+                      <div key={product.id} 
+                           className="relative cursor-pointer transition-all duration-300 ease-out hover:bg-white/5 group"
+                           style={{
+                             padding: '12px',
+                             color: fontColor
+                           }}>
+                        
+                        {/* Card Layout: Image Above Product Name */}
+                        <div className="flex flex-col items-center text-center relative z-10">
+                          {showImages && (
+                            <div className="w-16 h-16 relative overflow-hidden flex-shrink-0 mb-3">
+                              {product.image ? (
+                                <img src={product.image} alt={product.name}
+                                     className="w-full h-full object-contain rounded opacity-70 group-hover:opacity-100 transition-opacity duration-300" loading="lazy" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <svg className="w-8 h-8 text-neutral-600 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 002 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
                               )}
                             </div>
+                          )}
+                          <div className="w-full">
+                            <h3 className={`font-medium leading-tight group-hover:text-opacity-90 transition-all duration-300 ${
+                              orientation === 'vertical' ? 'text-base' : 'text-sm'
+                            }`} style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                              {product.name}
+                            </h3>
+                            {product.sku && (
+                              <p className="text-xs mt-1 opacity-60 group-hover:opacity-80 transition-opacity duration-300" style={{ fontFamily: 'Tiempo, serif', color: fontColor }}>
+                                {product.sku}
+                              </p>
+                            )}
                           </div>
-                        ))}
+                        </div>
+                        
+                        {/* Subtle Fading Divider Line */}
+                        <div 
+                          className="absolute bottom-0 left-0 right-0 h-px"
+                          style={{
+                            background: `linear-gradient(to right, transparent 0%, ${fontColor}20 20%, ${fontColor}40 50%, ${fontColor}20 80%, transparent 100%)`
+                          }}
+                        />
+                      </div>
+                    ))}
                       </div>
                     )}
                   </div>
@@ -1114,4 +1197,68 @@ export function SharedMenuDisplay({
       </div>
     </div>
   );
+
+  // If preview mode, wrap in TV-like container
+  if (isPreview) {
+    return (
+      <div className="flex items-center justify-center h-full w-full p-6">
+        {/* TV Frame */}
+        <div className="relative rounded-xl shadow-2xl" 
+             style={{ 
+               aspectRatio: '16/9',
+               height: '60vh',
+               background: 'linear-gradient(145deg, #1a1a1a, #0a0a0a)',
+               padding: '4px'
+             }}>
+          
+          {/* TV Screen */}
+          <div className="relative h-full w-full rounded-lg overflow-hidden border border-gray-700 bg-black">
+            {/* Screen Glass Effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/8 via-transparent to-black/20 pointer-events-none z-20"></div>
+            <div className="absolute inset-0 bg-gradient-to-tl from-transparent via-white/2 to-transparent pointer-events-none z-20"></div>
+            
+            {/* Anti-glare coating simulation */}
+            <div className="absolute inset-0 opacity-30 pointer-events-none z-10"
+                 style={{
+                   background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.05) 0%, transparent 50%)'
+                 }}></div>
+            
+            {/* Actual Menu Content */}
+            <div className="h-full w-full relative z-0">
+              <div 
+                className="h-full w-full"
+                style={{
+                  transform: 'scale(0.6)',
+                  transformOrigin: 'top left',
+                  width: '167%',
+                  height: '167%',
+                  fontSize: '0.65rem'
+                }}
+              >
+                {menuContent}
+              </div>
+            </div>
+            
+            {/* TV Info Overlay */}
+            <div className="absolute top-2 right-3 text-[0.6rem] text-gray-400 font-mono opacity-40 z-30">
+              85" QLED 4K
+            </div>
+            <div className="absolute bottom-2 right-3 text-[0.55rem] text-gray-500 font-mono opacity-30 z-30">
+              3840×2160
+            </div>
+          </div>
+          
+          {/* TV Brand Logo Area */}
+          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex items-center">
+            <div className="w-20 h-2 bg-gradient-to-r from-transparent via-gray-600 to-transparent rounded-full opacity-60"></div>
+          </div>
+          
+          {/* Power LED */}
+          <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-green-400 rounded-full opacity-80 shadow-lg shadow-green-400/50"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return menuContent;
 }

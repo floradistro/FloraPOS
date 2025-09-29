@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { WordPressUser } from '../../services/users-service';
+import { AveryLabelService, AveryLabelSize, LabelData, AVERY_LABEL_SIZES } from '../../services/averyLabelService';
+import { AveryLabelSheetPreview } from './AveryLabelTemplate';
+import { Product } from './ProductGrid';
 
 export interface PrintSettings {
   includeLogo: boolean;
@@ -10,17 +13,20 @@ export interface PrintSettings {
   includeDisclaimer: boolean;
   includeTimestamp: boolean;
   labelSize: string;
+  averyLabelSize: AveryLabelSize;
   orientation: string;
   copies: number;
+  useAveryTemplate: boolean;
 }
 
 interface PrintSettingsProps {
   selectedCustomer?: WordPressUser | null;
+  selectedProduct?: Product | null;
   onCustomerSelect?: (customer: WordPressUser | null) => void;
   onSettingsChange?: (settings: PrintSettings) => void;
 }
 
-export function PrintSettingsPanel({ selectedCustomer, onCustomerSelect, onSettingsChange }: PrintSettingsProps) {
+export function PrintSettingsPanel({ selectedCustomer, selectedProduct, onCustomerSelect, onSettingsChange }: PrintSettingsProps) {
   const printFrameRef = useRef<HTMLIFrameElement>(null);
   
   // Print settings state
@@ -31,8 +37,10 @@ export function PrintSettingsPanel({ selectedCustomer, onCustomerSelect, onSetti
     includeDisclaimer: true,
     includeTimestamp: true,
     labelSize: '2x4', // 2x4, 2x3, 4x6
+    averyLabelSize: '5160', // Avery label size
     orientation: 'landscape', // portrait, landscape
-    copies: 1
+    copies: 1,
+    useAveryTemplate: false
   });
 
   // Notify parent component when settings change
@@ -40,71 +48,149 @@ export function PrintSettingsPanel({ selectedCustomer, onCustomerSelect, onSetti
     onSettingsChange?.(printSettings);
   }, [printSettings, onSettingsChange]);
 
-  const handlePrint = () => {
-    // Apply print styles to the document
-    const [width, height] = printSettings.labelSize.split('x').map(n => parseInt(n));
-    const isPortrait = printSettings.orientation === 'portrait';
-    const printWidth = isPortrait ? width : height;
-    const printHeight = isPortrait ? height : width;
+  const handlePrint = async () => {
+    if (printSettings.useAveryTemplate) {
+      await handleAveryPrint();
+    } else {
+      // Apply print styles to the document
+      const [width, height] = printSettings.labelSize.split('x').map(n => parseInt(n));
+      const isPortrait = printSettings.orientation === 'portrait';
+      const printWidth = isPortrait ? width : height;
+      const printHeight = isPortrait ? height : width;
 
-    // Create a style element for print media
-    const styleEl = document.createElement('style');
-    styleEl.id = 'print-styles';
-    styleEl.textContent = `
-      @media print {
-        @page {
-          size: ${printWidth}in ${printHeight}in;
-          margin: 0;
+      // Create a style element for print media
+      const styleEl = document.createElement('style');
+      styleEl.id = 'print-styles';
+      styleEl.textContent = `
+        @media print {
+          @page {
+            size: ${printWidth}in ${printHeight}in;
+            margin: 0;
+          }
+          
+          body * {
+            visibility: hidden;
+          }
+          
+          .label-preview-container,
+          .label-preview-container * {
+            visibility: visible;
+          }
+          
+          .label-preview-container {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: ${printWidth}in !important;
+            height: ${printHeight}in !important;
+          }
+          
+          .label-preview-container > div {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
+            margin: 0 !important;
+          }
         }
-        
-        body * {
-          visibility: hidden;
-        }
-        
-        .label-preview-container,
-        .label-preview-container * {
-          visibility: visible;
-        }
-        
-        .label-preview-container {
-          position: fixed;
-          left: 0;
-          top: 0;
-          width: ${printWidth}in !important;
-          height: ${printHeight}in !important;
-        }
-        
-        .label-preview-container > div {
-          width: 100% !important;
-          height: 100% !important;
-          max-width: none !important;
-          max-height: none !important;
-          margin: 0 !important;
-        }
+      `;
+
+      // Remove any existing print styles
+      const existingStyle = document.getElementById('print-styles');
+      if (existingStyle) {
+        existingStyle.remove();
       }
-    `;
 
-    // Remove any existing print styles
-    const existingStyle = document.getElementById('print-styles');
-    if (existingStyle) {
-      existingStyle.remove();
+      // Add the new print styles
+      document.head.appendChild(styleEl);
+
+      // Trigger print
+      window.print();
+
+      // Clean up after printing
+      setTimeout(() => {
+        styleEl.remove();
+      }, 1000);
     }
-
-    // Add the new print styles
-    document.head.appendChild(styleEl);
-
-    // Trigger print
-    window.print();
-
-    // Clean up after printing
-    setTimeout(() => {
-      styleEl.remove();
-    }, 1000);
   };
 
-  const handleExportPDF = () => {
-    // Same as print but with a different title
-    handlePrint();
+  const handleExportPDF = async () => {
+    if (printSettings.useAveryTemplate) {
+      await handleAveryExportPDF();
+    } else {
+      // Same as print but with a different title
+      handlePrint();
+    }
+  };
+
+  const handleAveryPrint = async () => {
+    try {
+      const labelData = generateLabelData();
+      const labelElement = document.querySelector('.avery-label-preview .avery-label');
+      
+      if (labelElement) {
+        const blob = await AveryLabelService.generateLabelFromHTML(
+          labelElement as HTMLElement,
+          printSettings.averyLabelSize,
+          printSettings.copies
+        );
+        
+        // Create temporary URL and trigger print
+        const url = URL.createObjectURL(blob);
+        const printWindow = window.open(url, '_blank');
+        if (printWindow) {
+          printWindow.onload = () => {
+            printWindow.print();
+          };
+        }
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error generating Avery labels:', error);
+    }
+  };
+
+  const handleAveryExportPDF = async () => {
+    try {
+      const labelData = generateLabelData();
+      
+      const blob = await AveryLabelService.generateLabelPDF({
+        labelSize: printSettings.averyLabelSize,
+        data: Array(printSettings.copies).fill(labelData[0]),
+        includeLogo: printSettings.includeLogo,
+        includeQRCode: printSettings.includeQRCode,
+        includeCustomer: printSettings.includeCustomer,
+        includeTimestamp: printSettings.includeTimestamp
+      });
+      
+      AveryLabelService.downloadPDF(blob, `avery-labels-${Date.now()}.pdf`);
+    } catch (error) {
+      console.error('Error exporting Avery labels:', error);
+    }
+  };
+
+  const generateLabelData = (): LabelData[] => {
+    // If no product selected, return empty array
+    if (!selectedProduct) {
+      return [];
+    }
+
+    const data: LabelData = {
+      customerName: selectedCustomer?.display_name || selectedCustomer?.username || '',
+      customerEmail: selectedCustomer?.email || '',
+      customerPhone: '', // Add phone field to WordPressUser if available
+      productName: selectedProduct.name,
+      productSku: selectedProduct.sku || '',
+      qrCode: selectedProduct.permalink || `${window.location.origin}/product/${selectedProduct.id}`,
+      logoUrl: '/logo123.png',
+      timestamp: new Date().toISOString(),
+      customText: printSettings.includeDisclaimer ? 'Terms and conditions apply' : '',
+      price: selectedProduct.regular_price ? `$${selectedProduct.regular_price}` : '',
+      quantity: selectedProduct.stock_quantity?.toString() || ''
+    };
+    
+    // Create array for multiple copies
+    return Array(printSettings.copies).fill(data);
   };
 
   return (
@@ -207,48 +293,143 @@ export function PrintSettingsPanel({ selectedCustomer, onCustomerSelect, onSetti
 
       {/* Label Settings Section */}
       <div className="flex-1 overflow-y-auto px-2">
+        {/* Template Type */}
+        <div className="mb-4">
+          <div className="px-2 py-2 text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
+            Label Template
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setPrintSettings({ ...printSettings, useAveryTemplate: false })}
+              className={`w-full transition-all duration-300 ease-out group relative rounded-lg p-3 ${
+                !printSettings.useAveryTemplate
+                  ? 'border-2 border-white/30 bg-gradient-to-br from-neutral-500/40 to-neutral-600/80 shadow-lg shadow-white/5 transform scale-[1.02]'
+                  : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:shadow-md'
+              }`}
+            >
+              <div className="text-left">
+                <div className={`font-medium text-sm transition-colors duration-300 ${
+                  !printSettings.useAveryTemplate
+                    ? 'text-neutral-200'
+                    : 'text-neutral-300 group-hover:text-neutral-200'
+                }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                  Standard
+                </div>
+                <div className={`text-xs transition-colors duration-300 ${
+                  !printSettings.useAveryTemplate
+                    ? 'text-neutral-500'
+                    : 'text-neutral-600 group-hover:text-neutral-500'
+                }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                  Basic labels
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => setPrintSettings({ ...printSettings, useAveryTemplate: true })}
+              className={`w-full transition-all duration-300 ease-out group relative rounded-lg p-3 ${
+                printSettings.useAveryTemplate
+                  ? 'border-2 border-white/30 bg-gradient-to-br from-neutral-500/40 to-neutral-600/80 shadow-lg shadow-white/5 transform scale-[1.02]'
+                  : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:shadow-md'
+              }`}
+            >
+              <div className="text-left">
+                <div className={`font-medium text-sm transition-colors duration-300 ${
+                  printSettings.useAveryTemplate
+                    ? 'text-neutral-200'
+                    : 'text-neutral-300 group-hover:text-neutral-200'
+                }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                  Avery
+                </div>
+                <div className={`text-xs transition-colors duration-300 ${
+                  printSettings.useAveryTemplate
+                    ? 'text-neutral-500'
+                    : 'text-neutral-600 group-hover:text-neutral-500'
+                }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                  Professional
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
         {/* Size Settings */}
         <div className="mb-4">
         <div className="px-2 py-2 text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
-          Label Size
+          {printSettings.useAveryTemplate ? 'Avery Label Size' : 'Label Size'}
         </div>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { value: '2x3', label: '2" × 3"', description: 'Small labels' },
-              { value: '2x4', label: '2" × 4"', description: 'Standard labels' },
-              { value: '4x6', label: '4" × 6"', description: 'Large labels' }
-            ].map((size) => (
-              <button
-                key={size.value}
-                onClick={() => setPrintSettings({ ...printSettings, labelSize: size.value })}
-                className={`w-full transition-all duration-300 ease-out group relative rounded-lg p-3 ${
-                  printSettings.labelSize === size.value
-                    ? 'border-2 border-white/30 bg-gradient-to-br from-neutral-500/40 to-neutral-600/80 shadow-lg shadow-white/5 transform scale-[1.02]'
-                    : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:shadow-md'
-                }`}
-              >
-                <div className="flex items-center">
-                  <div className="text-left flex-1">
-                    <div className={`font-medium text-sm transition-colors duration-300 ${
-                      printSettings.labelSize === size.value
-                        ? 'text-neutral-200'
-                        : 'text-neutral-300 group-hover:text-neutral-200'
-                    }`} style={{ fontFamily: 'Tiempos, serif' }}>
-                      {size.label}
-                    </div>
-                    <div className={`text-xs transition-colors duration-300 ${
-                      printSettings.labelSize === size.value
-                        ? 'text-neutral-500'
-                        : 'text-neutral-600 group-hover:text-neutral-500'
-                    }`} style={{ fontFamily: 'Tiempos, serif' }}>
-                      {size.description}
+          {printSettings.useAveryTemplate ? (
+            <div className="grid grid-cols-1 gap-2">
+              {Object.entries(AVERY_LABEL_SIZES).map(([key, dimensions]) => (
+                <button
+                  key={key}
+                  onClick={() => setPrintSettings({ ...printSettings, averyLabelSize: key as AveryLabelSize })}
+                  className={`w-full transition-all duration-300 ease-out group relative rounded-lg p-3 ${
+                    printSettings.averyLabelSize === key
+                      ? 'border-2 border-white/30 bg-gradient-to-br from-neutral-500/40 to-neutral-600/80 shadow-lg shadow-white/5 transform scale-[1.02]'
+                      : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-left flex-1">
+                      <div className={`font-medium text-sm transition-colors duration-300 ${
+                        printSettings.averyLabelSize === key
+                          ? 'text-neutral-200'
+                          : 'text-neutral-300 group-hover:text-neutral-200'
+                      }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                        Avery {key}
+                      </div>
+                      <div className={`text-xs transition-colors duration-300 ${
+                        printSettings.averyLabelSize === key
+                          ? 'text-neutral-500'
+                          : 'text-neutral-600 group-hover:text-neutral-500'
+                      }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                        {dimensions.width}" × {dimensions.height}" ({dimensions.columns}×{dimensions.rows})
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gradient-to-r from-transparent via-white/[0.02] to-transparent"></div>
-              </button>
-            ))}
-          </div>
+                  <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gradient-to-r from-transparent via-white/[0.02] to-transparent"></div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: '2x3', label: '2" × 3"', description: 'Small labels' },
+                { value: '2x4', label: '2" × 4"', description: 'Standard labels' },
+                { value: '4x6', label: '4" × 6"', description: 'Large labels' }
+              ].map((size) => (
+                <button
+                  key={size.value}
+                  onClick={() => setPrintSettings({ ...printSettings, labelSize: size.value })}
+                  className={`w-full transition-all duration-300 ease-out group relative rounded-lg p-3 ${
+                    printSettings.labelSize === size.value
+                      ? 'border-2 border-white/30 bg-gradient-to-br from-neutral-500/40 to-neutral-600/80 shadow-lg shadow-white/5 transform scale-[1.02]'
+                      : 'border border-neutral-500/30 bg-transparent hover:bg-neutral-600/10 hover:border-neutral-400/40 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <div className="text-left flex-1">
+                      <div className={`font-medium text-sm transition-colors duration-300 ${
+                        printSettings.labelSize === size.value
+                          ? 'text-neutral-200'
+                          : 'text-neutral-300 group-hover:text-neutral-200'
+                      }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                        {size.label}
+                      </div>
+                      <div className={`text-xs transition-colors duration-300 ${
+                        printSettings.labelSize === size.value
+                          ? 'text-neutral-500'
+                          : 'text-neutral-600 group-hover:text-neutral-500'
+                      }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                        {size.description}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gradient-to-r from-transparent via-white/[0.02] to-transparent"></div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
 
@@ -337,11 +518,66 @@ export function PrintSettingsPanel({ selectedCustomer, onCustomerSelect, onSetti
         </div>
       </div>
 
+      {/* Full Sheet Preview */}
+      {printSettings.useAveryTemplate && selectedProduct && (
+        <div className="border-t border-white/[0.06] px-4 py-3">
+          <div className="px-2 py-2 text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
+            Label Sheet Preview
+          </div>
+          <div className="flex justify-center">
+            <div 
+              className="label-preview-container bg-white shadow-2xl border border-gray-200 rounded-lg overflow-hidden"
+              style={{ 
+                width: '300px',
+                height: '388px', // 8.5:11 aspect ratio scaled down
+                transform: 'scale(0.35)',
+                transformOrigin: 'top center'
+              }}
+            >
+              <AveryLabelSheetPreview
+                labelSize={printSettings.averyLabelSize}
+                labelData={generateLabelData()}
+                includeLogo={printSettings.includeLogo}
+                includeQRCode={printSettings.includeQRCode}
+                includeCustomer={printSettings.includeCustomer}
+                includeTimestamp={printSettings.includeTimestamp}
+                logoUrl="/logo123.png"
+                className="w-full h-full"
+              />
+            </div>
+          </div>
+          <div className="text-center mt-2">
+            <div className="text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
+              {selectedProduct.name} • {AVERY_LABEL_SIZES[printSettings.averyLabelSize].columns}×{AVERY_LABEL_SIZES[printSettings.averyLabelSize].rows} labels per sheet
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Product Selected Message */}
+      {printSettings.useAveryTemplate && !selectedProduct && (
+        <div className="border-t border-white/[0.06] px-4 py-3">
+          <div className="px-2 py-2 text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
+            Preview
+          </div>
+          <div className="flex justify-center py-8">
+            <div className="text-center text-neutral-500">
+              <div className="text-sm" style={{ fontFamily: 'Tiempos, serif' }}>
+                Select a product to preview labels
+              </div>
+              <div className="text-xs mt-1 text-neutral-600">
+                Use the search bar above to choose a product
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer Status */}
       <div className="border-t border-white/[0.06] px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-            {printSettings.copies} cop{printSettings.copies !== 1 ? 'ies' : 'y'} • {printSettings.labelSize.replace('x', '" × ')}" • {printSettings.orientation}
+            {printSettings.copies} cop{printSettings.copies !== 1 ? 'ies' : 'y'} • {printSettings.useAveryTemplate ? `Avery ${printSettings.averyLabelSize}` : printSettings.labelSize.replace('x', '" × ')}"} • {printSettings.orientation}
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
