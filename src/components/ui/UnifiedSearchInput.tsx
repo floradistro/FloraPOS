@@ -677,6 +677,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       return;
     }
     
+    // Only require either email OR phone (not both)
     if (!newCustomerData.email.trim() && !newCustomerData.phone.trim()) {
       return;
     }
@@ -1437,7 +1438,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                           />
                           <input
                             type="tel"
-                            placeholder="Phone"
+                            placeholder="Phone (optional)"
                             value={newCustomerData.phone}
                             onChange={(e) => setNewCustomerData(prev => ({ ...prev, phone: e.target.value }))}
                             className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"

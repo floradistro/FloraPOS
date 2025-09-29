@@ -346,7 +346,7 @@ export function HeaderCustomerSelector({
                   />
                   <input
                     type="tel"
-                    placeholder="Phone"
+                    placeholder="Phone (optional)"
                     value={newCustomerData.phone}
                     onChange={(e) => setNewCustomerData(prev => ({ ...prev, phone: e.target.value }))}
                     className="w-full px-2 py-1 bg-neutral-700 border border-neutral-600 rounded text-white placeholder-neutral-400 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
