@@ -1,2 +1,0 @@
-Cache check: Updated at ${new Date().toISOString()}
-If you see an old timestamp, your browser is caching files.
