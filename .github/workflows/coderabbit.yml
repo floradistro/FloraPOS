@@ -1,0 +1,147 @@
+name: CodeRabbit AI Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, develop]
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+# Ensure only one workflow runs at a time per PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coderabbit-review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    
+    # Only run on pull requests, not on pushes to main
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: |
+          npm ci --prefer-offline --no-audit
+          
+      - name: Run TypeScript check
+        run: |
+          npx tsc --noEmit
+          
+      - name: Run ESLint
+        run: |
+          npm run lint
+          
+      - name: CodeRabbit AI Review
+        uses: coderabbitai/coderabbit-action@v2
+        with:
+          # GitHub token for API access
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # CodeRabbit API key (add this to your repository secrets)
+          coderabbit-token: ${{ secrets.CODERABBIT_TOKEN }}
+          
+          # Configuration file path
+          config-file: '.coderabbit.yaml'
+          
+          # Review settings
+          auto-review: true
+          include-deleted-files: false
+          
+          # Flora POS specific settings
+          project-type: 'nextjs'
+          language: 'typescript'
+          
+          # Focus areas for POS system
+          focus-areas: 'security,performance,best_practices,type_safety'
+          
+          # Custom rules for retail/POS
+          custom-rules: |
+            - pattern: "price|amount|total|cost"
+              message: "Monetary values detected - ensure proper formatting and validation"
+              severity: high
+            - pattern: "customer|order|transaction" 
+              message: "Business logic detected - verify error handling and data validation"
+              severity: high
+            - pattern: "auth|login|session"
+              message: "Authentication code detected - security review required"
+              severity: critical
+              
+      - name: Comment PR with Review Summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { context } = require('@actions/github');
+            
+            // Create a summary comment
+            const comment = `## 🤖 CodeRabbit AI Review Complete
+            
+            ✅ **Automated code review has been completed for this PR**
+            
+            ### Review Focus Areas:
+            - 🔒 **Security** - Authentication, data validation, XSS prevention
+            - ⚡ **Performance** - Bundle size, rendering optimization, API efficiency  
+            - 🎯 **Best Practices** - React patterns, TypeScript usage, error handling
+            - 🛡️ **Type Safety** - Proper typing, null checks, interface definitions
+            
+            ### Flora POS Specific Checks:
+            - 💰 Monetary value handling and formatting
+            - 🛒 Customer/order data validation
+            - 🔐 Authentication and session security
+            - 📱 POS system performance optimization
+            
+            *Review details and suggestions will appear as individual comments on the relevant lines.*
+            
+            ---
+            *Powered by CodeRabbit AI | [Learn more](https://coderabbit.ai)*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+            
+  # Security scan for POS system
+  security-scan:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run security audit
+        run: |
+          npm audit --audit-level moderate
+          
+      - name: Check for hardcoded secrets
+        run: |
+          # Basic check for potential secrets (enhance as needed)
+          if grep -r -E "(api[_-]?key|secret|password|token)" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" src/; then
+            echo "⚠️ Potential hardcoded secrets detected"
+            echo "Please review the flagged files and ensure no sensitive data is committed"
+            exit 1
+          else
+            echo "✅ No obvious hardcoded secrets detected"
+          fi

@@ -1,0 +1,193 @@
+# CodeRabbit Configuration for Flora POS
+# AI-powered code review automation
+
+# Language and framework detection
+language: typescript
+framework: nextjs
+
+# Review settings
+reviews:
+  # Enable automatic reviews on pull requests
+  auto_review: true
+  
+  # Review focus areas
+  focus:
+    - security
+    - performance
+    - best_practices
+    - code_quality
+    - type_safety
+    - accessibility
+    
+  # Severity levels for different types of issues
+  severity:
+    security: high
+    performance: medium
+    best_practices: medium
+    code_quality: low
+    type_safety: medium
+    accessibility: medium
+
+# File patterns to review
+include:
+  - "src/**/*.{ts,tsx,js,jsx}"
+  - "app/**/*.{ts,tsx,js,jsx}"
+  - "components/**/*.{ts,tsx,js,jsx}"
+  - "pages/**/*.{ts,tsx,js,jsx}"
+  - "lib/**/*.{ts,tsx,js,jsx}"
+  - "utils/**/*.{ts,tsx,js,jsx}"
+  - "hooks/**/*.{ts,tsx,js,jsx}"
+  - "services/**/*.{ts,tsx,js,jsx}"
+  - "types/**/*.{ts,tsx}"
+  - "*.{ts,tsx,js,jsx}"
+  - "*.json"
+  - "*.md"
+
+# File patterns to exclude from review
+exclude:
+  - "node_modules/**"
+  - ".next/**"
+  - "dist/**"
+  - "build/**"
+  - "coverage/**"
+  - "*.min.js"
+  - "*.bundle.js"
+  - "public/scandit/**"
+  - "scripts/**"
+  - "*.log"
+  - "*.lock"
+
+# Project-specific rules for Flora POS
+rules:
+  # React/Next.js specific rules
+  react:
+    enforce_hooks_rules: true
+    prefer_function_components: true
+    require_key_props: true
+    no_unsafe_lifecycle: true
+    
+  # TypeScript specific rules
+  typescript:
+    strict_mode: true
+    no_any: warn
+    prefer_interfaces: true
+    require_return_types: false
+    
+  # Performance rules for POS system
+  performance:
+    max_component_size: 300
+    warn_large_bundles: true
+    check_memo_usage: true
+    detect_unnecessary_rerenders: true
+    
+  # Security rules for POS/payment system
+  security:
+    no_hardcoded_secrets: error
+    validate_api_inputs: error
+    check_xss_vulnerabilities: error
+    secure_payment_handling: error
+    
+  # Code quality rules
+  quality:
+    max_function_length: 50
+    max_file_length: 500
+    prefer_const: true
+    no_console_log: warn
+    require_error_handling: true
+
+# Custom patterns for Flora POS business logic
+custom_patterns:
+  # POS-specific patterns
+  pos_patterns:
+    - pattern: "price|amount|total|cost"
+      rule: "Always use proper number formatting for monetary values"
+      severity: high
+      
+    - pattern: "customer|order|transaction"
+      rule: "Ensure proper data validation and error handling"
+      severity: high
+      
+    - pattern: "api|fetch|request"
+      rule: "Always implement proper error handling and loading states"
+      severity: medium
+      
+    - pattern: "auth|login|session"
+      rule: "Security review required for authentication code"
+      severity: high
+
+# Integration settings
+integrations:
+  github:
+    # Auto-approve minor changes
+    auto_approve_minor: false
+    
+    # Request changes for major issues
+    request_changes_on: 
+      - security_high
+      - critical_bugs
+      
+    # Comment on specific issues
+    comment_on:
+      - performance_issues
+      - best_practice_violations
+      - type_safety_issues
+      
+  # Slack notifications (if configured)
+  notifications:
+    on_review_complete: true
+    on_critical_issues: true
+    
+# Learning and adaptation
+learning:
+  # Learn from approved/rejected suggestions
+  adaptive_suggestions: true
+  
+  # Project-specific context learning
+  context_learning: true
+  
+  # Team coding style adaptation
+  style_adaptation: true
+
+# Review templates
+templates:
+  # Standard review template
+  standard: |
+    ## CodeRabbit Review Summary
+    
+    ### 🔍 Files Reviewed: {files_count}
+    ### ⚠️ Issues Found: {issues_count}
+    ### 🎯 Focus Areas: {focus_areas}
+    
+    ### Key Findings:
+    {key_findings}
+    
+    ### Recommendations:
+    {recommendations}
+    
+    ---
+    *Automated review by CodeRabbit AI*
+    
+  # Security-focused template  
+  security: |
+    ## 🔒 Security Review
+    
+    ### Security Issues Detected: {security_issues_count}
+    
+    {security_findings}
+    
+    ### Action Required:
+    {security_actions}
+    
+    ---
+    *Security review by CodeRabbit AI*
+
+# Experimental features
+experimental:
+  # AI-powered code suggestions
+  code_suggestions: true
+  
+  # Automated refactoring suggestions
+  refactoring_suggestions: true
+  
+  # Performance optimization hints
+  performance_hints: true

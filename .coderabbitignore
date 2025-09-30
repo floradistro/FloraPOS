@@ -1,0 +1,89 @@
+# CodeRabbit Ignore File for Flora POS
+# Files and directories to exclude from CodeRabbit reviews
+
+# Dependencies and build artifacts
+node_modules/
+.next/
+dist/
+build/
+out/
+coverage/
+.nyc_output/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment and config files (may contain sensitive data)
+.env*
+!.env.example
+
+# Generated files
+*.min.js
+*.min.css
+*.bundle.js
+*.chunk.js
+*.map
+
+# Third-party libraries and SDKs
+public/scandit/**
+public/*.otf
+public/*.woff*
+public/*.ttf
+
+# Test files (optional - remove if you want reviews on tests)
+**/*.test.{js,ts,tsx}
+**/*.spec.{js,ts,tsx}
+__tests__/
+test/
+tests/
+
+# Documentation (optional - remove if you want reviews on docs)
+*.md
+!README.md
+
+# Specific to Flora POS
+scripts/
+vercel.json
+
+# Large data files
+*.json.gz
+*.csv
+*.xlsx
+
+# Binary files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.pdf
+*.wasm
+
+# Lock files and generated configs
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Storybook (if used)
+.storybook/
+storybook-static/
+
+# Cypress (if used)
+cypress/videos/
+cypress/screenshots/

@@ -3,9 +3,10 @@
  * Standardized approach for all API calls in POSV1
  */
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.floradistro.com'
-  : 'https://api.floradistro.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 
+  (process.env.NODE_ENV === 'production' 
+    ? 'https://api.floradistro.com'
+    : 'http://localhost:8081');
 
 const WC_CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const WC_CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
