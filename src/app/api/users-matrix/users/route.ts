@@ -1,4 +1,4 @@
-import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
+import { getApiEnvironmentFromRequest, getApiBaseUrl } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
@@ -9,64 +9,70 @@ export async function GET(request: NextRequest) {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
-    console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching customers...`);
     
     const { searchParams } = new URL(request.url);
-    const bustCache = searchParams.get('_');
+    const userId = searchParams.get('user_id');
+    const page = searchParams.get('page') || '1';
+    const perPage = searchParams.get('per_page') || '100';
     
-    // Fetch customers from WooCommerce API
+    if (userId) {
+      // Fetch specific user
+      const url = `${WOOCOMMERCE_API_URL}/wp-json/wc/v3/customers/${userId}`;
+      const params = new URLSearchParams({
+        consumer_key: CONSUMER_KEY,
+        consumer_secret: CONSUMER_SECRET,
+      });
+
+      const response = await fetch(`${url}?${params.toString()}`);
+      
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: `Failed to fetch user: ${response.status}` },
+          { status: response.status }
+        );
+      }
+
+      const user = await response.json();
+      return NextResponse.json(user);
+    }
+    
+    // Fetch all customers
     const url = `${WOOCOMMERCE_API_URL}/wp-json/wc/v3/customers`;
     const params = new URLSearchParams({
       consumer_key: CONSUMER_KEY,
       consumer_secret: CONSUMER_SECRET,
-      per_page: '100',
-      status: 'any'
+      page: page,
+      per_page: perPage,
+      orderby: 'registered_date',
+      order: 'desc'
     });
 
-    if (bustCache) {
-      params.append('_', bustCache);
-    }
-
-    const response = await fetch(`${url}?${params.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': bustCache ? 'no-cache' : 'default',
-      },
-    });
-
+    const response = await fetch(`${url}?${params.toString()}`);
+    
     if (!response.ok) {
-      throw new Error(`WooCommerce API error: ${response.status}`);
+      return NextResponse.json(
+        { error: `Failed to fetch customers: ${response.status}` },
+        { status: response.status }
+      );
     }
 
     const customers = await response.json();
+    return NextResponse.json(customers);
     
-    // Transform to user format
-    const users = customers.map((customer: any) => ({
-      id: customer.id,
-      name: `${customer.first_name} ${customer.last_name}`.trim() || customer.username,
-      username: customer.username || customer.email.split('@')[0],
-      email: customer.email,
-      roles: ['customer'],
-      display_name: `${customer.first_name} ${customer.last_name}`.trim() || customer.username || customer.email
-    }));
-
-    return NextResponse.json(users);
   } catch (error) {
-    console.error('Failed to fetch users:', error);
+    console.error('Failed to fetch customers:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch users' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch customers' },
       { status: 500 }
     );
   }
 }
 
 export async function POST(request: NextRequest) {
+  const apiEnv = getApiEnvironmentFromRequest(request);
+  
   try {
-    // Get API environment from request
-    const apiEnv = getApiEnvironmentFromRequest(request);
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
-    console.log(`🔄 [${apiEnv.toUpperCase()}] Creating customer...`);
     
     const body = await request.json();
     
@@ -89,9 +95,6 @@ export async function POST(request: NextRequest) {
       billing: body.billing || {},
       shipping: body.shipping || {}
     };
-
-    console.log(`📤 [${apiEnv.toUpperCase()}] Sending customer data to:`, url);
-    console.log(`👤 Customer data:`, customerData);
     
     const response = await fetch(`${url}?${params.toString()}`, {
       method: 'POST',
@@ -103,7 +106,6 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ [${apiEnv.toUpperCase()}] WooCommerce API error:`, response.status, errorText);
       let errorData;
       try {
         errorData = JSON.parse(errorText);
@@ -125,13 +127,13 @@ export async function POST(request: NextRequest) {
       display_name: `${newCustomer.first_name} ${newCustomer.last_name}`.trim() || newCustomer.username
     };
 
-    console.log(`✅ [${apiEnv.toUpperCase()}] Customer created successfully:`, newCustomer.id);
     return NextResponse.json(transformedUser);
   } catch (error) {
-    console.error(`❌ Failed to create customer in ${apiEnv.toUpperCase()}:`, error);
+    console.error(`❌ Failed to create customer:`, error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create customer' },
       { status: 500 }
     );
   }
 }
+
