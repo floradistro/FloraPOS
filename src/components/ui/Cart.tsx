@@ -144,264 +144,227 @@ const CartComponent = function Cart({
             )}
             <div className="gap-3 pt-3 px-3 pb-3 flex flex-col">
               {items.map((item) => (
-                <div key={item.id} className="bg-white/[0.02] hover:bg-white/[0.06] backdrop-blur-lg border border-white/[0.1] hover:border-white/[0.2] rounded-xl overflow-hidden p-4 relative transition-all duration-300 ease-out cursor-pointer shadow-lg hover:shadow-xl group">
-                  <div className="flex items-center justify-between">
-                    {/* Product Details with Image */}
-                    <div className="flex-1 min-w-0 mr-4">
-                      <div className="flex items-center gap-4 mb-2">
-                        {/* Product Image */}
-                        <div className="w-12 h-12 relative overflow-hidden flex-shrink-0 rounded-lg ring-1 ring-white/10 group-hover:ring-white/20 transition-all">
-                          {item.image ? (
-                            <img 
-                              src={item.image} 
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-neutral-700/40">
-                              <Image 
-                                src="/logo123.png" 
-                                alt="Flora POS Logo" 
-                                width={48}
-                                height={48}
-                                className="object-contain opacity-25"
-                              />
-                            </div>
-                          )}
+                <div key={item.id} className="bg-white/[0.02] hover:bg-white/[0.06] backdrop-blur-lg border border-white/[0.1] hover:border-white/[0.2] rounded-xl p-3 relative transition-all duration-300 ease-out shadow-lg hover:shadow-xl">
+                  {/* Header Row: Image, Name, Remove Button */}
+                  <div className="flex items-start gap-3 mb-3">
+                    {/* Product Image */}
+                    <div className="w-14 h-14 relative overflow-hidden flex-shrink-0 rounded-lg ring-1 ring-white/10 hover:ring-white/20 transition-all">
+                      {item.image ? (
+                        <img 
+                          src={item.image} 
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-neutral-700/40">
+                          <Image 
+                            src="/logo123.png" 
+                            alt="Flora POS Logo" 
+                            width={56}
+                            height={56}
+                            className="object-contain opacity-25"
+                          />
                         </div>
-                        
-                        {/* Product Name and Category */}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-base font-semibold text-neutral-200 truncate mb-1.5" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)' }}>{item.name}</h4>
-                          {item.category && (
-                            <span className="text-sm text-neutral-400 bg-neutral-600/30 backdrop-blur-sm px-3 py-1 rounded-full whitespace-nowrap inline-block">
-                              {CATEGORY_DISPLAY_NAMES[item.category] || item.category.charAt(0).toUpperCase() + item.category.slice(1)}
-                            </span>
-                          )}
-                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Product Name, Category, and Price */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-base font-semibold text-neutral-200 mb-1.5 leading-tight" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)' }}>
+                        {item.name}
+                      </h4>
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        {item.category && (
+                          <span className="text-xs text-neutral-400 bg-neutral-600/30 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                            {CATEGORY_DISPLAY_NAMES[item.category] || item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+                          </span>
+                        )}
+                        <span className="text-sm text-neutral-400 font-medium">${item.price.toFixed(2)}</span>
                       </div>
                       {/* Pricing tier information */}
                       {item.pricing_tier && (
-                        <div className="text-sm text-neutral-500 mb-2 ml-16">
+                        <div className="text-xs text-neutral-500">
                           <span className="text-neutral-400 font-medium">{item.pricing_tier.tier_label}</span>
-                          <span className="text-neutral-500 ml-2">({item.pricing_tier.tier_rule_name})</span>
-                          {/* Show conversion ratio info if present */}
                           {item.pricing_tier.conversion_ratio && (
-                            <div className="text-sm text-neutral-400 mt-1.5">
-                              {item.pricing_tier.conversion_ratio.output_amount} {item.pricing_tier.conversion_ratio.output_unit} = {item.pricing_tier.conversion_ratio.input_amount} {item.pricing_tier.conversion_ratio.input_unit}
-                            </div>
+                            <span className="ml-2 text-neutral-500">
+                              ({item.pricing_tier.conversion_ratio.output_amount} {item.pricing_tier.conversion_ratio.output_unit})
+                            </span>
                           )}
                         </div>
                       )}
-                      
-                      <div className="flex items-center justify-between ml-16">
-                        {item.is_adjustment ? (
-                          /* Adjustment Item Display */
-                          <div className="flex items-center gap-4">
-                            {isAuditMode && onUpdateAdjustment ? (
-                              /* Adjustment Controls in Audit Mode */
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => {
-                                    const currentAmount = item.adjustment_amount || 0;
-                                    const step = 1; // You can make this dynamic based on product type
-                                    onUpdateAdjustment(item.id, currentAmount - step);
-                                  }}
-                                  className="w-8 h-8 bg-transparent hover:bg-red-600/50 border border-white/10 hover:border-red-500/50 flex items-center justify-center transition-all duration-300 ease-out rounded-lg shadow-md hover:shadow-lg"
-                                  title="Decrease adjustment"
-                                >
-                                  <svg className="w-4 h-4 text-neutral-300 hover:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                                  </svg>
-                                </button>
-                                
-                                <input
-                                  type="number"
-                                  value={item.adjustment_amount || 0}
-                                  onChange={(e) => {
-                                    const value = parseFloat(e.target.value) || 0;
-                                    onUpdateAdjustment(item.id, value);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.currentTarget.blur();
-                                    }
-                                  }}
-                                  className={`w-20 h-8 text-base text-center bg-white/[0.03] border border-white/10 hover:border-white/20 rounded-lg font-semibold focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                                    item.adjustment_amount && item.adjustment_amount > 0 
-                                      ? 'text-green-400' 
-                                      : item.adjustment_amount && item.adjustment_amount < 0
-                                      ? 'text-red-400'
-                                      : 'text-neutral-300'
-                                  }`}
-                                  title="Type adjustment amount"
-                                />
-                                
-                                <button
-                                  onClick={() => {
-                                    const currentAmount = item.adjustment_amount || 0;
-                                    const step = 1; // You can make this dynamic based on product type
-                                    onUpdateAdjustment(item.id, currentAmount + step);
-                                  }}
-                                  className="w-8 h-8 bg-transparent hover:bg-green-600/50 border border-white/10 hover:border-green-500/50 flex items-center justify-center transition-all duration-300 ease-out rounded-lg shadow-md hover:shadow-lg"
-                                  title="Increase adjustment"
-                                >
-                                  <svg className="w-4 h-4 text-neutral-300 hover:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                  </svg>
-                                </button>
-                              </div>
-                            ) : (
-                              /* Read-only Adjustment Display */
-                              <span className={`text-base font-semibold ${
-                                item.adjustment_amount && item.adjustment_amount > 0 
-                                  ? 'text-green-400' 
-                                  : 'text-red-400'
-                              }`}>
-                                {item.adjustment_amount && item.adjustment_amount > 0 ? '+' : ''}
-                                {item.adjustment_amount || 0}
-                              </span>
-                            )}
-                            <span className="text-sm text-neutral-400 bg-neutral-600/30 backdrop-blur-sm px-3 py-1 rounded-full font-medium">
-                              Adjustment
-                            </span>
-                          </div>
-                        ) : (
-                          /* Normal Cart Item Display */
-                          <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-4">
-                              <span className="text-base text-neutral-500 font-medium">${item.price.toFixed(2)}</span>
-                              
-                              {/* Quantity Controls */}
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => onUpdateQuantity?.(item.id, Math.max(0, item.quantity - 1))}
-                                  className="w-8 h-8 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 flex items-center justify-center transition-all duration-300 ease-out rounded-lg shadow-md hover:shadow-lg"
-                                >
-                                  <svg className="w-4 h-4 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                                  </svg>
-                                </button>
-                                <span className="text-base text-neutral-200 min-w-[2rem] text-center font-semibold">{item.quantity}</span>
-                                <button
-                                  onClick={() => onUpdateQuantity?.(item.id, item.quantity + 1)}
-                                  className="w-8 h-8 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 flex items-center justify-center transition-all duration-300 ease-out rounded-lg shadow-md hover:shadow-lg"
-                                >
-                                  <svg className="w-4 h-4 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </div>
-                            
-                            {/* Price Override and Discount Controls */}
-                            <div className="flex items-center gap-3">
-                              {/* Price Override */}
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-neutral-400 font-medium">Price:</span>
-                                {editingPriceItemId === item.id ? (
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    defaultValue={item.override_price ?? item.price}
-                                    onBlur={(e) => {
-                                      const value = parseFloat(e.target.value);
-                                      if (!isNaN(value) && value >= 0) {
-                                        onUpdatePriceOverride?.(item.id, value === item.price ? undefined : value);
-                                      }
-                                      setEditingPriceItemId(null);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        e.currentTarget.blur();
-                                      }
-                                    }}
-                                    className="w-20 h-7 text-sm text-center bg-white/[0.03] border border-white/10 hover:border-white/20 rounded-lg text-neutral-200 focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                    autoFocus
-                                  />
-                                ) : (
-                                  <button
-                                    onClick={() => setEditingPriceItemId(item.id)}
-                                    className={`text-sm px-3 py-1 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300 font-medium ${
-                                      item.override_price !== undefined
-                                        ? 'text-green-400 border-green-400/40 bg-green-400/10'
-                                        : 'text-neutral-300'
-                                    }`}
-                                  >
-                                    ${(item.override_price ?? item.price).toFixed(2)}
-                                  </button>
-                                )}
-                              </div>
-                              
-                              {/* Discount Percentage */}
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-neutral-400 font-medium">Disc:</span>
-                                {editingDiscountItemId === item.id ? (
-                                  <input
-                                    type="number"
-                                    step="1"
-                                    min="0"
-                                    max="100"
-                                    defaultValue={item.discount_percentage ?? 0}
-                                    onBlur={(e) => {
-                                      const value = parseFloat(e.target.value);
-                                      if (!isNaN(value) && value >= 0 && value <= 100) {
-                                        onUpdateDiscountPercentage?.(item.id, value === 0 ? undefined : value);
-                                      }
-                                      setEditingDiscountItemId(null);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        e.currentTarget.blur();
-                                      }
-                                    }}
-                                    className="w-16 h-7 text-sm text-center bg-white/[0.03] border border-white/10 hover:border-white/20 rounded-lg text-neutral-200 focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all duration-300 ease-out [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                    autoFocus
-                                  />
-                                ) : (
-                                  <button
-                                    onClick={() => setEditingDiscountItemId(item.id)}
-                                    className={`text-sm px-3 py-1 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300 font-medium ${
-                                      item.discount_percentage
-                                        ? 'text-orange-400 border-orange-400/40 bg-orange-400/10'
-                                        : 'text-neutral-300'
-                                    }`}
-                                  >
-                                    {item.discount_percentage ?? 0}%
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Subtotal - Only show for non-adjustment items */}
-                        {!item.is_adjustment && (
-                          <span className="text-lg font-bold text-neutral-200">
-                            ${(() => {
-                              let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
-                              if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
-                                finalPrice = finalPrice * (1 - item.discount_percentage / 100);
-                              }
-                              return (finalPrice * item.quantity).toFixed(2);
-                            })()}
-                          </span>
-                        )}
-                      </div>
                     </div>
 
                     {/* Remove Button */}
                     <button
                       onClick={() => onRemoveItem?.(item.id)}
-                      className="w-8 h-8 bg-transparent hover:bg-red-600/50 border border-white/10 hover:border-red-500/50 flex items-center justify-center transition-all duration-300 ease-out flex-shrink-0 rounded-lg shadow-md hover:shadow-lg"
+                      className="w-8 h-8 bg-transparent hover:bg-red-600/50 border border-white/10 hover:border-red-500/50 flex items-center justify-center transition-all duration-300 ease-out flex-shrink-0 rounded-lg"
                       title="Remove item"
                     >
                       <svg className="w-4 h-4 text-neutral-400 hover:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
+                  </div>
+                  
+                  {/* Controls Row */}
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                    {item.is_adjustment ? (
+                      /* Adjustment Item Display */
+                      <div className="flex items-center gap-3 flex-1">
+                        {isAuditMode && onUpdateAdjustment ? (
+                          /* Adjustment Controls in Audit Mode */
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                const currentAmount = item.adjustment_amount || 0;
+                                onUpdateAdjustment(item.id, currentAmount - 1);
+                              }}
+                              className="w-7 h-7 bg-transparent hover:bg-red-600/50 border border-white/10 hover:border-red-500/50 flex items-center justify-center transition-all duration-200 rounded-lg"
+                            >
+                              <svg className="w-3.5 h-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                              </svg>
+                            </button>
+                            <input
+                              type="number"
+                              value={item.adjustment_amount || 0}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value) || 0;
+                                onUpdateAdjustment(item.id, value);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') e.currentTarget.blur();
+                              }}
+                              className={`w-16 h-7 text-sm text-center bg-white/[0.03] border border-white/10 rounded-lg font-semibold focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                                item.adjustment_amount && item.adjustment_amount > 0 ? 'text-green-400' : 
+                                item.adjustment_amount && item.adjustment_amount < 0 ? 'text-red-400' : 'text-neutral-300'
+                              }`}
+                            />
+                            <button
+                              onClick={() => {
+                                const currentAmount = item.adjustment_amount || 0;
+                                onUpdateAdjustment(item.id, currentAmount + 1);
+                              }}
+                              className="w-7 h-7 bg-transparent hover:bg-green-600/50 border border-white/10 hover:border-green-500/50 flex items-center justify-center transition-all duration-200 rounded-lg"
+                            >
+                              <svg className="w-3.5 h-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <span className={`text-base font-semibold ${item.adjustment_amount && item.adjustment_amount > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {item.adjustment_amount && item.adjustment_amount > 0 ? '+' : ''}{item.adjustment_amount || 0}
+                          </span>
+                        )}
+                        <span className="text-xs text-neutral-400 bg-neutral-600/30 px-2 py-0.5 rounded-full">Adjustment</span>
+                      </div>
+                    ) : (
+                      /* Normal Cart Item Display */
+                      <>
+                        {/* Quantity Controls */}
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => onUpdateQuantity?.(item.id, Math.max(0, item.quantity - 1))}
+                            className="w-7 h-7 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 flex items-center justify-center transition-all duration-200 rounded-lg"
+                          >
+                            <svg className="w-3.5 h-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                          </button>
+                          <span className="text-base text-neutral-200 min-w-[1.75rem] text-center font-semibold">{item.quantity}</span>
+                          <button
+                            onClick={() => onUpdateQuantity?.(item.id, item.quantity + 1)}
+                            className="w-7 h-7 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 flex items-center justify-center transition-all duration-200 rounded-lg"
+                          >
+                            <svg className="w-3.5 h-3.5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        {/* Price Override */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-neutral-500">$</span>
+                          {editingPriceItemId === item.id ? (
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              defaultValue={item.override_price ?? item.price}
+                              onBlur={(e) => {
+                                const value = parseFloat(e.target.value);
+                                if (!isNaN(value) && value >= 0) {
+                                  onUpdatePriceOverride?.(item.id, value === item.price ? undefined : value);
+                                }
+                                setEditingPriceItemId(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') e.currentTarget.blur();
+                              }}
+                              className="w-16 h-7 text-sm text-center bg-white/[0.03] border border-white/10 rounded-lg text-neutral-200 focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              autoFocus
+                            />
+                          ) : (
+                            <button
+                              onClick={() => setEditingPriceItemId(item.id)}
+                              className={`text-sm px-2 py-0.5 rounded border border-white/10 hover:border-white/20 transition-all font-medium ${
+                                item.override_price !== undefined ? 'text-green-400 border-green-400/40 bg-green-400/10' : 'text-neutral-300'
+                              }`}
+                            >
+                              {(item.override_price ?? item.price).toFixed(2)}
+                            </button>
+                          )}
+                        </div>
+                        
+                        {/* Discount */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-neutral-500">%</span>
+                          {editingDiscountItemId === item.id ? (
+                            <input
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="100"
+                              defaultValue={item.discount_percentage ?? 0}
+                              onBlur={(e) => {
+                                const value = parseFloat(e.target.value);
+                                if (!isNaN(value) && value >= 0 && value <= 100) {
+                                  onUpdateDiscountPercentage?.(item.id, value === 0 ? undefined : value);
+                                }
+                                setEditingDiscountItemId(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') e.currentTarget.blur();
+                              }}
+                              className="w-12 h-7 text-sm text-center bg-white/[0.03] border border-white/10 rounded-lg text-neutral-200 focus:bg-neutral-600/90 focus:border-neutral-300 focus:outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              autoFocus
+                            />
+                          ) : (
+                            <button
+                              onClick={() => setEditingDiscountItemId(item.id)}
+                              className={`text-sm px-2 py-0.5 rounded border border-white/10 hover:border-white/20 transition-all font-medium ${
+                                item.discount_percentage ? 'text-orange-400 border-orange-400/40 bg-orange-400/10' : 'text-neutral-300'
+                              }`}
+                            >
+                              {item.discount_percentage ?? 0}
+                            </button>
+                          )}
+                        </div>
+                        
+                        {/* Subtotal */}
+                        <span className="text-base font-bold text-neutral-100 ml-auto">
+                          ${(() => {
+                            let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
+                            if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
+                              finalPrice = finalPrice * (1 - item.discount_percentage / 100);
+                            }
+                            return (finalPrice * item.quantity).toFixed(2);
+                          })()}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -412,47 +375,47 @@ const CartComponent = function Cart({
 
       {/* Action Buttons */}
       {items.length > 0 && (
-        <div className="pt-2 px-2 pb-2 space-y-2">
+        <div className="pt-4 px-4 pb-4 space-y-3 bg-gradient-to-t from-neutral-900/60 to-transparent backdrop-blur-md border-t border-white/[0.08]">
           {/* Empty Cart Button */}
           <button
             onClick={() => setShowEmptyConfirm(true)}
-            className="w-full bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 hover:text-red-400 font-medium py-1 px-4 transition-all duration-300 ease-out flex items-center justify-center gap-2 rounded-lg"
+            className="w-full bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-red-500/40 text-neutral-300 hover:text-red-300 font-medium py-3 px-5 transition-all duration-300 ease-out flex items-center justify-center gap-3 rounded-xl shadow-lg hover:shadow-xl"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            <span>Empty Cart</span>
+            <span className="text-base">Empty Cart</span>
           </button>
 
           {/* Confirmation Dialog */}
           <UnifiedPopout isOpen={showEmptyConfirm} onClose={() => setShowEmptyConfirm(false)} width="min(90vw, 500px)" height="auto">
             <div className="flex flex-col">
               {/* Header */}
-              <div className="px-4 py-3 border-b border-neutral-500/20 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="px-6 py-4 border-b border-neutral-500/20 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-neutral-200" style={{ fontFamily: 'Tiempos, serif' }}>
                   Burn List?
                 </h3>
                 <button
                   onClick={() => setShowEmptyConfirm(false)}
-                  className="text-neutral-400 hover:text-neutral-300 transition-colors"
+                  className="text-neutral-400 hover:text-neutral-200 transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
               
               {/* Content */}
-              <div className="p-4">
-                <p className="text-neutral-200 mb-6 text-sm">
+              <div className="p-6">
+                <p className="text-neutral-200 mb-8 text-base">
                   Remove all {itemCount} item{itemCount !== 1 ? 's' : ''} from cart?
                 </p>
                 
                 {/* Form Actions */}
-                <div className="flex items-center justify-end space-x-3 pt-2">
+                <div className="flex items-center justify-end space-x-4 pt-2">
                   <button
                     onClick={() => setShowEmptyConfirm(false)}
-                    className="px-4 py-2 text-sm bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-neutral-300 hover:text-white rounded-md transition-colors duration-200"
+                    className="px-6 py-3 text-base bg-neutral-700 hover:bg-neutral-600 border border-neutral-600 text-neutral-300 hover:text-white rounded-lg transition-colors duration-200"
                   >
                     Cancel
                   </button>
@@ -461,7 +424,7 @@ const CartComponent = function Cart({
                       onClearCart?.();
                       setShowEmptyConfirm(false);
                     }}
-                    className="px-6 py-2 text-sm bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-neutral-800"
+                    className="px-8 py-3 text-base bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-neutral-800 shadow-lg"
                   >
                     Burn List
                   </button>
@@ -472,10 +435,10 @@ const CartComponent = function Cart({
 
           {isAuditMode ? (
             /* Apply Adjustments Section */
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* Reason Input */}
               <div>
-                <label className="block text-xs text-neutral-500 mb-1">
+                <label className="block text-sm text-neutral-400 mb-2 font-medium">
                   Adjustment Reason
                 </label>
                 <input
@@ -483,22 +446,22 @@ const CartComponent = function Cart({
                   value={adjustmentReason}
                   onChange={(e) => setAdjustmentReason(e.target.value)}
                   placeholder="e.g., Physical count, damaged goods, etc."
-                  className="w-full px-3 py-1 text-sm bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] rounded-lg text-neutral-400 placeholder-neutral-500 focus:bg-neutral-600/5 focus:border-white/[0.12] focus:outline-none transition-all duration-300 ease-out"
+                  className="w-full px-4 py-3 text-base bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 hover:border-white/20 rounded-xl text-neutral-200 placeholder-neutral-500 focus:bg-white/[0.05] focus:border-white/20 focus:outline-none transition-all duration-300 ease-out"
                 />
               </div>
               
               {/* Apply Adjustments Button */}
               <button
                 onClick={() => onApplyAdjustments?.(adjustmentReason || 'Manual adjustment')}
-                className="w-full bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 font-medium py-3 px-4 transition-all duration-300 ease-out flex items-center justify-between rounded-lg cursor-pointer"
+                className="w-full bg-white/[0.03] hover:bg-white/[0.08] backdrop-blur-md border border-white/10 hover:border-white/20 text-neutral-200 font-semibold py-4 px-5 transition-all duration-300 ease-out flex items-center justify-between rounded-xl cursor-pointer shadow-lg hover:shadow-xl"
               >
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-3">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>Apply Adjustments</span>
+                  <span className="text-base">Apply Adjustments</span>
                 </div>
-                <span className="font-semibold">{adjustmentCount} item{adjustmentCount !== 1 ? 's' : ''}</span>
+                <span className="text-base font-bold">{adjustmentCount} item{adjustmentCount !== 1 ? 's' : ''}</span>
               </button>
             </div>
           ) : (
@@ -506,19 +469,19 @@ const CartComponent = function Cart({
             <button
               onClick={() => onCheckout?.(selectedCustomer)}
               disabled={isCheckoutLoading}
-              className="w-full bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 font-medium py-3 px-4 transition-all duration-300 ease-out flex items-center justify-between rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-neutral-700/50 to-neutral-600/50 hover:from-neutral-600/60 hover:to-neutral-500/60 backdrop-blur-md border border-white/10 hover:border-white/20 text-neutral-100 font-bold py-5 px-5 transition-all duration-300 ease-out flex items-center justify-between rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-2xl"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 {isCheckoutLoading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-neutral-400"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-neutral-200"></div>
                 ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                 )}
-                <span>{isCheckoutLoading ? 'Processing...' : 'Checkout'}</span>
+                <span className="text-lg">{isCheckoutLoading ? 'Processing...' : 'Checkout'}</span>
               </div>
-              <span className="font-semibold">${total.toFixed(2)}</span>
+              <span className="text-xl font-black tracking-tight">${total.toFixed(2)}</span>
             </button>
           )}
         </div>
