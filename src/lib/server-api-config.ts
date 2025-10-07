@@ -50,14 +50,15 @@ export function getApiEnvironmentFromRequest(request: Request): ApiEnvironment {
     }
   }
   
-  // Default to docker for local development
-  return 'docker';
+  // Default to staging from environment variable
+  const DEFAULT_ENV = process.env.NEXT_PUBLIC_API_ENVIRONMENT as ApiEnvironment || 'staging';
+  return DEFAULT_ENV;
 }
 
 /**
  * Get base URL for the specified environment
  */
-export function getApiBaseUrl(env: ApiEnvironment = 'production'): string {
+export function getApiBaseUrl(env: ApiEnvironment = 'staging'): string {
   if (env === 'docker') return DOCKER_URL;
   if (env === 'staging') return STAGING_URL;
   return PRODUCTION_URL;
@@ -66,7 +67,7 @@ export function getApiBaseUrl(env: ApiEnvironment = 'production'): string {
 /**
  * Get full API URL with wp-json path
  */
-export function getApiUrl(path: string, env: ApiEnvironment = 'production'): string {
+export function getApiUrl(path: string, env: ApiEnvironment = 'staging'): string {
   const base = getApiBaseUrl(env);
   return `${base}/wp-json${path}`;
 }
@@ -75,7 +76,7 @@ export function getApiUrl(path: string, env: ApiEnvironment = 'production'): str
  * Get API credentials for specified environment
  */
 export function getApiCredentials(env?: ApiEnvironment) {
-  const environment = env || 'production';
+  const environment = env || 'staging';
   
   if (environment === 'staging') {
     return {

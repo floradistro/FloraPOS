@@ -26,9 +26,10 @@ export function MenuConfigPanel({ onLoadConfig, onSaveConfig, currentConfigName 
   // Load location names
   const loadLocations = async () => {
     try {
+      const DEFAULT_ENV = process.env.NEXT_PUBLIC_API_ENVIRONMENT || 'staging';
       const response = await fetch('/api/proxy/flora-im/locations', {
         headers: {
-          'x-api-environment': localStorage.getItem('flora_pos_api_environment') || 'docker',
+          'x-api-environment': localStorage.getItem('flora_pos_api_environment') || DEFAULT_ENV,
           'Cache-Control': 'no-cache'
         }
       });
