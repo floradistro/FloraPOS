@@ -1,14 +1,14 @@
-import { getApiEnvironmentFromRequest, getApiBaseUrl } from '@/lib/server-api-config';
+import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
-
-const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
-const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
 
 export async function GET(request: NextRequest) {
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    const credentials = getApiCredentials();
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('user_id');
@@ -73,6 +73,9 @@ export async function POST(request: NextRequest) {
   
   try {
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    const credentials = getApiCredentials();
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     
     const body = await request.json();
     
