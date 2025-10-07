@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { CategoriesService } from '../services/categories-service';
 import { Category } from '../components/ui/CategoryFilter';
+import { apiFetch } from '../lib/api-fetch';
 
 /**
  * Hook for caching categories data with long stale time
@@ -38,60 +39,70 @@ export function useUserLocations() {
         });
 
         if (!response.ok) {
-          throw new Error(`Locations API error: ${response.status}`);
+          throw new Error('Failed to fetch locations');
         }
 
-        const result = await response.json();
-        return result.success ? result.data : [];
+        const data = await response.json();
+        return data.success ? data.data : [];
       } catch (error) {
+        console.error('Error fetching locations:', error);
         return [];
       }
     },
     staleTime: isDevelopment ? 0 : 1000 * 60 * 240, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 60, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false,
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 120, // No cache in dev
+    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
     retry: isDevelopment ? 0 : 1,
+    refetchInterval: isDevelopment ? false : 1000 * 60 * 30, // No background refetch in dev
   });
 }
 
 /**
- * Hook for caching tax rates by location
- * Tax rates change infrequently
+ * Hook for caching tax rates
+ * Tax rates change very infrequently
  */
-export function useTaxRates(locationName?: string) {
+export function useTaxRates() {
   return useQuery({
-    queryKey: ['tax-rates', locationName],
-    queryFn: () => {
-      // Static tax rate mapping (rarely changes)
-      const locationMapping: { [key: string]: { id: number, rate: number, name: string } } = {
-        'Charlotte Monroe': { id: 19, rate: 0.0875, name: 'NC Sales Tax + Local' },
-        'Charlotte Central': { id: 20, rate: 0.0875, name: 'NC Sales Tax + Local' },
-        'Blowing Rock': { id: 21, rate: 0.085, name: 'NC Sales Tax + Local' },
-        'Warehouse': { id: 23, rate: 0.08, name: 'NC Sales Tax' },
-        'Main Location': { id: 25, rate: 0.08, name: 'Sales Tax' },
-        'Default': { id: 25, rate: 0.08, name: 'Sales Tax' }
-      };
+    queryKey: ['tax-rates'],
+    queryFn: async () => {
+      try {
+        const response = await apiFetch('/api/proxy/flora-im/taxes', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': isDevelopment ? 'no-cache, no-store, must-revalidate' : 'public, max-age=3600',
+          },
+        });
 
-      return locationMapping[locationName || 'Default'] || locationMapping['Default'];
+        if (!response.ok) {
+          throw new Error('Failed to fetch tax rates');
+        }
+
+        const data = await response.json();
+        return data.success ? data.data : [];
+      } catch (error) {
+        console.error('Error fetching tax rates:', error);
+        return [];
+      }
     },
     staleTime: isDevelopment ? 0 : 1000 * 60 * 60 * 24, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 60 * 2, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false,
-    retry: 0, // No retries needed for static data
-    enabled: !!locationName, // Only run if locationName is provided
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 60 * 4, // No cache in dev
+    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
+    retry: isDevelopment ? 0 : 1,
+    refetchInterval: isDevelopment ? false : 1000 * 60 * 60, // No background refetch in dev
   });
 }
 
 /**
- * Hook for caching blueprint assignments
- * Assignments change infrequently but need to be fresh
+ * Hook for caching blueprint pricing assignments
+ * Blueprint assignments change occasionally
  */
 export function useBlueprintAssignments() {
   return useQuery({
     queryKey: ['blueprint-assignments'],
     queryFn: async () => {
       try {
-        const response = await apiFetch('/api/proxy/blueprints/assignments', {
+        const response = await apiFetch('/api/pricing/rules/blueprint', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -100,18 +111,20 @@ export function useBlueprintAssignments() {
         });
 
         if (!response.ok) {
-          throw new Error(`Blueprint assignments API error: ${response.status}`);
+          throw new Error('Failed to fetch blueprint assignments');
         }
 
-        const result = await response.json();
-        return result.success ? result.data : [];
+        const data = await response.json();
+        return data;
       } catch (error) {
-        return [];
+        console.error('Error fetching blueprint assignments:', error);
+        return { assignments: [] };
       }
     },
     staleTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
     gcTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false,
+    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
     retry: isDevelopment ? 0 : 1,
+    refetchInterval: isDevelopment ? false : 1000 * 60 * 5, // No background refetch in dev
   });
 }

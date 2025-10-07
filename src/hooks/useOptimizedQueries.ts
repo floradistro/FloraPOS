@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CategoriesService } from '../services/categories-service';
-
+import { apiFetch } from '../lib/api-fetch';
 import { usersService, WordPressUser } from '../services/users-service';
 
 /**
@@ -32,145 +32,146 @@ export function useProducts(searchQuery?: string, categoryFilter?: string) {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch products: ${response.status}`);
+        throw new Error('Failed to fetch products');
       }
 
-      const result = await response.json();
-      return {
-        success: true,
-        data: result.success ? result.data : [],
-        meta: result.meta || { total: 0, pages: 1, page: 1, per_page: 100 }
-      };
+      const data = await response.json();
+      return data.success ? data.data : [];
     },
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 5, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 10, // No cache in dev
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 5, // No cache in dev, 5 min in prod
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
     refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
-    retry: isDevelopment ? 0 : 2,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000),
+    retry: isDevelopment ? 0 : 1,
+    refetchInterval: isDevelopment ? false : 1000 * 60 * 2, // No background refetch in dev
   });
 }
 
-// Categories with longer cache time (they rarely change)
+// Categories (reusing existing service)
 export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
     queryFn: () => CategoriesService.getCategories(),
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 120, // No cache in dev
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 10, // No cache in dev
     gcTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false,
+    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
+    retry: isDevelopment ? 0 : 1,
+    refetchInterval: isDevelopment ? false : 1000 * 60 * 5, // No background refetch in dev
+  });
+}
+
+// Customers
+export function useCustomers(searchQuery?: string) {
+  return useQuery({
+    queryKey: ['customers', searchQuery],
+    queryFn: () => usersService.getUsers(searchQuery),
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
+    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
+    retry: isDevelopment ? 0 : 1,
+    refetchInterval: isDevelopment ? false : 1000 * 60 * 5, // No background refetch in dev
+  });
+}
+
+// Orders (for orders view)
+export function useOrders(filters?: {
+  status?: string;
+  page?: number;
+  perPage?: number;
+  locationId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
+  return useQuery({
+    queryKey: ['orders', filters],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: (filters?.page || 1).toString(),
+        per_page: (filters?.perPage || 50).toString(),
+        status: filters?.status || 'any',
+        orderby: 'date',
+        order: 'desc',
+      });
+
+      if (filters?.locationId) params.append('location_id', filters.locationId);
+      if (filters?.dateFrom) params.append('date_from', filters.dateFrom);
+      if (filters?.dateTo) params.append('date_to', filters.dateTo);
+
+      const response = await apiFetch(`/api/orders?${params}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
+
+      const data = await response.json();
+      return data;
+    },
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 2, // No cache in dev
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
+    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
+    retry: isDevelopment ? 0 : 2,
+    refetchInterval: isDevelopment ? false : 1000 * 60, // No background refetch in dev
+  });
+}
+
+// Inventory for specific product/location
+export function useInventory(productId?: number, locationId?: number) {
+  return useQuery({
+    queryKey: ['inventory', productId, locationId],
+    queryFn: async () => {
+      if (!productId || !locationId) return null;
+      
+      const params = new URLSearchParams({
+        product_id: productId.toString(),
+        location_id: locationId.toString(),
+      });
+
+      const response = await apiFetch(`/api/proxy/flora-im/inventory?${params}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch inventory');
+      }
+
+      const data = await response.json();
+      return data;
+    },
+    enabled: !!productId && !!locationId,
+    staleTime: isDevelopment ? 0 : 1000 * 60 * 1, // No cache in dev
+    gcTime: isDevelopment ? 0 : 1000 * 60 * 5, // No cache in dev
+    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
     retry: isDevelopment ? 0 : 1,
   });
 }
 
-// Customer data
-export function useCustomers(searchQuery?: string) {
-  return useQuery({
-    queryKey: ['customers', searchQuery],
-    queryFn: async () => {
-      // getUsers doesn't accept parameters, so we'll get all users and filter client-side
-      const users = await usersService.getUsers();
-      if (searchQuery) {
-        return users.filter(user => 
-          user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-      return users;
-    },
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
-    enabled: !!searchQuery, // Only run if we have a search query
-  });
-}
-
-// Individual customer details
-export function useCustomer(customerId: number) {
-  return useQuery({
-    queryKey: ['customer', customerId],
-    queryFn: () => usersService.getUserById(customerId),
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 10, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 20, // No cache in dev
-    enabled: !!customerId,
-  });
-}
-
-// Order creation mutation with optimistic updates
-export function useCreateOrder() {
+// Mutation for updating inventory
+export function useInventoryUpdate() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (orderData: any) => {
-      const response = await apiFetch('/api/orders', {
+    mutationFn: async ({ productId, locationId, newStock }: { 
+      productId: number; 
+      locationId: number; 
+      newStock: number;
+    }) => {
+      const response = await apiFetch('/api/proxy/flora-im/inventory', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: productId,
+          location_id: locationId,
+          quantity: newStock
+        })
       });
-      
+
       if (!response.ok) {
-        throw new Error(`Order creation failed: ${response.status}`);
+        throw new Error('Failed to update inventory');
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate and refetch relevant queries after successful order
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
-    },
-    onError: (error) => {
-      console.error('Order creation failed:', error);
-    },
-  });
-}
-
-// Inventory refresh mutation (for manual refresh buttons)
-export function useRefreshInventory() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async () => {
-      // Invalidate all inventory-related queries
-      await queryClient.invalidateQueries({ queryKey: ['products'] });
-      await queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      
-      // Wait for refetch to complete
-      await queryClient.refetchQueries({ queryKey: ['products'] });
-    },
-    onError: (error) => {
-      console.error('Inventory refresh failed:', error);
-    },
-  });
-}
-
-// Optimized cache utilities
-export function useOptimizedCache() {
-  const queryClient = useQueryClient();
-  
-  return {
-    // Smart invalidation - only invalidate what's needed
-    invalidateProducts: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
-    },
-    
-    invalidateCustomers: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-    },
-    
-    // Prefetch data for better UX
-    prefetchCustomer: (customerId: number) => {
-      queryClient.prefetchQuery({
-        queryKey: ['customer', customerId],
-        queryFn: () => usersService.getUserById(customerId),
-        staleTime: isDevelopment ? 0 : 1000 * 60 * 10,
-      });
-    },
-    
-    // Clear old cache entries to prevent memory buildup
-    clearStaleCache: () => {
-      queryClient.clear();
-    },
-  };
+    }
+  });
 }
