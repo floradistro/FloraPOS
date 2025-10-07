@@ -44,8 +44,8 @@ export function getApiEnvironmentFromRequest(request: Request): ApiEnvironment {
     }
   }
   
-  // Default to production
-  return 'production';
+  // Default to docker for local development
+  return 'docker';
 }
 
 /**
