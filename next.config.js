@@ -69,6 +69,17 @@ const nextConfig = {
     
     // Handle Scandit and Three.js modules - exclude from server-side rendering
     if (isServer) {
+      // Polyfill 'self' for server-side builds to prevent build errors
+      const definePlugin = config.plugins.find(
+        (plugin) => plugin.constructor.name === 'DefinePlugin'
+      );
+      if (definePlugin) {
+        definePlugin.definitions = {
+          ...definePlugin.definitions,
+          'self': 'undefined',
+        };
+      }
+      
       config.externals = config.externals || [];
       config.externals.push({
         '@scandit/web-datacapture-core': 'commonjs @scandit/web-datacapture-core',
@@ -76,7 +87,9 @@ const nextConfig = {
         '@scandit/web-datacapture-barcode': 'commonjs @scandit/web-datacapture-barcode',
         '@react-three/fiber': 'commonjs @react-three/fiber',
         '@react-three/drei': 'commonjs @react-three/drei',
-        'three': 'commonjs three'
+        'three': 'commonjs three',
+        'html2canvas': 'commonjs html2canvas',
+        'jspdf': 'commonjs jspdf'
       });
     }
     
@@ -95,45 +108,45 @@ const nextConfig = {
         ...config.optimization,
         // More aggressive splitting
         splitChunks: {
-          chunks: 'all',
+          chunks: (chunk) => {
+            // Don't split server chunks - prevents 'self is not defined' errors
+            return !isServer && chunk.name !== 'polyfills';
+          },
           cacheGroups: {
-            default: {
-              minChunks: 2,
-              priority: -20,
-              reuseExistingChunk: true,
-            },
+            default: false,
             vendor: {
               test: /[\\/]node_modules[\\/]/,
               name: 'vendors',
               priority: -10,
-              chunks: 'all',
+              chunks: (chunk) => !isServer,
+              reuseExistingChunk: true,
             },
-            // Separate chunk for React Query
+            // Separate chunk for React Query (client-only)
             reactQuery: {
               test: /[\\/]node_modules[\\/]@tanstack[\\/]react-query[\\/]/,
               name: 'react-query',
-              chunks: 'all',
+              chunks: (chunk) => !isServer,
               priority: 10,
             },
-            // Separate chunk for Zustand
+            // Separate chunk for Zustand (client-only)
             zustand: {
               test: /[\\/]node_modules[\\/]zustand[\\/]/,
               name: 'zustand', 
-              chunks: 'all',
+              chunks: (chunk) => !isServer,
               priority: 10,
             },
             // Separate chunk for Scandit (client-side only)
             scandit: {
               test: /[\\/]node_modules[\\/]@scandit[\\/]/,
               name: 'scandit',
-              chunks: 'all',
+              chunks: (chunk) => !isServer,
               priority: 15,
             },
             // Separate chunk for Three.js (client-side only)
             threejs: {
               test: /[\\/]node_modules[\\/](three|@react-three)[\\/]/,
               name: 'threejs',
-              chunks: 'all',
+              chunks: (chunk) => !isServer,
               priority: 15,
             }
           },

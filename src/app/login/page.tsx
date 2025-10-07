@@ -4,10 +4,19 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ThreeBackground } from '../../components/ui/ThreeBackground';
-import { RetroButton } from '../../components/ui/RetroButton';
+import dynamic from 'next/dynamic';
 import { MatrixRain } from '../../components/ui/MatrixRain';
 import { EnvironmentToggle } from './env-toggle';
+
+const ThreeBackground = dynamic(
+  () => import('../../components/ui/ThreeBackground').then(mod => ({ default: mod.ThreeBackground })),
+  { ssr: false }
+);
+
+const RetroButton = dynamic(
+  () => import('../../components/ui/RetroButton').then(mod => ({ default: mod.RetroButton })),
+  { ssr: false }
+);
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');

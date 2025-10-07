@@ -63,7 +63,7 @@ export function useCategories() {
 export function useCustomers(searchQuery?: string) {
   return useQuery({
     queryKey: ['customers', searchQuery],
-    queryFn: () => usersService.getUsers(searchQuery || ''),
+    queryFn: () => usersService.getUsers(isDevelopment),
     staleTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
     gcTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
     refetchOnWindowFocus: isDevelopment, // Always refetch in dev
