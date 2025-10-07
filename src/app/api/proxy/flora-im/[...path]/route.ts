@@ -64,28 +64,13 @@ export async function GET(
     
     const data = await response.json();
     
-    // Apply stock filtering for products endpoint if enabled
-    // IMPORTANT: Only filter products endpoint, NOT inventory endpoint to preserve refresh functionality
+    // DISABLED: Stock filtering - show all products with accurate inventory
+    // This prevents hiding products that have been sold out
+    // Frontend will show "0" stock instead of hiding the product
     if (path === 'products' && data.success && data.data) {
-      // Check if this is audit mode or restock mode from query params
-      const isAuditMode = searchParams.get('audit_mode') === 'true';
-      const isRestockMode = searchParams.get('restock_mode') === 'true';
-      const includeZeroStock = searchParams.get('include_zero_stock') === 'true';
-      
-      // Get location ID from query params (sent by frontend)
       const locationId = searchParams.get('location_id');
-      
-      if (locationId && !isAuditMode && !isRestockMode && !includeZeroStock) {
-        // Apply stock filtering while preserving all other product data
-        // For variable products, we let them through and filter variants at UI level
-        const filteredProducts = InventoryVisibilityService.filterProductsByStock(
-          data.data,
-          locationId,
-          { isAuditMode, isRestockMode, includeZeroStock }
-        );
-        
-        console.log(`🔍 Stock filtering: ${data.data.length} products -> ${filteredProducts.length} with stock at location ${locationId}`);
-        data.data = filteredProducts;
+      if (locationId) {
+        console.log(`📍 Returning all ${data.data.length} products for location ${locationId} with real-time inventory`);
       }
     }
     
@@ -153,28 +138,13 @@ export async function POST(
     
     const data = await response.json();
     
-    // Apply stock filtering for products endpoint if enabled
-    // IMPORTANT: Only filter products endpoint, NOT inventory endpoint to preserve refresh functionality
+    // DISABLED: Stock filtering - show all products with accurate inventory
+    // This prevents hiding products that have been sold out
+    // Frontend will show "0" stock instead of hiding the product
     if (path === 'products' && data.success && data.data) {
-      // Check if this is audit mode or restock mode from query params
-      const isAuditMode = searchParams.get('audit_mode') === 'true';
-      const isRestockMode = searchParams.get('restock_mode') === 'true';
-      const includeZeroStock = searchParams.get('include_zero_stock') === 'true';
-      
-      // Get location ID from query params (sent by frontend)
       const locationId = searchParams.get('location_id');
-      
-      if (locationId && !isAuditMode && !isRestockMode && !includeZeroStock) {
-        // Apply stock filtering while preserving all other product data
-        // For variable products, we let them through and filter variants at UI level
-        const filteredProducts = InventoryVisibilityService.filterProductsByStock(
-          data.data,
-          locationId,
-          { isAuditMode, isRestockMode, includeZeroStock }
-        );
-        
-        console.log(`🔍 Stock filtering: ${data.data.length} products -> ${filteredProducts.length} with stock at location ${locationId}`);
-        data.data = filteredProducts;
+      if (locationId) {
+        console.log(`📍 Returning all ${data.data.length} products for location ${locationId} with real-time inventory`);
       }
     }
     

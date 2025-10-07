@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const baseUrl = 'https://api.floradistro.com';
     const credentials = getApiCredentials();
 
-    console.log(`🔄 [${'PROD'}] Fetching pricing rules for blueprint ${blueprintId} from Flora V2 API`);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching pricing rules for blueprint ${blueprintId} from Flora V2 API`);
 
     // Build the API URL for general pricing rules (V2 endpoint)
     let url = `${baseUrl}/wp-json/fd/v2/pricing/rules?consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}`;

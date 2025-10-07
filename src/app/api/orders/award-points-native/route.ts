@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
-const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
 
 /**
  * This endpoint replicates the exact WooCommerce Points & Rewards plugin logic
@@ -13,7 +12,8 @@ export async function POST(request: NextRequest) {
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    console.log(`🔄 [${'PROD'}] Awarding points...`);
+    const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Awarding points at ${WOOCOMMERCE_API_URL}...`);
     
     const { orderId, customerId } = await request.json();
     
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     
     if (pointsEarned <= 0) {
       // Still update the meta to mark as processed
-      await updateOrderMeta(orderId, pointsEarned);
+      await updateOrderMeta(orderId, pointsEarned, WOOCOMMERCE_API_URL);
       return NextResponse.json({
         success: true,
         pointsAwarded: 0,
@@ -137,10 +137,10 @@ export async function POST(request: NextRequest) {
     }
     
     // 6. Update order meta (like the plugin does)
-    await updateOrderMeta(orderId, pointsEarned);
+    await updateOrderMeta(orderId, pointsEarned, WOOCOMMERCE_API_URL);
     
     // 7. Add order note (like the plugin does)
-    await addOrderNote(orderId, `Customer earned ${pointsEarned} points for purchase.`);
+    await addOrderNote(orderId, `Customer earned ${pointsEarned} points for purchase.`, WOOCOMMERCE_API_URL);
     
     return NextResponse.json({
       success: true,
@@ -212,9 +212,9 @@ async function calculatePointsForOrder(order: any, earnPointsRatio: string): Pro
 /**
  * Update order meta data
  */
-async function updateOrderMeta(orderId: number, points: number): Promise<void> {
+async function updateOrderMeta(orderId: number, points: number, apiUrl: string): Promise<void> {
   const updateResponse = await fetch(
-    `${WOOCOMMERCE_API_URL}/wp-json/wc/v3/orders/${orderId}?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+    `${apiUrl}/wp-json/wc/v3/orders/${orderId}?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -239,9 +239,9 @@ async function updateOrderMeta(orderId: number, points: number): Promise<void> {
 /**
  * Add order note
  */
-async function addOrderNote(orderId: number, note: string): Promise<void> {
+async function addOrderNote(orderId: number, note: string, apiUrl: string): Promise<void> {
   const noteResponse = await fetch(
-    `${WOOCOMMERCE_API_URL}/wp-json/wc/v3/orders/${orderId}/notes?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+    `${apiUrl}/wp-json/wc/v3/orders/${orderId}/notes?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

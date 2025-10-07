@@ -7,8 +7,8 @@
  * Get the current API environment from localStorage
  */
 function getApiEnvironment(): string {
-  if (typeof window === 'undefined') return 'production';
-  return localStorage.getItem('flora_pos_api_environment') || 'production';
+  if (typeof window === 'undefined') return 'docker';
+  return localStorage.getItem('flora_pos_api_environment') || 'docker';
 }
 
 /**
@@ -27,9 +27,11 @@ export async function apiFetch(
   // Add the API environment header
   headers.set('x-api-environment', apiEnv);
   
-  // Log for debugging
-  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-  console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching:`, url);
+  // Minimal logging - only for API environment issues
+  if (process.env.NODE_ENV === 'development' && apiEnv === 'production') {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    console.warn(`⚠️ Using PRODUCTION API:`, url);
+  }
   
   // Make the request with updated headers
   return fetch(input, {

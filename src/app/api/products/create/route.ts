@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
     const floraApiBase = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Creating products...`);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Creating products...`);
     
     const products = await request.json();
     

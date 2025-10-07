@@ -7,7 +7,7 @@ import { CustomerSelector } from './CustomerSelector';
 import { WordPressUser } from '../../services/users-service';
 import { CartItem, PaymentMethod, TaxRate } from '../../types';
 import { LOCATION_MAPPINGS } from '../../constants';
-import { PaymentMethodSelector, OrderSummary } from './checkout';
+import { PaymentMethodSelector, OrderSummary, SplitPayment } from './checkout';
 import { AlertModal } from './';
 import { ReloadDebugger } from '../../lib/debug-reload';
 import { InventoryDeductionService } from '../../services/inventory-deduction-service';
@@ -56,6 +56,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
   const [isProcessing, setIsProcessing] = useState(false);
   const [taxRate, setTaxRate] = useState<TaxRate>({ rate: 0.08, name: 'Sales Tax', location: user?.location || 'Default' });
   const [selectedCustomer, setSelectedCustomer] = useState<WordPressUser | null>(initialSelectedCustomer || null);
+  const [splitPayments, setSplitPayments] = useState<SplitPayment[]>([]);
   
   // Alert state
   const [alertModal, setAlertModal] = useState<{
@@ -73,10 +74,10 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
     }
     return sum + (finalPrice * item.quantity);
   }, 0);
-  const taxAmount = subtotal * taxRate.rate;
-  const total = subtotal + taxAmount;
+  const taxAmount = Math.round(subtotal * taxRate.rate * 100) / 100;
+  const total = Math.round((subtotal + taxAmount) * 100) / 100;
   const cashReceivedNum = parseFloat(cashReceived) || 0;
-  const change = cashReceivedNum - total;
+  const change = Math.round((cashReceivedNum - total) * 100) / 100;
 
   // Load tax rates for location
   useEffect(() => {
@@ -110,7 +111,19 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
 
   const processOrder = async () => {
-    if (paymentMethod === 'cash' && cashReceivedNum < total) {
+    // Handle split payment validation with floating point tolerance
+    if (splitPayments.length > 0) {
+      const totalPaid = Math.round(splitPayments.reduce((sum, p) => sum + p.amount, 0) * 100) / 100;
+      // Allow 2 cent tolerance for floating point precision
+      if (totalPaid < total - 0.02) {
+        setAlertModal({
+          isOpen: true,
+          title: 'Insufficient Payment',
+          message: `Total paid ($${totalPaid.toFixed(2)}) is less than the order total ($${total.toFixed(2)}).`
+        });
+        return;
+      }
+    } else if (paymentMethod === 'cash' && cashReceivedNum < total) {
       setAlertModal({
         isOpen: true,
         title: 'Insufficient Payment',
@@ -118,10 +131,6 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       });
       return;
     }
-
-    // Start debugging to catch any reloads during checkout
-    ReloadDebugger.startCheckoutDebug();
-    ReloadDebugger.logCheckoutStep('Starting order processing');
 
     setIsProcessing(true);
 
@@ -133,27 +142,9 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       const locationId = LOCATION_MAPPINGS[user?.location || 'Default']?.id || LOCATION_MAPPINGS['Default'].id;
       
       // Map cart items to include WooCommerce product IDs for rewards integration
-      console.log('🔄 Mapping cart items to WooCommerce products for rewards...');
       const mappedLineItems = await Promise.all(items.map(async item => {
-        // Map Flora IM product to WooCommerce product for rewards integration
-        console.log(`🔍 Mapping product: "${item.name}"`);
         const wooCommerceProductId = await ProductMappingService.findWooCommerceProductId(item.name);
         const productId = wooCommerceProductId || item.product_id || parseInt(item.id);
-        
-        console.log('Product mapping:', {
-          item_id: item.id,
-          flora_product_id: item.product_id,
-          woocommerce_product_id: wooCommerceProductId,
-          final_product_id: productId,
-          variation_id: item.variation_id,
-          mapping_success: !!wooCommerceProductId
-        });
-        
-        if (!wooCommerceProductId) {
-          console.error(`❌ Failed to map product "${item.name}" to WooCommerce - points may not be awarded!`);
-        } else {
-          console.log(`✅ Successfully mapped "${item.name}" to WooCommerce product ID ${wooCommerceProductId}`);
-        }
         
         // Calculate final price after overrides and discounts
         let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
@@ -164,10 +155,10 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         const lineItem: any = {
           product_id: productId,
           name: item.name,
-          quantity: Math.floor(item.quantity * 1000), // Convert to milligrams/milliunit for integer quantity
-          price: (finalPrice / 1000), // Adjust price per milliunit with overrides/discounts
+          quantity: item.quantity,
+          subtotal: (finalPrice * item.quantity).toFixed(2),
           total: (finalPrice * item.quantity).toFixed(2),
-          sku: item.sku || item.id, // Use proper SKU or fallback to ID
+          sku: item.sku || item.id,
           meta_data: [
             {
               key: '_actual_quantity',
@@ -263,10 +254,16 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         }));
       
       // Prepare order data
+      const isSplitPayment = splitPayments.length > 0;
+      const primaryPaymentMethod = isSplitPayment ? 'split' : paymentMethod;
+      const paymentTitle = isSplitPayment ? 
+        `Split Payment (${splitPayments.map(p => `${p.method}: $${p.amount.toFixed(2)}`).join(', ')})` :
+        paymentMethod === 'cash' ? 'Cash' : 'Credit Card';
+      
       const orderData = {
         ...(selectedCustomer?.id ? { customer_id: selectedCustomer.id } : {}), // Only include customer_id if valid
-        payment_method: paymentMethod,
-        payment_method_title: paymentMethod === 'cash' ? 'Cash' : 'Credit Card',
+        payment_method: primaryPaymentMethod,
+        payment_method_title: paymentTitle,
         status: 'processing', // Use 'processing' to prevent automatic stock deduction
         currency: 'USD',
         line_items: mappedLineItems,
@@ -354,7 +351,23 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
             key: '_total',
             value: total.toFixed(2)
           },
-          ...(paymentMethod === 'cash' ? [
+          ...(isSplitPayment ? [
+            {
+              key: '_split_payment',
+              value: 'true'
+            },
+            {
+              key: '_split_payment_details',
+              value: JSON.stringify(splitPayments.map(p => ({
+                method: p.method,
+                amount: p.amount.toFixed(2)
+              })))
+            },
+            {
+              key: '_split_payment_count',
+              value: splitPayments.length.toString()
+            }
+          ] : paymentMethod === 'cash' ? [
             {
               key: '_cash_received',
               value: cashReceivedNum.toFixed(2)
@@ -374,11 +387,6 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
       
       // Create order via API
-      ReloadDebugger.logCheckoutStep('Making API call to create order');
-      ReloadDebugger.logApiCall('/api/orders', 'POST');
-      
-      console.log('🔍 [DEBUG v2.3] Order data being sent:', JSON.stringify(orderData, null, 2));
-      
       const response = await apiFetch('/api/orders', {
         method: 'POST',
         headers: {
@@ -392,49 +400,21 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
-          console.error('❌ [DEBUG] Order creation failed:', errorData);
-          console.error('❌ [DEBUG] Response status:', response.status);
-          console.error('❌ [DEBUG] Response headers:', Object.fromEntries(response.headers.entries()));
         } catch (jsonError) {
-          // If we can't parse JSON, get the raw text
-          try {
-            const errorText = await response.text();
-            console.error('Non-JSON error response:', errorText);
-            errorMessage = `Server error: ${errorText.substring(0, 200)}...`;
-          } catch (textError) {
-            console.error('Could not read error response:', textError);
-          }
+          const errorText = await response.text().catch(() => 'Unknown error');
+          errorMessage = `Server error: ${errorText.substring(0, 100)}`;
         }
         throw new Error(errorMessage);
       }
 
-      let result;
-      try {
-        ReloadDebugger.logCheckoutStep('Parsing order creation response');
-        result = await response.json();
-
-      } catch (jsonError) {
-        console.error('Failed to parse success response as JSON:', jsonError);
-        ReloadDebugger.logError('JSON parsing', jsonError);
-        throw new Error('Server returned invalid response format');
-      }
+      const result = await response.json();
 
 
 
-      ReloadDebugger.logCheckoutStep('Order created successfully, processing inventory deduction');
-      
-      console.log('Location and cart info:', {
-        userLocation: user?.location,
-        locationId: locationId,
-        locationName: LOCATION_MAPPINGS[user?.location || 'Default']?.name,
-        cartItems: items.length
-      });
-      
       // Complete the order and award points using native WooCommerce Points & Rewards logic
       if (result.data?.id) {
         try {
           // First, mark the order as completed and paid (POS transactions are immediate)
-          console.log(`🔧 [POINTS SYSTEM v2.0] Completing order ${result.data.id} for POS transaction...`);
           const completeResponse = await apiFetch(`/api/orders/${result.data.id}`, {
             method: 'PUT',
             headers: {
@@ -447,13 +427,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
             }),
           });
           
-          if (!completeResponse.ok) {
-            console.warn('⚠️ Failed to complete order status, but continuing with points...');
-          } else {
-          }
-          
-          // Now award points using native WooCommerce logic
-          console.log(`🎯 Awarding points for order ${result.data.id} using native WooCommerce logic...`);
+          // Award points using native WooCommerce logic
           const pointsResponse = await apiFetch('/api/orders/award-points-native', {
             method: 'POST',
             headers: {
@@ -465,22 +439,8 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
             }),
           });
           
-          if (pointsResponse.ok) {
-            const pointsResult = await pointsResponse.json();
-            console.log('✅ Native points result:', pointsResult);
-            
-            if (pointsResult.success && pointsResult.pointsAwarded > 0) {
-              console.log(`🎉 ${pointsResult.pointsAwarded} points awarded using WooCommerce Points & Rewards settings!`);
-            } else if (!selectedCustomer?.id) {
-              console.warn('⚠️ No customer selected - points only awarded to registered customers');
-            } else if (pointsResult.pointsAwarded === 0) {
-              console.log('ℹ️ No points awarded based on WooCommerce Points & Rewards settings');
-            } else {
-              console.warn('⚠️ Points calculation failed:', pointsResult);
-            }
-          } else {
-            const errorText = await pointsResponse.text();
-            console.error('❌ Failed to award points:', pointsResponse.status, errorText);
+          if (!pointsResponse.ok) {
+            console.error('❌ Points award failed:', pointsResponse.status);
           }
         } catch (pointsError) {
           console.error('❌ Error in points/completion process:', pointsError);
@@ -502,52 +462,30 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
       if (!inventoryResult.success) {
         console.error('❌ Inventory deduction failed:', inventoryResult.error);
-        // Show warning but don't fail the entire transaction since order is already created
         setAlertModal({
           isOpen: true,
           title: 'Inventory Warning',
-          message: `Order completed but inventory deduction failed: ${inventoryResult.error}. Please manually adjust inventory.`
+          message: `Order completed but inventory deduction failed: ${inventoryResult.error}`
         });
-      } else {
-        console.log('📊 Deduction summary:', {
-          totalItems: inventoryResult.deductedItems?.length || 0,
-          items: inventoryResult.deductedItems?.map(item => ({
-            product: item.product_id,
-            deducted: item.quantity_deducted,
-            conversion: item.conversion_applied
-          }))
-        });
-        ReloadDebugger.logCheckoutStep('Inventory deduction completed successfully');
       }
 
-      // Immediately complete the order and close checkout without showing success popup
+      // Complete the order and close checkout
       try {
-        ReloadDebugger.logCheckoutStep('Triggering order completion callback');
         await onOrderComplete();
-        ReloadDebugger.logCheckoutStep('Order completion callback finished');
       } catch (error) {
         console.error('Error during order completion:', error);
-        ReloadDebugger.logError('Order completion callback', error);
       }
       
-      ReloadDebugger.logCheckoutStep('Closing checkout screen');
       onClose();
-      
-      // Stop debugging after successful completion
-      ReloadDebugger.stopCheckoutDebug();
 
     } catch (error) {
       console.error('Order processing failed:', error);
-      ReloadDebugger.logError('Order processing', error);
       
       setAlertModal({
         isOpen: true,
         title: 'Order Failed',
         message: `Failed to process order: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
-      
-      // Stop debugging on error
-      ReloadDebugger.stopCheckoutDebug();
     } finally {
       setIsProcessing(false);
     }
@@ -555,8 +493,8 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
 
   return (
-    <div ref={ref} className="flex-1 bg-transparent flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto">
+    <div ref={ref} className="flex-1 bg-gradient-to-br from-neutral-900/40 via-neutral-800/30 to-neutral-900/40 backdrop-blur-xl flex flex-col h-full border-l border-white/[0.08] shadow-2xl">
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-600/50 scrollbar-track-transparent hover:scrollbar-thumb-neutral-500/50">
 
         {/* Order Summary - Now has more room */}
         <OrderSummary
@@ -578,28 +516,36 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
           cashReceived={cashReceived}
           onCashReceivedChange={setCashReceived}
           change={change}
+          splitPayments={splitPayments}
+          onSplitPaymentsChange={setSplitPayments}
         />
       </div>
 
       {/* Footer */}
-      <div className="px-2 py-4 border-t border-white/[0.06]">
-        <div className="flex gap-2">
+      <div className="px-4 py-4 border-t border-white/[0.08] bg-gradient-to-t from-neutral-900/60 to-transparent backdrop-blur-md">
+        <div className="flex gap-3">
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="flex-1 px-3 py-2 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 hover:text-red-400 text-sm transition-all duration-300 ease-out rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-5 py-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-red-500/40 text-neutral-300 hover:text-red-300 text-base font-medium transition-all duration-300 ease-out rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={processOrder}
-            disabled={isProcessing || (paymentMethod === 'cash' && (cashReceivedNum < total || !cashReceived))}
-            className="flex-1 px-3 py-2 bg-transparent hover:bg-neutral-600/5 border border-white/[0.06] hover:border-white/[0.12] text-neutral-400 hover:text-green-400 text-sm transition-all duration-300 ease-out font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:text-neutral-500"
+            disabled={
+              isProcessing || 
+              (splitPayments.length > 0 
+                ? Math.round(splitPayments.reduce((sum, p) => sum + p.amount, 0) * 100) / 100 < total - 0.02
+                : paymentMethod === 'cash' && (cashReceivedNum < total || !cashReceived)
+              )
+            }
+            className="flex-1 px-5 py-3 bg-gradient-to-r from-neutral-700/50 to-neutral-600/50 hover:from-neutral-600/60 hover:to-neutral-500/60 backdrop-blur-md border border-white/10 hover:border-white/20 text-neutral-100 hover:text-white text-base font-bold transition-all duration-300 ease-out rounded-xl shadow-lg hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:text-neutral-500"
           >
             {isProcessing ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-3 h-3 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
-                Processing...
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-5 h-5 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
+                <span>Processing...</span>
               </div>
             ) : (
               `Pay $${total.toFixed(2)}`

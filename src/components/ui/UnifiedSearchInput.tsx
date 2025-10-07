@@ -961,7 +961,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
 
   const displayText = getDisplayText();
   const showFilters = displayText && !internalValue;
-  const hasSelections = selectedCustomer || selectedProduct || selectedCategory;
+  const hasSelections = selectedProduct || selectedCategory;
   
   // In product-only mode, if a product is selected and not editing, show it and make input readonly
   const showProductSelection = productOnlyMode && selectedProduct && !internalValue && !isEditingProduct;
@@ -1048,37 +1048,13 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 ? 'border-2 border-pink-500/30 bg-pink-500/10' 
                 : 'border border-neutral-500/30 hover:border-neutral-400/50 focus:border-neutral-300'
           } ${
-            selectedCustomer && selectedCustomer.id >= 0 && !isCustomerMode
-              ? 'px-3 pr-36' 
-              : isAuditMode && pendingAdjustments && pendingAdjustments.size > 0
-                ? 'px-3 pr-28'
-                : isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0
-                  ? 'px-3 pr-24'
-                  : 'px-3'
+            isAuditMode && pendingAdjustments && pendingAdjustments.size > 0
+              ? 'px-3 pr-28'
+              : isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0
+                ? 'px-3 pr-24'
+                : 'px-3'
           }`}
         />
-        
-        {/* Selected customer display as part of the search bar */}
-        {selectedCustomer && selectedCustomer.id >= 0 && !isCustomerMode && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 text-xs pointer-events-auto">
-            <span className="text-pink-300 font-medium truncate max-w-24" style={{ fontFamily: 'Tiempo, serif' }}>
-              {selectedCustomer.id === 0 ? 'Guest' : (selectedCustomer.display_name || selectedCustomer.name || selectedCustomer.username)}
-            </span>
-            {selectedCustomer.id > 0 && <CustomerPoints customerId={selectedCustomer.id} />}
-            <button
-              onClick={() => {
-                handleCustomerSelect(null);
-                // Don't focus input to prevent dropdown from opening
-              }}
-              className="text-pink-400 hover:text-pink-200 transition-all p-0.5 rounded-full hover:bg-pink-500/10"
-              title="Clear customer"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
         
         {/* Clear filters button - normal mode (only for product/category when no customer selected) */}
         {!isCustomerMode && !isProductMode && !selectedCustomer && (selectedProduct || selectedCategory) && !internalValue && (

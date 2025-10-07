@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Fetching orders...`);
+    const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching orders from ${WOOCOMMERCE_API_URL}...`);
     
     const { searchParams } = new URL(request.url);
     const customer = searchParams.get('customer');
@@ -206,8 +206,8 @@ export async function POST(request: NextRequest) {
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Creating new order...`);
+    const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Creating new order at ${WOOCOMMERCE_API_URL}...`);
     
     const body = await request.json();
     console.log('🔄 [Orders API] Creating new order:', body);

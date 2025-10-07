@@ -2,5 +2,5 @@
  * Checkout Components Barrel Export
  */
 
-export { PaymentMethodSelector } from './PaymentMethodSelector';
+export { PaymentMethodSelector, type SplitPayment } from './PaymentMethodSelector';
 export { OrderSummary } from './OrderSummary';

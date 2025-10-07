@@ -33,10 +33,6 @@ export class InventoryDeductionService {
     
     try {
       for (const item of cartItems) {
-        console.log(`📦 Processing item: ${item.name} (qty: ${item.quantity})`);
-        if (item.pricing_tier?.conversion_ratio) {
-          console.log(`⚖️ Has conversion ratio:`, item.pricing_tier.conversion_ratio);
-        }
         const result = await this.deductInventoryForItem(item, locationId, orderId);
         if (!result.success) {
           // Rollback previous deductions if one fails
@@ -100,12 +96,9 @@ export class InventoryDeductionService {
       // Step 3: Calculate new stock level
       const newStock = Math.max(0, currentStock - actualDeductionAmount);
 
-      // Log the inventory operation
-      console.log(`Inventory deduction: "${item.name}" - Current: ${currentStock.toFixed(3)}, Deducting: ${actualDeductionAmount.toFixed(3)}, New: ${newStock.toFixed(3)}`);
-
       // Warn if deduction exceeds current stock
       if (actualDeductionAmount > currentStock) {
-        console.warn(`OVERSELLING: Deduction (${actualDeductionAmount.toFixed(3)}) exceeds current stock (${currentStock.toFixed(3)})`);
+        console.warn(`⚠️ OVERSELLING: ${item.name} - Deducting ${actualDeductionAmount.toFixed(1)} but only ${currentStock.toFixed(1)} in stock`);
       }
 
       // Step 4: Update inventory via Magic2 API
@@ -196,11 +189,8 @@ export class InventoryDeductionService {
         actualDeductionAmount = Math.min(calculatedAmount, maxReasonableDeduction);
 
         if (actualDeductionAmount !== calculatedAmount) {
-          console.warn(`Capped deduction amount from ${calculatedAmount} to ${actualDeductionAmount} for safety`);
+          console.warn(`⚠️ Capped deduction for ${item.name}: ${calculatedAmount} → ${actualDeductionAmount}`);
         }
-
-        // Log conversion ratio application
-        console.log(`Conversion ratio applied: "${item.name}" - ${item.quantity} ${conversionRatio.output_unit} = ${actualDeductionAmount.toFixed(3)} ${conversionRatio.input_unit}`);
 
       } catch (error) {
         return {
@@ -333,20 +323,16 @@ export class InventoryDeductionService {
     deductedItems: any[], 
     locationId: number
   ): Promise<void> {
-    console.log('🔄 Rolling back inventory deductions...');
-    
     for (const item of deductedItems) {
       try {
-        // Restore the original stock level
         await this.updateInventory(
           item.product_id, 
           locationId, 
           item.old_stock, 
           item.variation_id
         );
-        console.log(`✅ Rolled back inventory for product ${item.product_id}`);
       } catch (error) {
-        console.error(`❌ Failed to rollback inventory for product ${item.product_id}:`, error);
+        console.error(`❌ Rollback failed for product ${item.product_id}:`, error);
       }
     }
   }

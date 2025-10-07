@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       const apiEnv = getApiEnvironmentFromRequest(request);
       const floraApiBase = 'https://api.floradistro.com';
       
-      console.log(`🔄 [${'PROD'}] Creating audit batch in WordPress...`);
+      console.log(`🔄 [${apiEnv.toUpperCase()}] Creating audit batch in WordPress...`);
       
       // Step 1: Create audit batch in WordPress
       const batchUrl = `${floraApiBase}/wp-json/flora-im/v1/audit-batches?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
