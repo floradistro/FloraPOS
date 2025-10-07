@@ -67,9 +67,12 @@ export function EnvironmentToggle() {
           Switch to {getNextEnv()}
         </button>
       </div>
-      {env === 'docker' && (
+      {(env === 'docker' || env === 'staging') && (
         <div className="mt-2 text-xs text-neutral-500">
-          Login with: admin / admin123
+          {env === 'staging' && !process.env.NEXT_PUBLIC_STAGING_API_URL && (
+            <div className="text-yellow-500 mb-1">⚠️ No staging URL configured - using production</div>
+          )}
+          Dev login: admin / admin123
         </div>
       )}
     </div>
