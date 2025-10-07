@@ -1,11 +1,16 @@
+import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
-const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
 
 export async function GET(request: NextRequest) {
   try {
+    // Get API environment from request
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
+    console.log(`🔄 [${'PROD'}] Fetching customers...`);
+    
     const { searchParams } = new URL(request.url);
     const bustCache = searchParams.get('_');
     
@@ -58,6 +63,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get API environment from request
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
+    console.log(`🔄 [${'PROD'}] Creating customer...`);
+    
     const body = await request.json();
     
     // Create new customer via WooCommerce API
@@ -80,6 +90,9 @@ export async function POST(request: NextRequest) {
       shipping: body.shipping || {}
     };
 
+    console.log(`📤 [${'PROD'}] Sending customer data to:`, url);
+    console.log(`👤 Customer data:`, customerData);
+    
     const response = await fetch(`${url}?${params.toString()}`, {
       method: 'POST',
       headers: {
@@ -89,7 +102,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorText = await response.text();
+      console.error(`❌ [${'PROD'}] WooCommerce API error:`, response.status, errorText);
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText };
+      }
       throw new Error(errorData.message || `Failed to create customer: ${response.status}`);
     }
 
@@ -105,9 +125,10 @@ export async function POST(request: NextRequest) {
       display_name: `${newCustomer.first_name} ${newCustomer.last_name}`.trim() || newCustomer.username
     };
 
+    console.log(`✅ [${'PROD'}] Customer created successfully:`, newCustomer.id);
     return NextResponse.json(transformedUser);
   } catch (error) {
-    console.error('Failed to create customer:', error);
+    console.error(`❌ Failed to create customer in ${'PROD'}:`, error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create customer' },
       { status: 500 }

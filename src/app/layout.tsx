@@ -3,6 +3,7 @@ import './globals.css'
 import { AuthProvider } from '../contexts/AuthContext'
 import { QueryProvider } from '../providers/QueryProvider'
 import { StandardErrorBoundary } from '../components/error/UnifiedErrorBoundary'
+import { DevModeWrapper } from '../components/DevModeWrapper'
 
 export const metadata: Metadata = {
   title: 'Flora POS',
@@ -31,6 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="text-neutral-300 min-h-screen">
+        <DevModeWrapper />
         <div className="wave-layer"></div>
         <StandardErrorBoundary componentName="RootLayout">
           <QueryProvider>

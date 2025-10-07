@@ -1,11 +1,16 @@
+import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
-const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
 
 export async function POST(request: NextRequest) {
   try {
+    // Get API environment from request
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
+    console.log(`🔄 [${'PROD'}] Triggering rewards...`);
+    
     const { orderId, customerId } = await request.json();
     
     if (!orderId) {
@@ -13,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`🎯 Triggering rewards for order ${orderId}, customer ${customerId}...`);
-    
+
     // Get the current order
     const orderResponse = await fetch(
       `${WOOCOMMERCE_API_URL}/wp-json/wc/v3/orders/${orderId}?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`
@@ -57,9 +62,9 @@ export async function POST(request: NextRequest) {
     
     console.log(`💰 Awarding ${pointsToAward} points to customer ${customerId} for $${orderSubtotal} subtotal (pre-tax)`);
     
-    // Award points directly via the rewards API
+    // Award points directly via the rewards API using correct environment
     const rewardsResponse = await fetch(
-      `http://localhost:3000/api/proxy/wc-points-rewards/user/${customerId}/adjust`,
+      `${WOOCOMMERCE_API_URL}/wp-json/wc-points-rewards/v1/user/${customerId}/adjust?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

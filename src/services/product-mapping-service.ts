@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/api-fetch';
 /**
  * Service to map Flora IM products to WooCommerce products for rewards integration
  */
@@ -29,7 +30,6 @@ export class ProductMappingService {
       }
 
       console.log(`🔍 Looking up WooCommerce product ID for: "${productName}"`);
-      console.log(`📡 Calling: /api/proxy/woocommerce/products?search=${encodeURIComponent(productName)}`);
 
       // Search WooCommerce products by name
       const searchParams = new URLSearchParams({
@@ -44,7 +44,7 @@ export class ProductMappingService {
       
       console.log(`📡 Fetching: ${apiUrl}`);
       
-      const response = await fetch(apiUrl, {
+      const response = await apiFetch(apiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

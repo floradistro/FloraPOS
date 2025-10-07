@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback, useRef } from 'react';
+import { apiFetch } from '../../lib/api-fetch';
 import { useAuth } from '../../contexts/AuthContext';
 import { QuantitySelector } from './QuantitySelector';
 import { BlueprintPricingService, BlueprintPricingData } from '../../services/blueprint-pricing-service';
@@ -138,36 +139,35 @@ export const ProductGrid = forwardRef<{
   // Store blueprint field data for filtering
   const [productBlueprintFields, setProductBlueprintFields] = useState<Record<number, any>>({});
 
-  // Fetch blueprint field data when filtering is active
+  // Fetch blueprint field data when filtering is active - NEW BLUEPRINTS PLUGIN
   useEffect(() => {
     if (selectedBlueprintField && blueprintFieldValue && products.length > 0) {
-      console.log('🔍 Fetching blueprint fields for filtering...');
       
       const fetchBlueprintFields = async () => {
-        const promises = products.map(async (product) => {
-          try {
-            const response = await fetch(
-              `https://api.floradistro.com/wp-json/wc/v3/products/${product.id}?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678`
-            );
-            
-            if (!response.ok) return { productId: product.id, meta_data: [] };
-            
-            const productData = await response.json();
-            return { productId: product.id, meta_data: productData.meta_data || [] };
-          } catch (error) {
-            console.error(`Error fetching blueprint fields for product ${product.id}:`, error);
-            return { productId: product.id, meta_data: [] };
+        // Fetch products from Flower category with meta_data (ONE call instead of 100+)
+        try {
+          const response = await apiFetch('/api/proxy/woocommerce/products?category=18&per_page=100');
+          if (!response.ok) {
+            console.error('Failed to fetch products for blueprint filtering');
+            return;
           }
-        });
-        
-        const results = await Promise.all(promises);
-        const blueprintFieldsMap: Record<number, any> = {};
-        results.forEach(result => {
-          blueprintFieldsMap[result.productId] = result.meta_data;
-        });
-        
-        setProductBlueprintFields(blueprintFieldsMap);
-        console.log('✅ Loaded blueprint fields for filtering');
+          
+          const wcProducts = await response.json();
+          
+          // Build map of product ID → blueprint meta_data only
+          const blueprintFieldsMap: Record<number, any> = {};
+          wcProducts.forEach((wcProduct: any) => {
+            if (wcProduct.meta_data && Array.isArray(wcProduct.meta_data)) {
+              blueprintFieldsMap[wcProduct.id] = wcProduct.meta_data.filter((meta: any) => 
+                meta.key.startsWith('_blueprint_')
+              );
+            }
+          });
+          
+          setProductBlueprintFields(blueprintFieldsMap);
+        } catch (error) {
+          console.error('Error fetching blueprint fields:', error);
+        }
       };
       
       fetchBlueprintFields();
@@ -185,22 +185,28 @@ export const ProductGrid = forwardRef<{
       const matchesCategory = !categoryFilter || 
         product.categories.some(cat => cat.slug === categoryFilter);
       
-      // Blueprint field filtering - use fetched blueprint field data
+      // Blueprint field filtering - new Blueprints plugin format
       const matchesBlueprintField = !selectedBlueprintField || !blueprintFieldValue || (() => {
         const blueprintMeta = productBlueprintFields[product.id];
         if (!blueprintMeta || !Array.isArray(blueprintMeta)) return false;
         
-        const fieldMeta = blueprintMeta.find((meta: any) => {
-          const fieldName = meta.key.startsWith('_') ? meta.key.substring(1) : meta.key;
-          return fieldName === selectedBlueprintField;
-        });
+        // Look for _blueprint_FIELDNAME format (also check alternative names)
+        const possibleKeys = [
+          `_blueprint_${selectedBlueprintField}`,
+          selectedBlueprintField === 'effect' ? '_blueprint_effects' : null,
+          selectedBlueprintField === 'thca_percentage' ? '_blueprint_thc_percentage' : null
+        ].filter(Boolean);
+        
+        const fieldMeta = blueprintMeta.find((meta: any) => possibleKeys.includes(meta.key));
         
         if (!fieldMeta || !fieldMeta.value) return false;
         
-        // Exact match for blueprint field values
-        const matches = fieldMeta.value.toString().trim() === blueprintFieldValue.trim();
+        // Check if value matches (support comma-separated values)
+        const fieldValue = fieldMeta.value.toString().trim();
+        const valueParts = fieldValue.split(',').map((v: string) => v.trim());
+        const matches = valueParts.some((v: string) => v === blueprintFieldValue.trim());
+        
         if (matches) {
-          console.log(`✅ Product ${product.name} matches ${selectedBlueprintField}: ${fieldMeta.value}`);
         }
         return matches;
       })();
@@ -301,12 +307,10 @@ export const ProductGrid = forwardRef<{
   const refreshInventory = async () => {
     try {
       setIsRefreshing(true);
-      console.log('🔄 [POSV1] Refreshing products and inventory...');
       
       // Just reload the products - this will get fresh inventory data
       await fetchProducts();
       
-      console.log('✅ [POSV1] Inventory refresh completed');
     } catch (error) {
       console.error('❌ [POSV1] Failed to refresh inventory:', error);
       // Don't rethrow - prevent crashes
@@ -317,7 +321,6 @@ export const ProductGrid = forwardRef<{
 
   // Update specific product quantities without full reload
   const updateProductQuantities = useCallback((updates: Array<{ productId: number; variantId?: number; newQuantity: number }>) => {
-    console.log('🎯 [POSV1] Updating specific product quantities:', updates);
     
     setProducts(prevProducts => 
       prevProducts.map(product => {
@@ -356,7 +359,6 @@ export const ProductGrid = forwardRef<{
       })
     );
     
-    console.log('✅ [POSV1] Product quantities updated in state');
   }, []);
 
   // Expose methods to parent component
@@ -375,7 +377,6 @@ export const ProductGrid = forwardRef<{
       setLoading(true);
       setError(null);
 
-      console.log(`🔄 Fetching all products using Flora IM API...`);
       
       // NO CACHING IN DEVELOPMENT
       const params = new URLSearchParams({
@@ -397,9 +398,8 @@ export const ProductGrid = forwardRef<{
       // We'll filter client-side after fetching the products
 
       const floraApiUrl = `/api/proxy/flora-im/products?${params}`;
-      console.log('🔄 Fetching from Flora IM API via POSV1 proxy...');
       
-      const response = await fetch(floraApiUrl, {
+      const response = await apiFetch(floraApiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -420,7 +420,6 @@ export const ProductGrid = forwardRef<{
       }
 
       const productsWithInventory = result.data;
-      console.log(`✅ Fetched ${productsWithInventory.length} products from Flora IM API`);
 
       // Don't filter products by location - show ALL products with stock > 0 anywhere
       // The user's location will still be used for display purposes
@@ -428,12 +427,16 @@ export const ProductGrid = forwardRef<{
         // Show products that have total stock > 0 (stock at any location)
         const totalStock = product.total_stock || 
           (product.inventory?.reduce((sum: number, inv: any) => sum + (parseFloat(inv.stock) || parseFloat(inv.quantity) || 0), 0) || 0);
-        return totalStock > 0;
+        const hasStock = totalStock > 0;
+        
+        // Debug logging for first few products in production
+        if (!hasStock && productsWithInventory.indexOf(product) < 3) {
+        }
+        
+        return hasStock;
       });
-      console.log(`✅ Showing ${filteredProducts.length} products with stock > 0 (from ${productsWithInventory.length} total)`);
       
       if (user?.location_id) {
-        console.log(`📍 User location: ${user.location_id} - will display location-specific stock in UI`);
       }
 
       // Filter by category if categoryFilter is set (client-side filtering)
@@ -441,7 +444,6 @@ export const ProductGrid = forwardRef<{
         filteredProducts = filteredProducts.filter((product: any) => 
           product.categories && product.categories.some((cat: any) => cat.slug === categoryFilter)
         );
-        console.log(`✅ Filtered to ${filteredProducts.length} products for category ${categoryFilter}`);
       }
 
       // Process products first without blueprint pricing
@@ -477,7 +479,6 @@ export const ProductGrid = forwardRef<{
 
       // Batch blueprint pricing for all products
       try {
-        console.log(`🔍 [POSV1] Batch fetching blueprint pricing for ${baseProducts.length} products`);
         const productsWithCategories = baseProducts.map(product => ({
           id: product.id,
           categoryIds: product.categories ? product.categories.map((cat: any) => parseInt(cat.id)) : []
@@ -485,15 +486,36 @@ export const ProductGrid = forwardRef<{
 
         const batchPricingResponse = await BlueprintPricingService.getBlueprintPricingBatch(productsWithCategories);
         
+        const sampleResponse = Object.entries(batchPricingResponse).slice(0, 3).map(([id, data]) => ({
+          productId: id,
+          hasData: !!data,
+          blueprintId: data?.blueprintId,
+          blueprintName: data?.blueprintName,
+          ruleGroupCount: data?.ruleGroups?.length || 0
+        }));
+        console.log('Batch pricing summary:', {
+          totalProducts: Object.keys(batchPricingResponse).length,
+          sample: sampleResponse
+        });
+        sampleResponse.forEach(s => {
+          console.log(`   Product ${s.productId}: hasData=${s.hasData}, blueprint=${s.blueprintId} (${s.blueprintName}), rules=${s.ruleGroupCount}`);
+        });
+        
         // Apply batch pricing results to products
+        let productsWithPricing = 0;
         baseProducts.forEach(product => {
           const pricingData = batchPricingResponse[product.id];
           if (pricingData) {
             product.blueprintPricing = pricingData;
+            productsWithPricing++;
+            
+            // Log first few products with pricing for debugging
+            if (productsWithPricing <= 3) {
+              console.log('Product pricing rules:', pricingData.ruleGroups?.map((g: any) => `${g.ruleName} (${g.tiers?.length || 0} tiers)`).join(', '));
+            }
           }
         });
         
-        console.log(`✅ Applied blueprint pricing to ${Object.keys(batchPricingResponse).length}/${baseProducts.length} products`);
             } catch (pricingError) {
         console.warn(`⚠️ [POSV1] Failed to get batch blueprint pricing:`, pricingError instanceof Error ? pricingError.message : 'Unknown error');
               // Continue without pricing
@@ -506,13 +528,11 @@ export const ProductGrid = forwardRef<{
         try {
           // Pre-load variants for variable products
           if (baseProduct.type === 'variable') {
-            console.log(`🔄 [POSV1] Pre-loading variants for variable product ${baseProduct.id}`);
             baseProduct.has_variants = true;
             
             try {
               const variants = await loadVariantsForProduct(baseProduct.id);
               baseProduct.variants = variants || [];
-              console.log(`✅ Pre-loaded ${baseProduct.variants.length} variants for product ${baseProduct.id}`);
             } catch (variantError) {
               console.warn(`⚠️ Failed to pre-load variants for product ${baseProduct.id}:`, variantError);
               baseProduct.variants = [];
@@ -548,7 +568,6 @@ export const ProductGrid = forwardRef<{
       
 
       const loadTime = Date.now() - startTime;
-      console.log(`✅ Successfully processed ${normalizedProducts.length} products in ${loadTime}ms`);
 
       // Always replace products since we're loading all at once
       setProducts(normalizedProducts);
@@ -581,7 +600,6 @@ export const ProductGrid = forwardRef<{
   // Listen for inventory change events - DISABLED to prevent automatic refresh
   // useEffect(() => {
   //   const unsubscribe = inventoryEventBus.subscribe(async () => {
-  //     console.log('🔄 [POSV1] Inventory event received, refreshing ProductGrid...');
   //     try {
   //       await refreshInventory();
   //     } catch (error) {
@@ -611,7 +629,6 @@ export const ProductGrid = forwardRef<{
   }, []);
 
   const handleQuantityChange = useCallback((productId: number, quantity: number, price: number, category?: string) => {
-    console.log(`🔄 Quantity selected for product ${productId}: ${quantity} @ $${price} (${category || 'no category'})`);
     setProducts(prevProducts => 
       prevProducts.map(p => 
         p.id === productId 
@@ -632,7 +649,6 @@ export const ProductGrid = forwardRef<{
     total_stock: number;
   }> | null> => {
     try {
-      console.log(`🔍 Loading variants for variable product ${productId}`);
       
       // Get variants from WooCommerce API
       const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=100&_t=${Date.now()}`;
@@ -658,7 +674,6 @@ export const ProductGrid = forwardRef<{
       }
 
       // OPTIMIZATION: Batch fetch inventory for all variants at once
-      console.log(`📦 Batch fetching inventory for ${variants.length} variants of product ${productId}`);
       const inventoryItems = variants.map((v: any) => ({
         product_id: productId,
         variation_id: v.id
@@ -716,7 +731,6 @@ export const ProductGrid = forwardRef<{
         };
       });
 
-      console.log(`✅ Loaded ${transformedVariants.length} variants for product ${productId}`);
       return transformedVariants;
 
     } catch (error) {
@@ -795,7 +809,6 @@ export const ProductGrid = forwardRef<{
           <p className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempos, serif' }}>{error}</p>
           <button 
             onClick={() => {
-              console.log('🔄 Manual retry triggered by user');
               setError(null);
               fetchProducts();
             }}

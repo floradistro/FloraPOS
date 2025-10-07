@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/api-fetch';
 /**
  * WordPress Users Service
  * Fetches WordPress users for location manager assignment
@@ -27,7 +28,7 @@ class UsersService {
       const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
       
       
-      const response = await fetch(fullUrl, {
+      const response = await apiFetch(fullUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +85,7 @@ class UsersService {
     shipping?: any;
   }): Promise<WordPressUser> {
     try {
-      const response = await fetch(`${this.baseUrl}/users`, {
+      const response = await apiFetch(`${this.baseUrl}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +106,7 @@ class UsersService {
       // Try to update customer with additional details if provided
       if (customerData.billing || customerData.shipping) {
         try {
-          await fetch(`${this.baseUrl}/customers/${newCustomer.id}`, {
+          await apiFetch(`${this.baseUrl}/customers/${newCustomer.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',

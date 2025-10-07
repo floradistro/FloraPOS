@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, Suspense, lazy, useRef, useCallback, useMemo } from 'react';
+import { apiFetch } from '../lib/api-fetch';
+import { ApiConfig } from '../lib/api-config';
 import { Header } from '../components/layout/Header';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Cart } from '../components/ui/Cart';
@@ -8,6 +10,8 @@ import { UnifiedSearchInput, UnifiedSearchInputRef } from '../components/ui/Unif
 import { ProductGrid } from '../components/ui/ProductGrid';
 import { AdjustmentsGrid, AdjustmentsGridRef } from '../components/ui/AdjustmentsGrid';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { SimpleAICanvas as AICanvas, AICanvasRef } from '../components/ui/SimpleAICanvas';
+import { AIChatPanel } from '../components/ui/AIChatPanel';
 
 
 
@@ -168,7 +172,7 @@ export default function HomePage() {
       setTimeout(async () => {
         try {
           // Fetch the entire product list but only update sold products
-          const response = await fetch(`/api/proxy/flora-im/products?per_page=1000&_t=${Date.now()}`, {
+          const response = await apiFetch(`/api/proxy/flora-im/products?per_page=1000&_t=${Date.now()}`, {
             headers: { 'Cache-Control': 'no-cache' }
           });
           
@@ -254,6 +258,22 @@ export default function HomePage() {
   const [showOnlySelectedAdjustments, setShowOnlySelectedAdjustments] = useState(false);
   const [sortAlphabetically, setSortAlphabetically] = useState(true);
   
+  // AI Canvas state
+  const [aiCanvasTool, setAiCanvasTool] = useState<'brush' | 'eraser'>('brush');
+  const [aiCanvasColor, setAiCanvasColor] = useState('#ffffff');
+  const [aiCanvasBrushSize, setAiCanvasBrushSize] = useState(3);
+  const aiCanvasRef = useRef<AICanvasRef>(null);
+  
+  const handleClearAiCanvas = useCallback(() => {
+    console.log('🎨 Clear artifact called, ref:', aiCanvasRef.current);
+    if (aiCanvasRef.current?.clearArtifact) {
+      aiCanvasRef.current.clearArtifact();
+      console.log('✅ Clear artifact executed');
+    } else {
+      console.warn('⚠️ Canvas ref not available');
+    }
+  }, []);
+  
   // Function to handle audit creation from header (legacy modal)
   const handleCreateAudit = useCallback(() => {
     if (adjustmentsGridRef.current) {
@@ -335,15 +355,7 @@ export default function HomePage() {
         const restockProducts = adjustmentsGridRef.current?.getPendingRestockProducts() || new Map();
         const creatingPO = adjustmentsGridRef.current?.getIsCreatingPO() || false;
         
-        // Debug logging
-        console.log('🔧 Main Page Debug:', {
-          currentView,
-          productsCount: products.length,
-          adjustmentsCount: adjustments.size,
-          restockProductsCount: restockProducts.size,
-          isCreatingPO: creatingPO,
-          sampleProducts: products.slice(0, 3).map(p => ({ id: p.id, name: p.name }))
-        });
+        // Debug logging removed - was causing infinite render loop
         
         setPendingAdjustments(adjustments);
         setIsApplying(adjustmentsGridRef.current?.getIsApplying() || false);
@@ -444,7 +456,7 @@ export default function HomePage() {
         params.append('location_id', user.location_id);
       }
 
-      const response = await fetch(`/api/proxy/flora-im/products?${params}`, {
+      const response = await apiFetch(`/api/proxy/flora-im/products?${params}`, {
         headers: { 'Cache-Control': 'no-cache' }
       });
       
@@ -453,62 +465,31 @@ export default function HomePage() {
       if (result.success && result.data) {
         console.log(`✅ Loaded ${result.data.length} products (including zero stock) for blueprint-fields`);
         
-        // Process products and fetch meta_data from WooCommerce for blueprint fields
-        const processedProducts = await Promise.all(
-          result.data.map(async (product: any) => {
-            const inventory = product.inventory?.map((inv: any) => ({
-              location_id: inv.location_id?.toString() || '0',
-              location_name: inv.location_name || `Location ${inv.location_id}`,
-              stock: parseFloat(inv.stock) || parseFloat(inv.quantity) || 0,
-              manage_stock: true
-            })) || [];
+        // Process products - no need to fetch meta_data individually
+        const processedProducts = result.data.map((product: any) => {
+          const inventory = product.inventory?.map((inv: any) => ({
+            location_id: inv.location_id?.toString() || '0',
+            location_name: inv.location_name || `Location ${inv.location_id}`,
+            stock: parseFloat(inv.stock) || parseFloat(inv.quantity) || 0,
+            manage_stock: true
+          })) || [];
 
-            // Fetch meta_data from WooCommerce for blueprint fields
-            let metaData = product.meta_data || [];
-            try {
-              const wcResponse = await fetch(`/api/proxy/woocommerce/products/${product.id}`, {
-                headers: { 'Cache-Control': 'no-cache' }
-              });
-              
-              if (wcResponse.ok) {
-                const wcProduct = await wcResponse.json();
-                if (wcProduct.meta_data) {
-                  metaData = wcProduct.meta_data;
-                  console.log(`🔍 Loaded meta_data for ${product.name}:`, metaData.length, 'fields');
-                }
-              }
-            } catch (error) {
-              console.warn(`Failed to load meta_data for product ${product.id}:`, error);
-            }
-
-            // Load blueprint pricing for this product
-            let blueprintPricing = null;
-            try {
-              const categoryIds = product.categories?.map((cat: any) => cat.id) || [];
-              const { BlueprintPricingService } = await import('../services/blueprint-pricing-service');
-              blueprintPricing = await BlueprintPricingService.getBlueprintPricing(product.id, categoryIds);
-              console.log(`🔍 Loaded blueprint pricing for ${product.name}:`, blueprintPricing?.ruleGroups?.length || 0, 'rule groups');
-            } catch (error) {
-              console.warn(`Failed to load blueprint pricing for product ${product.id}:`, error);
-            }
-
-            return {
-              id: product.id,
-              name: product.name,
-              sku: product.sku || '',
-              type: product.type || 'simple',
-              status: product.status || 'publish',
-              regular_price: product.regular_price || '0',
-              sale_price: product.sale_price,
-              image: product.image,
-              categories: product.categories || [],
-              inventory,
-              total_stock: product.total_stock || 0,
-              meta_data: metaData,
-              blueprintPricing: blueprintPricing
-            };
-          })
-        );
+          return {
+            id: product.id,
+            name: product.name,
+            sku: product.sku || '',
+            type: product.type || 'simple',
+            status: product.status || 'publish',
+            regular_price: product.regular_price || '0',
+            sale_price: product.sale_price,
+            image: product.image,
+            categories: product.categories || [],
+            inventory,
+            total_stock: product.total_stock || 0,
+            meta_data: [],
+            blueprintPricing: null
+          };
+        });
         
         setAllProducts(processedProducts);
         console.log('🔍 All products loaded for blueprint-fields with meta_data:', processedProducts.length, 'products');
@@ -657,7 +638,7 @@ export default function HomePage() {
       
       // Apply all adjustments via API calls
       const adjustmentPromises = adjustmentItems.map(async (item) => {
-        const response = await fetch('/api/inventory/adjust', {
+        const response = await apiFetch('/api/inventory/adjust', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1022,7 +1003,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex flex-col h-screen relative overflow-hidden" style={{ backgroundColor: '#1a1a1a' }}>
+    <div className="flex flex-col h-screen relative overflow-hidden bg-[#1a1a1a]">
       {/* Storybook-inspired Background */}
       <div className="absolute inset-0">
         {/* Parchment-like base gradient */}
@@ -1180,6 +1161,15 @@ export default function HomePage() {
             sortAlphabetically={sortAlphabetically}
             onSortAlphabeticallyChange={setSortAlphabetically}
             unifiedSearchRef={unifiedSearchRef}
+            // AI Canvas props
+            aiCanvasTool={aiCanvasTool}
+            onAiCanvasToolChange={setAiCanvasTool}
+            aiCanvasColor={aiCanvasColor}
+            onAiCanvasColorChange={setAiCanvasColor}
+            aiCanvasBrushSize={aiCanvasBrushSize}
+            onAiCanvasBrushSizeChange={setAiCanvasBrushSize}
+            onClearAiCanvas={handleClearAiCanvas}
+            aiCanvasRef={aiCanvasRef}
           />
           
           {/* Main Content Area */}
@@ -1194,7 +1184,7 @@ export default function HomePage() {
         
             {/* Main Content */}
             <main className={`flex-1 relative transition-all duration-500 ease-in-out ${
-              currentView !== 'products' ? 'mr-[-320px]' : 'mr-0'
+              currentView !== 'products' && currentView !== 'ai-view' ? 'mr-[-320px]' : 'mr-0'
             }`}>
           {/* Loading Overlays - Only show refresh overlays for views without their own loading */}
           {isRefreshing && currentView !== 'blueprint-fields' && (
@@ -1292,7 +1282,7 @@ export default function HomePage() {
           )}
 
           {currentView === 'menu' && (
-            <div className="h-full overflow-y-auto">
+            <div className="h-full overflow-hidden">
               <StandardErrorBoundary componentName="MenuView">
                 <MenuView
                   searchQuery={searchQuery}
@@ -1302,13 +1292,25 @@ export default function HomePage() {
             </div>
           )}
 
+          {currentView === 'ai-view' && (
+            <div className="h-full">
+              <StandardErrorBoundary componentName="AICanvas">
+                <AICanvas ref={aiCanvasRef} />
+              </StandardErrorBoundary>
+            </div>
+          )}
+
             </main>
 
-        {/* Cart Panel - Only show for products view */}
+        {/* Cart Panel - Show for products view, AI Chat Panel for AI view */}
         <div className={`w-80 flex-shrink-0 transition-transform duration-500 ease-in-out ${
-          currentView !== 'products' ? 'transform translate-x-full' : 'transform translate-x-0'
+          currentView !== 'products' && currentView !== 'ai-view' ? 'transform translate-x-full' : 'transform translate-x-0'
         }`}>
-          {!showCheckout && currentView === 'products' ? (
+          {currentView === 'ai-view' ? (
+            <StandardErrorBoundary componentName="AIChatPanel">
+              <AIChatPanel canvasRef={aiCanvasRef} />
+            </StandardErrorBoundary>
+          ) : !showCheckout && currentView === 'products' ? (
             <StandardErrorBoundary componentName="Cart">
               <Cart
                 items={cartItems}
@@ -1350,6 +1352,19 @@ export default function HomePage() {
       <div className="flex-shrink-0 bg-transparent px-4 py-2 relative z-10">
         <div className="flex items-center justify-between relative">
           <div className="flex items-center gap-3 text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
+            {/* Dev Mode Badge - Compact */}
+            {ApiConfig.getEnvironment() === 'docker' && (
+              <>
+                <div 
+                  className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#FF3B30]/10 text-[#FF3B30] border border-[#FF3B30]/30 animate-pulse"
+                  title="⚠️ Using local Docker API at localhost:8080"
+                >
+                  DEV
+                </div>
+                <span className="text-neutral-600">•</span>
+              </>
+            )}
+            
             {/* Orders Count in Status Bar */}
             {currentView === 'orders' && (
               <>

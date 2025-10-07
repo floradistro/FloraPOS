@@ -33,7 +33,6 @@ export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration
       }
     });
 
-    console.log('Service worker registered successfully');
     return registration;
   } catch (error) {
     console.error('Service worker registration failed:', error);

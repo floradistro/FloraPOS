@@ -1,0 +1,25 @@
+
+> posv1@0.1.0 build
+> NODE_ENV=production next build
+
+  ▲ Next.js 14.2.5
+  - Environments: .env.local, .env.production
+  - Experiments (use with caution):
+    · optimizeCss
+    · webpackBuildWorker
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/app/api/users-matrix/users/route.ts:131:53
+Type error: Cannot find name 'apiEnv'.
+
+[0m [90m 129 |[39m     [36mreturn[39m [33mNextResponse[39m[33m.[39mjson(transformedUser)[33m;[39m[0m
+[0m [90m 130 |[39m   } [36mcatch[39m (error) {[0m
+[0m[31m[1m>[22m[39m[90m 131 |[39m     console[33m.[39merror([32m`❌ Failed to create customer in ${apiEnv.toUpperCase()}:`[39m[33m,[39m error)[33m;[39m[0m
+[0m [90m     |[39m                                                     [31m[1m^[22m[39m[0m
+[0m [90m 132 |[39m     [36mreturn[39m [33mNextResponse[39m[33m.[39mjson([0m
+[0m [90m 133 |[39m       { error[33m:[39m error [36minstanceof[39m [33mError[39m [33m?[39m error[33m.[39mmessage [33m:[39m [32m'Failed to create customer'[39m }[33m,[39m[0m
+[0m [90m 134 |[39m       { status[33m:[39m [35m500[39m }[0m

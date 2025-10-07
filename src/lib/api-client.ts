@@ -3,13 +3,50 @@
  * Standardized approach for all API calls in POSV1
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_WORDPRESS_API_URL || 
-  (process.env.NODE_ENV === 'production' 
-    ? 'https://api.floradistro.com'
-    : 'http://localhost:8081');
+import { ApiConfig as ApiEnvironmentConfig } from './api-config';
 
-const WC_CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
-const WC_CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
+// Use environment variables - NO FALLBACKS
+const API_BASE_URL = process.env.NEXT_PUBLIC_PRODUCTION_API_URL!;
+
+if (!API_BASE_URL) {
+  throw new Error('❌ MISSING REQUIRED ENV VAR: NEXT_PUBLIC_PRODUCTION_API_URL must be set in .env.local');
+}
+
+const WC_CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
+const WC_CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
+
+if (!WC_CONSUMER_KEY || !WC_CONSUMER_SECRET) {
+  throw new Error('❌ MISSING REQUIRED ENV VARS: NEXT_PUBLIC_WC_CONSUMER_KEY and NEXT_PUBLIC_WC_CONSUMER_SECRET must be set');
+}
+
+/**
+ * Track last used environment to detect changes
+ */
+let lastApiEnvironment: string | null = null;
+
+/**
+ * Get common headers including API environment
+ */
+function getCommonHeaders(): HeadersInit {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Add API environment header for server-side routing
+  if (typeof window !== 'undefined') {
+    const apiEnv = ApiEnvironmentConfig.getEnvironment();
+    headers['x-api-environment'] = apiEnv;
+    
+    // Clear cache if environment changed
+    if (lastApiEnvironment !== null && lastApiEnvironment !== apiEnv) {
+      console.log(`🔄 API environment changed from ${lastApiEnvironment} to ${apiEnv} - clearing cache`);
+      ApiClient.getInstance().clearCache();
+    }
+    lastApiEnvironment = apiEnv;
+  }
+  
+  return headers;
+}
 
 export interface ApiConfig {
   timeout?: number;
@@ -37,14 +74,17 @@ export class ApiClient {
    */
   async get<T>(endpoint: string, config: ApiConfig = {}): Promise<T> {
     const url = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    return this.makeRequest<T>(url, { method: 'GET' }, config);
+    return this.makeRequest<T>(url, { 
+      method: 'GET',
+      headers: getCommonHeaders()
+    }, config);
   }
 
   async post<T>(endpoint: string, data?: any, config: ApiConfig = {}): Promise<T> {
     const url = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     return this.makeRequest<T>(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getCommonHeaders(),
       body: data ? JSON.stringify(data) : undefined
     }, config);
   }
@@ -53,14 +93,17 @@ export class ApiClient {
     const url = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     return this.makeRequest<T>(url, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getCommonHeaders(),
       body: data ? JSON.stringify(data) : undefined
     }, config);
   }
 
   async delete<T>(endpoint: string, config: ApiConfig = {}): Promise<T> {
     const url = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    return this.makeRequest<T>(url, { method: 'DELETE' }, config);
+    return this.makeRequest<T>(url, { 
+      method: 'DELETE',
+      headers: getCommonHeaders()
+    }, config);
   }
 
   /**

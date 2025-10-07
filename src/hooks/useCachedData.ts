@@ -29,7 +29,7 @@ export function useUserLocations() {
     queryKey: ['user-locations'],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/proxy/flora-im/locations', {
+        const response = await apiFetch('/api/proxy/flora-im/locations', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ export function useBlueprintAssignments() {
     queryKey: ['blueprint-assignments'],
     queryFn: async () => {
       try {
-        const response = await fetch('/api/proxy/blueprints/assignments', {
+        const response = await apiFetch('/api/proxy/blueprints/assignments', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

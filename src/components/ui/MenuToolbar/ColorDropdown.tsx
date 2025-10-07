@@ -34,13 +34,23 @@ interface ColorDropdownProps {
   backgroundColor: string;
   fontColor: string;
   containerColor: string;
-  onColorsChange: (colors: { backgroundColor: string; fontColor: string; containerColor: string }) => void;
+  cardFontColor: string;
+  imageBackgroundColor: string;
+  onColorsChange: (colors: { 
+    backgroundColor: string; 
+    fontColor: string; 
+    containerColor: string;
+    cardFontColor: string;
+    imageBackgroundColor: string;
+  }) => void;
 }
 
 export const ColorDropdown: React.FC<ColorDropdownProps> = ({
   backgroundColor,
   fontColor,
   containerColor,
+  cardFontColor,
+  imageBackgroundColor,
   onColorsChange
 }) => {
   return (
@@ -57,19 +67,31 @@ export const ColorDropdown: React.FC<ColorDropdownProps> = ({
         label="Background"
         description="Menu background color"
         value={backgroundColor}
-        onChange={(value) => onColorsChange({ backgroundColor: value, fontColor, containerColor })}
+        onChange={(value) => onColorsChange({ backgroundColor: value, fontColor, containerColor, cardFontColor, imageBackgroundColor })}
       />
       <ColorPickerItem
         label="Text Color"
         description="Primary text color"
         value={fontColor}
-        onChange={(value) => onColorsChange({ backgroundColor, fontColor: value, containerColor })}
+        onChange={(value) => onColorsChange({ backgroundColor, fontColor: value, containerColor, cardFontColor, imageBackgroundColor })}
       />
       <ColorPickerItem
         label="Container"
         description="Card container color"
         value={containerColor}
-        onChange={(value) => onColorsChange({ backgroundColor, fontColor, containerColor: value })}
+        onChange={(value) => onColorsChange({ backgroundColor, fontColor, containerColor: value, cardFontColor, imageBackgroundColor })}
+      />
+      <ColorPickerItem
+        label="Card Font"
+        description="Card text color"
+        value={cardFontColor}
+        onChange={(value) => onColorsChange({ backgroundColor, fontColor, containerColor, cardFontColor: value, imageBackgroundColor })}
+      />
+      <ColorPickerItem
+        label="Image Background"
+        description="Product image background"
+        value={imageBackgroundColor}
+        onChange={(value) => onColorsChange({ backgroundColor, fontColor, containerColor, cardFontColor, imageBackgroundColor: value })}
       />
     </ToolbarDropdown>
   );

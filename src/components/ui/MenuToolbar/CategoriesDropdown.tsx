@@ -13,6 +13,7 @@ interface CategoriesDropdownProps {
   selectedQuadrant: 'left' | 'right' | 'leftBottom' | 'rightBottom' | '';
   onSingleMenuChange: (config: MenuConfig) => void;
   onDualMenuChange: (config: DualMenuConfig) => void;
+  onQuadrantChange: (quadrant: 'left' | 'right' | 'leftBottom' | 'rightBottom' | '') => void;
   orientation: 'horizontal' | 'vertical';
 }
 
@@ -24,6 +25,7 @@ export const CategoriesDropdown: React.FC<CategoriesDropdownProps> = ({
   selectedQuadrant,
   onSingleMenuChange,
   onDualMenuChange,
+  onQuadrantChange,
   orientation
 }) => {
   const clearAllCategories = () => {
@@ -32,8 +34,8 @@ export const CategoriesDropdown: React.FC<CategoriesDropdownProps> = ({
         ...dualMenu,
         left: { ...dualMenu.left, category: null },
         right: { ...dualMenu.right, category: null },
-        leftBottom: { ...(dualMenu.leftBottom || { viewMode: 'auto', showImages: false }), category: null },
-        rightBottom: { ...(dualMenu.rightBottom || { viewMode: 'auto', showImages: false }), category: null },
+        leftBottom: { ...(dualMenu.leftBottom || { viewMode: 'auto', showImages: false, priceLocation: 'inline' }), category: null },
+        rightBottom: { ...(dualMenu.rightBottom || { viewMode: 'auto', showImages: false, priceLocation: 'inline' }), category: null },
         enableLeftStacking: false,
         enableRightStacking: false
       });
@@ -43,23 +45,29 @@ export const CategoriesDropdown: React.FC<CategoriesDropdownProps> = ({
   };
 
   const selectSingleCategory = (categorySlug: string) => {
-    onSingleMenuChange({ ...singleMenu, category: categorySlug });
+    console.log('📁 Selecting single category:', categorySlug);
+    const newConfig = { ...singleMenu, category: categorySlug };
+    console.log('📁 New single menu config:', newConfig);
+    onSingleMenuChange(newConfig);
   };
 
   const selectDualCategory = (position: 'left' | 'right' | 'leftBottom' | 'rightBottom', categorySlug: string | null) => {
+    console.log(`📁 Selecting ${position} category:`, categorySlug);
     const updates: Partial<DualMenuConfig> = {};
     
     if (position === 'leftBottom') {
-      updates.leftBottom = { ...(dualMenu.leftBottom || { viewMode: 'auto', showImages: false }), category: categorySlug };
+      updates.leftBottom = { ...(dualMenu.leftBottom || { viewMode: 'auto', showImages: false, priceLocation: 'inline' }), category: categorySlug };
       updates.enableLeftStacking = !!categorySlug;
     } else if (position === 'rightBottom') {
-      updates.rightBottom = { ...(dualMenu.rightBottom || { viewMode: 'auto', showImages: false }), category: categorySlug };
+      updates.rightBottom = { ...(dualMenu.rightBottom || { viewMode: 'auto', showImages: false, priceLocation: 'inline' }), category: categorySlug };
       updates.enableRightStacking = !!categorySlug;
     } else {
       updates[position] = { ...dualMenu[position], category: categorySlug };
     }
 
-    onDualMenuChange({ ...dualMenu, ...updates });
+    const newDualMenu = { ...dualMenu, ...updates };
+    console.log(`📁 New dual menu config for ${position}:`, newDualMenu[position === 'left' || position === 'right' ? position : position === 'leftBottom' ? 'leftBottom' : 'rightBottom']);
+    onDualMenuChange(newDualMenu);
   };
 
   return (
@@ -113,88 +121,163 @@ export const CategoriesDropdown: React.FC<CategoriesDropdownProps> = ({
             {/* Grid layout for category selectors */}
             <div className="grid grid-cols-2 gap-2">
               {/* Left Top */}
-              <select 
-                value={dualMenu.left.category || ''} 
-                onChange={(e) => selectDualCategory('left', e.target.value || null)}
-                className={`px-2 py-1 rounded text-xs border focus:outline-none ${
-                  selectedQuadrant === 'left' 
-                    ? 'bg-green-900/50 border-green-500 text-green-300' 
-                    : 'bg-neutral-900 border-neutral-700 text-neutral-400 focus:border-neutral-500'
-                }`}
+              <div 
+                onClick={() => {
+                  onQuadrantChange('left');
+                  console.log('🟢 LEFT quadrant now active');
+                }}
+                className="cursor-pointer"
               >
-                <option value="">Left Top</option>
-                {categories.map(category => (
-                  <option key={`left-${category.id}`} value={category.slug}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+                <select 
+                  value={dualMenu.left.category || ''} 
+                  onChange={(e) => {
+                    onQuadrantChange('left');
+                    selectDualCategory('left', e.target.value || null);
+                    console.log('🟢 LEFT selected:', e.target.value);
+                  }}
+                  onFocus={() => {
+                    onQuadrantChange('left');
+                    console.log('🟢 LEFT focused');
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onQuadrantChange('left');
+                  }}
+                  className={`w-full px-2 py-1 rounded text-xs border focus:outline-none ${
+                    selectedQuadrant === 'left' 
+                      ? 'bg-white/10 border-white/40 text-white font-medium' 
+                      : 'bg-neutral-900 border-neutral-700 text-neutral-400 focus:border-neutral-500'
+                  }`}
+                >
+                  <option value="">Left Top</option>
+                  {categories.map(category => (
+                    <option key={`left-${category.id}`} value={category.slug}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               
               {/* Right Top */}
-              <select 
-                value={dualMenu.right.category || ''} 
-                onChange={(e) => selectDualCategory('right', e.target.value || null)}
-                className={`px-2 py-1 rounded text-xs border focus:outline-none ${
-                  selectedQuadrant === 'right' 
-                    ? 'bg-blue-900/50 border-blue-500 text-blue-300' 
-                    : 'bg-neutral-900 border-neutral-700 text-neutral-400 focus:border-neutral-500'
-                }`}
+              <div 
+                onClick={() => {
+                  onQuadrantChange('right');
+                  console.log('🔵 RIGHT quadrant now active');
+                }}
+                className="cursor-pointer"
               >
-                <option value="">Right Top</option>
-                {categories.map(category => (
-                  <option key={`right-${category.id}`} value={category.slug}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+                <select 
+                  value={dualMenu.right.category || ''} 
+                  onChange={(e) => {
+                    onQuadrantChange('right');
+                    selectDualCategory('right', e.target.value || null);
+                    console.log('🔵 RIGHT selected:', e.target.value);
+                  }}
+                  onFocus={() => {
+                    onQuadrantChange('right');
+                    console.log('🔵 RIGHT focused');
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onQuadrantChange('right');
+                  }}
+                  className={`w-full px-2 py-1 rounded text-xs border focus:outline-none ${
+                    selectedQuadrant === 'right' 
+                      ? 'bg-white/10 border-white/40 text-white font-medium' 
+                      : 'bg-neutral-900 border-neutral-700 text-neutral-400 focus:border-neutral-500'
+                  }`}
+                >
+                  <option value="">Right Top</option>
+                  {categories.map(category => (
+                    <option key={`right-${category.id}`} value={category.slug}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               {/* Left Bottom */}
-              <select 
-                value={dualMenu.leftBottom?.category || ''} 
-                onChange={(e) => selectDualCategory('leftBottom', e.target.value || null)}
-                className={`px-2 py-1 rounded text-xs border focus:outline-none ${
-                  selectedQuadrant === 'leftBottom' 
-                    ? 'bg-orange-900/50 border-orange-500 text-orange-300' 
-                    : 'bg-neutral-900 border-neutral-700 text-neutral-400 focus:border-neutral-500'
-                }`}
+              <div 
+                onClick={() => {
+                  onQuadrantChange('leftBottom');
+                  console.log('🟠 LEFT BOTTOM quadrant now active');
+                }}
+                className="cursor-pointer"
               >
-                <option value="">Left Bottom</option>
-                {categories.map(category => (
-                  <option key={`left2-${category.id}`} value={category.slug}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+                <select 
+                  value={dualMenu.leftBottom?.category || ''} 
+                  onChange={(e) => {
+                    onQuadrantChange('leftBottom');
+                    selectDualCategory('leftBottom', e.target.value || null);
+                    console.log('🟠 LEFT BOTTOM selected:', e.target.value);
+                  }}
+                  onFocus={() => {
+                    onQuadrantChange('leftBottom');
+                    console.log('🟠 LEFT BOTTOM focused');
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onQuadrantChange('leftBottom');
+                  }}
+                  className={`w-full px-2 py-1 rounded text-xs border focus:outline-none ${
+                    selectedQuadrant === 'leftBottom' 
+                      ? 'bg-white/10 border-white/40 text-white font-medium' 
+                      : 'bg-neutral-900 border-neutral-700 text-neutral-400 focus:border-neutral-500'
+                  }`}
+                >
+                  <option value="">Left Bottom</option>
+                  {categories.map(category => (
+                    <option key={`left2-${category.id}`} value={category.slug}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               {/* Right Bottom */}
-              <select 
-                value={dualMenu.rightBottom?.category || ''} 
-                onChange={(e) => selectDualCategory('rightBottom', e.target.value || null)}
-                className={`px-2 py-1 rounded text-xs border focus:outline-none ${
-                  selectedQuadrant === 'rightBottom' 
-                    ? 'bg-purple-900/50 border-purple-500 text-purple-300' 
-                    : 'bg-neutral-900 border-neutral-700 text-neutral-400 focus:border-neutral-500'
-                }`}
+              <div 
+                onClick={() => {
+                  onQuadrantChange('rightBottom');
+                  console.log('🟣 RIGHT BOTTOM quadrant now active');
+                }}
+                className="cursor-pointer"
               >
-                <option value="">Right Bottom</option>
-                {categories.map(category => (
-                  <option key={`right2-${category.id}`} value={category.slug}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+                <select 
+                  value={dualMenu.rightBottom?.category || ''} 
+                  onChange={(e) => {
+                    onQuadrantChange('rightBottom');
+                    selectDualCategory('rightBottom', e.target.value || null);
+                    console.log('🟣 RIGHT BOTTOM selected:', e.target.value);
+                  }}
+                  onFocus={() => {
+                    onQuadrantChange('rightBottom');
+                    console.log('🟣 RIGHT BOTTOM focused');
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onQuadrantChange('rightBottom');
+                  }}
+                  className={`w-full px-2 py-1 rounded text-xs border focus:outline-none ${
+                    selectedQuadrant === 'rightBottom' 
+                      ? 'bg-white/10 border-white/40 text-white font-medium' 
+                      : 'bg-neutral-900 border-neutral-700 text-neutral-400 focus:border-neutral-500'
+                  }`}
+                >
+                  <option value="">Right Bottom</option>
+                  {categories.map(category => (
+                    <option key={`right2-${category.id}`} value={category.slug}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             
             {/* Show current selection */}
             {selectedQuadrant && (
-              <div className="mt-2 px-2 py-1 rounded bg-neutral-800 border border-neutral-600">
-                <div className="text-xs text-neutral-300">
-                  Currently configuring: <span className={`font-medium ${
-                    selectedQuadrant === 'left' ? 'text-green-400' :
-                    selectedQuadrant === 'right' ? 'text-blue-400' :
-                    selectedQuadrant === 'leftBottom' ? 'text-orange-400' :
-                    'text-purple-400'
-                  }`}>
+              <div className="mt-2 px-2 py-1 rounded bg-white/5 border border-white/20">
+                <div className="text-xs text-white/70">
+                  Currently configuring: <span className="font-medium text-white">
                     {selectedQuadrant === 'left' ? 'Left Top' :
                      selectedQuadrant === 'right' ? 'Right Top' :
                      selectedQuadrant === 'leftBottom' ? 'Left Bottom' :

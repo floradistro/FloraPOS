@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { apiFetch } from '../../lib/api-fetch';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatDateTime as formatDateTimeUtil, debugTimezone } from '../../utils/date-utils';
 
@@ -98,7 +99,6 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
 
   // Debug: Log when productNames changes
   useEffect(() => {
-    console.log('🔄 ProductNames state updated, size:', productNames.size, 'entries:', Array.from(productNames.entries()));
   }, [productNames]);
 
   const fetchProductNames = async (productIds: number[]) => {
@@ -107,12 +107,11 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
     try {
       // Get unique product IDs
       const uniqueIds = Array.from(new Set(productIds));
-      console.log(`🔍 Fetching names for products:`, uniqueIds);
 
       // Fetch each product individually to ensure we get the data
       const productPromises = uniqueIds.map(async (productId) => {
         try {
-          const response = await fetch(`/api/proxy/woocommerce/products/${productId}`, {
+          const response = await apiFetch(`/api/proxy/woocommerce/products/${productId}`, {
             headers: {
               'Cache-Control': 'no-cache, no-store, must-revalidate',
             }
@@ -128,7 +127,6 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
             }
             
             if (product.name) {
-              console.log(`📦 Fetched product ${productId}: "${product.name}"`);
               return { id: productId, name: product.name };
             } else {
               console.warn(`❌ Product ${productId} has no name`);
@@ -151,9 +149,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
         const newMap = new Map(prev);
         productResults.forEach(product => {
           newMap.set(product.id, product.name);
-          console.log(`✅ Added to cache: ${product.id} -> "${product.name}"`);
         });
-        console.log(`🎯 Final cache state:`, Array.from(newMap.entries()));
         return newMap;
       });
 
@@ -178,7 +174,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
       });
 
       // Fetch audit log entries
-      const auditResponse = await fetch(`/api/audit-log?${params}`, {
+      const auditResponse = await apiFetch(`/api/audit-log?${params}`, {
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
@@ -199,7 +195,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
       const entries = auditData.data || [];
       
       // Debug: Log the first few entries to see what timestamps we're getting
-      console.log('🕐 Raw audit entries from API:', entries.slice(0, 3).map((entry: AuditLogEntry) => ({
+      console.log('First few audit entries:', entries.slice(0, 3).map((entry: any) => ({
         id: entry.id,
         created_at: entry.created_at,
         created_at_type: typeof entry.created_at,
@@ -215,9 +211,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
       
       // If no restock batches found from stored metadata, try pattern-based detection
       if (restockBatches.length === 0) {
-        console.log('🔍 No stored restock operations found, trying pattern-based detection...');
         restockBatches = identifyPotentialRestockGroups(entries);
-        console.log('📦 Pattern-based restock batches found:', restockBatches.length);
       }
       
       setRestockBatches(restockBatches);
@@ -235,7 +229,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
       if (batchIds.length > 0) {
         try {
           const batchPromises = batchIds.map(async (batchId) => {
-            const batchResponse = await fetch(`/api/proxy/flora-im/audit-batches/${batchId}`);
+            const batchResponse = await apiFetch(`/api/proxy/flora-im/audit-batches/${batchId}`);
             if (batchResponse.ok) {
               const batchData = await batchResponse.json();
               return batchData;
@@ -286,10 +280,8 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
       const restockOps: RestockOperation[] = JSON.parse(localStorage.getItem('restock_operations') || '[]');
       const restockBatches: RestockBatch[] = [];
 
-      console.log('🔍 Processing restock operations:', restockOps.length);
 
       restockOps.forEach(restock => {
-        console.log('📦 Processing restock:', restock.po_number, 'with', restock.products.length, 'products');
         
         // Find audit entries that match this restock operation
         // Match by timestamp (within 10 minutes) and product IDs - increased window
@@ -304,7 +296,6 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
             (p.variation_id || 0) === (entry.variation_id || 0)
           );
 
-          console.log('🔍 Checking entry:', entry.id, 'product:', entry.product_id, 'time diff:', Math.round(timeDiff/1000), 's', 'matches product:', matchesProduct, 'within window:', isWithinTimeWindow);
 
           return isWithinTimeWindow && matchesProduct && !entry.batch_id;
         });
@@ -315,7 +306,6 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
             return sum + change;
           }, 0);
 
-          console.log('✅ Created restock batch:', restock.po_number, 'with', matchingEntries.length, 'entries, net change:', totalChange);
 
           restockBatches.push({
             po_number: restock.po_number,
@@ -326,11 +316,9 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
             entries: matchingEntries
           });
         } else {
-          console.log('❌ No matching entries found for restock:', restock.po_number);
         }
       });
 
-      console.log('📦 Final restock batches created:', restockBatches.length);
       return restockBatches;
     } catch (error) {
       console.warn('Failed to process restock operations:', error);
@@ -435,8 +423,21 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
     
     // Priority 4: Check for stock transfers
     if (action === 'stock_transfer' || action === 'transfer' || detailsStr.includes('transfer')) {
+      // Check direction based on quantity_change or details
+      let direction = 'Transfer';
+      
+      if (detailsObj.direction === 'out' || quantityChange < 0) {
+        // Stock leaving - show destination
+        const toLocation = detailsObj.to_location || 'Another Location';
+        direction = `→ ${toLocation}`;
+      } else if (detailsObj.direction === 'in' || quantityChange > 0) {
+        // Stock arriving - show source
+        const fromLocation = detailsObj.from_location || 'Another Location';
+        direction = `← ${fromLocation}`;
+      }
+      
       return {
-        label: 'Transfer',
+        label: direction,
         color: 'text-neutral-400'
       };
     }
@@ -559,7 +560,7 @@ export const InventoryHistoryView: React.FC<InventoryHistoryViewProps> = ({ onBa
 
     const standaloneEntries = auditLog.filter(entry => !batchedEntryIds.has(entry.id));
     
-    console.log('📊 Grouping results:', {
+    console.log('Batch processing summary:', {
       auditBatches: auditBatches.length,
       restockBatches: restockBatches.length,
       batchedEntryIds: batchedEntryIds.size,

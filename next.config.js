@@ -67,13 +67,16 @@ const nextConfig = {
       });
     }
     
-    // Handle Scandit modules - exclude from server-side rendering
+    // Handle Scandit and Three.js modules - exclude from server-side rendering
     if (isServer) {
       config.externals = config.externals || [];
       config.externals.push({
         '@scandit/web-datacapture-core': 'commonjs @scandit/web-datacapture-core',
         '@scandit/web-datacapture-id': 'commonjs @scandit/web-datacapture-id',
-        '@scandit/web-datacapture-barcode': 'commonjs @scandit/web-datacapture-barcode'
+        '@scandit/web-datacapture-barcode': 'commonjs @scandit/web-datacapture-barcode',
+        '@react-three/fiber': 'commonjs @react-three/fiber',
+        '@react-three/drei': 'commonjs @react-three/drei',
+        'three': 'commonjs three'
       });
     }
     
@@ -123,6 +126,13 @@ const nextConfig = {
             scandit: {
               test: /[\\/]node_modules[\\/]@scandit[\\/]/,
               name: 'scandit',
+              chunks: 'all',
+              priority: 15,
+            },
+            // Separate chunk for Three.js (client-side only)
+            threejs: {
+              test: /[\\/]node_modules[\\/](three|@react-three)[\\/]/,
+              name: 'threejs',
               chunks: 'all',
               priority: 15,
             }

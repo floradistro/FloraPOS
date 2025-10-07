@@ -3,6 +3,8 @@
  * Handles purchase order operations for restock mode
  */
 
+import { apiFetch } from '../lib/api-fetch';
+
 export interface PurchaseOrderItem {
   product_id: number;
   variation_id?: number;
@@ -86,7 +88,7 @@ export class PurchaseOrdersService {
    */
   static async getSuppliers(): Promise<SuppliersResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/suppliers?status=active&_t=${Date.now()}`, {
+      const response = await apiFetch(`${this.baseUrl}/suppliers?status=active&_t=${Date.now()}`, {
         headers: { 'Cache-Control': 'no-cache' }
       });
 
@@ -131,7 +133,7 @@ export class PurchaseOrdersService {
         });
       }
 
-      const response = await fetch(`${this.baseUrl}/purchase-orders?${searchParams.toString()}`, {
+      const response = await apiFetch(`${this.baseUrl}/purchase-orders?${searchParams.toString()}`, {
         headers: { 'Cache-Control': 'no-cache' }
       });
 
@@ -159,7 +161,7 @@ export class PurchaseOrdersService {
    */
   static async getPurchaseOrder(id: number): Promise<CreatePurchaseOrderResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/purchase-orders/${id}?_t=${Date.now()}`, {
+      const response = await apiFetch(`${this.baseUrl}/purchase-orders/${id}?_t=${Date.now()}`, {
         headers: { 'Cache-Control': 'no-cache' }
       });
 
@@ -187,46 +189,27 @@ export class PurchaseOrdersService {
    */
   static async createPurchaseOrder(poData: Omit<PurchaseOrder, 'id' | 'po_number' | 'created_at'>): Promise<CreatePurchaseOrderResponse> {
     try {
-      // TEMPORARY: Since Flora-IM API purchase orders endpoint returns 500,
-      // we'll create a mock purchase order for now
-      console.log('🔧 [TEMP] Creating mock purchase order due to Flora-IM API issue');
       
-      // Generate a mock PO number
-      const poNumber = `PO-${Date.now().toString().slice(-6)}`;
-      const mockPO: PurchaseOrder = {
-        ...poData,
-        id: Math.floor(Math.random() * 10000),
-        po_number: poNumber,
-        created_at: new Date().toISOString(),
-        status: 'draft'
-      };
-      
-      // Log the purchase order details for reference
-      console.log('📦 Mock Purchase Order Created:', {
-        po_number: mockPO.po_number,
-        supplier_name: mockPO.supplier_name,
-        total_amount: mockPO.total_amount,
-        items_count: mockPO.items?.length || 0,
-        notes: mockPO.notes
+      const response = await apiFetch(`${this.baseUrl}/purchase-orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        body: JSON.stringify(poData)
       });
-      
-      // Store in localStorage for persistence during development (client-side only)
-      if (typeof window !== 'undefined' && window.localStorage) {
-        try {
-          const existingPOs = JSON.parse(localStorage.getItem('mock_purchase_orders') || '[]');
-          existingPOs.push(mockPO);
-          localStorage.setItem('mock_purchase_orders', JSON.stringify(existingPOs));
-          console.log('💾 Stored mock PO in localStorage');
-        } catch (e) {
-          console.warn('Failed to store mock PO in localStorage:', e);
-        }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Failed to create purchase order:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
+
+      const result = await response.json();
       
-      return {
-        success: true,
-        data: mockPO,
-        message: `Purchase order ${poNumber} created successfully (mock)`
-      };
+      console.log('✅ Purchase order created:', result.data?.po_number);
+      
+      return result;
     } catch (error) {
       console.error('Failed to create purchase order:', error);
       return {
@@ -249,7 +232,7 @@ export class PurchaseOrdersService {
     try {
       console.log(`🔍 [PO Service] Generating PO from ${params.products.length} restock products`);
       
-      const response = await fetch(`${this.baseUrl}/purchase-orders/generate-from-restock`, {
+      const response = await apiFetch(`${this.baseUrl}/purchase-orders/generate-from-restock`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -282,7 +265,7 @@ export class PurchaseOrdersService {
    */
   static async updatePurchaseOrder(id: number, updates: Partial<PurchaseOrder>): Promise<CreatePurchaseOrderResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/purchase-orders/${id}`, {
+      const response = await apiFetch(`${this.baseUrl}/purchase-orders/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -313,7 +296,7 @@ export class PurchaseOrdersService {
    */
   static async cancelPurchaseOrder(id: number, reason?: string): Promise<{ success: boolean; error?: string; message?: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}/purchase-orders/${id}`, {
+      const response = await apiFetch(`${this.baseUrl}/purchase-orders/${id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -347,7 +330,7 @@ export class PurchaseOrdersService {
     quantity_received: number;
   }>): Promise<{ success: boolean; error?: string; message?: string; data?: any }> {
     try {
-      const response = await fetch(`${this.baseUrl}/purchase-orders/${id}/receive`, {
+      const response = await apiFetch(`${this.baseUrl}/purchase-orders/${id}/receive`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

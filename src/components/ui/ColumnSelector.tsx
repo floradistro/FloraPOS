@@ -42,11 +42,20 @@ export function ColumnSelector({
 
   const currentSelectedColumns = getCurrentColumns();
 
+  // Track last fetched category to prevent duplicate fetches
+  const [lastFetchedCategory, setLastFetchedCategory] = useState<string | null>(null);
+
   // Fetch blueprint fields for the selected category
   useEffect(() => {
     const fetchCategoryFields = async () => {
       if (!selectedCategory) {
         setAvailableFields([]);
+        setLastFetchedCategory(null);
+        return;
+      }
+
+      // Skip if already loading or already fetched this category
+      if (loading || selectedCategory === lastFetchedCategory) {
         return;
       }
 
@@ -63,6 +72,7 @@ export function ColumnSelector({
         console.log(`🔍 Fetching blueprint fields for category: ${category.name} (ID: ${category.id})`);
         
         const categoryProducts = await BlueprintFieldsService.getCategoryProductsBlueprintFields(category.id);
+        setLastFetchedCategory(selectedCategory);
         
         if (categoryProducts.length === 0) {
           console.log(`⚠️ No products with blueprint fields found for category: ${category.name}`);
@@ -126,7 +136,7 @@ export function ColumnSelector({
     };
 
     fetchCategoryFields();
-  }, [selectedCategory, categories]);
+  }, [selectedCategory]); // Removed categories from deps to prevent infinite loop
 
   const handleColumnToggle = (fieldName: string) => {
     if (!selectedCategory) return;

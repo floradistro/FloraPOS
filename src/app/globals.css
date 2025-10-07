@@ -76,6 +76,82 @@
   --foreground: #ededed;
 }
 
+/* Dev Mode: Pure Black Background */
+body.dev-mode {
+  --background: #000000;
+  background: #000000 !important;
+}
+
+body.dev-mode::before {
+  background: #000000 !important;
+  opacity: 1 !important;
+}
+
+body.dev-mode::after {
+  background: #000000 !important;
+  opacity: 1 !important;
+  animation: none !important;
+}
+
+body.dev-mode .wave-layer {
+  background: #000000 !important;
+  opacity: 1 !important;
+  animation: none !important;
+}
+
+/* Dev Mode: Black or Transparent Backgrounds for All Sections */
+body.dev-mode * {
+  /* Override any background gradients and colors to black or transparent */
+}
+
+body.dev-mode .header-nav,
+body.dev-mode .sidebar-nav,
+body.dev-mode [class*="bg-neutral"],
+body.dev-mode [class*="bg-gray"],
+body.dev-mode [style*="backgroundColor"],
+body.dev-mode main,
+body.dev-mode section,
+body.dev-mode header,
+body.dev-mode nav {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+body.dev-mode [class*="bg-black"] {
+  background: #000000 !important;
+  background-color: #000000 !important;
+}
+
+/* Dev Mode: Ensure root containers are black */
+body.dev-mode > div,
+body.dev-mode #__next,
+body.dev-mode [class*="flex flex-col h-screen"] {
+  background: #000000 !important;
+}
+
+/* Dev Mode: Status bar and toolbars transparent */
+body.dev-mode [class*="status-bar"],
+body.dev-mode [class*="toolbar"] {
+  background: transparent !important;
+}
+
+/* Dev Mode: Hide decorative background elements */
+body.dev-mode div[class*="absolute inset-0"] {
+  background: transparent !important;
+  opacity: 0 !important;
+  display: none !important;
+}
+
+/* Dev Mode: Ensure storybook backgrounds are hidden */
+body.dev-mode div[class*="absolute inset-0"][class*="opacity-"] {
+  display: none !important;
+}
+
+/* Dev Mode: Override any inline styles on background divs */
+body.dev-mode .flex.flex-col.h-screen > div[class*="absolute"] {
+  display: none !important;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

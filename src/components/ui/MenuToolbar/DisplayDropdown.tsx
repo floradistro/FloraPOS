@@ -74,7 +74,10 @@ export const DisplayDropdown: React.FC<DisplayDropdownProps> = ({
         label="Table"
         description="Compact table view"
         isActive={currentConfig.viewMode === 'table'}
-        onClick={() => onConfigChange({ viewMode: 'table' })}
+        onClick={() => {
+          console.log('🔧 Setting viewMode to TABLE');
+          onConfigChange({ viewMode: 'table' });
+        }}
       />
       <DropdownItem
         icon={
@@ -85,7 +88,47 @@ export const DisplayDropdown: React.FC<DisplayDropdownProps> = ({
         label="Card"
         description="Visual card layout"
         isActive={currentConfig.viewMode === 'card'}
-        onClick={() => onConfigChange({ viewMode: 'card' })}
+        onClick={() => {
+          console.log('🔧 Setting viewMode to CARD');
+          onConfigChange({ viewMode: 'card' });
+        }}
+      />
+      
+      <DropdownSeparator />
+      <div className="px-3 py-1 text-xs text-neutral-400 font-medium">PRICE DISPLAY</div>
+      
+      <DropdownItem
+        icon={
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+          </svg>
+        }
+        label="Hide Prices"
+        description="No pricing shown"
+        isActive={currentConfig.priceLocation === 'none'}
+        onClick={() => onConfigChange({ priceLocation: 'none' })}
+      />
+      <DropdownItem
+        icon={
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+        }
+        label="Header Prices"
+        description="Pricing tiers at top"
+        isActive={currentConfig.priceLocation === 'header'}
+        onClick={() => onConfigChange({ priceLocation: 'header' })}
+      />
+      <DropdownItem
+        icon={
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        }
+        label="Inline Prices"
+        description="Prices in product rows"
+        isActive={currentConfig.priceLocation === 'inline'}
+        onClick={() => onConfigChange({ priceLocation: 'inline' })}
       />
       
       {onPandaModeToggle && (

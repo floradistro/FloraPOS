@@ -6,10 +6,13 @@ import { UnifiedSearchInput, UnifiedSearchInputRef, Category, Product } from '..
 import { IconButton } from '../ui/IconButton';
 import { Divider } from '../ui/Divider';
 import { HeaderCustomerSelector } from '../ui/HeaderCustomerSelector';
+import { ArtifactsDropdown } from '../ui/ArtifactsDropdown';
 import { useAuth } from '../../contexts/AuthContext';
 import { useDebounce } from '../../hooks/useDebounce';
 import { WordPressUser } from '../../services/users-service';
 import { ViewType } from '../../types';
+import { ApiConfig } from '../../lib/api-config';
+import { AICanvasRef } from '../ui/SimpleAICanvas';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -83,6 +86,15 @@ interface HeaderProps {
   onSortAlphabeticallyChange?: (sort: boolean) => void;
   // Search ref
   unifiedSearchRef?: React.RefObject<UnifiedSearchInputRef>;
+  // AI Canvas props
+  aiCanvasTool?: 'brush' | 'eraser';
+  onAiCanvasToolChange?: (tool: 'brush' | 'eraser') => void;
+  aiCanvasColor?: string;
+  onAiCanvasColorChange?: (color: string) => void;
+  aiCanvasBrushSize?: number;
+  onAiCanvasBrushSizeChange?: (size: number) => void;
+  onClearAiCanvas?: () => void;
+  aiCanvasRef?: React.RefObject<AICanvasRef>;
 }
 
 export function Header({ 
@@ -143,9 +155,54 @@ export function Header({
   onShowOnlySelectedAdjustmentsChange,
   sortAlphabetically = true,
   onSortAlphabeticallyChange,
-  unifiedSearchRef
+  unifiedSearchRef,
+  // AI Canvas
+  aiCanvasTool = 'brush',
+  onAiCanvasToolChange,
+  aiCanvasColor = '#ffffff',
+  onAiCanvasColorChange,
+  aiCanvasBrushSize = 3,
+  onAiCanvasBrushSizeChange,
+  onClearAiCanvas,
+  aiCanvasRef
 }: HeaderProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showAiToolsDropdown, setShowAiToolsDropdown] = useState(false);
+  const [apiEnvironment, setApiEnvironment] = useState<'production' | 'docker'>('production');
+  
+  // Click outside handler for menu config dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const dropdown = document.getElementById('menu-config-dropdown');
+      const button = (e.target as HTMLElement).closest('button');
+      
+      if (dropdown && !dropdown.classList.contains('hidden')) {
+        const clickedInside = dropdown.contains(e.target as Node);
+        const clickedButton = button?.textContent?.includes('Config');
+        
+        if (!clickedInside && !clickedButton) {
+          dropdown.classList.add('hidden');
+        }
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+  
+  // Check API environment on mount and update periodically
+  useEffect(() => {
+    const updateApiEnv = () => {
+      if (typeof window !== 'undefined') {
+        setApiEnvironment(ApiConfig.getEnvironment());
+      }
+    };
+    
+    updateApiEnv();
+    const interval = setInterval(updateApiEnv, 1000); // Check every second
+    
+    return () => clearInterval(interval);
+  }, []);
   const { user, logout } = useAuth();
   
   // Debug logging for audit products
@@ -220,7 +277,7 @@ export function Header({
           </button>
         )}
 
-        {/* Left Controls - A-Z and Show Selected for adjustments view */}
+        {/* Left Controls - Adjustments Controls */}
         {currentView === 'adjustments' && (
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* A-Z Sort Toggle */}
@@ -260,7 +317,7 @@ export function Header({
         )}
 
         {/* Fixed Search Bar Container - Same position as adjustments view */}
-        <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0" style={{ marginLeft: (currentView === 'adjustments' || currentView === 'history') ? '0px' : '30px' }}>
+        <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0" style={{ marginLeft: (currentView === 'adjustments' || currentView === 'history' || currentView === 'menu') ? '0px' : '30px' }}>
           <UnifiedSearchInput
             ref={unifiedSearchRef}
             searchValue={searchValue}
@@ -302,6 +359,12 @@ export function Header({
         
         {/* Right group - All Navigation Buttons and Filters */}
         <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
+          {/* Artifacts Library Dropdown - Show on all views */}
+          <ArtifactsDropdown 
+            canvasRef={aiCanvasRef}
+            onViewChange={onViewChange}
+          />
+
           {/* Orders View Filters */}
           {currentView === 'orders' && (
             <>
@@ -470,6 +533,126 @@ export function Header({
                   <span>Audit</span>
                 </button>
               )}
+            </>
+          )}
+
+          {/* AI Canvas Tools */}
+          {currentView === 'ai-view' && (
+            <>
+              {/* Combined Tools Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowAiToolsDropdown(!showAiToolsDropdown)}
+                  className="px-3 h-[30px] rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-2 whitespace-nowrap border bg-transparent text-neutral-400 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50"
+                  style={{ fontFamily: 'Tiempo, serif' }}
+                  title="Drawing Tools"
+                >
+                  <span>Tools</span>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown */}
+                {showAiToolsDropdown && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowAiToolsDropdown(false)}
+                    />
+                    <div className="absolute top-full right-0 mt-2 w-56 bg-neutral-900/95 backdrop-blur-md border border-neutral-700/50 rounded-lg shadow-2xl z-50 p-4">
+                      {/* Tool Selection */}
+                      <div className="mb-4">
+                        <label className="text-xs text-neutral-400 font-medium block mb-2" style={{ fontFamily: 'Tiempo, serif' }}>Tool</label>
+                        <div className="flex gap-1.5 p-1 bg-neutral-800/40 rounded-lg">
+                          <button
+                            onClick={() => onAiCanvasToolChange?.('brush')}
+                            className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 ${
+                              aiCanvasTool === 'brush'
+                                ? 'bg-white/10 text-white shadow-sm'
+                                : 'text-neutral-400 hover:text-neutral-300 hover:bg-white/5'
+                            }`}
+                            style={{ fontFamily: 'Tiempo, serif' }}
+                          >
+                            <svg className="w-4 h-4 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            Brush
+                          </button>
+                          <button
+                            onClick={() => onAiCanvasToolChange?.('eraser')}
+                            className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 ${
+                              aiCanvasTool === 'eraser'
+                                ? 'bg-white/10 text-white shadow-sm'
+                                : 'text-neutral-400 hover:text-neutral-300 hover:bg-white/5'
+                            }`}
+                            style={{ fontFamily: 'Tiempo, serif' }}
+                          >
+                            <svg className="w-4 h-4 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Eraser
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Colors - Only show for brush */}
+                      {aiCanvasTool === 'brush' && (
+                        <>
+                          <div className="h-px bg-gradient-to-r from-transparent via-neutral-700/50 to-transparent mb-3"></div>
+                          <div className="mb-4">
+                            <label className="text-xs text-neutral-400 font-medium block mb-2" style={{ fontFamily: 'Tiempo, serif' }}>Color</label>
+                            <div className="flex gap-1.5 flex-wrap">
+                              {['#ffffff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#ffd93d', '#6bcf7f', '#c77dff'].map((c) => (
+                                <button
+                                  key={c}
+                                  onClick={() => onAiCanvasColorChange?.(c)}
+                                  className={`w-8 h-8 rounded-md transition-all duration-200 hover:scale-110 ${
+                                    aiCanvasColor === c ? 'ring-2 ring-white/60 ring-offset-2 ring-offset-neutral-900 scale-110' : 'hover:ring-1 hover:ring-white/30'
+                                  }`}
+                                  style={{ backgroundColor: c }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Size */}
+                      <div className={aiCanvasTool === 'brush' ? '' : ''}>
+                        {aiCanvasTool === 'brush' && (
+                          <div className="h-px bg-gradient-to-r from-transparent via-neutral-700/50 to-transparent mb-3"></div>
+                        )}
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs text-neutral-400 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Size</label>
+                          <span className="text-xs text-neutral-500 font-mono">{aiCanvasBrushSize}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="20"
+                          value={aiCanvasBrushSize}
+                          onChange={(e) => onAiCanvasBrushSizeChange?.(parseInt(e.target.value))}
+                          className="w-full h-1.5 bg-neutral-800/60 rounded-full appearance-none cursor-pointer"
+                          style={{
+                            background: `linear-gradient(to right, white 0%, white ${(aiCanvasBrushSize - 1) / 19 * 100}%, rgba(38, 38, 38, 0.6) ${(aiCanvasBrushSize - 1) / 19 * 100}%, rgba(38, 38, 38, 0.6) 100%)`
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Clear Canvas Button */}
+              <button
+                onClick={onClearAiCanvas}
+                className="px-3 h-[30px] bg-transparent hover:bg-neutral-800/40 text-neutral-400 hover:text-neutral-200 rounded-lg text-xs font-medium border border-neutral-700/40 hover:border-neutral-600/60 transition-all duration-200"
+                style={{ fontFamily: 'Tiempo, serif' }}
+                title="Clear Canvas"
+              >
+                Clear
+              </button>
             </>
           )}
 

@@ -1,3 +1,4 @@
+import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Type definitions for field update results
@@ -217,27 +218,18 @@ export async function POST(request: NextRequest) {
       // Save blueprint field values directly to the Flora Fields database
       if (Object.keys(blueprintFieldsToUpdate).length > 0) {
         try {
-          console.log(`  🔄 Saving ${Object.keys(blueprintFieldsToUpdate).length} blueprint fields directly...`);
+          console.log(`  🔄 Saving ${Object.keys(blueprintFieldsToUpdate).length} blueprint fields via V2 API...`);
           
-          // Save the entire field set as a JSON object to the fd_field_values table
-          const blueprintId = 42; // Concentrate blueprint ID
-          
+          // Save field values using V2 API (stores in WordPress post meta)
           const response = await fetch(
-            `${FLORA_API_BASE}/wp-json/fd/v1/field-values?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+            `${FLORA_API_BASE}/wp-json/fd/v2/products/${parseInt(productId)}/fields?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
             {
-              method: 'POST',
+              method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                blueprint_id: blueprintId,
-                entity_type: 'product',
-                entity_id: parseInt(productId),
-                field_value: JSON.stringify(blueprintFieldsToUpdate),
-                meta_data: {
-                  field_names: Object.keys(blueprintFieldsToUpdate),
-                  updated_at: new Date().toISOString()
-                }
+                fields: blueprintFieldsToUpdate
               })
             }
           );

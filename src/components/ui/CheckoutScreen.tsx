@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-
+import { apiFetch } from '../../lib/api-fetch';
 import { useAuth } from '../../contexts/AuthContext';
 import { CustomerSelector } from './CustomerSelector';
 import { WordPressUser } from '../../services/users-service';
@@ -140,7 +140,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         const wooCommerceProductId = await ProductMappingService.findWooCommerceProductId(item.name);
         const productId = wooCommerceProductId || item.product_id || parseInt(item.id);
         
-        console.log(`📦 Creating line item for ${item.name}:`, {
+        console.log('Product mapping:', {
           item_id: item.id,
           flora_product_id: item.product_id,
           woocommerce_product_id: wooCommerceProductId,
@@ -379,7 +379,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       
       console.log('🔍 [DEBUG v2.3] Order data being sent:', JSON.stringify(orderData, null, 2));
       
-      const response = await fetch('/api/orders', {
+      const response = await apiFetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -423,7 +423,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
       ReloadDebugger.logCheckoutStep('Order created successfully, processing inventory deduction');
       
-      console.log('🏪 Order location info:', {
+      console.log('Location and cart info:', {
         userLocation: user?.location,
         locationId: locationId,
         locationName: LOCATION_MAPPINGS[user?.location || 'Default']?.name,
@@ -435,7 +435,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         try {
           // First, mark the order as completed and paid (POS transactions are immediate)
           console.log(`🔧 [POINTS SYSTEM v2.0] Completing order ${result.data.id} for POS transaction...`);
-          const completeResponse = await fetch(`/api/orders/${result.data.id}`, {
+          const completeResponse = await apiFetch(`/api/orders/${result.data.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -450,12 +450,11 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
           if (!completeResponse.ok) {
             console.warn('⚠️ Failed to complete order status, but continuing with points...');
           } else {
-            console.log('✅ Order marked as completed');
           }
           
           // Now award points using native WooCommerce logic
           console.log(`🎯 Awarding points for order ${result.data.id} using native WooCommerce logic...`);
-          const pointsResponse = await fetch('/api/orders/award-points-native', {
+          const pointsResponse = await apiFetch('/api/orders/award-points-native', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -510,7 +509,6 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
           message: `Order completed but inventory deduction failed: ${inventoryResult.error}. Please manually adjust inventory.`
         });
       } else {
-        console.log('✅ Inventory successfully deducted for order:', inventoryResult.deductedItems);
         console.log('📊 Deduction summary:', {
           totalItems: inventoryResult.deductedItems?.length || 0,
           items: inventoryResult.deductedItems?.map(item => ({

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three.js Dynamic Loading Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #0a0a0a;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100vh;
+      touch-action: none;
+    }
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-size: 12px;
+      background: rgba(0,0,0,0.5);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-family: monospace;
+      pointer-events: none;
+      z-index: 100;
+    }
+    #error {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ff4444;
+      font-size: 14px;
+      background: rgba(0,0,0,0.8);
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 80%;
+      text-align: center;
+      display: none;
+      z-index: 1000;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ffffff;
+      font-size: 14px;
+      background: rgba(0,0,0,0.8);
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">Three.js Dynamic Loading Test</div>
+  <div id="loading">Loading Three.js...</div>
+  <div id="error"></div>
+  
+  <script>
+    // Load Three.js using dynamic script loading
+    (function() {
+      const loadingEl = document.getElementById('loading');
+      const errorEl = document.getElementById('error');
+      
+      // Create script element for Three.js
+      const threeScript = document.createElement('script');
+      threeScript.src = 'https://unpkg.com/three@0.160.0/build/three.min.js';
+      threeScript.onload = function() {
+        console.log('✅ Three.js core loaded');
+        
+        // Load OrbitControls after Three.js
+        const controlsScript = document.createElement('script');
+        controlsScript.src = 'https://unpkg.com/three@0.160.0/examples/js/controls/OrbitControls.js';
+        controlsScript.onload = function() {
+          console.log('✅ OrbitControls loaded');
+          
+          // Hide loading
+          if (loadingEl) loadingEl.style.display = 'none';
+          
+          // Run user code
+          try {
+            // USER CODE STARTS HERE
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+            
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            
+            // Create a colorful cube
+            const geometry = new THREE.BoxGeometry(2, 2, 2);
+            const materials = [
+              new THREE.MeshStandardMaterial({ color: 0xff0000 }),
+              new THREE.MeshStandardMaterial({ color: 0x00ff00 }),
+              new THREE.MeshStandardMaterial({ color: 0x0000ff }),
+              new THREE.MeshStandardMaterial({ color: 0xffff00 }),
+              new THREE.MeshStandardMaterial({ color: 0xff00ff }),
+              new THREE.MeshStandardMaterial({ color: 0x00ffff })
+            ];
+            const cube = new THREE.Mesh(geometry, materials);
+            scene.add(cube);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+            
+            camera.position.z = 5;
+            
+            function animate() {
+              requestAnimationFrame(animate);
+              cube.rotation.x += 0.01;
+              cube.rotation.y += 0.01;
+              controls.update();
+              renderer.render(scene, camera);
+            }
+            animate();
+            
+            window.addEventListener('resize', () => {
+              camera.aspect = window.innerWidth / window.innerHeight;
+              camera.updateProjectionMatrix();
+              renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            console.log('✅ Scene created successfully!');
+            // USER CODE ENDS HERE
+            
+          } catch (err) {
+            console.error('❌ User code error:', err);
+            errorEl.textContent = 'Error: ' + err.message + '\n\n' + (err.stack || '');
+            errorEl.style.display = 'block';
+          }
+        };
+        controlsScript.onerror = function(e) {
+          console.error('❌ Failed to load OrbitControls');
+          if (loadingEl) loadingEl.style.display = 'none';
+          errorEl.textContent = 'Failed to load OrbitControls library';
+          errorEl.style.display = 'block';
+        };
+        document.head.appendChild(controlsScript);
+      };
+      threeScript.onerror = function(e) {
+        console.error('❌ Failed to load Three.js');
+        if (loadingEl) loadingEl.style.display = 'none';
+        errorEl.textContent = 'Failed to load Three.js library';
+        errorEl.style.display = 'block';
+      };
+      
+      // Global error handler
+      window.addEventListener('error', function(e) {
+        console.error('❌ Global error:', e);
+        if (loadingEl) loadingEl.style.display = 'none';
+        errorEl.textContent = 'Error: ' + (e.message || e.error?.message || 'Unknown error');
+        errorEl.style.display = 'block';
+      });
+      
+      // Start loading
+      document.head.appendChild(threeScript);
+    })();
+  </script>
+</body>
+</html>
+

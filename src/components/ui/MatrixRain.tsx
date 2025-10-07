@@ -5,15 +5,16 @@ import React, { useEffect, useRef } from 'react';
 interface MatrixRainProps {
   className?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  active?: boolean;
 }
 
-export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = 'lg' }) => {
+export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = 'lg', active = true }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !active) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -160,7 +161,7 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [size]);
+  }, [size, active]);
 
   return (
     <canvas

@@ -10,15 +10,16 @@ export const useMenuConfig = () => {
   const [singleMenu, setSingleMenu] = useState<MenuConfig>({
     category: null,
     viewMode: 'auto',
-    showImages: true
+    showImages: true,
+    priceLocation: 'inline'
   });
 
   // Dual menu configuration
   const [dualMenu, setDualMenu] = useState<DualMenuConfig>({
-    left: { category: null, viewMode: 'auto', showImages: true },
-    right: { category: null, viewMode: 'auto', showImages: true },
-    leftBottom: { category: null, viewMode: 'auto', showImages: true },
-    rightBottom: { category: null, viewMode: 'auto', showImages: true },
+    left: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
+    right: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
+    leftBottom: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
+    rightBottom: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
     enableLeftStacking: false,
     enableRightStacking: false
   });
@@ -27,6 +28,13 @@ export const useMenuConfig = () => {
   const [backgroundColor, setBackgroundColor] = useState('#000000');
   const [fontColor, setFontColor] = useState('#ffffff');
   const [containerColor, setContainerColor] = useState('#1f1f1f');
+  const [cardFontColor, setCardFontColor] = useState('#ffffff');
+  const [imageBackgroundColor, setImageBackgroundColor] = useState('#1a1a1a');
+  
+  // Fonts
+  const [titleFont, setTitleFont] = useState('Tiempos, serif');
+  const [pricingFont, setPricingFont] = useState('Tiempos, serif');
+  const [cardFont, setCardFont] = useState('Tiempos, serif');
 
   // Selected quadrant for dual menu configuration
   const [selectedQuadrant, setSelectedQuadrant] = useState<'left' | 'right' | 'leftBottom' | 'rightBottom' | ''>('');
@@ -82,10 +90,10 @@ export const useMenuConfig = () => {
     setIsDualMode(false);
     setSelectedQuadrant('');
     setDualMenu({
-      left: { category: null, viewMode: 'auto', showImages: true },
-      right: { category: null, viewMode: 'auto', showImages: true },
-      leftBottom: { category: null, viewMode: 'auto', showImages: true },
-      rightBottom: { category: null, viewMode: 'auto', showImages: true },
+      left: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
+      right: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
+      leftBottom: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
+      rightBottom: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
       enableLeftStacking: false,
       enableRightStacking: false
     });
@@ -96,23 +104,40 @@ export const useMenuConfig = () => {
     if (categories.length >= 2) {
       setDualMenu(prev => ({
         ...prev,
-        left: { ...prev.left, category: categories[0].slug },
-        right: { ...prev.right, category: categories[1].slug }
+        left: { ...prev.left, category: categories[0].slug, priceLocation: prev.left.priceLocation || 'inline' },
+        right: { ...prev.right, category: categories[1].slug, priceLocation: prev.right.priceLocation || 'inline' }
       }));
       setSelectedQuadrant('left');
     }
   }, []);
 
+  // Get current panel config properties
+  const currentConfig = getCurrentConfig();
+  
   return {
     // State
     orientation,
     isDualMode,
     singleMenu,
+    singlePanel: singleMenu, // Alias for backwards compatibility
     dualMenu,
+    leftPanel: dualMenu.left, // Alias for backwards compatibility
+    rightPanel: dualMenu.right, // Alias for backwards compatibility
     backgroundColor,
     fontColor,
     containerColor,
+    cardFontColor,
+    imageBackgroundColor,
+    titleFont,
+    pricingFont,
+    cardFont,
     selectedQuadrant,
+    
+    // Current panel convenience properties
+    showImages: currentConfig.showImages,
+    viewMode: currentConfig.viewMode,
+    category: currentConfig.category,
+    priceLocation: (currentConfig as any).priceLocation,
     
     // Actions
     setOrientation,
@@ -122,6 +147,11 @@ export const useMenuConfig = () => {
     setBackgroundColor,
     setFontColor,
     setContainerColor,
+    setCardFontColor,
+    setImageBackgroundColor,
+    setTitleFont,
+    setPricingFont,
+    setCardFont,
     setSelectedQuadrant,
     
     // Helpers
@@ -130,6 +160,7 @@ export const useMenuConfig = () => {
     updateDualMenuSide,
     getCurrentConfig,
     updateCurrentConfig,
+    updateActivePanel: updateCurrentConfig, // Alias
     resetToSingleMode,
     switchToDualMode
   };

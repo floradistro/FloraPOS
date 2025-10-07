@@ -23,7 +23,7 @@ export function useProducts(searchQuery?: string, categoryFilter?: string) {
       params.append('page', '1');
       params.append('_t', Date.now().toString());
 
-      const response = await fetch(`/api/proxy/flora-im/products?${params}`, {
+      const response = await apiFetch(`/api/proxy/flora-im/products?${params}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ export function useCreateOrder() {
   
   return useMutation({
     mutationFn: async (orderData: any) => {
-      const response = await fetch('/api/orders', {
+      const response = await apiFetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
