@@ -18,6 +18,6 @@ export { Modal, ConfirmModal, AlertModal } from './Modal';
 export { WarningMessages } from './WarningMessages';
 export { SettingsDropdown } from './SettingsDropdown';
 export { InventoryHistoryView } from './InventoryHistoryView';
-export { MenuView } from './MenuView_V2';
+export { MenuView } from './MenuView';
 export { MenuToolbar, useMenuConfig } from './MenuToolbar';
 export { PrintView } from './PrintView';
