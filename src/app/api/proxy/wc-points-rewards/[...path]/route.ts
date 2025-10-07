@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiEnvironmentFromRequest, getApiBaseUrl } from '@/lib/server-api-config';
 
-const REWARDS_API_BASE = 'https://api.floradistro.com/wp-json/wc-points-rewards/v1';
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
 
@@ -9,6 +9,8 @@ export async function GET(
   { params }: { params: { path: string[] } }
 ) {
   try {
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const REWARDS_API_BASE = `${getApiBaseUrl(apiEnv)}/wp-json/wc-points-rewards/v1`;
     const path = params.path.join('/');
     const searchParams = request.nextUrl.searchParams;
     
@@ -70,6 +72,8 @@ export async function POST(
   { params }: { params: { path: string[] } }
 ) {
   try {
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const REWARDS_API_BASE = `${getApiBaseUrl(apiEnv)}/wp-json/wc-points-rewards/v1`;
     const path = params.path.join('/');
     const body = await request.json();
     

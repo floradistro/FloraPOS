@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiEnvironmentFromRequest, getApiBaseUrl as getBaseUrl } from '@/lib/server-api-config';
 
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
 
 function getApiBaseUrl(request: NextRequest): string {
-  const apiEnv = request.headers.get('x-api-environment') || 'docker';
-  if (apiEnv === 'production') {
-    return 'https://api.floradistro.com/wp-json';
-  }
-  return 'http://localhost:8081/wp-json';
+  const apiEnv = getApiEnvironmentFromRequest(request);
+  return `${getBaseUrl(apiEnv)}/wp-json`;
 }
 
 export async function GET(
