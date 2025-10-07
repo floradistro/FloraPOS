@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
-    const credentials = getApiCredentials();
+    const credentials = getApiCredentials(apiEnv);
     const CONSUMER_KEY = credentials.consumerKey;
     const CONSUMER_SECRET = credentials.consumerSecret;
     
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   
   try {
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
-    const credentials = getApiCredentials();
+    const credentials = getApiCredentials(apiEnv);
     const CONSUMER_KEY = credentials.consumerKey;
     const CONSUMER_SECRET = credentials.consumerSecret;
     

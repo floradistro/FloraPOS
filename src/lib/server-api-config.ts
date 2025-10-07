@@ -16,9 +16,13 @@ if (!PRODUCTION_URL || !DOCKER_URL) {
   throw new Error('❌ MISSING REQUIRED ENV VARS: NEXT_PUBLIC_PRODUCTION_API_URL and NEXT_PUBLIC_DOCKER_API_URL must be set');
 }
 
-// API Credentials - NO FALLBACKS
+// API Credentials - Production
 const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
 const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
+
+// Staging-specific credentials (optional - defaults to production keys)
+const STAGING_CONSUMER_KEY = process.env.NEXT_PUBLIC_STAGING_WC_CONSUMER_KEY || CONSUMER_KEY;
+const STAGING_CONSUMER_SECRET = process.env.NEXT_PUBLIC_STAGING_WC_CONSUMER_SECRET || CONSUMER_SECRET;
 
 if (!CONSUMER_KEY || !CONSUMER_SECRET) {
   throw new Error('❌ MISSING REQUIRED ENV VARS: NEXT_PUBLIC_WC_CONSUMER_KEY and NEXT_PUBLIC_WC_CONSUMER_SECRET must be set');
@@ -68,9 +72,18 @@ export function getApiUrl(path: string, env: ApiEnvironment = 'production'): str
 }
 
 /**
- * Get API credentials
+ * Get API credentials for specified environment
  */
-export function getApiCredentials() {
+export function getApiCredentials(env?: ApiEnvironment) {
+  const environment = env || 'production';
+  
+  if (environment === 'staging') {
+    return {
+      consumerKey: STAGING_CONSUMER_KEY,
+      consumerSecret: STAGING_CONSUMER_SECRET,
+    };
+  }
+  
   return {
     consumerKey: CONSUMER_KEY,
     consumerSecret: CONSUMER_SECRET,
