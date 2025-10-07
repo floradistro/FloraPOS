@@ -38,9 +38,10 @@ class AgentsService {
    * Get the active agent configuration
    */
   async getActiveAgent(): Promise<Agent> {
+    const DEFAULT_ENV = process.env.NEXT_PUBLIC_API_ENVIRONMENT || 'staging';
     const apiEnv = typeof window !== 'undefined'
-      ? (localStorage.getItem('flora_pos_api_environment') || 'docker')
-      : 'docker';
+      ? (localStorage.getItem('flora_pos_api_environment') || DEFAULT_ENV)
+      : DEFAULT_ENV;
 
     const response = await fetch(`${this.baseUrl}/api/ai/config`, {
       headers: {
@@ -60,9 +61,10 @@ class AgentsService {
    * Update agent configuration
    */
   async updateAgent(agentId: number, updates: UpdateAgentData): Promise<Agent> {
+    const DEFAULT_ENV = process.env.NEXT_PUBLIC_API_ENVIRONMENT || 'staging';
     const apiEnv = typeof window !== 'undefined'
-      ? (localStorage.getItem('flora_pos_api_environment') || 'docker')
-      : 'docker';
+      ? (localStorage.getItem('flora_pos_api_environment') || DEFAULT_ENV)
+      : DEFAULT_ENV;
 
     const response = await fetch(`${this.baseUrl}/api/ai/config`, {
       method: 'PUT',

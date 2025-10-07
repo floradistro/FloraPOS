@@ -7,8 +7,9 @@
  * Get the current API environment from localStorage
  */
 function getApiEnvironment(): string {
-  if (typeof window === 'undefined') return 'docker';
-  return localStorage.getItem('flora_pos_api_environment') || 'docker';
+  const DEFAULT_ENV = process.env.NEXT_PUBLIC_API_ENVIRONMENT || 'staging';
+  if (typeof window === 'undefined') return DEFAULT_ENV;
+  return localStorage.getItem('flora_pos_api_environment') || DEFAULT_ENV;
 }
 
 /**
