@@ -14,14 +14,14 @@ export async function POST(request: NextRequest) {
     
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const baseUrl = 'https://api.floradistro.com';
+    const baseUrl = getApiBaseUrl(apiEnv);
     const credentials = getApiCredentials();
     
-    console.log(`🔐 [${apiEnv.toUpperCase()}] Authenticating user: ${username}`);
+    console.log(`🔐 [${apiEnv.toUpperCase()}] Authenticating user: ${username} at ${baseUrl}`);
     
-    // 🔓 DEV MODE BYPASS: Allow admin/admin123 in docker/local mode
-    if (apiEnv === 'docker' && username === 'admin' && password === 'admin123') {
-      console.log('🔓 [DEV MODE] Using local dev bypass credentials');
+    // 🔓 DEV MODE BYPASS: Allow admin/admin123 in docker/staging mode (for testing)
+    if ((apiEnv === 'docker' || apiEnv === 'staging') && username === 'admin' && password === 'admin123') {
+      console.log(`🔓 [${apiEnv.toUpperCase()} MODE] Using dev bypass credentials`);
       const devUser = {
         id: 1,
         username: 'admin',
