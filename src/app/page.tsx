@@ -68,26 +68,6 @@ export default function HomePage() {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [mounted, setMounted] = useState(false);
   
-  // Force API environment to match .env on mount - CRITICAL FIX
-  useEffect(() => {
-    const envFromConfig = process.env.NEXT_PUBLIC_API_ENVIRONMENT;
-    if (envFromConfig && typeof window !== 'undefined') {
-      const currentEnv = localStorage.getItem('flora_pos_api_environment');
-      
-      // ALWAYS force to docker for local development
-      if (currentEnv !== 'docker') {
-        console.log(`🚨 FORCING API to Docker mode (was: ${currentEnv || 'not set'})`);
-        localStorage.setItem('flora_pos_api_environment', 'docker');
-        
-        // Clear production cache
-        sessionStorage.clear();
-        
-        // Immediate reload to apply
-        window.location.reload();
-        return;
-      }
-    }
-  }, []);
   // View-specific selections state
   const [viewSelections, setViewSelections] = useState<{
     [key in ViewType]?: {
