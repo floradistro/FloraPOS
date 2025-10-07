@@ -134,10 +134,10 @@ export const useMenuConfig = () => {
     selectedQuadrant,
     
     // Current panel convenience properties
-    showImages: currentConfig?.showImages || false,
-    viewMode: currentConfig?.viewMode || 'auto',
-    category: currentConfig?.category || null,
-    priceLocation: (currentConfig as any)?.priceLocation || 'inline',
+    showImages: currentConfig.showImages,
+    viewMode: currentConfig.viewMode,
+    category: currentConfig.category,
+    priceLocation: (currentConfig as any).priceLocation || 'inline',
     
     // Actions
     setOrientation,
