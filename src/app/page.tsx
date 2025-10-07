@@ -1375,14 +1375,38 @@ export default function HomePage() {
       <div className="flex-shrink-0 bg-transparent px-4 py-2 relative z-10">
         <div className="flex items-center justify-between relative">
           <div className="flex items-center gap-3 text-xs text-neutral-500" style={{ fontFamily: 'Tiempo, serif' }}>
-            {/* Dev Mode Badge - Compact */}
+            {/* Environment Badge */}
             {ApiConfig.getEnvironment() === 'docker' && (
               <>
                 <div 
                   className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#FF3B30]/10 text-[#FF3B30] border border-[#FF3B30]/30 animate-pulse"
-                  title="⚠️ Using local Docker API at localhost:8080"
+                  title="⚠️ Using local Docker API at localhost:8081"
                 >
-                  DEV
+                  🐳 DOCKER
+                </div>
+                <span className="text-neutral-600">•</span>
+              </>
+            )}
+            
+            {ApiConfig.getEnvironment() === 'staging' && (
+              <>
+                <div 
+                  className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#FF9500]/10 text-[#FF9500] border border-[#FF9500]/30 animate-pulse"
+                  title="⚠️ Using Staging API"
+                >
+                  🚧 STAGING
+                </div>
+                <span className="text-neutral-600">•</span>
+              </>
+            )}
+            
+            {ApiConfig.getEnvironment() === 'production' && (
+              <>
+                <div 
+                  className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30"
+                  title="✓ Using Production API"
+                >
+                  ☁️ PRODUCTION
                 </div>
                 <span className="text-neutral-600">•</span>
               </>
