@@ -7,14 +7,22 @@ export type ApiEnvironment = 'production' | 'staging' | 'docker';
 
 const STORAGE_KEY = 'flora_pos_api_environment';
 
-// URLs from environment variables - NO FALLBACKS
+// URLs from environment variables
 const PRODUCTION_URL = process.env.NEXT_PUBLIC_PRODUCTION_API_URL!;
-const STAGING_URL = process.env.NEXT_PUBLIC_STAGING_API_URL!;
 const DOCKER_URL = process.env.NEXT_PUBLIC_DOCKER_API_URL!;
+// Staging URL is optional - defaults to production if not set
+const STAGING_URL = process.env.NEXT_PUBLIC_STAGING_API_URL || PRODUCTION_URL;
 
 // Validate required environment variables at startup
-if (!PRODUCTION_URL || !STAGING_URL || !DOCKER_URL) {
-  throw new Error('❌ MISSING REQUIRED ENV VARS: NEXT_PUBLIC_PRODUCTION_API_URL, NEXT_PUBLIC_STAGING_API_URL, and NEXT_PUBLIC_DOCKER_API_URL must be set in .env.local');
+if (!PRODUCTION_URL || !DOCKER_URL) {
+  throw new Error('❌ MISSING REQUIRED ENV VARS: NEXT_PUBLIC_PRODUCTION_API_URL and NEXT_PUBLIC_DOCKER_API_URL must be set in .env.local');
+}
+
+// Log staging URL status
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  if (!process.env.NEXT_PUBLIC_STAGING_API_URL) {
+    console.warn('⚠️ NEXT_PUBLIC_STAGING_API_URL not set - using production URL for staging');
+  }
 }
 
 // API Credentials from environment variables - NO FALLBACKS
