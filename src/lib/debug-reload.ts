@@ -40,7 +40,6 @@ export class ReloadDebugger {
   static stopCheckoutDebug() {
     if (this.isDebugging && this.checkoutStartTime) {
       const duration = Date.now() - this.checkoutStartTime;
-      console.log(`✅ [RELOAD DEBUG] Checkout completed successfully in ${duration}ms - no reload detected`);
     }
     
     this.isDebugging = false;

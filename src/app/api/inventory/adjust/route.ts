@@ -1,11 +1,17 @@
+import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
-const FLORA_API_BASE = 'https://api.floradistro.com/wp-json';
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
 
 export async function POST(request: NextRequest) {
   try {
+    // Get API environment from request
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const floraApiBase = 'https://api.floradistro.com';
+    console.log(`🔄 [${'PROD'}] Adjusting inventory...`);
+    
+    const FLORA_API_BASE = `${floraApiBase}/wp-json`;
     const body = await request.json();
     const { adjustments } = body;
 

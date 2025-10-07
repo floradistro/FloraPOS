@@ -1,3 +1,4 @@
+import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface AuditLogEntry {
@@ -11,12 +12,17 @@ interface AuditLogEntry {
   metadata?: any;
 }
 
-const FLORA_API_BASE = 'https://api.floradistro.com/wp-json';
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
 
 export async function GET(request: NextRequest) {
   try {
+    // Get API environment from request
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const floraApiBase = 'https://api.floradistro.com';
+    const FLORA_API_BASE = `${floraApiBase}/wp-json`;
+    console.log(`🔄 [${'PROD'}] Fetching audit logs...`);
+    
     const { searchParams } = new URL(request.url);
     
     // Extract query parameters
@@ -112,11 +118,14 @@ export async function GET(request: NextRequest) {
     let filteredData: AuditLogEntry[] = auditData || [];
 
     // Apply client-side filtering since Flora IM doesn't support it
+    // Each location ONLY sees its own inventory movements
     if (locationId && locationId !== 'all') {
-      filteredData = filteredData.filter((entry: AuditLogEntry) => 
-        entry.location_id && entry.location_id.toString() === locationId.toString()
-      );
-      console.log(`📍 After location filter: ${filteredData.length} entries`);
+      const targetLocationId = parseInt(locationId);
+      filteredData = filteredData.filter((entry: AuditLogEntry) => {
+        // Simple filter - only show entries where location_id matches
+        return entry.location_id && parseInt(entry.location_id.toString()) === targetLocationId;
+      });
+      console.log(`📍 After location filter (showing only location ${locationId} movements): ${filteredData.length} entries`);
     }
 
     if (action && action !== 'all' && action !== '') {

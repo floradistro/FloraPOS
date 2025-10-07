@@ -91,6 +91,7 @@ export interface Product {
   sku: string;
   type: string;
   status: string;
+  stock_status?: string;
   regular_price: string;
   sale_price?: string;
   image?: string;
@@ -106,6 +107,18 @@ export interface Product {
     id: number;
     key: string;
     value: any;
+  }>;
+  
+  // V2 Fields structure (new)
+  fields?: Array<{
+    id: number;
+    name: string;
+    label: string;
+    type: string;
+    value: any;
+    has_value: boolean;
+    is_required: boolean;
+    config?: any;
   }>;
   
   // Variant support
@@ -267,7 +280,7 @@ export interface RestockProduct {
 // VIEW TYPES
 // ====================
 
-export type ViewType = 'products' | 'adjustments' | 'customers' | 'orders' | 'blueprint-fields' | 'history' | 'menu';
+export type ViewType = 'products' | 'adjustments' | 'customers' | 'orders' | 'blueprint-fields' | 'history' | 'menu' | 'ai-view';
 
 // ====================
 // API TYPES

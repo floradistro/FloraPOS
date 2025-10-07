@@ -27,14 +27,25 @@ export class CacheManager {
       }
       
       // Clear localStorage but preserve important data
-      const preserveKeys = ['restock_operations', 'mock_purchase_orders', 'pos_user', 'pos_token'];
+      const preserveKeys = ['restock_operations', 'mock_purchase_orders', 'pos_user', 'pos_token', 'flora_pos_api_environment'];
       const preservedData: { [key: string]: string } = {};
       
-      // Save important data
+      // Save important data - exact keys
       preserveKeys.forEach(key => {
         const value = localStorage.getItem(key);
         if (value) {
           preservedData[key] = value;
+        }
+      });
+      
+      // Save important data - pattern-based (store configs, menu configs, TV registrations)
+      const preservePatterns = ['flora-store-config-', 'flora-menu-config-', 'tv-id-'];
+      Object.keys(localStorage).forEach(key => {
+        if (preservePatterns.some(pattern => key.includes(pattern))) {
+          const value = localStorage.getItem(key);
+          if (value) {
+            preservedData[key] = value;
+          }
         }
       });
       
@@ -46,7 +57,7 @@ export class CacheManager {
         localStorage.setItem(key, value);
       });
       
-      console.log('🧹 Cleared localStorage (preserved:', Object.keys(preservedData).join(', '), ')');
+      console.log('🧹 Cleared localStorage (preserved:', Object.keys(preservedData).filter(k => !k.includes('tv-id-')).join(', '), '+ TV registrations)');
       
       // Clear sessionStorage
       sessionStorage.clear();

@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/api-fetch';
 export interface UserPointsBalance {
   user_id: number;
   balance: number;
@@ -87,7 +88,7 @@ class RewardsService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',

@@ -2,9 +2,11 @@
 
 import React from 'react';
 import { MenuToolbarProps } from './types';
+import { ConfigDropdown } from './ConfigDropdown';
 import { LayoutDropdown } from './LayoutDropdown';
 import { DisplayDropdown } from './DisplayDropdown';
 import { ColorDropdown } from './ColorDropdown';
+import { FontDropdown } from './FontDropdown';
 import { MenuModeDropdown } from './MenuModeDropdown';
 import { CategoriesDropdown } from './CategoriesDropdown';
 import { ColumnSelector } from '../ColumnSelector';
@@ -23,7 +25,13 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   backgroundColor,
   fontColor,
   containerColor,
+  cardFontColor,
+  imageBackgroundColor,
+  titleFont,
+  pricingFont,
+  cardFont,
   onColorsChange,
+  onFontsChange,
   categories,
   categoryColumnConfigs,
   onColumnsChange,
@@ -33,7 +41,19 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   openWindowsCount,
   maxWindows,
   pandaMode = false,
-  onPandaModeToggle
+  onPandaModeToggle,
+  // Config actions
+  loadedConfigName,
+  onLoadConfig,
+  onSaveLayout,
+  onSaveTheme,
+  onQRCode,
+  onStoreConfig,
+  onToggleTVPanel,
+  showTVPanel,
+  onlineCount,
+  totalTVs,
+  hasLocation
 }) => {
   // Determine current configuration based on mode and selected quadrant
   const getCurrentConfig = () => {
@@ -57,16 +77,39 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   };
 
   const handleConfigChange = (updates: Partial<typeof singleMenu>) => {
+    console.log('🔧 handleConfigChange called:', {
+      isDualMode,
+      selectedQuadrant,
+      updates,
+      currentConfig: isDualMode && selectedQuadrant ? dualMenu[selectedQuadrant] : singleMenu
+    });
+    
     if (!isDualMode) {
-      onSingleMenuChange({ ...singleMenu, ...updates });
+      const newConfig = { ...singleMenu, ...updates };
+      console.log('✅ Updating single menu:', newConfig);
+      onSingleMenuChange(newConfig);
     } else {
       // Update only the selected quadrant
       if (selectedQuadrant) {
+        const currentQuadConfig = selectedQuadrant === 'leftBottom' || selectedQuadrant === 'rightBottom'
+          ? dualMenu[selectedQuadrant] || { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' }
+          : dualMenu[selectedQuadrant];
+          
         const updatedDualMenu = {
           ...dualMenu,
-          [selectedQuadrant]: { ...dualMenu[selectedQuadrant], ...updates }
+          [selectedQuadrant]: { ...currentQuadConfig, ...updates }
         };
+        console.log(`✅ Updating ${selectedQuadrant} panel:`, updatedDualMenu[selectedQuadrant]);
+        console.log(`✅ Full dual menu after update:`, {
+          left: updatedDualMenu.left,
+          right: updatedDualMenu.right,
+          leftBottom: updatedDualMenu.leftBottom,
+          rightBottom: updatedDualMenu.rightBottom
+        });
         onDualMenuChange(updatedDualMenu);
+      } else {
+        console.warn('⚠️ No quadrant selected in dual mode! You must click a quadrant first.');
+        alert('Please click on a quadrant (Left Top, Right Top, Left Bottom, or Right Bottom) to configure it.');
       }
     }
   };
@@ -83,6 +126,20 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
       <div className="flex items-center justify-between bg-neutral-900/40 backdrop-blur-sm border border-neutral-700/50 rounded-lg px-2 py-2 w-full">
         {/* Left Side - Configuration Dropdowns */}
         <div className="flex items-center gap-3 flex-shrink-0">
+          <ConfigDropdown
+            loadedConfigName={loadedConfigName}
+            onLoadConfig={onLoadConfig}
+            onSaveLayout={onSaveLayout}
+            onSaveTheme={onSaveTheme}
+            onQRCode={onQRCode}
+            onStoreConfig={onStoreConfig}
+            onToggleTVPanel={onToggleTVPanel}
+            showTVPanel={showTVPanel}
+            onlineCount={onlineCount}
+            totalTVs={totalTVs}
+            hasLocation={hasLocation}
+          />
+          
           <LayoutDropdown
             orientation={orientation}
             onOrientationChange={onOrientationChange}
@@ -99,7 +156,16 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             backgroundColor={backgroundColor}
             fontColor={fontColor}
             containerColor={containerColor}
+            cardFontColor={cardFontColor}
+            imageBackgroundColor={imageBackgroundColor}
             onColorsChange={onColorsChange}
+          />
+
+          <FontDropdown
+            titleFont={titleFont}
+            pricingFont={pricingFont}
+            cardFont={cardFont}
+            onFontsChange={onFontsChange}
           />
 
           <MenuModeDropdown
@@ -125,6 +191,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             selectedQuadrant={selectedQuadrant}
             onSingleMenuChange={onSingleMenuChange}
             onDualMenuChange={onDualMenuChange}
+            onQuadrantChange={onQuadrantChange}
             orientation={orientation}
           />
           

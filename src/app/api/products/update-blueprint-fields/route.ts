@@ -1,3 +1,4 @@
+import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
 const FLORA_API_BASE = 'https://api.floradistro.com';

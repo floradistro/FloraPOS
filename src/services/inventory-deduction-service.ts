@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/api-fetch';
 /**
  * Inventory Deduction Service
  * Handles stock deduction with conversion ratios from BluePrints plugin
@@ -28,7 +29,6 @@ export class InventoryDeductionService {
     locationId: number, 
     orderId: string | number
   ): Promise<InventoryDeductionResult> {
-    console.log(`🔍 Starting inventory deduction for order ${orderId}, location ${locationId}, ${cartItems.length} items`);
     const deductedItems: any[] = [];
     
     try {
@@ -118,7 +118,6 @@ export class InventoryDeductionService {
       }
 
       // Log successful deduction
-      console.log(`✅ Successfully deducted inventory for "${item.name}" at location ${locationId}`);
 
       return {
         success: true,
@@ -247,7 +246,7 @@ export class InventoryDeductionService {
         ...(variationId ? { variation_id: variationId.toString() } : {})
       });
 
-      const response = await fetch(`/api/proxy/flora-im/inventory?${params}`, {
+      const response = await apiFetch(`/api/proxy/flora-im/inventory?${params}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -302,7 +301,7 @@ export class InventoryDeductionService {
         ...(variationId ? { variation_id: variationId } : {})
       };
 
-      const response = await fetch('/api/proxy/flora-im/inventory', {
+      const response = await apiFetch('/api/proxy/flora-im/inventory', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

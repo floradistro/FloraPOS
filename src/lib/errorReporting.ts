@@ -96,7 +96,6 @@ class ErrorReportingService {
   }
 
   private logToConsole(errorReport: ErrorReport): void {
-    console.group('🚨 Error Report');
     console.error('Error:', errorReport.error);
     console.log('Context:', errorReport.context);
     console.log('User ID:', errorReport.userId);
@@ -107,7 +106,6 @@ class ErrorReportingService {
       console.log('Component Stack:', errorReport.errorInfo.componentStack);
     }
     
-    console.groupEnd();
   }
 
   private async sendToRemoteService(errorReport: ErrorReport): Promise<void> {

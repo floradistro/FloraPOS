@@ -1,3 +1,4 @@
+import { apiFetch } from '../lib/api-fetch';
 export interface CustomerOrder {
   id: number;
   number: string;
@@ -43,7 +44,7 @@ class CustomerOrdersService {
     try {
       const url = `/api/orders?customer=${customerId}&page=${page}&per_page=${perPage}&orderby=date&order=desc`;
       
-      const response = await fetch(url);
+      const response = await apiFetch(url);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);

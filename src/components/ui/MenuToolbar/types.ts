@@ -2,6 +2,7 @@ export interface MenuConfig {
   category: string | null;
   viewMode: 'table' | 'card' | 'auto';
   showImages: boolean;
+  priceLocation?: 'none' | 'header' | 'inline';
 }
 
 export interface DualMenuConfig {
@@ -37,7 +38,34 @@ export interface MenuToolbarProps {
   backgroundColor: string;
   fontColor: string;
   containerColor: string;
-  onColorsChange: (colors: { backgroundColor: string; fontColor: string; containerColor: string }) => void;
+  cardFontColor: string;
+  imageBackgroundColor: string;
+  onColorsChange: (colors: { 
+    backgroundColor: string; 
+    fontColor: string; 
+    containerColor: string;
+    cardFontColor: string;
+    imageBackgroundColor: string;
+  }) => void;
+  
+  // Fonts
+  titleFont: string;
+  pricingFont: string;
+  cardFont: string;
+  onFontsChange: (fonts: { titleFont: string; pricingFont: string; cardFont: string }) => void;
+  
+  // Config actions
+  loadedConfigName?: string;
+  onLoadConfig: () => void;
+  onSaveLayout: () => void;
+  onSaveTheme: () => void;
+  onQRCode: () => void;
+  onStoreConfig: () => void;
+  onToggleTVPanel: () => void;
+  showTVPanel: boolean;
+  onlineCount: number;
+  totalTVs: number;
+  hasLocation: boolean;
   
   // Categories
   categories: Array<{ id: number; name: string; slug: string }>;

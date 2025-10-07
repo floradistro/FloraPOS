@@ -1,6 +1,6 @@
+import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
-const FLORA_API_BASE = 'https://api.floradistro.com/wp-json';
 const CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
 
@@ -154,18 +154,68 @@ export async function POST(request: NextRequest) {
 
       console.log(`📦 Completing audit session ${session_id} with ${session.adjustments.length} adjustments`);
 
-      // Apply all adjustments to Flora IM
+      // Get API environment and base URL
+      const apiEnv = getApiEnvironmentFromRequest(request);
+      const floraApiBase = 'https://api.floradistro.com';
+      
+      console.log(`🔄 [${'PROD'}] Creating audit batch in WordPress...`);
+      
+      // Step 1: Create audit batch in WordPress
+      const batchUrl = `${floraApiBase}/wp-json/flora-im/v1/audit-batches?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
+      
+      const batchData = {
+        batch_name: session.name,
+        batch_description: session.reason,
+        location_id: session.location_id,
+        user_id: session.user_id || 1,
+        user_name: session.user_name || 'System'
+      };
+
+      const batchResponse = await fetch(batchUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batchData)
+      });
+
+      if (!batchResponse.ok) {
+        const errorText = await batchResponse.text();
+        console.error('❌ Failed to create audit batch:', errorText);
+        return NextResponse.json({
+          error: 'Failed to create audit batch in WordPress',
+          details: errorText
+        }, { status: 500 });
+      }
+
+      const batchResult = await batchResponse.json();
+      const batchId = batchResult.batch_id;
+      const auditNumber = batchResult.batch?.audit_number;
+      
+      console.log(`✅ Created audit batch: ${auditNumber} (ID: ${batchId})`);
+      
+      // Step 2: Start the batch
+      const startUrl = `${floraApiBase}/wp-json/flora-im/v1/audit-batches/${batchId}?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
+      
+      await fetch(startUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start' })
+      });
+      
+      // Step 3: Apply all adjustments to Flora IM with batch_id
       const results = await Promise.all(
         session.adjustments.map(async (adj) => {
           try {
-            // Update inventory through Flora IM
-            const updateUrl = `${FLORA_API_BASE}/flora-im/v1/inventory?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
+            // Update inventory through Flora IM with batch_id for audit trail
+            const updateUrl = `${floraApiBase}/wp-json/flora-im/v1/inventory?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
             
             const updateData = {
               product_id: adj.product_id,
               variation_id: adj.variation_id || null,
               location_id: session.location_id,
-              quantity: adj.new_quantity
+              quantity: adj.new_quantity,
+              batch_id: batchId,
+              reason: session.reason,
+              user_name: session.user_name
             };
 
             const updateResponse = await fetch(updateUrl, {
@@ -190,6 +240,15 @@ export async function POST(request: NextRequest) {
         })
       );
 
+      // Step 4: Complete the batch in WordPress
+      const completeUrl = `${floraApiBase}/wp-json/flora-im/v1/audit-batches/${batchId}?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
+      
+      await fetch(completeUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'complete' })
+      });
+
       // Calculate summary
       const summary = {
         total_products: session.adjustments.length,
@@ -210,6 +269,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: `Audit session completed. ${successCount} products updated, ${failedCount} failed.`,
+        audit_number: auditNumber,
+        batch_id: batchId,
         session_id,
         summary,
         results
