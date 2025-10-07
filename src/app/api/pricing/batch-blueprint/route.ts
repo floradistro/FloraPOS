@@ -185,7 +185,7 @@ async function loadBlueprintData(apiEnv: 'production' | 'docker') {
 
 // Load blueprint assignments from category fields (V2 API)
 async function loadBlueprintAssignments(apiEnv: 'production' | 'docker') {
-  const baseUrl = 'https://api.floradistro.com';
+  const baseUrl = apiEnv === 'docker' ? 'http://localhost:8081' : 'https://api.floradistro.com';
   const credentials = getApiCredentials();
   
   console.log(`\n🔍 [${'PROD'}] Building blueprint assignments from category fields...`);
@@ -275,7 +275,7 @@ async function loadBlueprintAssignments(apiEnv: 'production' | 'docker') {
 
 // Load all pricing rules once (V2 API - pricing rules table unchanged)
 async function loadAllPricingRules(apiEnv: 'production' | 'docker') {
-  const baseUrl = 'https://api.floradistro.com';
+  const baseUrl = apiEnv === 'docker' ? 'http://localhost:8081' : 'https://api.floradistro.com';
   const credentials = getApiCredentials();
   // Note: Pricing rules are still in the same table, just accessed via V2 endpoint
   const url = `${baseUrl}/wp-json/fd/v2/pricing/rules?consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}&_t=${Date.now()}`;
@@ -531,7 +531,7 @@ function convertRulesToGroupedTiers(rules: any[]) {
 // Helper function to get product name from WooCommerce API
 async function getProductName(productId: number, apiEnv: 'production' | 'docker'): Promise<string | null> {
   try {
-    const baseUrl = 'https://api.floradistro.com';
+    const baseUrl = apiEnv === 'docker' ? 'http://localhost:8081' : 'https://api.floradistro.com';
     const credentials = getApiCredentials();
     const response = await fetch(`${baseUrl}/wp-json/wc/v3/products/${productId}?consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}`);
     

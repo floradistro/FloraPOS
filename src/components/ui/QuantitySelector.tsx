@@ -61,28 +61,29 @@ export function QuantitySelector({
     return `$${numPrice.toFixed(2)}`;
   };
 
-  // If product has a specific price set, show only that price (not blueprint pricing)
-  if (basePrice > 0) {
-    return (
-      <div className="text-center">
-        <button
-          onClick={(e) => handleQuantitySelect(e, 1, basePrice)}
-          disabled={disabled}
-          className={`w-16 h-16 rounded-full text-xs transition-all duration-300 ease-out border flex items-center justify-center ${
-            selectedQuantity === 1
-              ? 'bg-white/10 text-white font-medium border-white/40 shadow-lg shadow-black/20'
-              : 'bg-neutral-800/40 text-neutral-400 hover:bg-neutral-700/60 hover:text-neutral-300 border-neutral-500/30 hover:border-neutral-400/50 hover:shadow-md'
-          } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}`}
-          title="Add to Cart"
-        >
-          <div className="font-medium text-xs leading-tight text-center">Add</div>
-        </button>
-      </div>
-    );
-  }
-
-  // If no blueprint pricing, show fallback
+  // Check for blueprint pricing FIRST (priority over base price)
   if (!blueprintPricing || !blueprintPricing.ruleGroups || blueprintPricing.ruleGroups.length === 0) {
+    // No blueprint pricing - fall back to base price if available
+    if (basePrice > 0) {
+      return (
+        <div className="text-center">
+          <button
+            onClick={(e) => handleQuantitySelect(e, 1, basePrice)}
+            disabled={disabled}
+            className={`w-16 h-16 rounded-full text-xs transition-all duration-300 ease-out border flex items-center justify-center ${
+              selectedQuantity === 1
+                ? 'bg-white/10 text-white font-medium border-white/40 shadow-lg shadow-black/20'
+                : 'bg-neutral-800/40 text-neutral-400 hover:bg-neutral-700/60 hover:text-neutral-300 border-neutral-500/30 hover:border-neutral-400/50 hover:shadow-md'
+            } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}`}
+            title="Add to Cart"
+          >
+            <div className="font-medium text-xs leading-tight text-center">Add</div>
+          </button>
+        </div>
+      );
+    }
+    
+    // No pricing at all
     return (
       <div className="text-center">
         <div className="text-[9px] text-neutral-500 mt-1">
