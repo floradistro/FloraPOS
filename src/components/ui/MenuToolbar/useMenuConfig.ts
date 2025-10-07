@@ -54,7 +54,7 @@ export const useMenuConfig = () => {
     }));
   }, []);
 
-  const getCurrentConfig = useCallback(() => {
+  const getCurrentConfig = useCallback((): MenuConfig => {
     if (!isDualMode) {
       return singleMenu;
     }
@@ -66,9 +66,9 @@ export const useMenuConfig = () => {
       case 'right':
         return dualMenu.right;
       case 'leftBottom':
-        return dualMenu.leftBottom;
+        return dualMenu.leftBottom || dualMenu.left;
       case 'rightBottom':
-        return dualMenu.rightBottom;
+        return dualMenu.rightBottom || dualMenu.right;
       default:
         return dualMenu.left; // Default fallback
     }
