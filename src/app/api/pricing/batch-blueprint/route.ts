@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
+import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials, type ApiEnvironment } from '@/lib/server-api-config';
 
 const WC_CONSUMER_KEY = 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5';
 const WC_CONSUMER_SECRET = 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678';
@@ -11,6 +11,11 @@ const CACHE_VERSION = 'v14_no_duplicates'; // Increment this to bust all caches 
 let blueprintCache: {
   version?: string;
   production?: {
+    assignments?: any[];
+    rules?: any[];
+    lastFetch?: number;
+  };
+  staging?: {
     assignments?: any[];
     rules?: any[];
     lastFetch?: number;
@@ -131,7 +136,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Load all blueprint data once and cache it
-async function loadBlueprintData(apiEnv: 'production' | 'docker') {
+async function loadBlueprintData(apiEnv: ApiEnvironment) {
   const now = Date.now();
   
   // Check cache version - clear if outdated
@@ -184,8 +189,8 @@ async function loadBlueprintData(apiEnv: 'production' | 'docker') {
 }
 
 // Load blueprint assignments from category fields (V2 API)
-async function loadBlueprintAssignments(apiEnv: 'production' | 'docker') {
-  const baseUrl = apiEnv === 'docker' ? 'http://localhost:8081' : 'https://api.floradistro.com';
+async function loadBlueprintAssignments(apiEnv: ApiEnvironment) {
+  const baseUrl = getApiBaseUrl(apiEnv);
   const credentials = getApiCredentials();
   
   console.log(`\n🔍 [${apiEnv.toUpperCase()}] Building blueprint assignments from category fields...`);
@@ -274,8 +279,8 @@ async function loadBlueprintAssignments(apiEnv: 'production' | 'docker') {
 }
 
 // Load all pricing rules once (V2 API - pricing rules table unchanged)
-async function loadAllPricingRules(apiEnv: 'production' | 'docker') {
-  const baseUrl = apiEnv === 'docker' ? 'http://localhost:8081' : 'https://api.floradistro.com';
+async function loadAllPricingRules(apiEnv: ApiEnvironment) {
+  const baseUrl = getApiBaseUrl(apiEnv);
   const credentials = getApiCredentials();
   // Note: Pricing rules are still in the same table, just accessed via V2 endpoint
   const url = `${baseUrl}/wp-json/fd/v2/pricing/rules?consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}&_t=${Date.now()}`;
@@ -333,7 +338,7 @@ async function loadAllPricingRules(apiEnv: 'production' | 'docker') {
 }
 
 // Find blueprint assignment from cached data (environment-aware)
-function findBlueprintAssignmentFromCache(productId: number, categoryIds: number[] = [], apiEnv: 'production' | 'docker' = 'production') {
+function findBlueprintAssignmentFromCache(productId: number, categoryIds: number[] = [], apiEnv: ApiEnvironment = 'production') {
   const envCache = blueprintCache[apiEnv];
   if (!envCache?.assignments) {
     console.log(`   ⚠️ No assignments in cache for ${apiEnv}`);
@@ -379,7 +384,7 @@ function findBlueprintAssignmentFromCache(productId: number, categoryIds: number
 }
 
 // Find blueprint rules from cached data (environment-aware)
-function findBlueprintRulesFromCache(blueprintId: number, apiEnv: 'production' | 'docker' = 'production') {
+function findBlueprintRulesFromCache(blueprintId: number, apiEnv: ApiEnvironment = 'production') {
   const envCache = blueprintCache[apiEnv];
   if (!envCache?.rules) return [];
 
@@ -529,9 +534,9 @@ function convertRulesToGroupedTiers(rules: any[]) {
 }
 
 // Helper function to get product name from WooCommerce API
-async function getProductName(productId: number, apiEnv: 'production' | 'docker'): Promise<string | null> {
+async function getProductName(productId: number, apiEnv: ApiEnvironment): Promise<string | null> {
   try {
-    const baseUrl = apiEnv === 'docker' ? 'http://localhost:8081' : 'https://api.floradistro.com';
+    const baseUrl = getApiBaseUrl(apiEnv);
     const credentials = getApiCredentials();
     const response = await fetch(`${baseUrl}/wp-json/wc/v3/products/${productId}?consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}`);
     

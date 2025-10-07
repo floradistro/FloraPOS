@@ -3,15 +3,16 @@
  * Used in API routes to determine which API endpoint to use based on client preferences
  */
 
-export type ApiEnvironment = 'production' | 'docker';
+export type ApiEnvironment = 'production' | 'staging' | 'docker';
 
 // URLs from environment variables - NO FALLBACKS
 const PRODUCTION_URL = process.env.NEXT_PUBLIC_PRODUCTION_API_URL!;
+const STAGING_URL = process.env.NEXT_PUBLIC_STAGING_API_URL!;
 const DOCKER_URL = process.env.NEXT_PUBLIC_DOCKER_API_URL!;
 
 // Validate required environment variables
-if (!PRODUCTION_URL || !DOCKER_URL) {
-  throw new Error('❌ MISSING REQUIRED ENV VARS: NEXT_PUBLIC_PRODUCTION_API_URL and NEXT_PUBLIC_DOCKER_API_URL must be set');
+if (!PRODUCTION_URL || !STAGING_URL || !DOCKER_URL) {
+  throw new Error('❌ MISSING REQUIRED ENV VARS: NEXT_PUBLIC_PRODUCTION_API_URL, NEXT_PUBLIC_STAGING_API_URL, and NEXT_PUBLIC_DOCKER_API_URL must be set');
 }
 
 // API Credentials - NO FALLBACKS
@@ -30,7 +31,7 @@ export function getApiEnvironmentFromRequest(request: Request): ApiEnvironment {
   const headers = new Headers(request.headers);
   const envHeader = headers.get('x-api-environment');
   
-  if (envHeader === 'docker' || envHeader === 'production') {
+  if (envHeader === 'docker' || envHeader === 'staging' || envHeader === 'production') {
     return envHeader;
   }
   
@@ -39,7 +40,7 @@ export function getApiEnvironmentFromRequest(request: Request): ApiEnvironment {
   const apiEnvMatch = cookies.match(/flora_pos_api_environment=([^;]+)/);
   if (apiEnvMatch) {
     const env = apiEnvMatch[1];
-    if (env === 'docker' || env === 'production') {
+    if (env === 'docker' || env === 'staging' || env === 'production') {
       return env;
     }
   }
@@ -52,7 +53,9 @@ export function getApiEnvironmentFromRequest(request: Request): ApiEnvironment {
  * Get base URL for the specified environment
  */
 export function getApiBaseUrl(env: ApiEnvironment = 'production'): string {
-  return env === 'docker' ? DOCKER_URL : PRODUCTION_URL;
+  if (env === 'docker') return DOCKER_URL;
+  if (env === 'staging') return STAGING_URL;
+  return PRODUCTION_URL;
 }
 
 /**
