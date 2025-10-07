@@ -1,0 +1,653 @@
+
+> posv1@0.1.0 dev
+> bash scripts/enforce-port-3000.sh && PORT=3000 next dev -p 3000
+
+🔒 Enforcing single port policy - ONLY port 3000 allowed
+❌ Killing process on port 5000 (PID: 47652)
+✅ Port 3000 is available
+🎯 Port enforcement complete - Only port 3000 is allowed for Flora POS
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ⚠ Disabling SWC Minifer will not be an option in the next major version. Please report any issues you may be experiencing to https://github.com/vercel/next.js/issues
+🔒 Port policy enforced - only port 3000 allowed
+🔒 Port policy enforced - only port 3000 allowed
+🔒 Port policy enforced - only port 3000 allowed
+ ✓ Ready in 1692ms
+ ⚠ Your project has `@next/font` installed as a dependency, please use the built-in `next/font` instead. The `@next/font` package will be removed in Next.js 14. You can migrate by running `npx @next/codemod@latest built-in-next-font .`. Read more: https://nextjs.org/docs/messages/built-in-next-font
+ ○ Compiling / ...
+ ✓ Compiled / in 1870ms (2030 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /_next/static/webpack/9edb50241c629a45.webpack.hot-update.json. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_next/static/webpack/9edb50241c629a45.webpack.hot-update.json. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET / 200 in 2002ms
+🔧 Supabase env: local
+🔧 NEXT_PUBLIC_SUPABASE_URL_LOCAL: undefined
+🔧 NEXT_PUBLIC_SUPABASE_ANON_KEY_LOCAL: undefined...
+✅ Using Supabase URL: http://127.0.0.1:54321
+🔑 Using REAL JWT token (first 30 chars): eyJhbGciOiJIUzI1NiIsInR5cCI6Ik...
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /_next/static/webpack/9edb50241c629a45.webpack.hot-update.json 404 in 2212ms
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ✓ Compiled in 411ms (1084 modules)
+ GET / 200 in 186ms
+ ✓ Compiled /api/users-matrix/users in 222ms (977 modules)
+ ✓ Compiled (979 modules)
+Failed to fetch customers: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/users-matrix/users/route.ts:49:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/users-matrix/users?_=1759871780550 500 in 431ms
+Failed to fetch customers: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/users-matrix/users/route.ts:49:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/users-matrix/users?_=1759871780550 500 in 419ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871781001&location_id=20&_nocache=true
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871781003&include_zero_stock=true&location_id=20&_nocache=true
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871781004&location_id=20&_nocache=true
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871781005&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 433ms
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=1759871780550&include_zero_stock=true&location_id=20 500 in 433ms
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 426ms
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1 500 in 470ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871781016&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1 500 in 9ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871784027&location_id=20&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 10ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871784542&location_id=20&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 19ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871784753&location_id=20&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 13ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871784898&location_id=20&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 7ms
+🔧 Supabase env: local
+🔧 NEXT_PUBLIC_SUPABASE_URL_LOCAL: undefined
+🔧 NEXT_PUBLIC_SUPABASE_ANON_KEY_LOCAL: undefined...
+✅ Using Supabase URL: http://127.0.0.1:54321
+🔑 Using REAL JWT token (first 30 chars): eyJhbGciOiJIUzI1NiIsInR5cCI6Ik...
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 117ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871795224&location_id=20&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 25ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871795703&location_id=20&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 10ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871795909&location_id=20&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 8ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871796094&location_id=20&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 9ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871808019&location_id=20&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 22ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871808553&location_id=20&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 17ms
+Proxying Flora-IM request to: https://staging.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759871812716&location_id=20&_nocache=true
+Proxy error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async GET (webpack-internal:///(rsc)/./src/app/api/proxy/flora-im/[...path]/route.ts:41:26)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1587:40)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: Error: getaddrinfo ENOTFOUND staging.floradistro.com
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26)
+      at GetAddrInfoReqWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'staging.floradistro.com'
+  }
+}
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866239&location_id=20 500 in 16ms
+   Reload env: .env.local
+ ✓ Compiled in 322ms (2013 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
