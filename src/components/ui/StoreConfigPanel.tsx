@@ -18,9 +18,10 @@ export function StoreConfigPanel() {
     
     setLoading(true);
     try {
+      const locationId = parseInt(user.location_id);
       const [config, allThemes] = await Promise.all([
-        storeConfigService.getStoreConfig(user.location_id),
-        menuConfigService.getAllConfigs(user.location_id, false)
+        storeConfigService.getStoreConfig(locationId),
+        menuConfigService.getAllConfigs(locationId, false)
       ]);
       
       if (config) {
@@ -28,7 +29,7 @@ export function StoreConfigPanel() {
       } else {
         // Create default config
         setStoreConfig({
-          location_id: user.location_id,
+          location_id: locationId,
           store_name: user.location || `Location ${user.location_id}`,
           tvs: [
             {
