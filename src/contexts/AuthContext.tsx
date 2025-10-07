@@ -72,7 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Step 1: Authenticate with WordPress
       // Use dedicated auth endpoint that validates credentials
-      console.log('🔐 Authenticating with WordPress...');
       const wpResponse = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -97,7 +96,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       const wpUser = loginResult.user;
-      console.log('✅ WordPress user authenticated:', wpUser.username);
 
       // Check for dev location override (only in dev mode)
       if (typeof window !== 'undefined') {
@@ -113,11 +111,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // User object already comes from login endpoint with location data
-      console.log('✅ Final user data:', wpUser);
-
       setUser(wpUser);
-      setIsAuthenticated(true);
+      
+      // Store in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('pos_user', JSON.stringify(wpUser));
+        localStorage.setItem('pos_token', loginResult.token);
+      }
       
       return true;
       
@@ -137,34 +137,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     router.push('/login');
   };
-  
+
   const updateUserLocation = (locationId: string, locationName: string) => {
-    if (!user) return;
-    
-    const updatedUser = {
-      ...user,
-      location_id: locationId,
-      location: locationName
-    };
-    
-    setUser(updatedUser);
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('pos_user', JSON.stringify(updatedUser));
-      localStorage.setItem('dev_location_override', JSON.stringify({
-        id: locationId,
-        name: locationName
-      }));
+    if (user) {
+      const updatedUser = { ...user, location_id: locationId, location: locationName };
+      setUser(updatedUser);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('pos_user', JSON.stringify(updatedUser));
+      }
     }
   };
 
-  const value: AuthContextType = {
+  const value = {
     user,
     isLoading,
     login,
     logout,
     isAuthenticated: !!user,
-    updateUserLocation
+    updateUserLocation,
   };
 
   return (
