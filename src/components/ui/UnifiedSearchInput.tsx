@@ -2,11 +2,17 @@
 
 import React, { useState, useRef, useEffect, useMemo, forwardRef, useImperativeHandle, useCallback } from 'react';
 import ReactDOM from 'react-dom';
+import dynamic from 'next/dynamic';
 import { WordPressUser, usersService } from '../../services/users-service';
 import { useUserPointsBalance } from '../../hooks/useRewards';
 import { useDebounce } from '../../hooks/useDebounce';
-import { ScanditIDScanner, IDScanResult } from './ScanditIDScanner';
+import type { IDScanResult } from './ScanditIDScanner';
 import { BlueprintFieldsService } from '../../services/blueprint-fields-service';
+
+const ScanditIDScanner = dynamic(
+  () => import('./ScanditIDScanner').then(mod => ({ default: mod.ScanditIDScanner })),
+  { ssr: false }
+);
 
 export interface Category {
   id: number;

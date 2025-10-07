@@ -11,15 +11,17 @@
    Creating an optimized production build ...
  ✓ Compiled successfully
    Linting and checking validity of types ...
-Failed to compile.
-
-./src/app/api/users-matrix/users/route.ts:131:53
-Type error: Cannot find name 'apiEnv'.
-
-[0m [90m 129 |[39m     [36mreturn[39m [33mNextResponse[39m[33m.[39mjson(transformedUser)[33m;[39m[0m
-[0m [90m 130 |[39m   } [36mcatch[39m (error) {[0m
-[0m[31m[1m>[22m[39m[90m 131 |[39m     console[33m.[39merror([32m`❌ Failed to create customer in ${apiEnv.toUpperCase()}:`[39m[33m,[39m error)[33m;[39m[0m
-[0m [90m     |[39m                                                     [31m[1m^[22m[39m[0m
-[0m [90m 132 |[39m     [36mreturn[39m [33mNextResponse[39m[33m.[39mjson([0m
-[0m [90m 133 |[39m       { error[33m:[39m error [36minstanceof[39m [33mError[39m [33m?[39m error[33m.[39mmessage [33m:[39m [32m'Failed to create customer'[39m }[33m,[39m[0m
-[0m [90m 134 |[39m       { status[33m:[39m [35m500[39m }[0m
+   Collecting page data ...
+unhandledRejection ReferenceError: self is not defined
+    at Object.<anonymous> (/Users/whale/Desktop/FloraPOS-main/.next/server/vendors.js:1:1)
+    at Module._compile (node:internal/modules/cjs/loader:1554:14)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1311:12)
+    at mod.require (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:136:16) {
+  type: 'ReferenceError'
+}

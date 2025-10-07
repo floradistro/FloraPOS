@@ -47,7 +47,7 @@ export class TVCommandService {
       if (error) throw error
 
       console.log(`✅ Command sent to TV: ${commandType}`, data)
-      return data
+      return data as TVCommand
     } catch (error) {
       console.error('Failed to send command:', error)
       return null
