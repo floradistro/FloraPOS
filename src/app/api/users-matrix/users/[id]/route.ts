@@ -8,8 +8,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Fetching user...`);
+    const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching user...`);
     
     const userId = params.id;
     
@@ -49,8 +49,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Updating user...`);
+    const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Updating user...`);
     
     const userId = params.id;
     const body = await request.json();
@@ -90,8 +90,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Deleting user...`);
+    const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Deleting user...`);
     
     const userId = params.id;
     

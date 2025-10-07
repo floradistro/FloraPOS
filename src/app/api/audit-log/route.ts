@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const apiEnv = getApiEnvironmentFromRequest(request);
     const floraApiBase = 'https://api.floradistro.com';
     const FLORA_API_BASE = `${floraApiBase}/wp-json`;
-    console.log(`🔄 [${'PROD'}] Fetching audit logs...`);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching audit logs...`);
     
     const { searchParams } = new URL(request.url);
     

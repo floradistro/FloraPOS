@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const baseUrl = 'https://api.floradistro.com';
     const credentials = getApiCredentials();
     
-    console.log(`🔐 [${'PROD'}] Authenticating user: ${username}`);
+    console.log(`🔐 [${apiEnv.toUpperCase()}] Authenticating user: ${username}`);
     
     // 🔓 DEV MODE BYPASS: Allow admin/admin123 in docker/local mode
     if (apiEnv === 'docker' && username === 'admin' && password === 'admin123') {
@@ -29,8 +29,8 @@ export async function POST(request: NextRequest) {
         first_name: 'Admin',
         last_name: 'User',
         role: 'administrator',
-        location_id: '3',
-        location: 'Local Dev',
+        location_id: '20',
+        location: 'Charlotte Central',
         capabilities: {
           manage_woocommerce: true,
           edit_products: true,
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ [${'PROD'}] WordPress auth failed:`, response.status, errorText);
+      console.error(`❌ [${apiEnv.toUpperCase()}] WordPress auth failed:`, response.status, errorText);
       return NextResponse.json(
         { error: 'Invalid credentials', status: response.status },
         { status: 401 }
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
     
     const wpUser = await response.json();
-    console.log(`✅ [${'PROD'}] User authenticated:`, wpUser.name);
+    console.log(`✅ [${apiEnv.toUpperCase()}] User authenticated:`, wpUser.name);
     
     // Get employee/location assignment from Flora IM
     let locationName = 'FloraDistro';
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
       
       if (employeeResponse.ok) {
         const employeeData = await employeeResponse.json();
-        console.log(`✅ [${'PROD'}] Employee data:`, employeeData);
+        console.log(`✅ [${apiEnv.toUpperCase()}] Employee data:`, employeeData);
         
         if (employeeData.success && employeeData.employees && employeeData.employees.length > 0) {
           const primaryEmployee = employeeData.employees.find((emp: any) => emp.is_primary === '1' || emp.is_primary === 1);
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.warn(`⚠️ [${'PROD'}] Could not fetch employee location:`, error);
+      console.warn(`⚠️ [${apiEnv.toUpperCase()}] Could not fetch employee location:`, error);
     }
     
     // Build user object
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       capabilities: wpUser.capabilities || {},
     };
     
-    console.log(`✅ [${'PROD'}] Login successful for ${user.username}`);
+    console.log(`✅ [${apiEnv.toUpperCase()}] Login successful for ${user.username}`);
     
     return NextResponse.json({
       success: true,

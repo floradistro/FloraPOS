@@ -28,7 +28,7 @@ export async function GET(
       }
     });
     
-    console.log(`[${'PROD'}] Proxying WordPress request to:`, apiUrl.toString());
+    console.log(`[${apiEnv.toUpperCase()}] Proxying WordPress request to:`, apiUrl.toString());
     
     // Get Authorization header from request if present
     const authHeader = request.headers.get('Authorization');
@@ -90,7 +90,7 @@ export async function POST(
     apiUrl.searchParams.append('consumer_key', credentials.consumerKey);
     apiUrl.searchParams.append('consumer_secret', credentials.consumerSecret);
     
-    console.log(`[${'PROD'}] Proxying WordPress POST request to:`, apiUrl.toString());
+    console.log(`[${apiEnv.toUpperCase()}] Proxying WordPress POST request to:`, apiUrl.toString());
     
     // Get Authorization header from request if present
     const authHeader = request.headers.get('Authorization');

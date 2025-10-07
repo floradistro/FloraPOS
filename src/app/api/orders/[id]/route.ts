@@ -9,7 +9,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
     const woocommerceApiUrl = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Updating order...`);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Updating order...`);
     
     const body = await request.json();
     const orderId = params.id;

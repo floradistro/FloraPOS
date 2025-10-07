@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Fetching customers...`);
+    const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching customers...`);
     
     const { searchParams } = new URL(request.url);
     const bustCache = searchParams.get('_');
@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Creating customer...`);
+    const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Creating customer...`);
     
     const body = await request.json();
     
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       shipping: body.shipping || {}
     };
 
-    console.log(`📤 [${'PROD'}] Sending customer data to:`, url);
+    console.log(`📤 [${apiEnv.toUpperCase()}] Sending customer data to:`, url);
     console.log(`👤 Customer data:`, customerData);
     
     const response = await fetch(`${url}?${params.toString()}`, {
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ [${'PROD'}] WooCommerce API error:`, response.status, errorText);
+      console.error(`❌ [${apiEnv.toUpperCase()}] WooCommerce API error:`, response.status, errorText);
       let errorData;
       try {
         errorData = JSON.parse(errorText);
@@ -125,10 +125,10 @@ export async function POST(request: NextRequest) {
       display_name: `${newCustomer.first_name} ${newCustomer.last_name}`.trim() || newCustomer.username
     };
 
-    console.log(`✅ [${'PROD'}] Customer created successfully:`, newCustomer.id);
+    console.log(`✅ [${apiEnv.toUpperCase()}] Customer created successfully:`, newCustomer.id);
     return NextResponse.json(transformedUser);
   } catch (error) {
-    console.error(`❌ Failed to create customer in ${'PROD'}:`, error);
+    console.error(`❌ Failed to create customer in ${apiEnv.toUpperCase()}:`, error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create customer' },
       { status: 500 }

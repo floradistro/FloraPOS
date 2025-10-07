@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const apiEnv = getApiEnvironmentFromRequest(request);
     const floraApiBase = 'https://api.floradistro.com';
     const FLORA_API_BASE = `${floraApiBase}/wp-json`;
-    console.log(`🔄 [${'PROD'}] Processing batch adjustment...`);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Processing batch adjustment...`);
     
     const body: BatchAdjustRequest = await request.json();
     const { batch_name, batch_description, location_id, user_id, user_name, adjustments } = body;

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const apiEnv = getApiEnvironmentFromRequest(request);
 
     console.log(`\n========================================`);
-    console.log(`🔄 [${'PROD'}] BATCH PRICING for ${products.length} products`);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] BATCH PRICING for ${products.length} products`);
     console.log(`   Cache version: ${CACHE_VERSION}`);
     console.log(`========================================`);
 
@@ -56,23 +56,23 @@ export async function POST(request: NextRequest) {
         const assignment = findBlueprintAssignmentFromCache(productId, categoryIds, apiEnv);
         
         if (!assignment) {
-          console.log(`⚠️ [${'PROD'}] No assignment found for product ${productId} with categories [${categoryIds}]`);
+          console.log(`⚠️ [${apiEnv.toUpperCase()}] No assignment found for product ${productId} with categories [${categoryIds}]`);
           results[productId] = null;
           continue;
         }
 
-        console.log(`✓ [${'PROD'}] Product ${productId} → Blueprint ${assignment.blueprint_id} (${assignment.blueprint_name})`);
+        console.log(`✓ [${apiEnv.toUpperCase()}] Product ${productId} → Blueprint ${assignment.blueprint_id} (${assignment.blueprint_name})`);
 
         // Get pricing rules for the blueprint from cache
         const allPricingRules = findBlueprintRulesFromCache(assignment.blueprint_id, apiEnv);
 
         if (!allPricingRules || allPricingRules.length === 0) {
-          console.log(`⚠️ [${'PROD'}] No pricing rules for blueprint ${assignment.blueprint_id}`);
+          console.log(`⚠️ [${apiEnv.toUpperCase()}] No pricing rules for blueprint ${assignment.blueprint_id}`);
           results[productId] = null;
           continue;
         }
 
-        console.log(`✓ [${'PROD'}] Found ${allPricingRules.length} pricing rules for blueprint ${assignment.blueprint_id}`);
+        console.log(`✓ [${apiEnv.toUpperCase()}] Found ${allPricingRules.length} pricing rules for blueprint ${assignment.blueprint_id}`);
 
         // For moonwater blueprint (ID 5 local, ID 44 production), filter rules by product name to get specific pricing tier
         let relevantRules = allPricingRules;
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     const successCount = Object.values(results).filter(r => r !== null).length;
-    console.log(`✅ [${'PROD'}] Batch blueprint pricing completed: ${successCount}/${products.length} products have pricing tiers`);
+    console.log(`✅ [${apiEnv.toUpperCase()}] Batch blueprint pricing completed: ${successCount}/${products.length} products have pricing tiers`);
 
     return NextResponse.json({
       success: true,
@@ -150,11 +150,11 @@ async function loadBlueprintData(apiEnv: 'production' | 'docker') {
   // Return cached data if still valid for this environment
   if (envCache.assignments && envCache.rules && 
       envCache.lastFetch && (now - envCache.lastFetch) < CACHE_DURATION) {
-    console.log(`✅ [${'PROD'}] Using cached blueprint data (${envCache.assignments.length} assignments, ${envCache.rules.length} rules)`);
+    console.log(`✅ [${apiEnv.toUpperCase()}] Using cached blueprint data (${envCache.assignments.length} assignments, ${envCache.rules.length} rules)`);
     return;
   }
 
-  console.log(`🔄 [${'PROD'}] Loading fresh blueprint data...`);
+  console.log(`🔄 [${apiEnv.toUpperCase()}] Loading fresh blueprint data...`);
 
   try {
     // Load assignments and rules in parallel
@@ -169,9 +169,9 @@ async function loadBlueprintData(apiEnv: 'production' | 'docker') {
       lastFetch: now
     };
 
-    console.log(`✅ [${'PROD'}] Cached ${assignments.length} assignments and ${rules.length} pricing rules`);
+    console.log(`✅ [${apiEnv.toUpperCase()}] Cached ${assignments.length} assignments and ${rules.length} pricing rules`);
   } catch (error) {
-    console.error(`❌ [${'PROD'}] Error loading blueprint data:`, error);
+    console.error(`❌ [${apiEnv.toUpperCase()}] Error loading blueprint data:`, error);
     // Use existing cache if available, otherwise empty arrays
     if (!envCache.assignments) {
       blueprintCache[apiEnv] = {
@@ -188,7 +188,7 @@ async function loadBlueprintAssignments(apiEnv: 'production' | 'docker') {
   const baseUrl = apiEnv === 'docker' ? 'http://localhost:8081' : 'https://api.floradistro.com';
   const credentials = getApiCredentials();
   
-  console.log(`\n🔍 [${'PROD'}] Building blueprint assignments from category fields...`);
+  console.log(`\n🔍 [${apiEnv.toUpperCase()}] Building blueprint assignments from category fields...`);
   
   // Category IDs to check
   const categoryIds = [16, 17, 18, 19, 20]; // Concentrate, Edibles, Flower, Moonwater, Vape
@@ -264,7 +264,7 @@ async function loadBlueprintAssignments(apiEnv: 'production' | 'docker') {
     }
   }
   
-    console.log(`✅ [${'PROD'}] Built ${allAssignments.length} blueprint assignments from V2 field groups`);
+    console.log(`✅ [${apiEnv.toUpperCase()}] Built ${allAssignments.length} blueprint assignments from V2 field groups`);
   if (allAssignments.length > 0) {
     console.log(`   Sample:`, allAssignments.slice(0, 3).map((a: any) => `${a.blueprint_name} (ID ${a.blueprint_id}) → Cat ${a.category_id}`));
     console.log(`   All category 18 assignments:`, allAssignments.filter((a: any) => a.category_id === 18));
@@ -280,7 +280,7 @@ async function loadAllPricingRules(apiEnv: 'production' | 'docker') {
   // Note: Pricing rules are still in the same table, just accessed via V2 endpoint
   const url = `${baseUrl}/wp-json/fd/v2/pricing/rules?consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}&_t=${Date.now()}`;
   
-  console.log(`🔍 [${'PROD'}] Fetching pricing rules from V2 API:`, url);
+  console.log(`🔍 [${apiEnv.toUpperCase()}] Fetching pricing rules from V2 API:`, url);
   
   const response = await fetch(url, {
     method: 'GET',
@@ -292,12 +292,12 @@ async function loadAllPricingRules(apiEnv: 'production' | 'docker') {
   });
 
   if (!response.ok) {
-    console.error(`❌ [${'PROD'}] Pricing rules API error:`, response.status, response.statusText);
+    console.error(`❌ [${apiEnv.toUpperCase()}] Pricing rules API error:`, response.status, response.statusText);
     throw new Error(`Pricing rules API error: ${response.status}`);
   }
 
   const result = await response.json();
-  console.log(`📊 [${'PROD'}] Raw pricing rules response:`, {
+  console.log(`📊 [${apiEnv.toUpperCase()}] Raw pricing rules response:`, {
     isArray: Array.isArray(result),
     hasRulesProperty: 'rules' in result,
     totalCount: Array.isArray(result) ? result.length : (result.rules?.length || 0),
@@ -309,7 +309,7 @@ async function loadAllPricingRules(apiEnv: 'production' | 'docker') {
   
   // Log sample rule for debugging
   if (allRules.length > 0) {
-    console.log(`📋 [${'PROD'}] Sample rule:`, {
+    console.log(`📋 [${apiEnv.toUpperCase()}] Sample rule:`, {
       id: allRules[0].id,
       rule_name: allRules[0].rule_name,
       rule_type: allRules[0].rule_type,
@@ -328,7 +328,7 @@ async function loadAllPricingRules(apiEnv: 'production' | 'docker') {
     return isActive;
   });
 
-  console.log(`✅ [${'PROD'}] Loaded ${activeRules.length} active rules (from ${allRules.length} total)`);
+  console.log(`✅ [${apiEnv.toUpperCase()}] Loaded ${activeRules.length} active rules (from ${allRules.length} total)`);
   return activeRules;
 }
 

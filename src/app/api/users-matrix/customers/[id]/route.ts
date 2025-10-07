@@ -8,8 +8,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Fetching customer...`);
+    const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching customer...`);
     
     const customerId = params.id;
     
@@ -46,8 +46,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Updating customer...`);
+    const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Updating customer...`);
     
     const customerId = params.id;
     const body = await request.json();

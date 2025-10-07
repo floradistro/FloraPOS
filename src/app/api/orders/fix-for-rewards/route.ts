@@ -9,8 +9,8 @@ export async function POST(request: NextRequest) {
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const WOOCOMMERCE_API_URL = 'https://api.floradistro.com';
-    console.log(`🔄 [${'PROD'}] Fixing order for rewards...`);
+    const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Fixing order for rewards...`);
     
     const { orderId, customerId } = await request.json();
     
