@@ -1,3 +1,5 @@
+import { apiFetch } from '../lib/api-fetch';
+
 // Utility to check user location assignments
 export async function checkUserLocation(username: string, credentials: string) {
   
@@ -17,20 +19,6 @@ export async function checkUserLocation(username: string, credentials: string) {
     }
 
     const user = await userResponse.json();
-    console.log('👤 User found:', user.name, 'ID:', user.id);
-
-    // Get all locations first to see what's available (use proxy)
-    const locationsResponse = await apiFetch('/api/proxy/flora-im/locations', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (locationsResponse.ok) {
-      const locations = await locationsResponse.json();
-    }
 
     // Check employee assignments for this user (use proxy)
     const employeeResponse = await apiFetch(`/api/proxy/flora-im/employees?user_id=${user.id}`, {
@@ -43,7 +31,6 @@ export async function checkUserLocation(username: string, credentials: string) {
 
     if (employeeResponse.ok) {
       const employeeData = await employeeResponse.json();
-      console.log('🎯 Employee assignments for', username + ':', employeeData);
       
       if (employeeData.success && employeeData.employees?.length > 0) {
         const primaryLocation = employeeData.employees.find((emp: any) => emp.is_primary === '1' || emp.is_primary === 1);

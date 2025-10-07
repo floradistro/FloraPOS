@@ -63,12 +63,12 @@ export function useCategories() {
 export function useCustomers(searchQuery?: string) {
   return useQuery({
     queryKey: ['customers', searchQuery],
-    queryFn: () => usersService.getUsers(searchQuery),
+    queryFn: () => usersService.getUsers(searchQuery || ''),
     staleTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
     gcTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
+    refetchOnWindowFocus: isDevelopment, // Always refetch in dev
     retry: isDevelopment ? 0 : 1,
-    refetchInterval: isDevelopment ? false : 1000 * 60 * 5, // No background refetch in dev
+    refetchInterval: isDevelopment ? undefined : 1000 * 60 * 5, // No background refetch in dev
   });
 }
 
@@ -107,9 +107,9 @@ export function useOrders(filters?: {
     },
     staleTime: isDevelopment ? 0 : 1000 * 60 * 2, // No cache in dev
     gcTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
+    refetchOnWindowFocus: isDevelopment, // Always refetch in dev
     retry: isDevelopment ? 0 : 2,
-    refetchInterval: isDevelopment ? false : 1000 * 60, // No background refetch in dev
+    refetchInterval: isDevelopment ? undefined : 1000 * 60, // No background refetch in dev
   });
 }
 
@@ -137,7 +137,7 @@ export function useInventory(productId?: number, locationId?: number) {
     enabled: !!productId && !!locationId,
     staleTime: isDevelopment ? 0 : 1000 * 60 * 1, // No cache in dev
     gcTime: isDevelopment ? 0 : 1000 * 60 * 5, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
+    refetchOnWindowFocus: isDevelopment, // Always refetch in dev
     retry: isDevelopment ? 0 : 1,
   });
 }
