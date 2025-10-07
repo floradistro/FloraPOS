@@ -168,7 +168,7 @@ export function Header({
 }: HeaderProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAiToolsDropdown, setShowAiToolsDropdown] = useState(false);
-  const [apiEnvironment, setApiEnvironment] = useState<'production' | 'docker'>('production');
+  const [apiEnvironment, setApiEnvironment] = useState<'production' | 'staging' | 'docker'>('production');
   
   // Click outside handler for menu config dropdown
   useEffect(() => {

@@ -1,19 +1,20 @@
 /**
  * API Configuration Manager
- * Handles switching between Docker (local) and Production API endpoints
+ * Handles switching between Docker (local), Staging, and Production API endpoints
  */
 
-export type ApiEnvironment = 'production' | 'docker';
+export type ApiEnvironment = 'production' | 'staging' | 'docker';
 
 const STORAGE_KEY = 'flora_pos_api_environment';
 
 // URLs from environment variables - NO FALLBACKS
 const PRODUCTION_URL = process.env.NEXT_PUBLIC_PRODUCTION_API_URL!;
+const STAGING_URL = process.env.NEXT_PUBLIC_STAGING_API_URL!;
 const DOCKER_URL = process.env.NEXT_PUBLIC_DOCKER_API_URL!;
 
 // Validate required environment variables at startup
-if (!PRODUCTION_URL || !DOCKER_URL) {
-  throw new Error('❌ MISSING REQUIRED ENV VARS: NEXT_PUBLIC_PRODUCTION_API_URL and NEXT_PUBLIC_DOCKER_API_URL must be set in .env.local');
+if (!PRODUCTION_URL || !STAGING_URL || !DOCKER_URL) {
+  throw new Error('❌ MISSING REQUIRED ENV VARS: NEXT_PUBLIC_PRODUCTION_API_URL, NEXT_PUBLIC_STAGING_API_URL, and NEXT_PUBLIC_DOCKER_API_URL must be set in .env.local');
 }
 
 // API Credentials from environment variables - NO FALLBACKS
@@ -40,6 +41,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   console.log(`║ Default API: ${DEFAULT_ENV.toUpperCase().padEnd(46)} ║`);
   console.log(`║ Toggle Enabled: ${(!IS_PRODUCTION_BUILD ? 'YES' : 'NO').padEnd(44)} ║`);
   console.log(`║ Docker URL: ${DOCKER_URL.padEnd(46)} ║`);
+  console.log(`║ Staging URL: ${STAGING_URL.padEnd(44)} ║`);
   console.log(`║ Production URL: ${PRODUCTION_URL.padEnd(39)} ║`);
   console.log('╚════════════════════════════════════════════════════════════╝');
 }
@@ -65,7 +67,7 @@ export class ApiConfig {
     
     // Local development -> check localStorage toggle, default to env var
     const stored = localStorage.getItem(STORAGE_KEY);
-    return (stored === 'docker' || stored === 'production') ? stored : DEFAULT_ENV;
+    return (stored === 'docker' || stored === 'staging' || stored === 'production') ? stored : DEFAULT_ENV;
   }
 
   /**
@@ -83,7 +85,8 @@ export class ApiConfig {
     
     localStorage.setItem(STORAGE_KEY, env);
     console.log(`🔄 API Environment switched to: ${env.toUpperCase()}`);
-    console.log(`🔄 New base URL: ${env === 'docker' ? DOCKER_URL : PRODUCTION_URL}`);
+    const url = env === 'docker' ? DOCKER_URL : env === 'staging' ? STAGING_URL : PRODUCTION_URL;
+    console.log(`🔄 New base URL: ${url}`);
   }
 
   /**
@@ -91,7 +94,9 @@ export class ApiConfig {
    */
   static getBaseUrl(): string {
     const env = this.getEnvironment();
-    return env === 'docker' ? DOCKER_URL : PRODUCTION_URL;
+    if (env === 'docker') return DOCKER_URL;
+    if (env === 'staging') return STAGING_URL;
+    return PRODUCTION_URL;
   }
 
   /**
@@ -121,6 +126,13 @@ export class ApiConfig {
   }
 
   /**
+   * Check if currently using Staging API
+   */
+  static isStaging(): boolean {
+    return this.getEnvironment() === 'staging';
+  }
+
+  /**
    * Check if currently using Production API
    */
   static isProduction(): boolean {
@@ -135,6 +147,9 @@ export class ApiConfig {
     const buildInfo = IS_PRODUCTION_BUILD ? ' [LOCKED]' : '';
     if (env === 'docker') {
       return `Docker (${DOCKER_URL})${buildInfo}`;
+    }
+    if (env === 'staging') {
+      return `Staging (${STAGING_URL})${buildInfo}`;
     }
     return `Production${buildInfo}`;
   }
@@ -171,6 +186,13 @@ export class ApiConfig {
         url: DOCKER_URL,
       };
     }
+    if (env === 'staging') {
+      return {
+        color: 'yellow',
+        label: 'Staging',
+        url: STAGING_URL,
+      };
+    }
     return {
       color: 'blue',
       label: 'Production',
@@ -190,14 +212,16 @@ export class ServerApiConfig {
   static getEnvironment(headers?: Headers): ApiEnvironment {
     // Check for custom header that client can send
     const envHeader = headers?.get('x-api-environment');
-    return (envHeader === 'docker' || envHeader === 'production') ? envHeader : 'production';
+    return (envHeader === 'docker' || envHeader === 'staging' || envHeader === 'production') ? envHeader : 'production';
   }
 
   /**
    * Get the base URL for the specified environment
    */
   static getBaseUrl(env: ApiEnvironment = 'production'): string {
-    return env === 'docker' ? DOCKER_URL : PRODUCTION_URL;
+    if (env === 'docker') return DOCKER_URL;
+    if (env === 'staging') return STAGING_URL;
+    return PRODUCTION_URL;
   }
 
   /**
