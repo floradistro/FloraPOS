@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { InventoryVisibilityService } from '@/services/inventory-visibility-service';
 import { getApiEnvironmentFromRequest, getApiBaseUrl as getBaseUrl } from '@/lib/server-api-config';
 
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
+const CONSUMER_KEY = process.env.WC_CONSUMER_KEY || process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
+const CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET || process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
 
 function getApiBaseUrl(request: NextRequest): string {
   const apiEnv = getApiEnvironmentFromRequest(request);
@@ -15,6 +15,17 @@ export async function GET(
   { params }: { params: { path: string[] } }
 ) {
   try {
+    // Validate credentials first
+    if (!CONSUMER_KEY || !CONSUMER_SECRET) {
+      console.error('❌ Missing WooCommerce credentials');
+      console.error('WC_CONSUMER_KEY:', !!process.env.WC_CONSUMER_KEY);
+      console.error('NEXT_PUBLIC_WC_CONSUMER_KEY:', !!process.env.NEXT_PUBLIC_WC_CONSUMER_KEY);
+      return NextResponse.json(
+        { error: 'Missing WooCommerce API credentials. Check environment variables.' },
+        { status: 500 }
+      );
+    }
+
     const FLORA_API_BASE = getApiBaseUrl(request);
     const path = params.path.join('/');
     const searchParams = request.nextUrl.searchParams;
