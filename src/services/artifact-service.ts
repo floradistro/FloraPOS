@@ -51,6 +51,8 @@ class ArtifactService {
    */
   async saveArtifact(userId: string, artifactData: CreateArtifactData): Promise<Artifact | null> {
     try {
+      console.log('💾 artifact-service.saveArtifact called:', { userId, title: artifactData.title, language: artifactData.language });
+      
       const { data, error } = await supabase
         .from('ai_artifacts')
         .insert({
@@ -63,11 +65,16 @@ class ArtifactService {
         .single();
 
       if (error) {
-        console.error('❌ Error saving artifact:', error);
+        console.error('❌ Supabase error saving artifact:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
         return null;
       }
 
-      console.log('✅ Artifact saved:', data.id);
+      console.log('✅ Artifact saved successfully:', data.id);
       return data as Artifact;
     } catch (error) {
       console.error('❌ Exception saving artifact:', error);
