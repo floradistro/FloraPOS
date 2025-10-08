@@ -7,24 +7,34 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
 
+// Production Supabase credentials (hardcoded as fallback for edge runtime)
+const PRODUCTION_URL = 'https://nfkshvmqqgosvcwztqyq.supabase.co'
+const PRODUCTION_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ma3Nodm1xcWdvc3Zjd3p0cXlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjg4ODIsImV4cCI6MjA3MDYwNDg4Mn0.9suNxH4gFmic5e4bG-P44e_qELYCx0KZI4VCvrNC2_E'
+
 // Get environment-specific URLs
 const getSupabaseConfig = () => {
-  // Check docker/production toggle (same logic as WordPress API)
-  const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  
-  // Check localStorage toggle (if in browser)
-  let apiEnvironment = 'production';
-  if (typeof window !== 'undefined') {
-    try {
-      apiEnvironment = localStorage.getItem('flora_pos_api_environment') || 'production';
-    } catch (e) {
-      // localStorage not available
-    }
+  // Server-side/Edge Runtime: Always use production
+  if (typeof window === 'undefined') {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || PRODUCTION_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || PRODUCTION_KEY
+    console.log('🔧 Supabase [Server/Edge]: PRODUCTION')
+    console.log('✅ URL:', url)
+    return { url, anonKey: key }
   }
   
-  // Production Supabase (default)
-  const productionUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nfkshvmqqgosvcwztqyq.supabase.co'
-  const productionKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ma3Nodm1xcWdvc3Zjd3p0cXlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjg4ODIsImV4cCI6MjA3MDYwNDg4Mn0.9suNxH4gFmic5e4bG-P44e_qELYCx0KZI4VCvrNC2_E'
+  // Client-side: Check docker/production toggle
+  const isLocalhost = window.location.hostname === 'localhost'
+  
+  // Check localStorage toggle
+  let apiEnvironment = 'production';
+  try {
+    apiEnvironment = localStorage.getItem('flora_pos_api_environment') || 'production';
+  } catch (e) {
+    // localStorage not available
+  }
+  
+  const productionUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || PRODUCTION_URL
+  const productionKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || PRODUCTION_KEY
   
   // Local Supabase (when docker is active)
   const localUrl = 'http://127.0.0.1:54321'
@@ -32,13 +42,13 @@ const getSupabaseConfig = () => {
   
   // Use local ONLY if on localhost AND toggle is set to 'docker'
   if (isLocalhost && apiEnvironment === 'docker') {
-    console.log('🔧 Supabase: LOCAL DEV (Docker Mode)')
+    console.log('🔧 Supabase [Client]: LOCAL DEV (Docker Mode)')
     console.log('✅ URL:', localUrl)
     return { url: localUrl, anonKey: localKey }
   }
   
-  // Otherwise use production (even on localhost if toggle is 'production')
-  console.log('🔧 Supabase: PRODUCTION')
+  // Otherwise use production
+  console.log('🔧 Supabase [Client]: PRODUCTION')
   console.log('✅ URL:', productionUrl)
   console.log('📡 Toggle:', apiEnvironment)
   
