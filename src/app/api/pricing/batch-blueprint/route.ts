@@ -192,8 +192,10 @@ async function loadBlueprintAssignments(apiEnv: ApiEnvironment) {
   
   console.log(`\n🔍 [${apiEnv.toUpperCase()}] Building blueprint assignments from category fields...`);
   
-  // Category IDs to check
-  const categoryIds = [16, 17, 18, 19, 20]; // Concentrate, Edibles, Flower, Moonwater, Vape
+  // Category IDs to check (Production: Flower=25, Concentrate=22, Edibles=21, Vape=19, Moonwater=16)
+  const categoryIds = apiEnv === 'docker' 
+    ? [16, 17, 18, 19, 20]  // Docker: Concentrate, Edibles, Flower, Moonwater, Vape
+    : [22, 21, 25, 16, 19]; // Production: Concentrate, Edibles, Flower, Moonwater, Vape
   const allAssignments: any[] = [];
   
   for (const categoryId of categoryIds) {
