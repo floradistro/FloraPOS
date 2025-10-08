@@ -3,22 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { AICanvasRef } from './SimpleAICanvas';
 import { ArtifactLanguage } from './SimpleArtifactRenderer';
-import { apiFetch } from '@/lib/api-fetch';
+import { useAuth } from '@/contexts/AuthContext';
 
+// Updated interface for Supabase artifacts
 interface Artifact {
-  id: number;
-  user_id: number;
+  id: string; // UUID
   title: string;
-  description?: string;
-  artifact_type: string;
+  description: string | null;
+  code: string; // Changed from code_content
   language: string;
-  code_content: string;
-  status: 'draft' | 'published';
-  conversation_id?: number;
-  message_id?: number;
-  published_url?: string;
+  artifact_type: string;
+  created_by: string; // Changed from user_id
+  is_global: boolean; // Changed from status
+  tags: string[] | null;
+  view_count: number;
+  fork_count: number;
   created_at: string;
   updated_at: string;
+  published_at: string | null;
 }
 
 interface ArtifactsDropdownProps {
@@ -27,25 +29,32 @@ interface ArtifactsDropdownProps {
 }
 
 export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdownProps) {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scope, setScope] = useState<'all' | 'personal' | 'global'>('all');
 
-  // Fetch artifacts when dropdown opens
+  // Fetch artifacts when dropdown opens or scope changes
   useEffect(() => {
-    if (isOpen && artifacts.length === 0) {
+    if (isOpen) {
       fetchArtifacts();
     }
-  }, [isOpen]);
+  }, [isOpen, scope]);
 
   const fetchArtifacts = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Use apiFetch to automatically add environment header (Docker vs Production)
-      const response = await apiFetch('/api/proxy/flora-im/artifacts');
+      // Use new Supabase artifacts API
+      const userId = user?.email || 'staff@floradistro.com';
+      const url = `/api/artifacts?userId=${encodeURIComponent(userId)}&scope=${scope}`;
+      
+      console.log('📡 Fetching artifacts from Supabase:', { userId, scope });
+      
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error('Failed to fetch artifacts');
@@ -54,6 +63,7 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
       const data = await response.json();
       
       if (data.success && Array.isArray(data.artifacts)) {
+        console.log('✅ Loaded artifacts:', data.artifacts.length);
         setArtifacts(data.artifacts);
       } else {
         throw new Error('Invalid response format');
@@ -72,7 +82,7 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
       id: artifact.id,
       type: artifact.artifact_type,
       language: artifact.language,
-      codeLength: artifact.code_content.length,
+      codeLength: artifact.code.length, // Changed from code_content
       hasCanvasRef: !!canvasRef,
       hasOnViewChange: !!onViewChange
     });
@@ -85,15 +95,13 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
     onViewChange?.('ai-view');
     
     // Load artifact into canvas with retry logic
-    // We need to wait for React to mount the AICanvas after view change
     const attemptLoad = (retries = 0, maxRetries = 20) => {
-      // Use requestAnimationFrame to wait for React to finish rendering
       requestAnimationFrame(() => {
         setTimeout(() => {
           if (canvasRef?.current) {
             try {
               canvasRef.current.setArtifact(
-                artifact.code_content,
+                artifact.code, // Changed from code_content
                 artifact.language as ArtifactLanguage,
                 artifact.title,
                 false // Not streaming
@@ -105,9 +113,8 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
             attemptLoad(retries + 1, maxRetries);
           } else {
             console.error('❌ [ArtifactsDropdown] Failed to load artifact - canvas ref never became available');
-            console.error('💡 Make sure you are switching to AI view and the AICanvas component is mounting');
           }
-        }, retries === 0 ? 50 : 100); // First try sooner, then regular intervals
+        }, retries === 0 ? 50 : 100);
       });
     };
     
@@ -181,21 +188,51 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
             onClick={() => setIsOpen(false)}
           />
           <div className="absolute top-full right-0 mt-2 w-96 max-h-[500px] bg-neutral-900/95 backdrop-blur-md border border-neutral-700/50 rounded-lg shadow-2xl z-50 overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-neutral-700/50 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white" style={{ fontFamily: 'Tiempo, serif' }}>
-                Artifacts Library
-              </h3>
-              <button
-                onClick={fetchArtifacts}
-                disabled={isLoading}
-                className="p-1 rounded hover:bg-neutral-800/50 transition-colors disabled:opacity-50"
-                title="Refresh"
-              >
-                <svg className={`w-4 h-4 text-neutral-400 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
+            {/* Header with Scope Toggle */}
+            <div className="px-4 py-3 border-b border-neutral-700/50">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-white" style={{ fontFamily: 'Tiempo, serif' }}>
+                  Artifacts Library
+                </h3>
+                <button
+                  onClick={fetchArtifacts}
+                  disabled={isLoading}
+                  className="p-1 rounded hover:bg-neutral-800/50 transition-colors disabled:opacity-50"
+                  title="Refresh"
+                >
+                  <svg className={`w-4 h-4 text-neutral-400 ${isLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Scope Filter */}
+              <div className="flex gap-1 bg-neutral-800/40 rounded p-0.5">
+                <button
+                  onClick={() => setScope('all')}
+                  className={`flex-1 px-2 py-1 text-xs rounded transition ${
+                    scope === 'all' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setScope('personal')}
+                  className={`flex-1 px-2 py-1 text-xs rounded transition ${
+                    scope === 'personal' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  🔒 Personal
+                </button>
+                <button
+                  onClick={() => setScope('global')}
+                  className={`flex-1 px-2 py-1 text-xs rounded transition ${
+                    scope === 'global' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'
+                  }`}
+                >
+                  🌐 Global
+                </button>
+              </div>
             </div>
 
             {/* Content */}
@@ -273,13 +310,20 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
                             <span className="text-[10px] px-1.5 py-0.5 bg-neutral-800/60 text-neutral-400 rounded font-mono">
                               {artifact.language}
                             </span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                              artifact.status === 'published' 
-                                ? 'bg-green-900/30 text-green-400' 
-                                : 'bg-neutral-800/60 text-neutral-400'
-                            }`} style={{ fontFamily: 'Tiempo, serif' }}>
-                              {artifact.status}
-                            </span>
+                            {artifact.is_global ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/30 text-blue-400 flex items-center gap-1">
+                                🌐 Global
+                              </span>
+                            ) : (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800/60 text-neutral-400 flex items-center gap-1">
+                                🔒 Personal
+                              </span>
+                            )}
+                            {artifact.view_count > 0 && (
+                              <span className="text-[10px] text-neutral-500" title="Views">
+                                👁️ {artifact.view_count}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
