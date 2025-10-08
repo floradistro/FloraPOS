@@ -428,15 +428,17 @@ const CodeArtifactComponent: React.FC<CodeArtifactProps> = ({
             )}
           </button>
 
-          {/* Save Button - More Prominent */}
-          <SaveArtifactButton
-            code={code}
-            artifactType={language}
-            language={language}
-            title={title}
-            conversationId={conversationId}
-            messageId={messageId}
-          />
+          {/* Save to Library Button - Always Visible */}
+          {!isStreaming && (
+            <SaveArtifactButton
+              code={code}
+              artifactType={language}
+              language={language}
+              title={title}
+              conversationId={conversationId}
+              messageId={messageId}
+            />
+          )}
 
           {onClose && (
             <button

@@ -409,7 +409,7 @@ ${code}
             </button>
           </div>
 
-          {/* Save Button */}
+          {/* Save to Library Button - Always Visible */}
           <SaveArtifactButton
             code={code}
             artifactType={language}
