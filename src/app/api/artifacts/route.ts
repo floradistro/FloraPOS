@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { artifactService } from '@/services/artifact-service';
 
-export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 /**
