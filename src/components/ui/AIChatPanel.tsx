@@ -1300,7 +1300,7 @@ ${currentArtifact.code}
 
       {/* Input Area - matches app style */}
       <div className="flex-shrink-0 px-3 py-3 border-t border-white/[0.06] bg-transparent">
-        <div className="flex gap-2 items-end">
+        <div className="flex gap-2 items-center">
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
@@ -1316,23 +1316,24 @@ ${currentArtifact.code}
           <button
             onClick={isGenerating ? handleStop : handleSend}
             disabled={!isGenerating && !inputValue.trim()}
-            className={`px-4 py-2 text-sm rounded-lg transition-all duration-300 ease-out border flex-shrink-0 ${
+            className={`p-2 rounded-lg transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
               isGenerating
-                ? 'bg-transparent hover:bg-neutral-600/10 text-blue-400 hover:text-blue-300 border-blue-500/30 hover:border-blue-400/50'
+                ? 'bg-neutral-700/30 hover:bg-neutral-700/50 text-neutral-400'
                 : inputValue.trim()
-                ? 'bg-transparent hover:bg-neutral-600/10 text-neutral-300 hover:text-neutral-200 border-neutral-500/30 hover:border-neutral-400/50'
-                : 'bg-transparent text-neutral-700 border-neutral-500/10 cursor-not-allowed'
+                ? 'bg-neutral-700/30 hover:bg-neutral-700/50 text-neutral-400 hover:text-neutral-300'
+                : 'bg-transparent text-neutral-800 cursor-not-allowed'
             }`}
-            style={{ fontFamily: 'Tiempo, serif' }}
+            style={{ fontFamily: 'Tiempo, serif', minWidth: '36px', height: '36px' }}
             title={isGenerating ? 'Stop generating' : 'Send message'}
           >
             {isGenerating ? (
-              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             )}
           </button>

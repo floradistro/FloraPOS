@@ -1,8 +1,6 @@
 import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
 
 // In-memory storage for audit sessions (in production, use database)
 const auditSessions = new Map<string, AuditSession>();
@@ -41,6 +39,11 @@ interface AuditAdjustment {
 // GET - Retrieve audit sessions
 export async function GET(request: NextRequest) {
   try {
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
+
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('session_id');
     const locationId = searchParams.get('location_id');
@@ -86,6 +89,11 @@ export async function GET(request: NextRequest) {
 // POST - Create new audit session or add adjustments
 export async function POST(request: NextRequest) {
   try {
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
+
     const body = await request.json();
     const { action } = body;
 
@@ -309,6 +317,11 @@ export async function POST(request: NextRequest) {
 // DELETE - Delete a session
 export async function DELETE(request: NextRequest) {
   try {
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
+
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('session_id');
 

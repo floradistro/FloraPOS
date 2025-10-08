@@ -2,13 +2,13 @@ import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '
 import { NextRequest, NextResponse } from 'next/server';
 import { ProductMappingService } from '../../../../services/product-mapping-service';
 
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
 
 export async function POST(request: NextRequest) {
   try {
-    // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
     console.log(`🔄 [${apiEnv.toUpperCase()}] Fixing order for rewards...`);
     

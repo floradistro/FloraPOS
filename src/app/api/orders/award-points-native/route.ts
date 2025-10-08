@@ -1,8 +1,6 @@
 import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
 
 /**
  * This endpoint replicates the exact WooCommerce Points & Rewards plugin logic
@@ -10,8 +8,10 @@ const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
     console.log(`🔄 [${apiEnv.toUpperCase()}] Awarding points at ${WOOCOMMERCE_API_URL}...`);
     
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     
     if (pointsEarned <= 0) {
       // Still update the meta to mark as processed
-      await updateOrderMeta(orderId, pointsEarned, WOOCOMMERCE_API_URL);
+      await updateOrderMeta(orderId, pointsEarned, WOOCOMMERCE_API_URL, CONSUMER_KEY, CONSUMER_SECRET);
       return NextResponse.json({
         success: true,
         pointsAwarded: 0,
@@ -137,10 +137,10 @@ export async function POST(request: NextRequest) {
     }
     
     // 6. Update order meta (like the plugin does)
-    await updateOrderMeta(orderId, pointsEarned, WOOCOMMERCE_API_URL);
+    await updateOrderMeta(orderId, pointsEarned, WOOCOMMERCE_API_URL, CONSUMER_KEY, CONSUMER_SECRET);
     
     // 7. Add order note (like the plugin does)
-    await addOrderNote(orderId, `Customer earned ${pointsEarned} points for purchase.`, WOOCOMMERCE_API_URL);
+    await addOrderNote(orderId, `Customer earned ${pointsEarned} points for purchase.`, WOOCOMMERCE_API_URL, CONSUMER_KEY, CONSUMER_SECRET);
     
     return NextResponse.json({
       success: true,
@@ -212,9 +212,9 @@ async function calculatePointsForOrder(order: any, earnPointsRatio: string): Pro
 /**
  * Update order meta data
  */
-async function updateOrderMeta(orderId: number, points: number, apiUrl: string): Promise<void> {
+async function updateOrderMeta(orderId: number, points: number, apiUrl: string, consumerKey: string, consumerSecret: string): Promise<void> {
   const updateResponse = await fetch(
-    `${apiUrl}/wp-json/wc/v3/orders/${orderId}?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+    `${apiUrl}/wp-json/wc/v3/orders/${orderId}?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -239,9 +239,9 @@ async function updateOrderMeta(orderId: number, points: number, apiUrl: string):
 /**
  * Add order note
  */
-async function addOrderNote(orderId: number, note: string, apiUrl: string): Promise<void> {
+async function addOrderNote(orderId: number, note: string, apiUrl: string, consumerKey: string, consumerSecret: string): Promise<void> {
   const noteResponse = await fetch(
-    `${apiUrl}/wp-json/wc/v3/orders/${orderId}/notes?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+    `${apiUrl}/wp-json/wc/v3/orders/${orderId}/notes?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

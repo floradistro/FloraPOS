@@ -2,8 +2,6 @@ import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '
 import { NextRequest, NextResponse } from 'next/server';
 
 const FLORA_API_BASE = 'https://api.floradistro.com/wp-json';
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
 
 interface InventoryRequest {
   product_id: number;
@@ -16,6 +14,11 @@ interface InventoryRequest {
  */
 export async function POST(request: NextRequest) {
   try {
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
+
     const body = await request.json();
     const { items, location_id } = body as { 
       items: InventoryRequest[]; 

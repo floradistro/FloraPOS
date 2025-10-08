@@ -2,11 +2,14 @@ import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '
 import { NextRequest, NextResponse } from 'next/server';
 
 const FLORA_API_BASE = 'https://api.floradistro.com';
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
 
 export async function POST(request: NextRequest) {
   try {
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
+
     const { updates } = await request.json();
     
     if (!Array.isArray(updates)) {

@@ -1,13 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getApiEnvironmentFromRequest, getApiBaseUrl as getBaseUrl } from '@/lib/server-api-config';
-
-// Get credentials from environment variables
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
-
-if (!CONSUMER_KEY || !CONSUMER_SECRET) {
-  throw new Error('Missing WooCommerce credentials in environment variables');
-}
+import { getApiEnvironmentFromRequest, getApiBaseUrl as getBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 
 function getApiBaseUrl(request: NextRequest): string {
   const apiEnv = getApiEnvironmentFromRequest(request);
@@ -19,6 +11,18 @@ export async function GET(
   { params }: { params: { path: string[] } }
 ) {
   try {
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
+    
+    if (!CONSUMER_KEY || !CONSUMER_SECRET) {
+      return NextResponse.json(
+        { error: 'Missing WooCommerce credentials in environment variables' },
+        { status: 500 }
+      );
+    }
+    
     const FLORA_API_BASE = getApiBaseUrl(request);
     const path = params.path.join('/');
     const searchParams = request.nextUrl.searchParams;
@@ -81,6 +85,18 @@ export async function POST(
   { params }: { params: { path: string[] } }
 ) {
   try {
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
+    
+    if (!CONSUMER_KEY || !CONSUMER_SECRET) {
+      return NextResponse.json(
+        { error: 'Missing WooCommerce credentials in environment variables' },
+        { status: 500 }
+      );
+    }
+    
     const FLORA_API_BASE = getApiBaseUrl(request);
     const path = params.path.join('/');
     const body = await request.json();
@@ -150,6 +166,18 @@ export async function PUT(
   { params }: { params: { path: string[] } }
 ) {
   try {
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
+    
+    if (!CONSUMER_KEY || !CONSUMER_SECRET) {
+      return NextResponse.json(
+        { error: 'Missing WooCommerce credentials in environment variables' },
+        { status: 500 }
+      );
+    }
+    
     const FLORA_API_BASE = getApiBaseUrl(request);
     const path = params.path.join('/');
     const body = await request.json();

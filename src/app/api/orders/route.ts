@@ -1,14 +1,14 @@
 import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
-
 export async function GET(request: NextRequest) {
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching orders from ${WOOCOMMERCE_API_URL}...`);
     
     const { searchParams } = new URL(request.url);
@@ -207,6 +207,9 @@ export async function POST(request: NextRequest) {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     console.log(`🔄 [${apiEnv.toUpperCase()}] Creating new order at ${WOOCOMMERCE_API_URL}...`);
     
     const body = await request.json();
