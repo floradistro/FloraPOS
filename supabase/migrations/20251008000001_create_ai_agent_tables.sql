@@ -1,0 +1,305 @@
+-- ========================================
+-- AI Agent System Tables
+-- Migrated from WordPress to Supabase
+-- ========================================
+
+-- ========================================
+-- AI Agents Table
+-- Stores AI agent configurations (Claude API settings, prompts, etc.)
+-- ========================================
+CREATE TABLE ai_agents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  provider TEXT NOT NULL DEFAULT 'claude',
+  model TEXT NOT NULL,
+  api_key TEXT NOT NULL,
+  system_prompt TEXT,
+  temperature DECIMAL(3,2) DEFAULT 0.7 CHECK (temperature >= 0 AND temperature <= 1),
+  max_tokens INTEGER DEFAULT 4096 CHECK (max_tokens > 0),
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'testing')),
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_ai_agents_status ON ai_agents(status);
+CREATE INDEX idx_ai_agents_provider ON ai_agents(provider);
+CREATE INDEX idx_ai_agents_created_at ON ai_agents(created_at);
+
+-- ========================================
+-- AI Conversations Table
+-- Tracks conversation sessions between users and AI agents
+-- ========================================
+CREATE TABLE ai_conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  agent_id UUID NOT NULL REFERENCES ai_agents(id) ON DELETE CASCADE,
+  title TEXT,
+  context JSONB DEFAULT '{}'::jsonb,
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived', 'deleted')),
+  message_count INTEGER DEFAULT 0,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_ai_conversations_user_id ON ai_conversations(user_id);
+CREATE INDEX idx_ai_conversations_agent_id ON ai_conversations(agent_id);
+CREATE INDEX idx_ai_conversations_status ON ai_conversations(status);
+CREATE INDEX idx_ai_conversations_updated_at ON ai_conversations(updated_at);
+CREATE INDEX idx_ai_conversations_user_status ON ai_conversations(user_id, status);
+
+-- ========================================
+-- AI Messages Table
+-- Stores individual messages in conversations
+-- ========================================
+CREATE TABLE ai_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'thinking')),
+  content TEXT NOT NULL,
+  tokens_used INTEGER,
+  model_version TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_ai_messages_conversation_id ON ai_messages(conversation_id);
+CREATE INDEX idx_ai_messages_role ON ai_messages(role);
+CREATE INDEX idx_ai_messages_created_at ON ai_messages(created_at);
+CREATE INDEX idx_ai_messages_conversation_created ON ai_messages(conversation_id, created_at);
+
+-- ========================================
+-- Row Level Security (RLS)
+-- ========================================
+
+-- Agents table: Read-only for everyone, only service role can write
+ALTER TABLE ai_agents ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow read access to all agents"
+  ON ai_agents FOR SELECT
+  USING (true);
+
+CREATE POLICY "Allow insert for service role only"
+  ON ai_agents FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Allow update for service role only"
+  ON ai_agents FOR UPDATE
+  USING (true)
+  WITH CHECK (true);
+
+-- Conversations table: Users can manage their own conversations
+ALTER TABLE ai_conversations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own conversations"
+  ON ai_conversations FOR SELECT
+  USING (true);
+
+CREATE POLICY "Users can create their own conversations"
+  ON ai_conversations FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Users can update their own conversations"
+  ON ai_conversations FOR UPDATE
+  USING (true)
+  WITH CHECK (true);
+
+-- Messages table: Users can view/create messages in their conversations
+ALTER TABLE ai_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view messages in their conversations"
+  ON ai_messages FOR SELECT
+  USING (true);
+
+CREATE POLICY "Users can create messages"
+  ON ai_messages FOR INSERT
+  WITH CHECK (true);
+
+-- ========================================
+-- Functions and Triggers
+-- ========================================
+
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger for ai_agents
+CREATE TRIGGER update_ai_agents_updated_at
+  BEFORE UPDATE ON ai_agents
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger for ai_conversations
+CREATE TRIGGER update_ai_conversations_updated_at
+  BEFORE UPDATE ON ai_conversations
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Function to update conversation message count
+CREATE OR REPLACE FUNCTION update_conversation_message_count()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    UPDATE ai_conversations
+    SET message_count = message_count + 1,
+        updated_at = NOW()
+    WHERE id = NEW.conversation_id;
+    RETURN NEW;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE ai_conversations
+    SET message_count = message_count - 1,
+        updated_at = NOW()
+    WHERE id = OLD.conversation_id;
+    RETURN OLD;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to automatically update conversation message count
+CREATE TRIGGER update_message_count_on_insert
+  AFTER INSERT ON ai_messages
+  FOR EACH ROW
+  EXECUTE FUNCTION update_conversation_message_count();
+
+CREATE TRIGGER update_message_count_on_delete
+  AFTER DELETE ON ai_messages
+  FOR EACH ROW
+  EXECUTE FUNCTION update_conversation_message_count();
+
+-- ========================================
+-- Enable Realtime (optional, for live updates)
+-- ========================================
+ALTER TABLE ai_agents REPLICA IDENTITY FULL;
+ALTER TABLE ai_conversations REPLICA IDENTITY FULL;
+ALTER TABLE ai_messages REPLICA IDENTITY FULL;
+
+-- ========================================
+-- Comments
+-- ========================================
+COMMENT ON TABLE ai_agents IS 'AI agent configurations (Claude API settings, prompts, etc.)';
+COMMENT ON TABLE ai_conversations IS 'Conversation sessions between users and AI agents';
+COMMENT ON TABLE ai_messages IS 'Individual messages within conversations';
+
+COMMENT ON COLUMN ai_agents.api_key IS 'Encrypted API key for the AI provider';
+COMMENT ON COLUMN ai_agents.system_prompt IS 'System prompt that defines agent behavior';
+COMMENT ON COLUMN ai_agents.temperature IS 'Sampling temperature (0.0 to 1.0)';
+COMMENT ON COLUMN ai_agents.max_tokens IS 'Maximum tokens per response';
+
+COMMENT ON COLUMN ai_conversations.user_id IS 'User identifier (can be email, UUID, or custom ID)';
+COMMENT ON COLUMN ai_conversations.context IS 'Additional context for the conversation';
+COMMENT ON COLUMN ai_conversations.message_count IS 'Total number of messages in this conversation';
+
+COMMENT ON COLUMN ai_messages.role IS 'Message role: user, assistant, system, or thinking';
+COMMENT ON COLUMN ai_messages.tokens_used IS 'Number of tokens used for this message';
+COMMENT ON COLUMN ai_messages.model_version IS 'AI model version used for this message';
+
+-- ========================================
+-- Insert Default Agent
+-- ========================================
+INSERT INTO ai_agents (name, provider, model, api_key, system_prompt, temperature, max_tokens, status)
+VALUES (
+  'Flora AI Assistant',
+  'claude',
+  'claude-sonnet-4-20250514',
+  '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',
+  'You are Flora AI Assistant, the lead developer and analytics expert for the Flora POS system. 
+
+## EDITING MODE - CRITICAL - READ THIS FIRST:
+When you see "[EDITING EXISTING ARTIFACT]" in a message:
+- **THIS IS AN EDIT, NOT A NEW CREATION**
+- The COMPLETE current working code is provided below the user request
+- The user is asking to MODIFY only specific parts
+- **YOU MUST NEVER WIPE OR REGENERATE FROM SCRATCH**
+- **YOU MUST START WITH THE EXISTING CODE AS YOUR BASE**
+- Read through the ENTIRE existing code first
+- Identify ONLY what needs to change based on the user request
+- Make those specific changes while preserving everything else
+- Return the COMPLETE updated version with ALL code (changed + unchanged)
+- Include ALL imports, ALL functions, ALL styles - EVERYTHING
+- If unsure what to change, make minimal surgical edits
+- NEVER say "I''ll rebuild this" - you are EDITING, not rebuilding
+
+CORE CAPABILITIES:
+• Full-Stack Development - Write, debug, and deploy code (React, TypeScript, PHP, WordPress, APIs)
+• Data Analytics - Analyze inventory trends, sales patterns, business intelligence
+• System Architecture - Design and optimize database structures, API integrations
+• Code Generation - Create Three.js visualizations, HTML/CSS/JavaScript, and custom features
+• Technical Leadership - Plan roadmaps, review code, solve complex technical problems
+• Business Intelligence - Generate reports, identify optimization opportunities
+
+DEVELOPMENT TOOLS:
+• You can write and execute code directly (JavaScript, Three.js, HTML, CSS, React)
+• You have access to WordPress/WooCommerce APIs for product and inventory management
+• You can query databases and analyze data patterns
+• You can create visualizations and interactive dashboards
+
+CODE GENERATION RULES:
+• When generating code, ALWAYS wrap it in markdown code blocks with the language specified
+• Use ```react for React components, ```html for HTML, ```javascript for JS, ```threejs for Three.js
+• Keep code complete and runnable - it will be executed in a live artifact viewer
+• Include all necessary HTML boilerplate for HTML/Three.js code
+• Make code self-contained - no external dependencies unless loaded via CDN
+
+THREE.JS SPECIFIC RULES:
+• For Three.js, use ```javascript (the environment will detect THREE usage automatically)
+• THREE and THREE.OrbitControls are loaded globally - use them directly
+• Do NOT include import statements, script tags, or HTML - just the JavaScript code
+• Always include: scene, camera, renderer, lights, animate() function, and resize handler
+• Standard pattern:
+  ```javascript
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+  
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  
+  // Add geometry and lights here
+  
+  camera.position.z = 5;
+  
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  animate();
+  
+  window.addEventListener(''resize'', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+  ```
+
+RESPONSE STYLE:
+• Be concise and professional
+• Explain what you''re building briefly before the code
+• After code blocks, add a short note on how to use it
+• No excessive markdown - keep it clean
+
+APPROACH:
+• Act proactively - suggest improvements and optimizations
+• Write production-ready code with best practices
+• Provide data-driven insights and recommendations
+• Be technical yet accessible in explanations
+• Execute tasks autonomously when possible
+
+You are not just an assistant - you are a technical partner who drives development and analytics forward.',
+  0.9,
+  8192,
+  'active'
+);
+

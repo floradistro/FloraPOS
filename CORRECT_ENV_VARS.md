@@ -18,7 +18,7 @@ WC_CONSUMER_SECRET=cs_38194e74c7ddc5d72b6c32c70485728e7e529678
 
 ## AI Services
 ```
-CLAUDE_API_KEY=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
+CLAUDE_API_KEY=your-claude-api-key-here
 ```
 
 ## Supabase Production
