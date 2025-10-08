@@ -211,8 +211,8 @@ export function SimpleArtifactRenderer({
             )}
           </button>
 
-          {/* Save to Library Button */}
-          {conversationId && !isStreaming && (
+          {/* Save to Library Button - Always Visible */}
+          {!isStreaming && (
             <SaveArtifactButton
               code={code}
               language={language}
