@@ -63,7 +63,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, title, description, code, language, artifact_type, tags, is_global } = body;
 
+    console.log('📝 Saving artifact:', { userId, title, language, artifact_type, codeLength: code?.length });
+
     if (!userId || !title || !code || !language) {
+      console.error('❌ Missing required fields');
       return NextResponse.json(
         { success: false, error: 'Missing required fields: userId, title, code, language' },
         { status: 400 }
@@ -81,12 +84,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!artifact) {
+      console.error('❌ artifactService.saveArtifact returned null - check Supabase table exists');
       return NextResponse.json(
-        { success: false, error: 'Failed to save artifact' },
+        { success: false, error: 'Failed to save artifact - Check if ai_artifacts table exists in Supabase' },
         { status: 500 }
       );
     }
 
+    console.log('✅ Artifact saved successfully:', artifact.id);
     return NextResponse.json({ success: true, artifact });
   } catch (error) {
     console.error('❌ Error saving artifact:', error);
