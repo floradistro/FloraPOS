@@ -1368,18 +1368,6 @@ export default function HomePage() {
               </>
             )}
             
-            {ApiConfig.getEnvironment() === 'staging' && (
-              <>
-                <div 
-                  className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#FF9500]/10 text-[#FF9500] border border-[#FF9500]/30 animate-pulse"
-                  title="⚠️ Using Staging API"
-                >
-                  🚧 STAGING
-                </div>
-                <span className="text-neutral-600">•</span>
-              </>
-            )}
-            
             {ApiConfig.getEnvironment() === 'production' && (
               <>
                 <div 

@@ -37,9 +37,8 @@ export function EnvironmentToggle() {
     }
   };
 
-  const getNextEnv = () => {
-    if (env === 'docker') return 'Staging';
-    if (env === 'staging') return 'Production';
+  const getNextLabel = () => {
+    if (env === 'docker') return 'Production';
     return 'Docker';
   };
 
@@ -60,7 +59,7 @@ export function EnvironmentToggle() {
           onClick={toggle}
           className="px-3 py-1.5 text-xs bg-neutral-800 hover:bg-neutral-700 text-white rounded-md transition-colors"
         >
-          Switch to {getNextEnv()}
+          Switch to {getNextLabel()}
         </button>
       </div>
       {env === 'docker' && (
