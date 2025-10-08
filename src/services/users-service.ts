@@ -42,14 +42,14 @@ class UsersService {
 
       const data = await response.json();
       
-      // Data is already in the correct format from UsersMatrix API
-      const users: WordPressUser[] = data.map((user: any) => ({
-        id: user.id,
-        name: user.name || user.display_name,
-        username: user.username,
-        email: user.email || '',
-        roles: user.roles || [],
-        display_name: user.display_name || user.name || user.username
+      // Transform WooCommerce customer format to our user format
+      const users: WordPressUser[] = data.map((customer: any) => ({
+        id: customer.id,
+        name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.username || customer.email,
+        username: customer.username || customer.email,
+        email: customer.email || '',
+        roles: [customer.role || 'customer'],
+        display_name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.username || customer.email
       }));
 
       return users;
