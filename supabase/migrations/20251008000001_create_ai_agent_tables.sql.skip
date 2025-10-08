@@ -7,7 +7,7 @@
 -- AI Agents Table
 -- Stores AI agent configurations (Claude API settings, prompts, etc.)
 -- ========================================
-CREATE TABLE ai_agents (
+CREATE TABLE IF NOT EXISTS ai_agents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   provider TEXT NOT NULL DEFAULT 'claude',
@@ -22,16 +22,16 @@ CREATE TABLE ai_agents (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Indexes for performance
-CREATE INDEX idx_ai_agents_status ON ai_agents(status);
-CREATE INDEX idx_ai_agents_provider ON ai_agents(provider);
-CREATE INDEX idx_ai_agents_created_at ON ai_agents(created_at);
+-- Indexes for performance (skip if exists)
+CREATE INDEX IF NOT EXISTS idx_ai_agents_is_active ON ai_agents(is_active);
+CREATE INDEX IF NOT EXISTS idx_ai_agents_provider ON ai_agents(provider);
+CREATE INDEX IF NOT EXISTS idx_ai_agents_created_at ON ai_agents(created_at);
 
 -- ========================================
 -- AI Conversations Table
 -- Tracks conversation sessions between users and AI agents
 -- ========================================
-CREATE TABLE ai_conversations (
+CREATE TABLE IF NOT EXISTS ai_conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL,
   agent_id UUID NOT NULL REFERENCES ai_agents(id) ON DELETE CASCADE,
@@ -55,7 +55,7 @@ CREATE INDEX idx_ai_conversations_user_status ON ai_conversations(user_id, statu
 -- AI Messages Table
 -- Stores individual messages in conversations
 -- ========================================
-CREATE TABLE ai_messages (
+CREATE TABLE IF NOT EXISTS ai_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
   role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'thinking')),
