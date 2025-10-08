@@ -1,5 +1,16 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "functions": {
+    "src/app/api/ai/direct/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/ai/wordpress-proxy/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/ai/stream/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }
