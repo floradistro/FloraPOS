@@ -21,26 +21,36 @@ export async function POST(request: NextRequest) {
     // Start the streaming response immediately
     (async () => {
       try {
-        // Fetch agent config from Supabase with timeout
+        // Fetch agent config from Supabase with timeout and retry
         console.log('📡 Fetching agent config from Supabase...');
         
-        const agentPromise = aiAgentService.getActiveAgent();
-        const timeoutPromise = new Promise<null>((_, reject) => 
-          setTimeout(() => reject(new Error('Supabase connection timeout')), 10000)
-        );
+        let agent = null;
+        let lastError = null;
         
-        const agent = await Promise.race([agentPromise, timeoutPromise]).catch((error) => {
-          console.error('❌ Failed to fetch agent from Supabase:', error);
-          throw new Error(`Database connection error: ${error.message}. Please try again.`);
-        });
-
+        // Retry up to 2 times with 5s timeout each
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const agentPromise = aiAgentService.getActiveAgent();
+            const timeoutPromise = new Promise<null>((_, reject) => 
+              setTimeout(() => reject(new Error('Supabase timeout (5s)')), 5000)
+            );
+            
+            agent = await Promise.race([agentPromise, timeoutPromise]);
+            if (agent) break; // Success
+          } catch (error: any) {
+            lastError = error;
+            console.warn(`⚠️ Supabase fetch attempt ${attempt} failed:`, error.message);
+            if (attempt < 2) await new Promise(r => setTimeout(r, 500)); // Wait 500ms before retry
+          }
+        }
+        
         if (!agent) {
-          console.error('❌ No active agent found in Supabase');
+          console.error('❌ Failed to fetch agent after retries:', lastError);
           await writer.write(
             encoder.encode(
               `data: ${JSON.stringify({ 
                 type: 'error', 
-                error: 'No active AI agent configured. Please configure an agent in Supabase.' 
+                error: 'Unable to load AI configuration. Please refresh and try again.' 
               })}\n\n`
             )
           );
@@ -109,19 +119,18 @@ export async function POST(request: NextRequest) {
         const abortController = new AbortController();
         const connectionTimeout = setTimeout(() => {
           abortController.abort();
-          console.error('❌ Claude API connection timeout (60s)');
-        }, 60000); // 60 second connection timeout
+          console.error('❌ Claude API connection timeout (30s)');
+        }, 30000); // 30 second connection timeout
 
         let response;
         try {
-          // Make direct streaming request to Claude with retry logic
+          // Make direct streaming request to Claude
           response = await fetch(claudeEndpoint, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'x-api-key': apiKey,
               'anthropic-version': '2023-06-01',
-              'Connection': 'keep-alive',
             },
             body: JSON.stringify({
               model: agent.model,
@@ -132,8 +141,6 @@ export async function POST(request: NextRequest) {
               stream: true
             }),
             signal: abortController.signal,
-            // @ts-ignore - keepalive is supported but not in types
-            keepalive: true,
           });
 
           clearTimeout(connectionTimeout);
@@ -160,9 +167,9 @@ export async function POST(request: NextRequest) {
           
           // Handle fetch-level errors (network, timeout, etc)
           if (fetchError.name === 'AbortError') {
-            throw new Error('Connection to Claude API timed out. Please check your network connection and try again.');
+            throw new Error('Connection to Claude API timed out (30s). Please try again.');
           } else if (fetchError.message?.includes('fetch failed') || fetchError.code === 'ECONNREFUSED' || fetchError.code === 'ENOTFOUND') {
-            throw new Error('Unable to connect to Claude API. Please check your internet connection and try again.');
+            throw new Error('Network error connecting to Claude API. Please check your connection and try again.');
           } else {
             throw fetchError;
           }
@@ -182,13 +189,13 @@ export async function POST(request: NextRequest) {
         let thinkingBuffer = '';
         let contentBuffer = '';
         let lastActivity = Date.now();
-        const streamTimeout = 90000; // 90 second stream timeout
+        const streamTimeout = 45000; // 45 second stream timeout
         
         while (true) {
           // Check for stream stall
           if (Date.now() - lastActivity > streamTimeout) {
-            console.error('❌ Stream stalled - no data for 90 seconds');
-            throw new Error('Stream timeout - no response from Claude API');
+            console.error('❌ Stream stalled - no data for 45 seconds');
+            throw new Error('Stream timeout - Claude API stopped responding');
           }
 
           const { done, value } = await reader.read();
