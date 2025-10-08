@@ -57,18 +57,24 @@ const getSupabaseConfig = () => {
 
 const config = getSupabaseConfig()
 
+// Create Supabase client with minimal config for edge runtime compatibility
 export const supabase = createClient<Database>(config.url, config.anonKey, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
+    persistSession: typeof window !== 'undefined', // Only persist on client
+    autoRefreshToken: typeof window !== 'undefined',
   },
-  realtime: {
+  realtime: typeof window !== 'undefined' ? {
     params: {
       eventsPerSecond: 10,
     },
-  },
+  } : undefined,
   db: {
     schema: 'public',
+  },
+  global: {
+    headers: {
+      'x-application-name': 'flora-pos',
+    },
   },
 })
 
