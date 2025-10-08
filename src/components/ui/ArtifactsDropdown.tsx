@@ -48,11 +48,11 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
     setError(null);
     
     try {
-      // Use new Supabase artifacts API
-      const userId = user?.email || 'staff@floradistro.com';
+      // Use new Supabase artifacts API - Use username first to match save logic
+      const userId = user?.username || user?.email || 'staff@floradistro.com';
       const url = `/api/artifacts?userId=${encodeURIComponent(userId)}&scope=${scope}`;
       
-      console.log('📡 Fetching artifacts from Supabase:', { userId, scope });
+      console.log('📡 Fetching artifacts from Supabase:', { userId, scope, userObj: user });
       
       const response = await fetch(url);
       
