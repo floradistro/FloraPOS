@@ -122,28 +122,32 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
   };
 
   const getArtifactIcon = (type: string) => {
+    // Returns SVG icon component instead of emoji
+    const iconClass = "w-5 h-5";
     switch (type.toLowerCase()) {
       case 'react':
       case 'jsx':
       case 'tsx':
-        return '⚛️';
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+        );
       case 'html':
-        return '🌐';
       case 'javascript':
       case 'js':
-        return '📜';
       case 'typescript':
       case 'ts':
-        return '📘';
       case 'threejs':
       case '3d':
-        return '🎮';
       case 'css':
-        return '🎨';
       case 'svg':
-        return '🖼️';
       default:
-        return '📄';
+        return (
+          <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+        );
     }
   };
 
@@ -222,7 +226,7 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
                     scope === 'personal' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'
                   }`}
                 >
-                  🔒 Personal
+                  Personal
                 </button>
                 <button
                   onClick={() => setScope('global')}
@@ -230,7 +234,7 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
                     scope === 'global' ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white'
                   }`}
                 >
-                  🌐 Global
+                  Global
                 </button>
               </div>
             </div>
@@ -289,8 +293,8 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
                       className="w-full px-4 py-3 hover:bg-neutral-800/40 transition-colors text-left group"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="text-2xl flex-shrink-0 mt-0.5">
-                          {getArtifactIcon(artifact.artifact_type)}
+                        <div className="text-neutral-400 flex-shrink-0 mt-0.5">
+                          {getArtifactIcon(artifact.language)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-1">
@@ -311,17 +315,17 @@ export function ArtifactsDropdown({ canvasRef, onViewChange }: ArtifactsDropdown
                               {artifact.language}
                             </span>
                             {artifact.is_global ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/30 text-blue-400 flex items-center gap-1">
-                                🌐 Global
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/30 text-blue-400">
+                                Global
                               </span>
                             ) : (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800/60 text-neutral-400 flex items-center gap-1">
-                                🔒 Personal
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800/60 text-neutral-400">
+                                Personal
                               </span>
                             )}
                             {artifact.view_count > 0 && (
                               <span className="text-[10px] text-neutral-500" title="Views">
-                                👁️ {artifact.view_count}
+                                {artifact.view_count} views
                               </span>
                             )}
                           </div>
