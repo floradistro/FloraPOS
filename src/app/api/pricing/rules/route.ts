@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 
-const WC_CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const WC_CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -12,8 +9,8 @@ export async function GET(request: NextRequest) {
 
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const baseUrl = 'https://api.floradistro.com';
-    const credentials = getApiCredentials();
+    const baseUrl = getApiBaseUrl(apiEnv);
+    const credentials = getApiCredentials(apiEnv);
 
     console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching pricing rules from Flora V2 API`);
 

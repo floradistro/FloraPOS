@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials, type ApiEnvironment } from '@/lib/server-api-config';
 
-const WC_CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const WC_CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
-
-const CACHE_DURATION = 60000; // 1 minute cache
-const CACHE_VERSION = 'v14_no_duplicates'; // Increment this to bust all caches - REMOVED DUPLICATE RULES
+const CACHE_DURATION = 10000; // 10 second cache for faster updates
+const CACHE_VERSION = 'v15_fixed_credentials'; // Increment this to bust all caches - FIXED RUNTIME CREDENTIALS
 
 // Environment-specific cache for blueprint data to avoid repeated API calls
 let blueprintCache: {
@@ -191,7 +188,7 @@ async function loadBlueprintData(apiEnv: ApiEnvironment) {
 // Load blueprint assignments from category fields (V2 API)
 async function loadBlueprintAssignments(apiEnv: ApiEnvironment) {
   const baseUrl = getApiBaseUrl(apiEnv);
-  const credentials = getApiCredentials();
+  const credentials = getApiCredentials(apiEnv);
   
   console.log(`\n🔍 [${apiEnv.toUpperCase()}] Building blueprint assignments from category fields...`);
   
@@ -281,7 +278,7 @@ async function loadBlueprintAssignments(apiEnv: ApiEnvironment) {
 // Load all pricing rules once (V2 API - pricing rules table unchanged)
 async function loadAllPricingRules(apiEnv: ApiEnvironment) {
   const baseUrl = getApiBaseUrl(apiEnv);
-  const credentials = getApiCredentials();
+  const credentials = getApiCredentials(apiEnv);
   // Note: Pricing rules are still in the same table, just accessed via V2 endpoint
   const url = `${baseUrl}/wp-json/fd/v2/pricing/rules?consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}&_t=${Date.now()}`;
   
@@ -537,7 +534,7 @@ function convertRulesToGroupedTiers(rules: any[]) {
 async function getProductName(productId: number, apiEnv: ApiEnvironment): Promise<string | null> {
   try {
     const baseUrl = getApiBaseUrl(apiEnv);
-    const credentials = getApiCredentials();
+    const credentials = getApiCredentials(apiEnv);
     const response = await fetch(`${baseUrl}/wp-json/wc/v3/products/${productId}?consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}`);
     
     if (!response.ok) {
