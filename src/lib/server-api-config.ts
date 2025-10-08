@@ -59,9 +59,9 @@ export function getApiEnvironmentFromRequest(request: Request): ApiEnvironment {
  * Get base URL for the specified environment
  */
 export function getApiBaseUrl(env: ApiEnvironment = 'staging'): string {
-  if (env === 'docker') return DOCKER_URL || 'http://localhost:8080';
-  if (env === 'staging') return STAGING_URL || PRODUCTION_URL || 'https://api.floradistro.com';
-  return PRODUCTION_URL || 'https://api.floradistro.com';
+  if (env === 'docker') return DOCKER_URL;
+  if (env === 'staging') return STAGING_URL || PRODUCTION_URL;
+  return PRODUCTION_URL;
 }
 
 /**
@@ -80,13 +80,13 @@ export function getApiCredentials(env?: ApiEnvironment) {
   
   if (environment === 'staging') {
     return {
-      consumerKey: STAGING_CONSUMER_KEY || CONSUMER_KEY || 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5',
-      consumerSecret: STAGING_CONSUMER_SECRET || CONSUMER_SECRET || 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678',
+      consumerKey: STAGING_CONSUMER_KEY || CONSUMER_KEY,
+      consumerSecret: STAGING_CONSUMER_SECRET || CONSUMER_SECRET,
     };
   }
   
   return {
-    consumerKey: CONSUMER_KEY || 'ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5',
-    consumerSecret: CONSUMER_SECRET || 'cs_38194e74c7ddc5d72b6c32c70485728e7e529678',
+    consumerKey: CONSUMER_KEY,
+    consumerSecret: CONSUMER_SECRET,
   };
 }
