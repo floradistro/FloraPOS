@@ -1,6 +1,6 @@
 /**
  * API Configuration Manager
- * Handles switching between Docker (local), Staging, and Production API endpoints
+ * Handles switching between Docker (local) and Production API endpoints
  */
 
 export type ApiEnvironment = 'production' | 'docker';
@@ -14,13 +14,6 @@ const DOCKER_URL = process.env.NEXT_PUBLIC_DOCKER_API_URL || 'http://localhost:8
 // Validate required environment variables at startup
 if (!PRODUCTION_URL || !DOCKER_URL) {
   throw new Error('❌ MISSING REQUIRED ENV VARS: NEXT_PUBLIC_PRODUCTION_API_URL and NEXT_PUBLIC_DOCKER_API_URL must be set in .env.local');
-}
-
-// Log staging URL status
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  if (!process.env.NEXT_PUBLIC_STAGING_API_URL) {
-    console.warn('⚠️ NEXT_PUBLIC_STAGING_API_URL not set - using production URL for staging');
-  }
 }
 
 // API Credentials from environment variables - NO FALLBACKS
@@ -45,7 +38,6 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   console.log(`║ Default API: ${DEFAULT_ENV.toUpperCase().padEnd(46)} ║`);
   console.log(`║ Toggle Enabled: ${(!IS_PRODUCTION_BUILD ? 'YES' : 'NO').padEnd(44)} ║`);
   console.log(`║ Docker URL: ${DOCKER_URL.padEnd(46)} ║`);
-  console.log(`║ Staging URL: ${STAGING_URL.padEnd(44)} ║`);
   console.log(`║ Production URL: ${PRODUCTION_URL.padEnd(39)} ║`);
   console.log('╚════════════════════════════════════════════════════════════╝');
 }
@@ -89,7 +81,7 @@ export class ApiConfig {
     
     localStorage.setItem(STORAGE_KEY, env);
     console.log(`🔄 API Environment switched to: ${env.toUpperCase()}`);
-    const url = env === 'docker' ? DOCKER_URL : env === 'staging' ? STAGING_URL : PRODUCTION_URL;
+    const url = env === 'docker' ? DOCKER_URL : PRODUCTION_URL;
     console.log(`🔄 New base URL: ${url}`);
   }
 
