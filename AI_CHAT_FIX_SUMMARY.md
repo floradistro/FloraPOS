@@ -8,53 +8,71 @@ fetch failed
 Suggestion: Wait a moment and try again.
 ```
 
-This occurred in live production on different basic requests, indicating network/timeout issues.
+This occurred in **live production** (not local) on different basic requests, indicating Vercel-specific timeout/network issues.
 
 ## Root Cause
-The `/api/ai/direct` route (which connects to Supabase + Claude API) had:
-1. **No timeout** on Supabase agent fetch
-2. **No timeout** on Claude API connection
-3. **No stream stall detection**
-4. **Generic error messages** that didn't distinguish between different failure types
-5. **No connection keep-alive** headers
+The `/api/ai/direct` route (which connects to Supabase + Claude API) had issues specific to Vercel production:
+1. **No Vercel function timeout** configured (default 10s too short for streaming)
+2. **Long Supabase timeout** (10s) with no retry logic
+3. **Long Claude API timeout** (60s) blocking the function
+4. **Long stream stall detection** (90s) causing hung connections
+5. **No retry logic** for transient network failures
+6. **Generic error messages** that didn't help debug production issues
 
 ## Fixes Applied
 
-### 1. Supabase Connection Timeout (10 seconds)
-```typescript
-const agentPromise = aiAgentService.getActiveAgent();
-const timeoutPromise = new Promise<null>((_, reject) => 
-  setTimeout(() => reject(new Error('Supabase connection timeout')), 10000)
-);
-
-const agent = await Promise.race([agentPromise, timeoutPromise]).catch((error) => {
-  throw new Error(`Database connection error: ${error.message}. Please try again.`);
-});
+### 1. Vercel Function Timeout (60 seconds)
+Added to `vercel.json`:
+```json
+{
+  "functions": {
+    "src/app/api/ai/direct/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
 ```
 
-### 2. Claude API Connection Timeout (60 seconds)
+### 2. Supabase Connection with Retry (5s timeout, 2 attempts)
+```typescript
+// Retry up to 2 times with 5s timeout each
+for (let attempt = 1; attempt <= 2; attempt++) {
+  try {
+    const agentPromise = aiAgentService.getActiveAgent();
+    const timeoutPromise = new Promise<null>((_, reject) => 
+      setTimeout(() => reject(new Error('Supabase timeout (5s)')), 5000)
+    );
+    
+    agent = await Promise.race([agentPromise, timeoutPromise]);
+    if (agent) break; // Success
+  } catch (error: any) {
+    console.warn(`⚠️ Supabase fetch attempt ${attempt} failed`);
+    if (attempt < 2) await new Promise(r => setTimeout(r, 500)); // Wait before retry
+  }
+}
+```
+
+### 3. Claude API Connection Timeout (30 seconds)
 ```typescript
 const abortController = new AbortController();
 const connectionTimeout = setTimeout(() => {
   abortController.abort();
-  console.error('❌ Claude API connection timeout (60s)');
-}, 60000);
+}, 30000); // 30s (reduced from 60s)
 
 const response = await fetch(claudeEndpoint, {
-  ...
   signal: abortController.signal,
-  keepalive: true,
+  ...
 });
 ```
 
-### 3. Stream Stall Detection (90 seconds)
+### 4. Stream Stall Detection (45 seconds)
 ```typescript
 let lastActivity = Date.now();
-const streamTimeout = 90000;
+const streamTimeout = 45000; // 45s (reduced from 90s)
 
 while (true) {
   if (Date.now() - lastActivity > streamTimeout) {
-    throw new Error('Stream timeout - no response from Claude API');
+    throw new Error('Stream timeout - Claude API stopped responding');
   }
   
   const { done, value } = await reader.read();
@@ -63,7 +81,7 @@ while (true) {
 }
 ```
 
-### 4. Specific Error Messages
+### 5. Specific Error Messages
 Now distinguishes between:
 - **Network failures**: "Unable to connect to Claude API. Please check your internet connection"
 - **Rate limits**: "Claude API rate limit exceeded. Please wait a moment"
@@ -72,14 +90,6 @@ Now distinguishes between:
 - **Database errors**: "Database connection error"
 - **Invalid API key**: "Invalid Claude API key"
 
-### 5. Connection Keep-Alive
-```typescript
-headers: {
-  'Connection': 'keep-alive',
-  ...
-}
-keepalive: true
-```
 
 ## Testing
 
@@ -128,12 +138,39 @@ git diff HEAD~1 src/app/api/ai/direct/route.ts
 ```
 
 ## Files Modified
-- `/src/app/api/ai/direct/route.ts` - Added timeouts, better errors, keep-alive
+- `/src/app/api/ai/direct/route.ts` - Reduced timeouts, added retry logic, better errors
+- `/vercel.json` - Added maxDuration: 60s for AI endpoints
+
+## Key Changes from First Fix
+
+**First Fix** (worked locally, not in production):
+- Long timeouts (60s Claude, 90s stream)
+- No retry logic
+- No Vercel function timeout config
+
+**Second Fix** (optimized for production):
+- ✅ Shorter timeouts (30s Claude, 45s stream) for faster failure detection
+- ✅ Retry logic for Supabase (2 attempts × 5s)
+- ✅ Vercel function timeout: 60s
+- ✅ Better error messages for debugging
+
+## Why It Failed in Production
+
+Local works fine because:
+- No Vercel function timeout limits
+- No cold start delays
+- Reliable local network to Supabase/Claude
+
+Production failed because:
+- Vercel default 10s timeout too short
+- Network latency to Supabase/Claude APIs
+- Long timeouts caused hung connections
+- No retry logic for transient failures
 
 ## Next Steps
-1. ✅ Deploy to production
-2. Monitor error rates in Vercel logs
-3. Check if "fetch failed" errors decrease
-4. If persists, check Supabase connection pool settings
-5. Consider adding retry logic with exponential backoff
+1. ✅ Deployed to production (commit af3519c)
+2. Wait 2-3 minutes for Vercel deployment
+3. Test on live production site
+4. Monitor Vercel logs for timeout/error patterns
+5. If still issues, may need to cache agent config
 
