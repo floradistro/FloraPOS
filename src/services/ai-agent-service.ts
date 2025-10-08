@@ -39,13 +39,13 @@ export type AIConversation = {
   id: string;
   user_id: string;
   agent_id: string;
-  title?: string;
-  context?: any;
+  title: string | null;
+  context: any;
   status: string;
   message_count: number;
-  metadata?: any;
-  created_at?: string;
-  updated_at?: string;
+  metadata: any;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 export type AIMessage = {
@@ -53,11 +53,16 @@ export type AIMessage = {
   conversation_id: string;
   role: string;
   content: string;
-  tokens_used?: number;
-  model_version?: string;
-  metadata?: any;
-  created_at?: string;
+  tokens_used: number | null;
+  model_version: string | null;
+  metadata: any;
+  created_at: string | null;
 };
+
+// Insert/Update types
+export type CreateConversationData = Partial<AIConversation>;
+export type UpdateConversationData = Partial<AIConversation>;
+export type CreateMessageData = Partial<AIMessage>;
 
 /**
  * AI Agent Service Class
@@ -169,7 +174,7 @@ class AIAgentService {
   async createAgent(agentData: any): Promise<AIAgent | null> {
     try {
       // Adapt data to existing schema
-      const supabaseData = {
+      const supabaseData: any = {
         name: agentData.name,
         provider: 'openai', // Schema constraint
         model: agentData.model,
@@ -188,7 +193,7 @@ class AIAgentService {
 
       const { data, error } = await supabase
         .from('ai_agents')
-        .insert(supabaseData)
+        .insert(supabaseData as any)
         .select()
         .single();
 
@@ -432,7 +437,7 @@ class AIAgentService {
     try {
       const { data, error } = await supabase
         .from('ai_messages')
-        .insert(messageData)
+        .insert(messageData as any)
         .select()
         .single();
 
