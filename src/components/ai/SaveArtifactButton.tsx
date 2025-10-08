@@ -113,12 +113,13 @@ export function SaveArtifactButton({
       <button
         onClick={handleSaveClick}
         disabled={isSaving}
-        className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        title="💾 Save to Library"
+        className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium"
+        title="Save to Your Library"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
         </svg>
+        <span>Save</span>
       </button>
 
       {/* Save Modal */}
