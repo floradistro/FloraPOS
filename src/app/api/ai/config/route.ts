@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { aiAgentService } from '@/services/ai-agent-service';
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 /**
  * Agent Configuration API
@@ -9,13 +10,18 @@ export const runtime = 'edge';
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('📡 Fetching active agent from Supabase...');
+    console.log('📡 [/api/ai/config] Fetching active agent from Supabase...');
+    console.log('📡 [/api/ai/config] Environment:', {
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...',
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      hasClaudeKey: !!process.env.CLAUDE_API_KEY,
+    });
 
     // Fetch agent from Supabase
     const agent = await aiAgentService.getActiveAgent();
 
     if (!agent) {
-      console.error('❌ No active agent found in Supabase');
+      console.error('❌ [/api/ai/config] No active agent found in Supabase');
       throw new Error('No active agent found');
     }
     
