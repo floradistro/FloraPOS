@@ -34,6 +34,139 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_agents: {
+        Row: {
+          id: string
+          name: string
+          provider: string
+          model: string
+          api_key: string
+          system_prompt: string | null
+          temperature: number
+          max_tokens: number
+          status: string
+          metadata: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          provider?: string
+          model: string
+          api_key: string
+          system_prompt?: string | null
+          temperature?: number
+          max_tokens?: number
+          status?: string
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          provider?: string
+          model?: string
+          api_key?: string
+          system_prompt?: string | null
+          temperature?: number
+          max_tokens?: number
+          status?: string
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ai_conversations: {
+        Row: {
+          id: string
+          user_id: string
+          agent_id: string
+          title: string | null
+          context: Json | null
+          status: string
+          message_count: number
+          metadata: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          agent_id: string
+          title?: string | null
+          context?: Json | null
+          status?: string
+          message_count?: number
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          agent_id?: string
+          title?: string | null
+          context?: Json | null
+          status?: string
+          message_count?: number
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      ai_messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          role: string
+          content: string
+          tokens_used: number | null
+          model_version: string | null
+          metadata: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          role: string
+          content: string
+          tokens_used?: number | null
+          model_version?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          role?: string
+          content?: string
+          tokens_used?: number | null
+          model_version?: string | null
+          metadata?: Json | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       tv_command_log: {
         Row: {
           command_type: string

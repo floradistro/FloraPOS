@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { requestCache } from '@/lib/request-cache';
+import { aiAgentService } from '@/services/ai-agent-service';
 
 export const runtime = 'edge';
 
@@ -8,8 +9,7 @@ export const runtime = 'edge';
  * Handles tool chaining by calling Claude directly from Next.js
  * and executing tools via WordPress API
  * 
- * This bypasses Docker WordPress SSL issues by having Next.js
- * communicate with Claude API directly
+ * Agent config from Supabase, tools from WordPress
  */
 export async function POST(request: NextRequest) {
   try {
@@ -29,38 +29,35 @@ export async function POST(request: NextRequest) {
     // Start streaming response
     (async () => {
       try {
-        // Step 1: Fetch agent config from WordPress
-        const apiEnv = request.headers.get('x-api-environment') || 'docker';
-        const wpBaseUrl = apiEnv === 'docker' 
-          ? 'http://localhost:8081' 
-          : process.env.NEXT_PUBLIC_PRODUCTION_API_URL;
-
-
+        // Step 1: Fetch agent config from Supabase
+        console.log('📡 Fetching agent config from Supabase...');
+        
         // Use cache for agent config (5 min TTL)
-        const agentData = await requestCache.get(
-          `agent-config-${apiEnv}`,
+        const agentConfig = await requestCache.get(
+          'agent-config-supabase',
           async () => {
-            const response = await fetch(`${wpBaseUrl}/wp-json/flora-im/v1/ai/agents/active`, {
-              headers: { 'Content-Type': 'application/json' },
-            });
-            if (!response.ok) {
-              throw new Error(`Failed to fetch agent config: ${response.status}`);
+            const agent = await aiAgentService.getActiveAgent();
+            if (!agent) {
+              throw new Error('No active agent found in Supabase');
             }
-            return await response.json();
+            return agent;
           },
           5 * 60 * 1000 // 5 minutes
         );
 
-        // WordPress wraps response in {success, agent}
-        const agentConfig = agentData.agent || agentData;
-
-        console.log('✅ Agent config loaded:', {
+        console.log('✅ Agent config loaded from Supabase:', {
+          name: agentConfig.name,
           model: agentConfig.model,
           temperature: agentConfig.temperature,
           max_tokens: agentConfig.max_tokens,
         });
 
         // Step 2: Fetch available tools from WordPress (cached 5 min)
+        const apiEnv = request.headers.get('x-api-environment') || 'docker';
+        const wpBaseUrl = apiEnv === 'docker' 
+          ? 'http://localhost:8081' 
+          : process.env.NEXT_PUBLIC_PRODUCTION_API_URL;
+
         const toolsData = await requestCache.get(
           `tools-${apiEnv}`,
           async () => {
@@ -76,15 +73,15 @@ export async function POST(request: NextRequest) {
         );
 
         const tools = toolsData.tools || [];
-        console.log('✅ Tools loaded:', tools.length, 'tools available');
+        console.log('✅ Tools loaded from WordPress:', tools.length, 'tools available');
 
-        // Step 3: Get Claude API key
-        const claudeApiKey = process.env.CLAUDE_API_KEY;
+        // Step 3: Get Claude API key from agent config
+        const claudeApiKey = agentConfig.api_key;
         if (!claudeApiKey) {
-          throw new Error('CLAUDE_API_KEY not configured');
+          throw new Error('Agent has no API key configured');
         }
 
-        // Step 4: Build messages for Claude with location context
+        // Step 4: Build messages for Claude with location context and system prompt from agent
         let enhancedMessage = message;
         
         // If user has a location, add context to the message
