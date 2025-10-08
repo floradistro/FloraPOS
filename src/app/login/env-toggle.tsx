@@ -17,29 +17,20 @@ export function EnvironmentToggle() {
 
   const toggle = () => {
     // Cycle: docker -> production -> docker
-    let newEnv: ApiEnvironment;
-    if (env === 'docker') {
-      newEnv = 'production';
-    } else {
-      newEnv = 'docker';
-    }
-    
+    const newEnv: ApiEnvironment = env === 'docker' ? 'production' : 'docker';
     localStorage.setItem('flora_pos_api_environment', newEnv);
     setEnv(newEnv);
   };
 
   const getEnvDisplay = () => {
-    switch (env) {
-      case 'docker':
-        return { icon: '🐳', label: 'Docker (localhost:8080)', color: 'text-orange-400' };
-      case 'production':
-        return { icon: '☁️', label: 'Production', color: 'text-blue-400' };
+    if (env === 'docker') {
+      return { icon: '🐳', label: 'Docker (localhost:8080)', color: 'text-orange-400' };
     }
+    return { icon: '☁️', label: 'Production', color: 'text-blue-400' };
   };
 
   const getNextLabel = () => {
-    if (env === 'docker') return 'Production';
-    return 'Docker';
+    return env === 'docker' ? 'Production' : 'Docker';
   };
 
   const display = getEnvDisplay();
@@ -70,4 +61,3 @@ export function EnvironmentToggle() {
     </div>
   );
 }
-
