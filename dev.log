@@ -1,0 +1,120 @@
+
+> posv1@0.1.0 dev
+> bash scripts/enforce-port-3000.sh && PORT=3000 next dev -p 3000
+
+🔒 Enforcing single port policy - ONLY port 3000 allowed
+❌ Killing process on port 5000 (PID: 84034)
+⚠️  Port 3000 is already in use. Checking if it's our app...
+❌ Port 3000 is being used by: /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/140.0.7339.134/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper (PID: 82852)
+🔒 Killing non-Node process on port 3000
+🎯 Port enforcement complete - Only port 3000 is allowed for Flora POS
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ⚠ Disabling SWC Minifer will not be an option in the next major version. Please report any issues you may be experiencing to https://github.com/vercel/next.js/issues
+🔒 Port policy enforced - only port 3000 allowed
+🔒 Port policy enforced - only port 3000 allowed
+🔒 Port policy enforced - only port 3000 allowed
+ ✓ Ready in 1287ms
+ ⚠ Your project has `@next/font` installed as a dependency, please use the built-in `next/font` instead. The `@next/font` package will be removed in Next.js 14. You can migrate by running `npx @next/codemod@latest built-in-next-font .`. Read more: https://nextjs.org/docs/messages/built-in-next-font
+ ✓ Compiled / in 299ms (54 modules)
+ ✓ Compiled in 1990ms (1082 modules)
+
+========================================
+🔄 [PRODUCTION] BATCH PRICING for 1 products
+   Cache version: v15_fixed_credentials
+========================================
+🔄 [PRODUCTION] Loading fresh blueprint data...
+
+🔍 [PRODUCTION] Building blueprint assignments from category fields...
+🔍 [PRODUCTION] Fetching pricing rules from V2 API: https://api.floradistro.com/wp-json/fd/v2/pricing/rules?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&_t=1759889223379
+🔧 Supabase env: local
+🔧 NEXT_PUBLIC_SUPABASE_URL_LOCAL: undefined
+🔧 NEXT_PUBLIC_SUPABASE_ANON_KEY_LOCAL: undefined...
+✅ Using Supabase URL: http://127.0.0.1:54321
+🔑 Using REAL JWT token (first 30 chars): eyJhbGciOiJIUzI1NiIsInR5cCI6Ik...
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 2600ms
+ ✓ Compiled in 494ms (1082 modules)
+❌ [PRODUCTION] Pricing rules API error: 404 Not Found
+❌ [PRODUCTION] Error loading blueprint data: Error: Pricing rules API error: 404
+    at loadAllPricingRules (webpack-internal:///(rsc)/./src/app/api/pricing/batch-blueprint/route.ts:261:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Promise.all (index 1)
+    at async loadBlueprintData (webpack-internal:///(rsc)/./src/app/api/pricing/batch-blueprint/route.ts:129:38)
+    at async POST (webpack-internal:///(rsc)/./src/app/api/pricing/batch-blueprint/route.ts:34:9)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:55038
+    at async ek.execute (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:45808)
+    at async ek.handle (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/compiled/next-server/app-route.runtime.dev.js:6:56292)
+    at async doRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1377:42)
+    at async cacheEntry.responseCache.get.routeKind (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1599:28)
+    at async DevServer.renderToResponseWithComponentsImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1507:28)
+    at async DevServer.renderPageComponent (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1931:24)
+    at async DevServer.renderToResponseImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:1969:32)
+    at async DevServer.pipeImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/base-server.js:816:17)
+    at async /Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:174:21)
+    at async handleRequest (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:353:24)
+    at async requestHandlerImpl (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/router-server.js:377:13)
+    at async Server.requestListener (/Users/whale/Desktop/FloraPOS-main/node_modules/next/dist/server/lib/start-server.js:141:13)
+   🔍 Finding assignment for product 7854 with categories [25]
+   📚 Available assignments: 0
+   🔍 Checking 0 category assignments
+   ❌ No assignment found for category 25
+   ❌ No assignment found for product 7854
+⚠️ [PRODUCTION] No assignment found for product 7854 with categories [25]
+✅ [PRODUCTION] Batch blueprint pricing completed: 0/1 products have pricing tiers
+ POST /api/pricing/batch-blueprint 200 in 2919ms
+   ❌ Category 22 API returned status: 404
+   ❌ Category 21 API returned status: 404
+   ❌ Category 25 API returned status: 404
+   ❌ Category 16 API returned status: 404
+   ❌ Category 19 API returned status: 404
+✅ [PRODUCTION] Built 0 blueprint assignments from V2 field groups
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 20ms
+ ✓ Compiled /api/proxy/flora-im/[...path] in 207ms (978 modules)
+ ✓ Compiled (980 modules)
+Proxying Flora-IM request to: https://api.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759889225214&_nocache=true
+Proxying Flora-IM request to: https://api.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759889225215&location_id=20&_nocache=true
+Proxying Flora-IM request to: https://api.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759889225216&include_zero_stock=true&location_id=20&_nocache=true
+Proxying Flora-IM request to: https://api.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759889225217&location_id=20&_nocache=true
+ GET /api/users-matrix/users?_=1759889224679 404 in 493ms
+ GET /api/users-matrix/users?_=1759889224696 404 in 487ms
+Flora-IM API error: 404 Not Found
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=1759889224691&include_zero_stock=true&location_id=20 404 in 645ms
+Flora-IM API error: 404 Not Found
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866297&location_id=20 404 in 646ms
+Flora-IM API error: 404 Not Found
+ GET /api/proxy/flora-im/products?per_page=1000&page=1 404 in 655ms
+Flora-IM API error: 404 Not Found
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866297&location_id=20 404 in 656ms
+Proxying Flora-IM request to: https://api.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759889225392&_nocache=true
+Flora-IM API error: 404 Not Found
+ GET /api/proxy/flora-im/products?per_page=1000&page=1 404 in 47ms
+Proxying Flora-IM request to: https://api.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759889244151&location_id=20&_nocache=true
+Flora-IM API error: 404 Not Found
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866297&location_id=20 404 in 168ms
+Proxying Flora-IM request to: https://api.floradistro.com/wp-json/flora-im/v1/products?consumer_key=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5&consumer_secret=cs_38194e74c7ddc5d72b6c32c70485728e7e529678&per_page=1000&page=1&_t=1759889244881&location_id=20&_nocache=true
+Flora-IM API error: 404 Not Found
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866297&location_id=20 404 in 43ms
+ ✓ Compiled in 408ms (2027 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ✓ Compiled /api/proxy/flora-im/[...path] in 137ms (976 modules)
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866297&location_id=20 404 in 493ms
+ GET /api/proxy/flora-im/products?per_page=1000&page=1&_t=5866297&location_id=20 404 in 138ms

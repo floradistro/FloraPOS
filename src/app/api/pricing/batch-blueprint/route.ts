@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials, type ApiEnvironment } from '@/lib/server-api-config';
 
 const CACHE_DURATION = 10000; // 10 second cache for faster updates
-const CACHE_VERSION = 'v15_fixed_credentials'; // Increment this to bust all caches - FIXED RUNTIME CREDENTIALS
+const CACHE_VERSION = 'v16_production_categories'; // Increment this to bust all caches - PRODUCTION CATEGORY IDS
 
 // Environment-specific cache for blueprint data to avoid repeated API calls
 let blueprintCache: {
