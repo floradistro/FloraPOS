@@ -123,8 +123,8 @@ export async function POST(request: NextRequest) {
             },
             body: JSON.stringify({
               model: agentConfig.model || 'claude-sonnet-4-20250514',
-              max_tokens: parseInt(agentConfig.max_tokens) || 8192,
-              temperature: parseFloat(agentConfig.temperature) || 0.9,
+              max_tokens: typeof agentConfig.max_tokens === 'number' ? agentConfig.max_tokens : parseInt(agentConfig.max_tokens) || 8192,
+              temperature: typeof agentConfig.temperature === 'number' ? agentConfig.temperature : parseFloat(agentConfig.temperature) || 0.9,
               system: agentConfig.system_prompt || 'You are a helpful AI assistant.',
               messages: messages,
               tools: tools,
