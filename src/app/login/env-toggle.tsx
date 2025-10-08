@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-type ApiEnvironment = 'docker' | 'staging' | 'production';
+type ApiEnvironment = 'docker' | 'production';
 
 export function EnvironmentToggle() {
   const [env, setEnv] = useState<ApiEnvironment>('production');
@@ -16,11 +16,9 @@ export function EnvironmentToggle() {
   }, []);
 
   const toggle = () => {
-    // Cycle: docker -> staging -> production -> docker
+    // Cycle: docker -> production -> docker
     let newEnv: ApiEnvironment;
     if (env === 'docker') {
-      newEnv = 'staging';
-    } else if (env === 'staging') {
       newEnv = 'production';
     } else {
       newEnv = 'docker';
