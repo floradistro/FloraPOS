@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { artifactService } from '@/services/artifact-service';
 
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/artifacts
@@ -15,15 +16,19 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const tag = searchParams.get('tag');
 
+    console.log('📡 GET /api/artifacts:', { userId, scope, search, tag });
+
     // Search
     if (search) {
       const artifacts = await artifactService.searchArtifacts(search, userId || undefined);
+      console.log('✅ Search results:', artifacts.length);
       return NextResponse.json({ success: true, artifacts });
     }
 
     // By tag
     if (tag) {
       const artifacts = await artifactService.getArtifactsByTag(tag);
+      console.log('✅ Tag results:', artifacts.length);
       return NextResponse.json({ success: true, artifacts });
     }
 
@@ -31,24 +36,29 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       // No user, return only global
       const artifacts = await artifactService.getGlobalArtifacts();
+      console.log('✅ Global artifacts (no user):', artifacts.length);
       return NextResponse.json({ success: true, artifacts });
     }
 
     if (scope === 'personal') {
       const artifacts = await artifactService.getPersonalArtifacts(userId);
+      console.log('✅ Personal artifacts:', artifacts.length);
       return NextResponse.json({ success: true, artifacts });
     } else if (scope === 'global') {
       const artifacts = await artifactService.getGlobalArtifacts();
+      console.log('✅ Global artifacts:', artifacts.length);
       return NextResponse.json({ success: true, artifacts });
     } else {
       // Default: all (personal + global)
       const artifacts = await artifactService.getUserArtifacts(userId);
+      console.log('✅ All artifacts for user:', artifacts.length);
       return NextResponse.json({ success: true, artifacts });
     }
   } catch (error) {
     console.error('❌ Error fetching artifacts:', error);
+    console.error('❌ Stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error', details: String(error) },
       { status: 500 }
     );
   }
