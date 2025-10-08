@@ -3,15 +3,13 @@
  * Handles switching between Docker (local), Staging, and Production API endpoints
  */
 
-export type ApiEnvironment = 'production' | 'staging' | 'docker';
+export type ApiEnvironment = 'production' | 'docker';
 
 const STORAGE_KEY = 'flora_pos_api_environment';
 
 // URLs from environment variables
-const PRODUCTION_URL = process.env.NEXT_PUBLIC_PRODUCTION_API_URL!;
-const DOCKER_URL = process.env.NEXT_PUBLIC_DOCKER_API_URL!;
-// Staging URL is optional - defaults to production if not set
-const STAGING_URL = process.env.NEXT_PUBLIC_STAGING_API_URL || PRODUCTION_URL;
+const PRODUCTION_URL = process.env.NEXT_PUBLIC_PRODUCTION_API_URL || 'https://api.floradistro.com';
+const DOCKER_URL = process.env.NEXT_PUBLIC_DOCKER_API_URL || 'http://localhost:8080';
 
 // Validate required environment variables at startup
 if (!PRODUCTION_URL || !DOCKER_URL) {
@@ -33,10 +31,8 @@ if (!CONSUMER_KEY || !CONSUMER_SECRET) {
   throw new Error('❌ MISSING REQUIRED ENV VARS: NEXT_PUBLIC_WC_CONSUMER_KEY and NEXT_PUBLIC_WC_CONSUMER_SECRET must be set in .env.local');
 }
 
-// Get default environment from build-time environment variable - NO FALLBACK
-const DEFAULT_ENV = process.env.NEXT_PUBLIC_API_ENVIRONMENT as ApiEnvironment || (() => {
-  throw new Error('❌ MISSING REQUIRED ENV VAR: NEXT_PUBLIC_API_ENVIRONMENT must be set in .env.local');
-})();
+// Get default environment from build-time environment variable
+const DEFAULT_ENV = process.env.NEXT_PUBLIC_API_ENVIRONMENT as ApiEnvironment || 'production';
 const BUILD_ENV = process.env.NEXT_PUBLIC_ENVIRONMENT || 'local';
 const IS_PRODUCTION_BUILD = BUILD_ENV === 'production';
 
@@ -75,7 +71,7 @@ export class ApiConfig {
     
     // Local development -> check localStorage toggle, default to env var
     const stored = localStorage.getItem(STORAGE_KEY);
-    return (stored === 'docker' || stored === 'staging' || stored === 'production') ? stored : DEFAULT_ENV;
+    return (stored === 'docker' || stored === 'production') ? stored : DEFAULT_ENV;
   }
 
   /**
@@ -103,7 +99,6 @@ export class ApiConfig {
   static getBaseUrl(): string {
     const env = this.getEnvironment();
     if (env === 'docker') return DOCKER_URL;
-    if (env === 'staging') return STAGING_URL;
     return PRODUCTION_URL;
   }
 
@@ -134,13 +129,6 @@ export class ApiConfig {
   }
 
   /**
-   * Check if currently using Staging API
-   */
-  static isStaging(): boolean {
-    return this.getEnvironment() === 'staging';
-  }
-
-  /**
    * Check if currently using Production API
    */
   static isProduction(): boolean {
@@ -155,9 +143,6 @@ export class ApiConfig {
     const buildInfo = IS_PRODUCTION_BUILD ? ' [LOCKED]' : '';
     if (env === 'docker') {
       return `Docker (${DOCKER_URL})${buildInfo}`;
-    }
-    if (env === 'staging') {
-      return `Staging (${STAGING_URL})${buildInfo}`;
     }
     return `Production${buildInfo}`;
   }
@@ -194,13 +179,6 @@ export class ApiConfig {
         url: DOCKER_URL,
       };
     }
-    if (env === 'staging') {
-      return {
-        color: 'yellow',
-        label: 'Staging',
-        url: STAGING_URL,
-      };
-    }
     return {
       color: 'blue',
       label: 'Production',
@@ -220,7 +198,7 @@ export class ServerApiConfig {
   static getEnvironment(headers?: Headers): ApiEnvironment {
     // Check for custom header that client can send
     const envHeader = headers?.get('x-api-environment');
-    return (envHeader === 'docker' || envHeader === 'staging' || envHeader === 'production') ? envHeader : 'production';
+    return (envHeader === 'docker' || envHeader === 'production') ? envHeader : 'production';
   }
 
   /**
@@ -228,7 +206,6 @@ export class ServerApiConfig {
    */
   static getBaseUrl(env: ApiEnvironment = 'production'): string {
     if (env === 'docker') return DOCKER_URL;
-    if (env === 'staging') return STAGING_URL;
     return PRODUCTION_URL;
   }
 
