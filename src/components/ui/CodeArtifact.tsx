@@ -350,18 +350,6 @@ const CodeArtifactComponent: React.FC<CodeArtifactProps> = ({
     }
   };
 
-  const downloadCode = () => {
-    const blob = new Blob([code], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `artifact.${language === 'typescript' ? 'tsx' : language}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
   };

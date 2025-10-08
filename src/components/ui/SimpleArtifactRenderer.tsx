@@ -138,17 +138,6 @@ export function SimpleArtifactRenderer({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
-    const ext = language === 'react' || language === 'jsx' ? 'jsx' : 
-                language === 'typescript' ? 'tsx' : language;
-    const blob = new Blob([code], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `artifact.${ext}`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <div className="h-full w-full flex flex-col bg-neutral-900 rounded-lg border border-neutral-800 overflow-hidden">
@@ -222,16 +211,7 @@ export function SimpleArtifactRenderer({
             )}
           </button>
 
-          <button
-            onClick={handleDownload}
-            className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded transition"
-            title="Download"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-          </button>
-
+          {/* Save to Library Button */}
           {conversationId && !isStreaming && (
             <SaveArtifactButton
               code={code}
