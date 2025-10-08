@@ -21,9 +21,18 @@ export async function POST(request: NextRequest) {
     // Start the streaming response immediately
     (async () => {
       try {
-        // Fetch agent config from Supabase
+        // Fetch agent config from Supabase with timeout
         console.log('📡 Fetching agent config from Supabase...');
-        const agent = await aiAgentService.getActiveAgent();
+        
+        const agentPromise = aiAgentService.getActiveAgent();
+        const timeoutPromise = new Promise<null>((_, reject) => 
+          setTimeout(() => reject(new Error('Supabase connection timeout')), 10000)
+        );
+        
+        const agent = await Promise.race([agentPromise, timeoutPromise]).catch((error) => {
+          console.error('❌ Failed to fetch agent from Supabase:', error);
+          throw new Error(`Database connection error: ${error.message}. Please try again.`);
+        });
 
         if (!agent) {
           console.error('❌ No active agent found in Supabase');
@@ -96,27 +105,67 @@ export async function POST(request: NextRequest) {
 
         console.log('💬 Sending', messages.length, 'messages to Claude (includes history)');
 
-        // Make direct streaming request to Claude
-        const response = await fetch(claudeEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify({
-            model: agent.model,
-            max_tokens: actualMaxTokens,
-            temperature: actualTemperature,
-            system: fullSystemPrompt,
-            messages: messages,
-            stream: true
-          }),
-        });
+        // Create abort controller for timeout
+        const abortController = new AbortController();
+        const connectionTimeout = setTimeout(() => {
+          abortController.abort();
+          console.error('❌ Claude API connection timeout (60s)');
+        }, 60000); // 60 second connection timeout
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+        let response;
+        try {
+          // Make direct streaming request to Claude with retry logic
+          response = await fetch(claudeEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'Connection': 'keep-alive',
+            },
+            body: JSON.stringify({
+              model: agent.model,
+              max_tokens: actualMaxTokens,
+              temperature: actualTemperature,
+              system: fullSystemPrompt,
+              messages: messages,
+              stream: true
+            }),
+            signal: abortController.signal,
+            // @ts-ignore - keepalive is supported but not in types
+            keepalive: true,
+          });
+
+          clearTimeout(connectionTimeout);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Claude API error:', response.status, errorText);
+            
+            // Provide specific error messages based on status
+            if (response.status === 429) {
+              throw new Error('Claude API rate limit exceeded. Please wait a moment and try again.');
+            } else if (response.status === 529) {
+              throw new Error('Claude API is temporarily overloaded. Please try again in a few seconds.');
+            } else if (response.status >= 500) {
+              throw new Error('Claude API server error. Please try again.');
+            } else if (response.status === 401) {
+              throw new Error('Invalid Claude API key. Please check agent configuration.');
+            } else {
+              throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+            }
+          }
+        } catch (fetchError: any) {
+          clearTimeout(connectionTimeout);
+          
+          // Handle fetch-level errors (network, timeout, etc)
+          if (fetchError.name === 'AbortError') {
+            throw new Error('Connection to Claude API timed out. Please check your network connection and try again.');
+          } else if (fetchError.message?.includes('fetch failed') || fetchError.code === 'ECONNREFUSED' || fetchError.code === 'ENOTFOUND') {
+            throw new Error('Unable to connect to Claude API. Please check your internet connection and try again.');
+          } else {
+            throw fetchError;
+          }
         }
 
         console.log('✅ Claude stream started');
@@ -132,8 +181,16 @@ export async function POST(request: NextRequest) {
         let buffer = '';
         let thinkingBuffer = '';
         let contentBuffer = '';
+        let lastActivity = Date.now();
+        const streamTimeout = 90000; // 90 second stream timeout
         
         while (true) {
+          // Check for stream stall
+          if (Date.now() - lastActivity > streamTimeout) {
+            console.error('❌ Stream stalled - no data for 90 seconds');
+            throw new Error('Stream timeout - no response from Claude API');
+          }
+
           const { done, value } = await reader.read();
           
           if (done) {
@@ -141,6 +198,7 @@ export async function POST(request: NextRequest) {
             break;
           }
           
+          lastActivity = Date.now(); // Reset timeout on data
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
           buffer = lines.pop() || '';
