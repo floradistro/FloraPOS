@@ -59,8 +59,10 @@ export function SaveArtifactButton({
       return;
     }
 
-    // Use user email or fallback to generic user
-    const userId = user?.email || user?.username || 'staff@floradistro.com';
+    // Use consistent userId: username first, then email, then fallback
+    const userId = user?.username || user?.email || 'staff@floradistro.com';
+    
+    console.log('💾 Saving artifact with userId:', userId);
 
     setIsSaving(true);
     
