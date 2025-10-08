@@ -31,9 +31,7 @@ export function EnvironmentToggle() {
   const getEnvDisplay = () => {
     switch (env) {
       case 'docker':
-        return { icon: '🐳', label: 'Docker (localhost:8081)', color: 'text-orange-400' };
-      case 'staging':
-        return { icon: '🚧', label: 'Staging', color: 'text-yellow-400' };
+        return { icon: '🐳', label: 'Docker (localhost:8080)', color: 'text-orange-400' };
       case 'production':
         return { icon: '☁️', label: 'Production', color: 'text-blue-400' };
     }
@@ -65,11 +63,8 @@ export function EnvironmentToggle() {
           Switch to {getNextEnv()}
         </button>
       </div>
-      {(env === 'docker' || env === 'staging') && (
+      {env === 'docker' && (
         <div className="mt-2 text-xs text-neutral-500">
-          {env === 'staging' && !process.env.NEXT_PUBLIC_STAGING_API_URL && (
-            <div className="text-yellow-500 mb-1">⚠️ No staging URL configured - using production</div>
-          )}
           Dev login: admin / admin123
         </div>
       )}
