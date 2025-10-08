@@ -1,14 +1,14 @@
 import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
-
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const woocommerceApiUrl = 'https://api.floradistro.com';
+    const woocommerceApiUrl = getApiBaseUrl(apiEnv);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     console.log(`🔄 [${apiEnv.toUpperCase()}] Updating order...`);
     
     const body = await request.json();

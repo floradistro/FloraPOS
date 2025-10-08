@@ -1,0 +1,36 @@
+# Correct Production Environment Variables
+
+## Production WordPress API
+```
+NEXT_PUBLIC_PRODUCTION_API_URL=https://api.floradistro.com
+NEXT_PUBLIC_DOCKER_API_URL=http://localhost:8080
+NEXT_PUBLIC_API_ENVIRONMENT=production
+NEXT_PUBLIC_ENVIRONMENT=production
+```
+
+## WooCommerce Credentials
+```
+NEXT_PUBLIC_WC_CONSUMER_KEY=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5
+NEXT_PUBLIC_WC_CONSUMER_SECRET=cs_38194e74c7ddc5d72b6c32c70485728e7e529678
+WC_CONSUMER_KEY=ck_bb8e5fe3d405e6ed6b8c079c93002d7d8b23a7d5
+WC_CONSUMER_SECRET=cs_38194e74c7ddc5d72b6c32c70485728e7e529678
+```
+
+## AI Services
+```
+CLAUDE_API_KEY=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
+```
+
+## Supabase Production
+```
+NEXT_PUBLIC_SUPABASE_URL=https://nfkshvmqqgosvcwztqyq.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ma3Nodm1xcWdvc3Zjd3p0cXlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwMjg4ODIsImV4cCI6MjA3MDYwNDg4Mn0.9suNxH4gFmic5e4bG-P44e_qELYCx0KZI4VCvrNC2_E
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ma3Nodm1xcWdvc3Zjd3p0cXlxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAyODg4MiwiZXhwIjoyMDcwNjA0ODgyfQ.p3xQ3EQ-aNnu0d2LjA1yAykD3HryhOQobgWpcqw6dJ4
+```
+
+## Variables to REMOVE
+- NEXT_PUBLIC_STAGING_API_URL (all environments)
+- NEXT_PUBLIC_STAGING_WC_CONSUMER_KEY (if exists)
+- NEXT_PUBLIC_STAGING_WC_CONSUMER_SECRET (if exists)
+- Any preview-only variables
+

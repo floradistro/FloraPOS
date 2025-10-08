@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getApiEnvironmentFromRequest, getApiBaseUrl } from '@/lib/server-api-config';
-
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
+import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 
 export async function GET(
   request: NextRequest,
@@ -10,6 +7,9 @@ export async function GET(
 ) {
   try {
     const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     const REWARDS_API_BASE = `${getApiBaseUrl(apiEnv)}/wp-json/wc-points-rewards/v1`;
     const path = params.path.join('/');
     const searchParams = request.nextUrl.searchParams;
@@ -73,6 +73,9 @@ export async function POST(
 ) {
   try {
     const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     const REWARDS_API_BASE = `${getApiBaseUrl(apiEnv)}/wp-json/wc-points-rewards/v1`;
     const path = params.path.join('/');
     const body = await request.json();

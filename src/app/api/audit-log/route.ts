@@ -12,14 +12,14 @@ interface AuditLogEntry {
   metadata?: any;
 }
 
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
 
 export async function GET(request: NextRequest) {
   try {
-    // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
-    const floraApiBase = 'https://api.floradistro.com';
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
+    const floraApiBase = getApiBaseUrl(apiEnv);
     const FLORA_API_BASE = `${floraApiBase}/wp-json`;
     console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching audit logs...`);
     

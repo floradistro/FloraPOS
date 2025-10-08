@@ -1,8 +1,6 @@
 import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
 
 interface BatchAdjustment {
   product_id: number;
@@ -23,8 +21,10 @@ interface BatchAdjustRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     const floraApiBase = 'https://api.floradistro.com';
     const FLORA_API_BASE = `${floraApiBase}/wp-json`;
     console.log(`🔄 [${apiEnv.toUpperCase()}] Processing batch adjustment...`);

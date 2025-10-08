@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 
 export async function POST(request: NextRequest) {
   try {
+    const apiEnv = getApiEnvironmentFromRequest(request);
+    const FLORA_API_BASE = getApiBaseUrl(apiEnv);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
+
     const { productId, fields } = await request.json();
 
     if (!productId || !fields || !Array.isArray(fields)) {
@@ -12,10 +19,6 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`🔄 API: Updating blueprint fields for product ${productId}:`, fields);
-
-    const FLORA_API_BASE = 'https://api.floradistro.com';
-    const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-    const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
 
     // Convert fields to magic2 plugin meta_data format
     const metaData = fields.map(field => {

@@ -1,14 +1,14 @@
 import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials } from '@/lib/server-api-config';
 import { NextRequest, NextResponse } from 'next/server';
 
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
-
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     console.log(`🔄 [${apiEnv.toUpperCase()}] Fetching user...`);
     
     const userId = params.id;
@@ -50,6 +50,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     console.log(`🔄 [${apiEnv.toUpperCase()}] Updating user...`);
     
     const userId = params.id;
@@ -91,6 +94,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     // Get API environment from request
     const apiEnv = getApiEnvironmentFromRequest(request);
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    const credentials = getApiCredentials(apiEnv);
+    const CONSUMER_KEY = credentials.consumerKey;
+    const CONSUMER_SECRET = credentials.consumerSecret;
     console.log(`🔄 [${apiEnv.toUpperCase()}] Deleting user...`);
     
     const userId = params.id;
