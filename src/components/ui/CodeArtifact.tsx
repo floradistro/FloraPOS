@@ -414,15 +414,6 @@ const CodeArtifactComponent: React.FC<CodeArtifactProps> = ({
           </div>
 
           {/* Actions */}
-          <SaveArtifactButton
-            code={code}
-            artifactType={language}
-            language={language}
-            title={title}
-            conversationId={conversationId}
-            messageId={messageId}
-          />
-
           <button
             onClick={handleRefresh}
             className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800/40 transition-all"
@@ -449,15 +440,15 @@ const CodeArtifactComponent: React.FC<CodeArtifactProps> = ({
             )}
           </button>
 
-          <button
-            onClick={downloadCode}
-            className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800/40 transition-all"
-            title="Download code"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-          </button>
+          {/* Save Button - More Prominent */}
+          <SaveArtifactButton
+            code={code}
+            artifactType={language}
+            language={language}
+            title={title}
+            conversationId={conversationId}
+            messageId={messageId}
+          />
 
           {onClose && (
             <button
