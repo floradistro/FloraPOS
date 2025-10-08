@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { artifactService } from '@/services/artifact-service';
 
-export const runtime = 'edge';
-
 /**
  * GET /api/artifacts/[id]
  * Fetch a specific artifact

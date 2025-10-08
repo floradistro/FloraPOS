@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { artifactService } from '@/services/artifact-service';
 
-export const runtime = 'edge';
-
 /**
  * POST /api/artifacts/[id]/fork
  * Fork an artifact (create a personal copy)
