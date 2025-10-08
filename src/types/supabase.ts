@@ -34,6 +34,103 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_artifacts: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          code: string
+          language: string
+          artifact_type: string
+          created_by: string
+          is_global: boolean
+          tags: string[] | null
+          thumbnail_url: string | null
+          view_count: number
+          fork_count: number
+          version: number
+          parent_artifact_id: string | null
+          created_at: string
+          updated_at: string
+          published_at: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          code: string
+          language: string
+          artifact_type?: string
+          created_by: string
+          is_global?: boolean
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          view_count?: number
+          fork_count?: number
+          version?: number
+          parent_artifact_id?: string | null
+          created_at?: string
+          updated_at?: string
+          published_at?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          code?: string
+          language?: string
+          artifact_type?: string
+          created_by?: string
+          is_global?: boolean
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          view_count?: number
+          fork_count?: number
+          version?: number
+          parent_artifact_id?: string | null
+          created_at?: string
+          updated_at?: string
+          published_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_artifacts_parent_artifact_id_fkey"
+            columns: ["parent_artifact_id"]
+            isOneToOne: false
+            referencedRelation: "ai_artifacts"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      ai_artifact_favorites: {
+        Row: {
+          id: string
+          artifact_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          artifact_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          artifact_id?: string
+          user_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_artifact_favorites_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "ai_artifacts"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       ai_agents: {
         Row: {
           id: string
@@ -311,6 +408,26 @@ export type Database = {
       cleanup_old_commands: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      increment_artifact_view_count: {
+        Args: { artifact_uuid: string }
+        Returns: void
+      }
+      publish_artifact: {
+        Args: { artifact_uuid: string }
+        Returns: Json
+      }
+      unpublish_artifact: {
+        Args: { artifact_uuid: string }
+        Returns: Json
+      }
+      fork_artifact: {
+        Args: { 
+          artifact_uuid: string
+          user_id_param: string
+          new_title: string
+        }
+        Returns: Json
       }
     }
     Enums: {
