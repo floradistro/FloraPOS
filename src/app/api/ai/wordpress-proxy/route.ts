@@ -2,8 +2,6 @@ import { NextRequest } from 'next/server';
 import { requestCache } from '@/lib/request-cache';
 import { aiAgentService } from '@/services/ai-agent-service';
 
-export const runtime = 'edge';
-
 /**
  * WordPress Proxy Endpoint
  * Handles tool chaining by calling Claude directly from Next.js
