@@ -59,14 +59,14 @@ interface TransparencyDropdownProps {
   borderOpacity: number;
   imageOpacity: number;
   blurIntensity: number;
-  glowIntensity?: number;
+  glowIntensity: number;
   onTransparencyChange: (values: { 
     containerOpacity: number; 
     borderWidth: number; 
     borderOpacity: number;
     imageOpacity: number;
     blurIntensity: number;
-    glowIntensity?: number;
+    glowIntensity: number;
   }) => void;
 }
 

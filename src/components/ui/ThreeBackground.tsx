@@ -794,6 +794,84 @@ function NebulaScene({ color = '#ff00ff', count = 8000 }: { color?: string; coun
 }
 
 /**
+ * Gradient Waves Scene - Beautiful flowing waves with color gradients
+ */
+function GradientWavesScene({ color = '#ff00ff', color2 = '#00ffff' }: { color?: string; color2?: string }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const gridSize = 60;
+  const segments = 120;
+
+  // Create color objects
+  const colorObj1 = React.useMemo(() => new THREE.Color(color), [color]);
+  const colorObj2 = React.useMemo(() => new THREE.Color(color2), [color2]);
+
+  useFrame((state) => {
+    if (meshRef.current && meshRef.current.geometry) {
+      const geometry = meshRef.current.geometry;
+      const position = geometry.attributes.position;
+      const colorAttribute = geometry.attributes.color;
+      
+      for (let i = 0; i < position.count; i++) {
+        const x = position.getX(i);
+        const y = position.getY(i);
+        const time = state.clock.elapsedTime;
+        
+        // Create complex wave patterns
+        const wave1 = Math.sin(x * 0.3 + time * 1.5) * 3;
+        const wave2 = Math.sin(y * 0.4 + time * 1.2) * 2.5;
+        const wave3 = Math.sin((x + y) * 0.25 + time * 0.9) * 2;
+        const wave4 = Math.cos(x * 0.2 - y * 0.2 + time) * 1.5;
+        
+        const z = wave1 + wave2 + wave3 + wave4;
+        position.setZ(i, z);
+        
+        // Interpolate color based on height (z value)
+        const t = (z + 10) / 20; // Normalize to 0-1
+        const interpolatedColor = colorObj1.clone().lerp(colorObj2, t);
+        
+        colorAttribute.setXYZ(i, interpolatedColor.r, interpolatedColor.g, interpolatedColor.b);
+      }
+      
+      position.needsUpdate = true;
+      colorAttribute.needsUpdate = true;
+      geometry.computeVertexNormals();
+    }
+  });
+
+  // Initialize geometry with color attribute
+  const geometry = React.useMemo(() => {
+    const geo = new THREE.PlaneGeometry(gridSize, gridSize, segments, segments);
+    const count = geo.attributes.position.count;
+    const colors = new Float32Array(count * 3);
+    
+    // Initialize colors
+    for (let i = 0; i < count; i++) {
+      colors[i * 3] = colorObj1.r;
+      colors[i * 3 + 1] = colorObj1.g;
+      colors[i * 3 + 2] = colorObj1.b;
+    }
+    
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    return geo;
+  }, [gridSize, segments, colorObj1]);
+
+  return (
+    <mesh ref={meshRef} rotation={[-Math.PI / 2.5, 0, 0]} position={[0, -8, 0]} geometry={geometry}>
+      <meshStandardMaterial
+        vertexColors
+        wireframe={false}
+        transparent
+        opacity={0.85}
+        metalness={0.3}
+        roughness={0.4}
+        emissive={colorObj1}
+        emissiveIntensity={0.2}
+      />
+    </mesh>
+  );
+}
+
+/**
  * Main Three.js Background Component
  */
 export function ThreeBackground({ sceneCode }: ThreeBackgroundProps) {
@@ -853,6 +931,9 @@ export function ThreeBackground({ sceneCode }: ThreeBackgroundProps) {
       
       case 'nebula':
         return <NebulaScene color={config.color} count={config.count} />;
+      
+      case 'gradientWaves':
+        return <GradientWavesScene color={config.color} color2={config.color2} />;
       
       case 'mixed':
         return (
