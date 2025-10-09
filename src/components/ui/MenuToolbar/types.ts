@@ -54,6 +54,12 @@ export interface MenuToolbarProps {
   cardFont: string;
   onFontsChange: (fonts: { titleFont: string; pricingFont: string; cardFont: string }) => void;
   
+  // Transparency and borders
+  containerOpacity: number;
+  borderWidth: number;
+  borderOpacity: number;
+  onTransparencyChange: (values: { containerOpacity: number; borderWidth: number; borderOpacity: number }) => void;
+  
   // Config actions
   loadedConfigName?: string;
   onLoadConfig: () => void;
