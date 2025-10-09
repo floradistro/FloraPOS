@@ -329,13 +329,18 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
         enableLeftStacking: false,
         enableRightStacking: false
       },
-      backgroundColor: '#000000', // Default
-      fontColor: '#ffffff', // Default
-      containerColor: '#1a1a1a', // Default
-      containerOpacity: 100, // Default
-      borderWidth: 1, // Default
-      borderOpacity: 100, // Default
-      customBackground: '', // Default - no custom background in layouts
+      backgroundColor: menuConfig.backgroundColor,
+      fontColor: menuConfig.fontColor,
+      cardFontColor: menuConfig.cardFontColor,
+      containerColor: menuConfig.containerColor,
+      imageBackgroundColor: menuConfig.imageBackgroundColor,
+      titleFont: menuConfig.titleFont,
+      pricingFont: menuConfig.pricingFont,
+      cardFont: menuConfig.cardFont,
+      containerOpacity: menuConfig.containerOpacity,
+      borderWidth: menuConfig.borderWidth,
+      borderOpacity: menuConfig.borderOpacity,
+      customBackground: menuConfig.customBackground, // Save custom background in layouts too!
       categoryColumnConfigs: {}
     }
     
@@ -454,7 +459,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
             if (!user?.location_id) return true // Show all if no location
             
             const locationInventory = product.inventory?.find((inv: any) => 
-              inv.location_id?.toString() === user.location_id.toString()
+              inv.location_id?.toString() === user.location_id?.toString()
             )
             const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || parseFloat(locationInventory.quantity?.toString() || '0') || 0) : 0
             return locationStock > 0
