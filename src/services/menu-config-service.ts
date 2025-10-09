@@ -64,6 +64,8 @@ export interface MenuConfigData {
   containerOpacity?: number;
   borderWidth?: number;
   borderOpacity?: number;
+  imageOpacity?: number;
+  blurIntensity?: number;
   customBackground?: string; // Custom HTML/React/CSS background code
   singlePriceLocation?: 'none' | 'header' | 'inline';
   leftPriceLocation?: 'none' | 'header' | 'inline';
