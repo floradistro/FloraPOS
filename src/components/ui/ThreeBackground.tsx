@@ -32,79 +32,85 @@ function parseSceneConfig(sceneCode: string): any {
 }
 
 /**
- * Parse and create custom Three.js scene from AI-generated code
+ * Dynamic Custom Scene Wrapper - Executes AI-generated Three.js code
  */
-function parseCustomScene(sceneCode: string): React.ComponentType | null {
-  try {
-    console.log('🔍 Parsing custom scene, code length:', sceneCode.length);
-    console.log('🔍 First 500 chars:', sceneCode.substring(0, 500));
-    
-    // Extract the function code
-    const functionMatch = sceneCode.match(/function\s+(\w+)\s*\([^)]*\)\s*\{[\s\S]*\}/);
-    if (!functionMatch) {
-      console.error('❌ Could not extract function from custom scene');
-      console.log('Full scene code:', sceneCode);
-      return null;
+function DynamicCustomScene({ sceneCode }: { sceneCode: string }) {
+  const [SceneComponent, setSceneComponent] = React.useState<React.ComponentType | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    console.log('🔍 DynamicCustomScene: Parsing new scene code');
+    console.log('📝 Code preview:', sceneCode.substring(0, 300));
+
+    try {
+      // Extract the function code
+      const functionMatch = sceneCode.match(/function\s+(\w+)\s*\([^)]*\)\s*\{[\s\S]*\}/);
+      if (!functionMatch) {
+        throw new Error('Could not find function in scene code');
+      }
+
+      const functionCode = functionMatch[0];
+      const functionName = functionMatch[1];
+
+      console.log('✅ Found function:', functionName, 'length:', functionCode.length);
+
+      // Create wrapper component that executes the code
+      const WrapperComponent = () => {
+        try {
+          // Use eval in a controlled way to execute the function definition
+          const evalCode = `
+            (function(React, useRef, useFrame, THREE, useMemo, Stars, Sphere, Box, Torus, TorusKnot) {
+              ${functionCode}
+              return ${functionName};
+            })
+          `;
+          
+          // Execute to get the function
+          const sceneFn = eval(evalCode);
+          
+          // Call it with the required dependencies
+          const { Stars: StarsComp, Sphere, Box, Torus, TorusKnot } = require('@react-three/drei');
+          const SceneFunc = sceneFn(React, useRef, useFrame, THREE, React.useMemo, StarsComp, Sphere, Box, Torus, TorusKnot);
+          
+          // Render the scene component
+          return <SceneFunc />;
+        } catch (err) {
+          console.error('❌ Error executing custom scene:', err);
+          return (
+            <mesh>
+              <boxGeometry args={[1, 1, 1]} />
+              <meshStandardMaterial color="#ff0000" />
+            </mesh>
+          );
+        }
+      };
+
+      setSceneComponent(() => WrapperComponent);
+      setError(null);
+      console.log('✅ Custom scene component created');
+      
+    } catch (err) {
+      console.error('❌ Failed to create custom scene:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setSceneComponent(null);
     }
+  }, [sceneCode]);
 
-    const functionCode = functionMatch[0];
-    const functionName = functionMatch[1];
-
-    console.log('✅ Extracted function:', functionName, 'code length:', functionCode.length);
-
-    // Create the function in a safe context with all needed imports
-    // eslint-disable-next-line no-new-func
-    const sceneFunction = new Function(
-      'React',
-      'useRef',
-      'useFrame',
-      'THREE',
-      'useMemo',
-      'Stars',
-      'Sphere',
-      'Box',
-      'Torus',
-      'TorusKnot',
-      `try {
-        ${functionCode}
-        return ${functionName};
-      } catch (e) {
-        console.error('Error in custom scene function:', e);
-        return null;
-      }`
+  if (error) {
+    console.error('Scene error:', error);
+    return (
+      <mesh>
+        <sphereGeometry args={[2, 32, 32]} />
+        <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={0.5} />
+      </mesh>
     );
+  }
 
-    // Import drei components
-    const { Stars: StarsComponent, Sphere, Box, Torus, TorusKnot } = require('@react-three/drei');
-
-    console.log('🚀 Executing scene function...');
-    
-    // Execute to get the component with all imports
-    const CustomScene = sceneFunction(
-      React, 
-      useRef, 
-      useFrame, 
-      THREE, 
-      React.useMemo,
-      StarsComponent,
-      Sphere,
-      Box,
-      Torus,
-      TorusKnot
-    );
-
-    if (!CustomScene) {
-      console.error('❌ Scene function returned null');
-      return null;
-    }
-
-    console.log('✅ Custom scene created successfully:', typeof CustomScene);
-    return CustomScene;
-  } catch (error) {
-    console.error('❌ Failed to parse custom scene:', error);
-    console.error('Stack:', (error as Error).stack);
+  if (!SceneComponent) {
     return null;
   }
+
+  return <SceneComponent />;
 }
 
 /**
@@ -233,12 +239,13 @@ function FloatingGeometry({ type = 'sphere', position, color }: any) {
     }
   });
 
-  const geometry = {
+  const geometries: Record<string, JSX.Element> = {
     sphere: <sphereGeometry args={[1, 32, 32]} />,
     box: <boxGeometry args={[2, 2, 2]} />,
     torus: <torusGeometry args={[1, 0.4, 16, 100]} />,
     torusknot: <torusKnotGeometry args={[1, 0.3, 100, 16]} />
-  }[type] || <sphereGeometry args={[1, 32, 32]} />;
+  };
+  const geometry = geometries[type] || geometries['sphere'];
 
   return (
     <mesh ref={meshRef} position={position}>
@@ -721,38 +728,18 @@ export function ThreeBackground({ sceneCode }: ThreeBackgroundProps) {
   console.log('🎮 ThreeBackground received:', {
     isCustom,
     codeLength: sceneCode.length,
-    hasFunction: sceneCode.includes('function')
+    hasFunction: sceneCode.includes('function'),
+    codePreview: sceneCode.substring(0, 100)
   });
-  
-  // For custom scenes, parse the function
-  const CustomSceneComponent = React.useMemo(() => {
-    if (isCustom) {
-      console.log('🔄 Parsing custom scene...');
-      const result = parseCustomScene(sceneCode);
-      console.log('🔄 Parse result:', result ? 'Success' : 'Failed');
-      return result;
-    }
-    return null;
-  }, [sceneCode, isCustom]);
 
   const config = parseSceneConfig(sceneCode);
   const sceneType = config.type || 'particles';
 
-  console.log('🎮 Rendering Three.js scene:', {
-    mode: isCustom ? 'custom' : sceneType,
-    hasCustomComponent: !!CustomSceneComponent,
-    config
-  });
-
   const renderScene = () => {
-    // Render custom scene if available
+    // Render custom scene using dynamic component
     if (isCustom) {
-      if (!CustomSceneComponent) {
-        console.error('❌ Custom scene requested but component is null!');
-        return <ParticlesScene color="#ff0000" count={1000} />; // Fallback
-      }
-      console.log('✅ Rendering custom scene component');
-      return <CustomSceneComponent />;
+      console.log('✅ Rendering CUSTOM scene with DynamicCustomScene');
+      return <DynamicCustomScene sceneCode={sceneCode} />;
     }
     switch (sceneType) {
       case 'particles':
@@ -815,6 +802,7 @@ export function ThreeBackground({ sceneCode }: ThreeBackgroundProps) {
       }}
     >
       <Canvas
+        key={sceneCode.substring(0, 100)} // Force re-render when code changes
         camera={{ position: [0, 0, 30], fov: 75 }}
         gl={{ 
           alpha: true, 
