@@ -456,6 +456,73 @@ html, body {
   }
 }
 
+/* TV Menu Display - Disable ALL animations and hardware acceleration */
+.tv-menu-display,
+.tv-menu-display * {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  will-change: auto !important;
+  backface-visibility: visible !important;
+  perspective: none !important;
+  transform-style: flat !important;
+}
+
+/* Disable background animations on TV displays */
+.tv-menu-display::before,
+.tv-menu-display::after {
+  display: none !important;
+}
+
+/* Disable any hover effects on TV displays */
+.tv-menu-display .card-hover:hover,
+.tv-menu-display .button-hover:hover,
+.tv-menu-display .smooth-hover:hover,
+.tv-menu-display .row-hover:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Force static rendering - no GPU layers */
+.tv-menu-display * {
+  contain: none !important;
+}
+
+/* Prevent layout shifts and repaints */
+.tv-menu-display {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Disable all transforms and 3D effects */
+.tv-menu-display img {
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Static overflow handling */
+.tv-menu-display .overflow-y-auto {
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: auto;
+}
+
+/* Disable wave animations when TV display is active */
+body.tv-display-active::before,
+body.tv-display-active::after,
+body.tv-display-active .wave-layer {
+  display: none !important;
+  animation: none !important;
+}
+
+/* Force static rendering for entire page when TV active */
+body.tv-display-active,
+body.tv-display-active * {
+  animation-play-state: paused !important;
+}
+
 /* Disable animations for users who prefer reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .smooth-hover,

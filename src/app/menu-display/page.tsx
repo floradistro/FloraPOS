@@ -133,6 +133,16 @@ function MenuDisplayContent() {
     onCommand: handleCommand,
   })
   
+  // Disable animations on body for TV displays
+  useEffect(() => {
+    document.body.classList.add('tv-display-active')
+    document.documentElement.style.overflow = 'hidden'
+    
+    return () => {
+      document.body.classList.remove('tv-display-active')
+    }
+  }, [])
+  
   // Load fonts dynamically
   useEffect(() => {
     loadGoogleFont(titleFont)
@@ -177,9 +187,20 @@ function MenuDisplayContent() {
             blueprintPricing: batchPricing[p.id] || null
           }))
           
-          setProducts(enrichedProducts)
+          // Only update if products actually changed
+          setProducts(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(enrichedProducts)) {
+              return prev
+            }
+            return enrichedProducts
+          })
         } catch (err) {
-          setProducts(result.data)
+          setProducts(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(result.data)) {
+              return prev
+            }
+            return result.data
+          })
         }
         
         // Extract categories
@@ -192,7 +213,14 @@ function MenuDisplayContent() {
           })
         })
         const extractedCategories = Array.from(catMap.values())
-        setCategories(extractedCategories)
+        
+        // Only update categories if changed
+        setCategories(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(extractedCategories)) {
+            return prev
+          }
+          return extractedCategories
+        })
         
       } catch (err: any) {
         setError(err.message || 'Failed to load products')
@@ -293,7 +321,7 @@ function MenuDisplayContent() {
 
         {/* Name */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold transition-colors truncate" style={{ color: fontColor, fontFamily: cardFont }}>
+          <h3 className="text-base font-semibold truncate" style={{ color: fontColor, fontFamily: cardFont }}>
             {product.name}
           </h3>
         </div>
@@ -328,7 +356,7 @@ function MenuDisplayContent() {
   // Loading
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center" style={{ backgroundColor }}>
+      <div className="h-screen w-screen flex items-center justify-center tv-menu-display" style={{ backgroundColor }}>
         <div className="text-center">
         <LoadingSpinner size="lg" />
           <p className="mt-4 text-gray-400">Loading menu...</p>
@@ -340,7 +368,7 @@ function MenuDisplayContent() {
   // Error
   if (error) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center" style={{ backgroundColor }}>
+      <div className="h-screen w-screen flex items-center justify-center tv-menu-display" style={{ backgroundColor }}>
         <div className="text-center">
           <div className="w-20 h-20 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -395,7 +423,7 @@ function MenuDisplayContent() {
     // Show default empty state with logo
     if (showDefaultEmptyState) {
       return (
-        <div className="h-screen w-screen flex items-center justify-center" style={{ backgroundColor }}>
+        <div className="h-screen w-screen flex items-center justify-center tv-menu-display" style={{ backgroundColor }}>
           <div className="text-center">
             <img 
               src="/logo123.png" 
@@ -421,7 +449,7 @@ function MenuDisplayContent() {
     }
 
     return (
-      <div className="h-screen w-screen flex flex-col overflow-hidden" style={{ backgroundColor }}>
+      <div className="h-screen w-screen flex flex-col overflow-hidden tv-menu-display" style={{ backgroundColor }}>
         {/* Header */}
         <div className="px-6 py-5 border-b flex-shrink-0" style={{ borderBottomColor: `${containerColor}40` }}>
           <div className="flex items-center justify-between gap-4">
@@ -570,7 +598,7 @@ function MenuDisplayContent() {
 
 
   return (
-    <div className="h-screen w-screen flex overflow-hidden" style={{ backgroundColor }}>
+    <div className="h-screen w-screen flex overflow-hidden tv-menu-display" style={{ backgroundColor }}>
       {/* Left Panel - with stacking support */}
       <div className="w-1/2 flex flex-col border-r overflow-hidden flex-shrink-0" style={{ borderRightColor: `${containerColor}40` }}>
         {/* Left Top Quadrant */}
