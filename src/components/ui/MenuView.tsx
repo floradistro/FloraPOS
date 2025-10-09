@@ -434,10 +434,35 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
             return { ...product, blueprintPricing: pricingData || null }
           })
           
-          setProducts(productsWithPricing)
+          // Filter to show only products with stock > 0 at current location (same as TV menu and ProductGrid)
+          const inStockProducts = productsWithPricing.filter((product: Product) => {
+            if (!user?.location_id) return true // Show all if no location
+            
+            const locationInventory = product.inventory?.find((inv: any) => 
+              inv.location_id?.toString() === user.location_id.toString()
+            )
+            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || parseFloat(locationInventory.quantity?.toString() || '0') || 0) : 0
+            return locationStock > 0
+          })
+          
+          console.log(`✅ Preview showing ${inStockProducts.length} in-stock products at location ${user?.location_id}`)
+          
+          setProducts(inStockProducts)
         } catch (err) {
           console.warn('Failed to load blueprint pricing:', err)
-          setProducts(result.data)
+          
+          // Even on pricing error, filter by stock
+          const inStockProducts = result.data.filter((product: Product) => {
+            if (!user?.location_id) return true
+            
+            const locationInventory = product.inventory?.find((inv: any) => 
+              inv.location_id?.toString() === user.location_id.toString()
+            )
+            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || parseFloat(locationInventory.quantity?.toString() || '0') || 0) : 0
+            return locationStock > 0
+          })
+          
+          setProducts(inStockProducts)
         }
       } else {
         throw new Error(result.error || 'Failed to load products')
