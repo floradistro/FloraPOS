@@ -5,7 +5,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, Suspense, memo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { apiFetch } from '../../lib/api-fetch'
 import { BlueprintPricingService } from '../../services/blueprint-pricing-service'
@@ -66,19 +66,6 @@ function MenuDisplayContent() {
   const rightPriceLocation2 = (searchParams.get('rightPriceLocation2') as 'header' | 'inline') || 'inline'
   const enableLeftStacking = searchParams.get('enableLeftStacking') === 'true'
   const enableRightStacking = searchParams.get('enableRightStacking') === 'true'
-  
-  console.log('📺 [TV DISPLAY] Dual menu params received:', {
-    leftCategory,
-    rightCategory,
-    leftViewMode,
-    rightViewMode,
-    leftImages,
-    rightImages,
-    leftCategory2,
-    rightCategory2,
-    enableLeftStacking,
-    enableRightStacking
-  })
 
   // TV Registration
   const [tvId, setTvId] = useState<string | null>(null)
@@ -97,8 +84,6 @@ function MenuDisplayContent() {
   
   // Handle incoming commands
   const handleCommand = useCallback((command: any) => {
-    console.log('📨 Received command:', command.command_type, command.payload)
-    
     if (command.command_type === 'update_theme') {
       const payload = command.payload
       const currentUrl = new URL(window.location.href)
@@ -178,8 +163,6 @@ function MenuDisplayContent() {
           throw new Error(result.error || 'Failed to load products')
         }
 
-        console.log(`✅ [TV DISPLAY] Loaded ${result.data.length} products`)
-
         // Apply blueprint pricing - BATCH (same as MenuView)
         try {
           const productsWithCategories = result.data.map((p: Product) => ({
@@ -194,20 +177,8 @@ function MenuDisplayContent() {
             blueprintPricing: batchPricing[p.id] || null
           }))
           
-          // Log first product with pricing
-          const firstWithPricing = enrichedProducts.find((p: any) => p.blueprintPricing)
-          if (firstWithPricing) {
-            console.log('💰 [TV DISPLAY] Sample product with pricing:', {
-              name: firstWithPricing.name,
-              blueprintPricing: firstWithPricing.blueprintPricing
-            })
-          } else {
-            console.warn('⚠️ [TV DISPLAY] No products have blueprint pricing!')
-          }
-          
           setProducts(enrichedProducts)
         } catch (err) {
-          console.warn('[TV DISPLAY] Pricing failed:', err)
           setProducts(result.data)
         }
         
@@ -223,9 +194,7 @@ function MenuDisplayContent() {
         const extractedCategories = Array.from(catMap.values())
         setCategories(extractedCategories)
         
-        
       } catch (err: any) {
-        console.error('❌ [TV DISPLAY] Error loading products:', err)
         setError(err.message || 'Failed to load products')
       } finally {
         setLoading(false)
@@ -235,8 +204,8 @@ function MenuDisplayContent() {
     loadProducts()
   }, [locationId])
 
-  // Render product card - COMPACT & RESPONSIVE
-  const renderProductCard = (product: Product, panelShowImages: boolean, panelPriceLocation: 'header' | 'inline' | 'none') => {
+  // Render product card - COMPACT & RESPONSIVE (memoized)
+  const renderProductCard = useCallback((product: Product, panelShowImages: boolean, panelPriceLocation: 'header' | 'inline' | 'none') => {
     const priceNum = product.blueprintPricing?.calculated_price ? parseFloat(product.blueprintPricing.calculated_price.toString()) : parseFloat(product.regular_price || '0')
     const pricingTiers = product.blueprintPricing?.ruleGroups?.[0]?.tiers || []
     const hasTiers = pricingTiers.length > 0
@@ -244,15 +213,16 @@ function MenuDisplayContent() {
     return (
       <div
         key={product.id}
-        className="group rounded-lg p-2 border hover:border-opacity-50 transition-all flex flex-col"
+        className="group rounded-lg p-2 border flex flex-col"
         style={{ 
           backgroundColor: containerColor,
-          borderColor: `${containerColor}80`
+          borderColor: `${containerColor}80`,
+          willChange: 'auto'
         }}
       >
         {panelShowImages && product.image && (
           <div className="aspect-square rounded-lg overflow-hidden mb-1.5 flex-shrink-0" style={{ backgroundColor: imageBackgroundColor }}>
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
+            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
           </div>
         )}
         <h3 className="text-sm font-semibold mb-1 line-clamp-2 flex-shrink-0" style={{ color: cardFontColor, minHeight: '2.5rem', fontFamily: cardFont }}>{product.name}</h3>
@@ -277,10 +247,10 @@ function MenuDisplayContent() {
         )}
       </div>
     )
-  }
+  }, [containerColor, imageBackgroundColor, cardFontColor, cardFont, pricingFont])
   
-  // Render product row
-  const renderProduct = (product: Product, index: number, panelPriceLocation: 'header' | 'inline' | 'none' = priceLocation, panelShowImages: boolean = showImages) => {
+  // Render product row (memoized)
+  const renderProduct = useCallback((product: Product, index: number, panelPriceLocation: 'header' | 'inline' | 'none' = priceLocation, panelShowImages: boolean = showImages) => {
     const price = product.blueprintPricing?.calculated_price || product.regular_price || '0'
     const priceNum = parseFloat(price.toString())
     
@@ -290,24 +260,16 @@ function MenuDisplayContent() {
     // Extract tiers from YOUR REAL structure: blueprintPricing.ruleGroups[0].tiers
     const pricingTiers = blueprintData?.ruleGroups?.[0]?.tiers || []
     const hasTiers = pricingTiers.length > 0
-    
-    // Log first product to verify
-    if (index === 0 && hasTiers) {
-      console.log('💰 Displaying pricing tiers:', {
-        product: product.name,
-        tierCount: pricingTiers.length,
-        tiers: pricingTiers.map((t: any) => `${t.label} ${t.unit} = $${t.price}`)
-      })
-    }
 
     return (
       <div
         key={product.id}
-        className="group flex items-center gap-2 py-1.5 px-3 border-b transition-all"
+        className="group flex items-center gap-2 py-1.5 px-3 border-b"
         style={{
           backgroundColor: index % 2 === 0 ? `${containerColor}30` : 'transparent',
           borderBottomColor: `${containerColor}50`,
-          color: fontColor
+          color: fontColor,
+          willChange: 'auto'
         }}
       >
         {/* Image */}
@@ -317,8 +279,7 @@ function MenuDisplayContent() {
               <img
                 src={product.image}
                 alt={product.name}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                loading="lazy"
+                className="w-full h-full object-cover"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -360,11 +321,9 @@ function MenuDisplayContent() {
           </div>
         )}
 
-        {/* Hover accent */}
-        <div className="absolute left-0 top-0 bottom-0 w-1 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top" style={{ backgroundColor: `${fontColor}30` }} />
       </div>
     )
-  }
+  }, [containerColor, imageBackgroundColor, fontColor, cardFont, pricingFont, priceLocation, showImages])
 
   // Loading
   if (loading) {
@@ -401,10 +360,6 @@ function MenuDisplayContent() {
     let displayCategory = 'Menu'
     let showDefaultEmptyState = false
     
-    console.log(`📺 [TV DISPLAY] Single menu - categoryFilter: "${categoryFilter}"`)
-    console.log(`📺 [TV DISPLAY] Total products loaded: ${products.length}`)
-    console.log(`📺 [TV DISPLAY] Categories available:`, categories.map(c => `${c.name} (${c.slug})`))
-    
     if (categoryFilter) {
       // Find category by slug
       const cat = categories.find(c => c.slug === categoryFilter)
@@ -412,16 +367,11 @@ function MenuDisplayContent() {
       if (cat) {
         displayProducts = products.filter(p => p.categories?.some(c => c.id === cat.id))
         displayCategory = cat.name
-        console.log(`✅ [TV DISPLAY] Showing "${cat.name}" with ${displayProducts.length} products`)
       } else {
-        // Category not found - show empty state
-        console.warn(`⚠️ [TV DISPLAY] Category "${categoryFilter}" not found! Showing empty state`)
         showDefaultEmptyState = true
         displayProducts = []
       }
     } else {
-      // No category specified - show default empty state with logo
-      console.log('ℹ️ [TV DISPLAY] No category specified, showing default empty state')
       showDefaultEmptyState = true
       displayProducts = []
     }
@@ -441,8 +391,6 @@ function MenuDisplayContent() {
     })
     const minPrice = allTierPrices.length > 0 ? Math.min(...allTierPrices) : 0
     const maxPrice = allTierPrices.length > 0 ? Math.max(...allTierPrices) : 0
-    
-    console.log('📊 [TV DISPLAY] Price range for header:', { min: minPrice, max: maxPrice, totalPrices: allTierPrices.length })
 
     // Show default empty state with logo
     if (showDefaultEmptyState) {
@@ -523,7 +471,6 @@ function MenuDisplayContent() {
           {displayProducts.length > 0 ? (
             (() => {
               const actualMode = viewMode === 'auto' ? (displayProducts.length > 20 ? 'table' : 'card') : viewMode;
-              console.log('🎨 [SINGLE] Rendering mode:', actualMode, 'from viewMode:', viewMode);
               
               return actualMode === 'card' ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-min">
@@ -614,15 +561,6 @@ function MenuDisplayContent() {
   const leftCatName2 = categories.find(c => c.slug === leftCategory2)?.name || ''
   const rightCatName2 = categories.find(c => c.slug === rightCategory2)?.name || ''
   
-  console.log('🎨 Quad rendering:', {
-    enableLeftStacking,
-    enableRightStacking,
-    leftProducts2Count: leftProducts2.length,
-    rightProducts2Count: rightProducts2.length,
-    leftCatName2,
-    rightCatName2
-  })
-  
   // Get pricing tiers for headers
   const leftFirstWithTiers = leftProducts.find(p => p.blueprintPricing?.ruleGroups?.[0]?.tiers?.length > 0)
   const leftHeaderTiers = leftFirstWithTiers?.blueprintPricing?.ruleGroups?.[0]?.tiers || []
@@ -666,7 +604,6 @@ function MenuDisplayContent() {
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3">
           {(() => {
             const actualMode = leftViewMode === 'auto' ? (leftProducts.length > 20 ? 'table' : 'card') : leftViewMode;
-            console.log('🎨 [LEFT] Rendering mode:', actualMode, 'from leftViewMode:', leftViewMode);
             
             return actualMode === 'card' ? (
               <div className="grid grid-cols-4 gap-3 auto-rows-min">
@@ -726,7 +663,6 @@ function MenuDisplayContent() {
             <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3">
               {(() => {
                 const actualMode = leftViewMode2 === 'auto' ? (leftProducts2.length > 20 ? 'table' : 'card') : leftViewMode2;
-                console.log('🎨 [LEFT BOTTOM] Rendering mode:', actualMode, 'from leftViewMode2:', leftViewMode2);
                 
                 return actualMode === 'card' ? (
                   <div className="grid grid-cols-4 gap-3 auto-rows-min">
@@ -807,7 +743,6 @@ function MenuDisplayContent() {
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3">
           {(() => {
             const actualMode = rightViewMode === 'auto' ? (rightProducts.length > 20 ? 'table' : 'card') : rightViewMode;
-            console.log('🎨 [RIGHT] Rendering mode:', actualMode, 'from rightViewMode:', rightViewMode);
             
             return actualMode === 'card' ? (
               <div className="grid grid-cols-4 gap-3 auto-rows-min">
@@ -867,7 +802,6 @@ function MenuDisplayContent() {
             <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3">
               {(() => {
                 const actualMode = rightViewMode2 === 'auto' ? (rightProducts2.length > 20 ? 'table' : 'card') : rightViewMode2;
-                console.log('🎨 [RIGHT BOTTOM] Rendering mode:', actualMode, 'from rightViewMode2:', rightViewMode2);
                 
                 return actualMode === 'card' ? (
                   <div className="grid grid-cols-4 gap-3 auto-rows-min">

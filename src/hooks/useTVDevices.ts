@@ -16,7 +16,7 @@ interface UseTVDevicesOptions {
 }
 
 export function useTVDevices(options: UseTVDevicesOptions = {}) {
-  const { locationId, autoRefresh = true, refreshInterval = 5000 } = options
+  const { locationId, autoRefresh = true, refreshInterval = 30000 } = options
   
   const [devices, setDevices] = useState<TVDevice[]>([])
   const [loading, setLoading] = useState(true)
