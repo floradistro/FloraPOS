@@ -8,6 +8,7 @@ import { DisplayDropdown } from './DisplayDropdown';
 import { ColorDropdown } from './ColorDropdown';
 import { FontDropdown } from './FontDropdown';
 import { TransparencyDropdown } from './TransparencyDropdown';
+import { BackgroundDropdown } from './BackgroundDropdown';
 import { MenuModeDropdown } from './MenuModeDropdown';
 import { CategoriesDropdown } from './CategoriesDropdown';
 import { ColumnSelector } from '../ColumnSelector';
@@ -36,7 +37,11 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   containerOpacity,
   borderWidth,
   borderOpacity,
+  imageOpacity,
+  blurIntensity,
   onTransparencyChange,
+  customBackground,
+  onCustomBackgroundChange,
   categories,
   categoryColumnConfigs,
   onColumnsChange,
@@ -170,7 +175,14 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             containerOpacity={containerOpacity}
             borderWidth={borderWidth}
             borderOpacity={borderOpacity}
+            imageOpacity={imageOpacity}
+            blurIntensity={blurIntensity}
             onTransparencyChange={onTransparencyChange}
+          />
+
+          <BackgroundDropdown
+            value={customBackground}
+            onChange={onCustomBackgroundChange}
           />
 
           <FontDropdown

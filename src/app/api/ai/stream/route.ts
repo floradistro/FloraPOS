@@ -3,6 +3,9 @@ import { ApiConfig } from '@/lib/api-config';
 
 export const runtime = 'edge';
 
+const CONSUMER_KEY = process.env.WC_CONSUMER_KEY || process.env.NEXT_PUBLIC_WC_CONSUMER_KEY || '';
+const CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET || process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET || '';
+
 export async function POST(request: NextRequest) {
   try {
     const { message, temperature, max_tokens, conversation } = await request.json();
@@ -19,13 +22,16 @@ export async function POST(request: NextRequest) {
       try {
         // Get WordPress API base URL
         const wpBaseUrl = ApiConfig.getBaseUrl();
-        const claudeEndpoint = `${wpBaseUrl}/wp-json/flora-im/v1/ai/chat`;
+        
+        // Build URL with authentication
+        const claudeUrl = new URL(`${wpBaseUrl}/wp-json/flora-im/v1/ai/chat`);
+        claudeUrl.searchParams.append('consumer_key', CONSUMER_KEY);
+        claudeUrl.searchParams.append('consumer_secret', CONSUMER_SECRET);
 
-        console.log('🔄 Streaming AI request to:', claudeEndpoint);
+        console.log('🔄 Streaming AI request to:', claudeUrl.toString().replace(CONSUMER_SECRET, '***'));
         
         // Make request to WordPress backend with STREAMING enabled
-        // NO fake messages - let Claude's real stream come through!
-        const response = await fetch(claudeEndpoint, {
+        const response = await fetch(claudeUrl.toString(), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

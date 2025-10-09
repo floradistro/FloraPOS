@@ -40,6 +40,17 @@ export const useMenuConfig = () => {
   const [containerOpacity, setContainerOpacity] = useState(100);
   const [borderWidth, setBorderWidth] = useState(1);
   const [borderOpacity, setBorderOpacity] = useState(100);
+  const [imageOpacity, setImageOpacity] = useState(100);
+  const [blurIntensity, setBlurIntensity] = useState(8);
+  
+  // Custom background
+  const [customBackground, setCustomBackground] = useState<string>('');
+  
+  // Wrapper for setCustomBackground with logging
+  const updateCustomBackground = useCallback((code: string) => {
+    console.log('🔄 useMenuConfig: Updating customBackground, length:', code.length);
+    setCustomBackground(code);
+  }, []);
 
   // Selected quadrant for dual menu configuration
   const [selectedQuadrant, setSelectedQuadrant] = useState<'left' | 'right' | 'leftBottom' | 'rightBottom' | ''>('');
@@ -139,6 +150,9 @@ export const useMenuConfig = () => {
     containerOpacity,
     borderWidth,
     borderOpacity,
+    imageOpacity,
+    blurIntensity,
+    customBackground,
     selectedQuadrant,
     
     // Current panel convenience properties
@@ -163,6 +177,9 @@ export const useMenuConfig = () => {
     setContainerOpacity,
     setBorderWidth,
     setBorderOpacity,
+    setImageOpacity,
+    setBlurIntensity,
+    setCustomBackground: updateCustomBackground,
     setSelectedQuadrant,
     
     // Helpers

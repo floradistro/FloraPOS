@@ -38,8 +38,8 @@ export class CacheManager {
         }
       });
       
-      // Save important data - pattern-based (store configs, menu configs, TV registrations)
-      const preservePatterns = ['flora-store-config-', 'flora-menu-config-', 'tv-id-'];
+      // Save important data - pattern-based (store configs, menu configs, TV registrations, Magic Backgrounds)
+      const preservePatterns = ['flora-store-config-', 'flora-menu-config-', 'tv-id-', 'magic-bg-'];
       Object.keys(localStorage).forEach(key => {
         if (preservePatterns.some(pattern => key.includes(pattern))) {
           const value = localStorage.getItem(key);

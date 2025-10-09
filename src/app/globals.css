@@ -456,9 +456,8 @@ html, body {
   }
 }
 
-/* TV Menu Display - Disable ALL animations and hardware acceleration */
-.tv-menu-display,
-.tv-menu-display * {
+/* TV Menu Display - Disable ALL animations EXCEPT Magic Backgrounds */
+.tv-menu-display *:not(.magic-background-container):not(.magic-background-container *) {
   animation: none !important;
   transition: none !important;
   transform: none !important;

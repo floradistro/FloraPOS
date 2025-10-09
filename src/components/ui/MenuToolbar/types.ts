@@ -58,7 +58,13 @@ export interface MenuToolbarProps {
   containerOpacity: number;
   borderWidth: number;
   borderOpacity: number;
-  onTransparencyChange: (values: { containerOpacity: number; borderWidth: number; borderOpacity: number }) => void;
+  imageOpacity: number;
+  blurIntensity: number;
+  onTransparencyChange: (values: { containerOpacity: number; borderWidth: number; borderOpacity: number; imageOpacity: number; blurIntensity: number }) => void;
+  
+  // Custom background
+  customBackground: string;
+  onCustomBackgroundChange: (code: string) => void;
   
   // Config actions
   loadedConfigName?: string;

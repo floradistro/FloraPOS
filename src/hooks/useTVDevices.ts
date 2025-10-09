@@ -16,7 +16,7 @@ interface UseTVDevicesOptions {
 }
 
 export function useTVDevices(options: UseTVDevicesOptions = {}) {
-  const { locationId, autoRefresh = true, refreshInterval = 30000 } = options
+  const { locationId, autoRefresh = true, refreshInterval = 5000 } = options
   
   const [devices, setDevices] = useState<TVDevice[]>([])
   const [loading, setLoading] = useState(true)
@@ -87,12 +87,12 @@ export function useTVDevices(options: UseTVDevicesOptions = {}) {
     }
   }, [locationId, autoRefresh, refreshInterval])
 
-  // Helper: Check if TV is online (last seen < 30s ago)
+  // Helper: Check if TV is online (last seen < 20s ago)
   const isOnline = (device: TVDevice): boolean => {
     if (!device.last_seen) return false
     const lastSeen = new Date(device.last_seen).getTime()
     const now = Date.now()
-    return (now - lastSeen) < 30000 // 30 seconds
+    return (now - lastSeen) < 20000 // 20 seconds - faster detection
   }
 
   // Helper: Get online count
