@@ -9,6 +9,7 @@
 import React from 'react'
 import { Product, Category } from '../../types'
 import { ProductBlueprintFields } from '../../services/blueprint-fields-service'
+import { MagicBackground } from './MagicBackground'
 
 interface SharedMenuDisplayProps {
   products: Product[]
@@ -41,9 +42,13 @@ interface SharedMenuDisplayProps {
   titleFont?: string
   pricingFont?: string
   cardFont?: string
+  isPreview?: boolean
   containerOpacity?: number
   borderWidth?: number
   borderOpacity?: number
+  imageOpacity?: number
+  blurIntensity?: number
+  customBackground?: string
   pandaMode: boolean
   priceLocation?: 'none' | 'header' | 'inline'
   leftPriceLocation?: 'none' | 'header' | 'inline'
@@ -91,6 +96,9 @@ export function SharedMenuDisplay({
   containerOpacity = 100,
   borderWidth = 1,
   borderOpacity = 100,
+  imageOpacity = 100,
+  blurIntensity = 8,
+  customBackground = '',
   priceLocation = 'none',
   leftPriceLocation = 'none',
   rightPriceLocation = 'none',
@@ -98,6 +106,7 @@ export function SharedMenuDisplay({
   categoryBlueprintFields = new Map(),
   selectedSide = '',
   onSideClick,
+  isPreview = false,
 }: SharedMenuDisplayProps) {
   
   console.log('🖼️ SharedMenuDisplay received:', {
@@ -151,11 +160,12 @@ export function SharedMenuDisplay({
     return (
       <div
         key={product.id}
-        className="group rounded-2xl p-4 flex flex-col backdrop-blur-xl overflow-hidden"
+        className="group rounded-2xl p-4 flex flex-col overflow-hidden"
         style={{ 
           background: `linear-gradient(135deg, ${containerColor}${containerAlpha} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 224).toString(16).padStart(2, '0')} 100%)`,
           border: `${borderWidth}px solid rgba(255, 255, 255, ${borderAlpha})`,
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+          backdropFilter: `blur(${blurIntensity}px)`,
           color: fontColor 
         }}
       >
@@ -164,7 +174,7 @@ export function SharedMenuDisplay({
           <div 
             className="aspect-square rounded-xl overflow-hidden mb-3 flex-shrink-0" 
             style={{ 
-              background: `linear-gradient(135deg, ${imageBackgroundColor} 0%, ${imageBackgroundColor}CC 100%)`,
+              background: `${imageBackgroundColor}${Math.round((imageOpacity / 100) * 255).toString(16).padStart(2, '0')}`,
               boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.3)'
             }}
           >
@@ -222,7 +232,7 @@ export function SharedMenuDisplay({
                   }}
                 >
                   <span style={{ color: `${cardFontColor}CC`, fontFamily: pricingFont, fontSize: '0.85rem', fontWeight: 500 }}>{tier.label}</span>
-                  <span className="font-bold" style={{ color: '#10b981', fontFamily: pricingFont, fontSize: '1rem', textShadow: '0 0 12px rgba(16, 185, 129, 0.3)' }}>
+                  <span className="font-bold" style={{ color: cardFontColor, fontFamily: pricingFont, fontSize: '1rem' }}>
                     ${parseFloat(tier.price).toFixed(2)}
                   </span>
                 </div>
@@ -235,11 +245,8 @@ export function SharedMenuDisplay({
             <div 
               className="text-2xl font-bold mt-auto" 
               style={{ 
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                fontFamily: pricingFont,
-                textShadow: '0 0 20px rgba(16, 185, 129, 0.2)'
+                color: cardFontColor,
+                fontFamily: pricingFont
               }}
             >
               ${priceNum.toFixed(2)}
@@ -315,7 +322,7 @@ export function SharedMenuDisplay({
             : `rgba(255, 255, 255, ${(containerOpacity / 100) * 0.02})`,
           borderBottom: `${borderWidth}px solid rgba(255, 255, 255, ${borderAlpha})`,
           color: fontColor,
-          backdropFilter: 'blur(8px)'
+          backdropFilter: `blur(${blurIntensity}px)`
         }}
       >
         {/* Image */}
@@ -323,7 +330,7 @@ export function SharedMenuDisplay({
           <div 
             className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0" 
             style={{ 
-              background: `linear-gradient(135deg, ${imageBackgroundColor}F0 0%, ${imageBackgroundColor}CC 100%)`,
+              background: `${imageBackgroundColor}${Math.round((imageOpacity / 100) * 255).toString(16).padStart(2, '0')}`,
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
               border: '1px solid rgba(255, 255, 255, 0.1)'
             }}
@@ -379,18 +386,16 @@ export function SharedMenuDisplay({
                 key={idx} 
                 className="text-center px-4 py-2 rounded-xl"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)',
-                  border: '1px solid rgba(16, 185, 129, 0.2)',
-                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)'
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)'
                 }}
               >
                 <div className="text-[10px] mb-1 uppercase tracking-wider font-semibold" style={{ color: `${fontColor}CC`, fontFamily: cardFont }}>
                   {tier.label}
                 </div>
                 <div className="text-base font-bold" style={{ 
-                  color: '#10b981', 
-                  fontFamily: cardFont,
-                  textShadow: '0 0 12px rgba(16, 185, 129, 0.3)'
+                  color: fontColor, 
+                  fontFamily: cardFont
                 }}>
                   ${parseFloat(tier.price).toFixed(2)}
                 </div>
@@ -404,12 +409,11 @@ export function SharedMenuDisplay({
           <div 
             className="text-2xl font-bold flex-shrink-0 text-right px-5 py-2 rounded-xl"
             style={{
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: '#10b981',
+              background: `${containerColor}60`,
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: fontColor,
               fontFamily: cardFont,
-              textShadow: '0 0 16px rgba(16, 185, 129, 0.4)',
-              boxShadow: '0 4px 16px rgba(16, 185, 129, 0.2)'
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)'
             }}
           >
             ${price.toFixed(2)}
@@ -541,8 +545,11 @@ export function SharedMenuDisplay({
         className="h-full w-full flex flex-col relative overflow-hidden"
         style={{ backgroundColor }}
       >
+        {/* Magic Background */}
+        {customBackground && <MagicBackground key={customBackground.length} htmlCode={customBackground} />}
+        
         {/* Header */}
-        <div className="px-10 py-4 border-b flex-shrink-0" style={{ borderBottomColor: `${containerColor}40` }}>
+        <div className="px-10 py-4 border-b flex-shrink-0 relative z-10" style={{ borderBottomColor: `${containerColor}40` }}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-6">
               <div className="w-2 h-16 rounded-full" style={{ backgroundColor: `${fontColor}30` }}></div>
@@ -574,7 +581,7 @@ export function SharedMenuDisplay({
         </div>
 
         {/* Products - Fixed No Scroll */}
-        <div className="flex-1 overflow-hidden px-8 py-4 flex items-start">
+        <div className="flex-1 overflow-hidden px-8 py-4 flex items-start relative z-10">
           {!singleCategory ? (
             <div className="flex items-center justify-center h-full w-full">
               <div className="text-center">
@@ -692,6 +699,9 @@ export function SharedMenuDisplay({
       className={`h-full w-full flex ${orientation === 'vertical' ? 'flex-col' : 'flex-row'} relative overflow-hidden`}
       style={{ backgroundColor }}
     >
+      {/* Magic Background */}
+      {customBackground && <MagicBackground key={customBackground.length} htmlCode={customBackground} />}
+      
       {/* Left Panel - with stacking support */}
       <div 
         className={`w-1/2 flex ${enableLeftStacking && leftMenuCategory2 ? 'flex-col' : 'flex-col'} ${orientation === 'vertical' ? 'border-b' : 'border-r'} overflow-hidden flex-shrink-0`}

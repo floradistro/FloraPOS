@@ -53,7 +53,7 @@ export const ToolbarDropdown: React.FC<ToolbarDropdownProps> = ({
       </button>
       
       {isOpen && (
-        <div className={`absolute top-full mt-2 bg-neutral-800/95 backdrop-blur-sm border border-neutral-600/50 rounded-lg shadow-xl z-[9999] min-w-56 max-h-96 overflow-y-auto ${
+        <div className={`absolute top-full mt-2 bg-neutral-800/95 backdrop-blur-sm border border-neutral-600/50 rounded-lg shadow-xl z-[9999] min-w-56 max-h-[calc(100vh-120px)] overflow-y-auto ${
           className?.includes('dropdown-right') ? 'right-0' : 'left-0'
         }`}>
           <div className="py-2">

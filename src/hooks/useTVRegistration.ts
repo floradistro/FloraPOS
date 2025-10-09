@@ -228,20 +228,20 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
     }
   }, [tvId])
   
-  // POLL for pending commands every 30 seconds (backup for when WebSocket fails)
+  // POLL for pending commands every 5 seconds (backup for when WebSocket fails)
   useEffect(() => {
     if (!tvId || !isRegistered) return
     
     const interval = setInterval(() => {
       checkPendingCommands()
-    }, 30000) // Reduced from 5s to 30s
+    }, 5000) // Check every 5 seconds for responsive feel
     
     return () => {
       clearInterval(interval)
     }
   }, [tvId, isRegistered, checkPendingCommands])
 
-  // Heartbeat every 30 seconds (reduced from 10s)
+  // Heartbeat every 10 seconds for real-time status
   useEffect(() => {
     if (!isRegistered) {
       return
@@ -250,10 +250,10 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
     // Send first heartbeat immediately
     sendHeartbeat()
     
-    // Then every 30 seconds
+    // Then every 10 seconds
     const interval = setInterval(() => {
       sendHeartbeat()
-    }, 30000)
+    }, 10000)
     
     return () => {
       clearInterval(interval)

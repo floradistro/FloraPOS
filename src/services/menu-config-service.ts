@@ -61,6 +61,10 @@ export interface MenuConfigData {
   titleFont?: string;
   pricingFont?: string;
   cardFont?: string;
+  containerOpacity?: number;
+  borderWidth?: number;
+  borderOpacity?: number;
+  customBackground?: string; // Custom HTML/React/CSS background code
   singlePriceLocation?: 'none' | 'header' | 'inline';
   leftPriceLocation?: 'none' | 'header' | 'inline';
   rightPriceLocation?: 'none' | 'header' | 'inline';

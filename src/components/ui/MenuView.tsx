@@ -28,17 +28,24 @@ import { storeConfigService, StoreConfig, TVConfig } from '../../services/store-
 import { useTVDevices } from '../../hooks/useTVDevices'
 import { TVCommandService } from '../../services/tv-command-service'
 import { loadGoogleFont } from '../../lib/fonts'
+import { ToastProvider, useToast } from './Toast'
+import { TVPreview } from './TVPreview'
+import { TVDashboard } from './TVDashboard'
 
 interface MenuViewProps {
   searchQuery?: string
   categoryFilter?: string
 }
 
-export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
+function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
   const { user } = useAuth()
+  const { showToast, updateToast } = useToast()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Track which TV is currently being pushed to
+  const [pushingTVs, setPushingTVs] = useState<Set<string>>(new Set())
   
   // Window management with TV tracking (local windows)
   const [openWindows, setOpenWindows] = useState<Map<string, { window: Window, tvNumber: number, category: string }>>(new Map())
@@ -325,6 +332,10 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
       backgroundColor: '#000000', // Default
       fontColor: '#ffffff', // Default
       containerColor: '#1a1a1a', // Default
+      containerOpacity: 100, // Default
+      borderWidth: 1, // Default
+      borderOpacity: 100, // Default
+      customBackground: '', // Default - no custom background in layouts
       categoryColumnConfigs: {}
     }
     
@@ -363,6 +374,10 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
       titleFont: menuConfig.titleFont,
       pricingFont: menuConfig.pricingFont,
       cardFont: menuConfig.cardFont,
+      containerOpacity: menuConfig.containerOpacity,
+      borderWidth: menuConfig.borderWidth,
+      borderOpacity: menuConfig.borderOpacity,
+      customBackground: menuConfig.customBackground,
       categoryColumnConfigs: {}
     }
     
@@ -554,6 +569,15 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     params.append('containerOpacity', menuConfig.containerOpacity.toString())
     params.append('borderWidth', menuConfig.borderWidth.toString())
     params.append('borderOpacity', menuConfig.borderOpacity.toString())
+    params.append('imageOpacity', menuConfig.imageOpacity.toString())
+    params.append('blurIntensity', menuConfig.blurIntensity.toString())
+    
+    // Store custom background in localStorage and pass just an ID (URL too long otherwise)
+    if (menuConfig.customBackground) {
+      const bgId = `magic-bg-${Date.now()}`
+      localStorage.setItem(bgId, menuConfig.customBackground)
+      params.append('magicBgId', bgId)
+    }
 
     if (menuConfig.isDualMode) {
       params.append('dual', 'true')
@@ -1366,10 +1390,19 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
         containerOpacity={menuConfig.containerOpacity}
         borderWidth={menuConfig.borderWidth}
         borderOpacity={menuConfig.borderOpacity}
+        imageOpacity={menuConfig.imageOpacity}
+        blurIntensity={menuConfig.blurIntensity}
         onTransparencyChange={(values) => {
           menuConfig.setContainerOpacity(values.containerOpacity)
           menuConfig.setBorderWidth(values.borderWidth)
           menuConfig.setBorderOpacity(values.borderOpacity)
+          menuConfig.setImageOpacity(values.imageOpacity)
+          menuConfig.setBlurIntensity(values.blurIntensity)
+        }}
+        customBackground={menuConfig.customBackground}
+        onCustomBackgroundChange={(code) => {
+          console.log('📝 MenuView: Custom background changed, length:', code.length);
+          menuConfig.setCustomBackground(code);
         }}
         categories={categories}
         categoryColumnConfigs={categoryColumnConfigs}
@@ -1434,6 +1467,17 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
             
             {/* TV List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* TV Dashboard - Grid View of All Online TVs */}
+              {tvDevices.length > 0 && (
+                <TVDashboard
+                  tvDevices={tvDevices}
+                  isOnline={isOnline}
+                  onSelectTV={(tvId) => setSelectedTV(selectedTV === tvId ? null : tvId)}
+                  selectedTV={selectedTV}
+                  pushingTVs={pushingTVs}
+                />
+              )}
+              
               {/* Local Windows Section */}
               {openWindows.size > 0 && (
                 <div>
@@ -1707,8 +1751,17 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                   <div className="px-2 mb-2 text-xs font-medium text-white/40 uppercase tracking-wider flex items-center justify-between">
                     <span>Network TVs</span>
                     <button
-                      onClick={refreshTVs}
+                      onClick={async () => {
+                        const toastId = showToast('Refreshing TV list...', 'loading')
+                        try {
+                          await refreshTVs()
+                          updateToast(toastId, '✓ TV list refreshed', 'success')
+                        } catch (error) {
+                          updateToast(toastId, '✗ Failed to refresh TV list', 'error')
+                        }
+                      }}
                       className="text-white/40 hover:text-white/90 transition-colors p-1"
+                      title="Refresh TV list"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1751,23 +1804,44 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                           {selectedTV === tv.id && online && (
                             <div className="space-y-1.5 mt-2 pt-2 border-t border-white/10">
                               <button
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation()
-                                  TVCommandService.sendCommand(tv.id, 'update_theme', {
-                                    backgroundColor: menuConfig.backgroundColor,
-                                    fontColor: menuConfig.fontColor,
-                                    cardFontColor: menuConfig.cardFontColor,
-                                    containerColor: menuConfig.containerColor,
-                                    imageBackgroundColor: menuConfig.imageBackgroundColor,
-                                    titleFont: menuConfig.titleFont,
-                                    pricingFont: menuConfig.pricingFont,
-                                    cardFont: menuConfig.cardFont,
-                                    orientation: menuConfig.orientation,
-                                    isDualMenu: menuConfig.isDualMode,
-                                    singleMenu: menuConfig.singlePanel,
-                                    leftPanel: menuConfig.leftPanel,
-                                    rightPanel: menuConfig.rightPanel
-                                  })
+                                  const toastId = showToast(`Pushing config to TV ${tv.tv_number}...`, 'loading')
+                                  
+                                  // Add to pushing state
+                                  setPushingTVs(prev => new Set(prev).add(tv.id))
+                                  
+                                  try {
+                                    await TVCommandService.sendCommand(tv.id, 'update_theme', {
+                                      backgroundColor: menuConfig.backgroundColor,
+                                      fontColor: menuConfig.fontColor,
+                                      cardFontColor: menuConfig.cardFontColor,
+                                      containerColor: menuConfig.containerColor,
+                                      imageBackgroundColor: menuConfig.imageBackgroundColor,
+                                      titleFont: menuConfig.titleFont,
+                                      pricingFont: menuConfig.pricingFont,
+                                      cardFont: menuConfig.cardFont,
+                                      orientation: menuConfig.orientation,
+                                      isDualMenu: menuConfig.isDualMode,
+                                      singleMenu: menuConfig.singlePanel,
+                                      leftPanel: menuConfig.leftPanel,
+                                      rightPanel: menuConfig.rightPanel
+                                    })
+                                    
+                                    // Wait a bit for TV to process
+                                    await new Promise(resolve => setTimeout(resolve, 2000))
+                                    
+                                    updateToast(toastId, `✓ Config pushed to TV ${tv.tv_number}`, 'success')
+                                  } catch (error) {
+                                    updateToast(toastId, `✗ Failed to push config to TV ${tv.tv_number}`, 'error')
+                                  } finally {
+                                    // Remove from pushing state
+                                    setPushingTVs(prev => {
+                                      const next = new Set(prev)
+                                      next.delete(tv.id)
+                                      return next
+                                    })
+                                  }
                                 }}
                                 className="w-full px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 rounded text-xs transition-colors flex items-center justify-center gap-2"
                               >
@@ -1778,9 +1852,15 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                               </button>
                               
                               <button
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation()
-                                  TVCommandService.sendCommand(tv.id, 'refresh')
+                                  const toastId = showToast(`Refreshing TV ${tv.tv_number}...`, 'loading')
+                                  try {
+                                    await TVCommandService.sendCommand(tv.id, 'refresh')
+                                    updateToast(toastId, `✓ TV ${tv.tv_number} refreshing`, 'success')
+                                  } catch (error) {
+                                    updateToast(toastId, `✗ Failed to refresh TV ${tv.tv_number}`, 'error')
+                                  }
                                 }}
                                 className="w-full px-3 py-1.5 bg-transparent hover:bg-white/5 border border-white/10 text-white/70 rounded text-xs transition-colors flex items-center justify-center gap-2"
                               >
@@ -1789,6 +1869,15 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                 </svg>
                                 Refresh
                               </button>
+                              
+                              {/* Live TV Preview */}
+                              <TVPreview
+                                tvId={tv.id}
+                                tvNumber={tv.tv_number}
+                                locationId={parseInt(user?.location_id?.toString() || '20')}
+                                isOnline={online}
+                                isPushing={pushingTVs.has(tv.id)}
+                              />
                             </div>
                           )}
                         </div>
@@ -1840,17 +1929,26 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
             <div className="p-4 border-t border-white/10 space-y-2">
               {/* Refresh All Network TVs */}
               <button
-                onClick={() => {
-                  // Refresh local windows
-                  Array.from(openWindows.values()).forEach(tv => {
-                    if (!tv.window.closed) {
-                      tv.window.location.reload()
-                    }
-                  })
+                onClick={async () => {
+                  const totalTVs = openWindows.size + onlineCount
+                  const toastId = showToast(`Refreshing ${totalTVs} TVs...`, 'loading')
                   
-                  // Send refresh command to all network TVs
-                  const locationId = user?.location_id ? parseInt(user.location_id.toString()) : 20
-                  TVCommandService.broadcastToLocation(locationId, 'refresh')
+                  try {
+                    // Refresh local windows
+                    Array.from(openWindows.values()).forEach(tv => {
+                      if (!tv.window.closed) {
+                        tv.window.location.reload()
+                      }
+                    })
+                    
+                    // Send refresh command to all network TVs
+                    const locationId = user?.location_id ? parseInt(user.location_id.toString()) : 20
+                    const count = await TVCommandService.broadcastToLocation(locationId, 'refresh')
+                    
+                    updateToast(toastId, `✓ Refreshed ${openWindows.size} local + ${count} network TVs`, 'success')
+                  } catch (error) {
+                    updateToast(toastId, `✗ Failed to refresh TVs`, 'error')
+                  }
                 }}
                 disabled={openWindows.size === 0 && onlineCount === 0}
                 className="w-full px-3 py-2 bg-white/5 hover:bg-white/10 disabled:bg-white/5 disabled:opacity-50 border border-white/10 text-white/90 rounded text-xs transition-all duration-200 flex items-center justify-center gap-2"
@@ -1864,23 +1962,31 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               {/* Push Config to All Network TVs */}
               {onlineCount > 0 && (
                 <button
-                  onClick={() => {
-                    const locationId = user?.location_id ? parseInt(user.location_id.toString()) : 20
-                    TVCommandService.broadcastToLocation(locationId, 'update_theme', {
-                      backgroundColor: menuConfig.backgroundColor,
-                      fontColor: menuConfig.fontColor,
-                      cardFontColor: menuConfig.cardFontColor,
-                      containerColor: menuConfig.containerColor,
-                      imageBackgroundColor: menuConfig.imageBackgroundColor,
-                      titleFont: menuConfig.titleFont,
-                      pricingFont: menuConfig.pricingFont,
-                      cardFont: menuConfig.cardFont,
-                      orientation: menuConfig.orientation,
-                      isDualMenu: menuConfig.isDualMode,
-                      singleMenu: menuConfig.singlePanel,
-                      leftPanel: menuConfig.leftPanel,
-                      rightPanel: menuConfig.rightPanel
-                    })
+                  onClick={async () => {
+                    const toastId = showToast(`Pushing config to ${onlineCount} network TVs...`, 'loading')
+                    
+                    try {
+                      const locationId = user?.location_id ? parseInt(user.location_id.toString()) : 20
+                      const count = await TVCommandService.broadcastToLocation(locationId, 'update_theme', {
+                        backgroundColor: menuConfig.backgroundColor,
+                        fontColor: menuConfig.fontColor,
+                        cardFontColor: menuConfig.cardFontColor,
+                        containerColor: menuConfig.containerColor,
+                        imageBackgroundColor: menuConfig.imageBackgroundColor,
+                        titleFont: menuConfig.titleFont,
+                        pricingFont: menuConfig.pricingFont,
+                        cardFont: menuConfig.cardFont,
+                        orientation: menuConfig.orientation,
+                        isDualMenu: menuConfig.isDualMode,
+                        singleMenu: menuConfig.singlePanel,
+                        leftPanel: menuConfig.leftPanel,
+                        rightPanel: menuConfig.rightPanel
+                      })
+                      
+                      updateToast(toastId, `✓ Config pushed to ${count} network TVs`, 'success')
+                    } catch (error) {
+                      updateToast(toastId, `✗ Failed to push config`, 'error')
+                    }
                   }}
                   className="w-full px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 rounded text-xs transition-colors flex items-center justify-center gap-2"
                 >
@@ -1976,6 +2082,9 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
               containerOpacity={menuConfig.containerOpacity}
               borderWidth={menuConfig.borderWidth}
               borderOpacity={menuConfig.borderOpacity}
+              imageOpacity={menuConfig.imageOpacity}
+              blurIntensity={menuConfig.blurIntensity}
+              customBackground={menuConfig.customBackground || ''}
               pandaMode={false}
               priceLocation={menuConfig.isDualMode ? menuConfig.leftPanel.priceLocation : menuConfig.singlePanel.priceLocation}
               leftPriceLocation={menuConfig.leftPanel.priceLocation}
@@ -1994,6 +2103,14 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
         </div>
       </div>
     </div>
+  )
+}
+
+export function MenuView(props: MenuViewProps) {
+  return (
+    <ToastProvider>
+      <MenuViewInner {...props} />
+    </ToastProvider>
   )
 }
 

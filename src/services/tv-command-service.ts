@@ -50,7 +50,7 @@ export class TVCommandService {
       return data as TVCommand
     } catch (error) {
       console.error('Failed to send command:', error)
-      return null
+      throw error // Throw to allow caller to handle
     }
   }
 
@@ -80,7 +80,7 @@ export class TVCommandService {
       return true
     } catch (error) {
       console.error('Failed to broadcast command:', error)
-      return false
+      throw error // Throw to allow caller to handle
     }
   }
 
@@ -91,25 +91,27 @@ export class TVCommandService {
     locationId: number,
     commandType: CommandType,
     payload: any = {}
-  ): Promise<boolean> {
+  ): Promise<number> {
     try {
-      // Get all TVs at this location
+      // Get all online TVs at this location (last seen within 20s)
       const { data: tvs, error: fetchError } = await supabase
         .from('tv_devices')
-        .select('id')
+        .select('id, last_seen')
         .eq('location_id', locationId)
+        .gte('last_seen', new Date(Date.now() - 20000).toISOString())
 
       if (fetchError) throw fetchError
       if (!tvs || tvs.length === 0) {
-        console.warn('No TVs found at location:', locationId)
-        return false
+        console.warn('No online TVs found at location:', locationId)
+        return 0
       }
 
       const tvIds = tvs.map(tv => tv.id)
-      return await this.sendCommandToMultiple(tvIds, commandType, payload)
+      await this.sendCommandToMultiple(tvIds, commandType, payload)
+      return tvIds.length
     } catch (error) {
       console.error('Failed to broadcast to location:', error)
-      return false
+      throw error
     }
   }
 

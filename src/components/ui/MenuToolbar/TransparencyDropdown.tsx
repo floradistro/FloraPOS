@@ -57,10 +57,14 @@ interface TransparencyDropdownProps {
   containerOpacity: number;
   borderWidth: number;
   borderOpacity: number;
+  imageOpacity: number;
+  blurIntensity: number;
   onTransparencyChange: (values: { 
     containerOpacity: number; 
     borderWidth: number; 
     borderOpacity: number;
+    imageOpacity: number;
+    blurIntensity: number;
   }) => void;
 }
 
@@ -68,6 +72,8 @@ export const TransparencyDropdown: React.FC<TransparencyDropdownProps> = ({
   containerOpacity,
   borderWidth,
   borderOpacity,
+  imageOpacity,
+  blurIntensity,
   onTransparencyChange
 }) => {
   return (
@@ -89,9 +95,29 @@ export const TransparencyDropdown: React.FC<TransparencyDropdownProps> = ({
           max={100}
           step={5}
           suffix="%"
-          onChange={(value) => onTransparencyChange({ containerOpacity: value, borderWidth, borderOpacity })}
+          onChange={(value) => onTransparencyChange({ containerOpacity: value, borderWidth, borderOpacity, imageOpacity, blurIntensity })}
         />
         <div className="border-t border-neutral-700"></div>
+        <SliderItem
+          label="Blur Intensity"
+          description="Glass blur effect strength"
+          value={blurIntensity}
+          min={0}
+          max={24}
+          step={2}
+          suffix="px"
+          onChange={(value) => onTransparencyChange({ containerOpacity, borderWidth, borderOpacity, imageOpacity, blurIntensity: value })}
+        />
+        <SliderItem
+          label="Image Opacity"
+          description="Product image transparency"
+          value={imageOpacity}
+          min={0}
+          max={100}
+          step={5}
+          suffix="%"
+          onChange={(value) => onTransparencyChange({ containerOpacity, borderWidth, borderOpacity, imageOpacity: value, blurIntensity })}
+        />
         <SliderItem
           label="Border Width"
           description="Border thickness"
@@ -100,7 +126,7 @@ export const TransparencyDropdown: React.FC<TransparencyDropdownProps> = ({
           max={10}
           step={1}
           suffix="px"
-          onChange={(value) => onTransparencyChange({ containerOpacity, borderWidth: value, borderOpacity })}
+          onChange={(value) => onTransparencyChange({ containerOpacity, borderWidth: value, borderOpacity, imageOpacity, blurIntensity })}
         />
         <SliderItem
           label="Border Opacity"
@@ -110,7 +136,7 @@ export const TransparencyDropdown: React.FC<TransparencyDropdownProps> = ({
           max={100}
           step={5}
           suffix="%"
-          onChange={(value) => onTransparencyChange({ containerOpacity, borderWidth, borderOpacity: value })}
+          onChange={(value) => onTransparencyChange({ containerOpacity, borderWidth, borderOpacity: value, imageOpacity, blurIntensity })}
         />
       </div>
     </ToolbarDropdown>

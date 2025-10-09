@@ -13,6 +13,7 @@ import { Product, Category } from '../../types'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { useTVRegistration } from '@/hooks/useTVRegistration'
 import { ConnectionStatusIndicator } from '@/components/tv/ConnectionStatusIndicator'
+import { MagicBackground } from '../../components/ui/MagicBackground'
 import { loadGoogleFont } from '../../lib/fonts'
 
 function MenuDisplayContent() {
@@ -46,6 +47,14 @@ function MenuDisplayContent() {
   const containerOpacity = parseInt(searchParams.get('containerOpacity') || '100')
   const borderWidth = parseInt(searchParams.get('borderWidth') || '1')
   const borderOpacity = parseInt(searchParams.get('borderOpacity') || '100')
+  const imageOpacity = parseInt(searchParams.get('imageOpacity') || '100')
+  const blurIntensity = parseInt(searchParams.get('blurIntensity') || '8')
+  
+  // Get custom background from localStorage (not URL to avoid 431 error)
+  const magicBgId = searchParams.get('magicBgId')
+  const customBackground = magicBgId && typeof window !== 'undefined' 
+    ? localStorage.getItem(magicBgId) || '' 
+    : ''
   
   console.log('🎨 [TV DISPLAY] View mode from URL:', viewMode)
   console.log('📐 [TV DISPLAY] Orientation from URL:', orientation)
@@ -89,10 +98,14 @@ function MenuDisplayContent() {
   
   // Handle incoming commands
   const handleCommand = useCallback((command: any) => {
-    if (command.command_type === 'refresh_inventory') {
+    console.log('📺 [TV DISPLAY] Received command:', command.command_type)
+    
+    if (command.command_type === 'refresh_inventory' || command.command_type === 'refresh') {
       // Reload products when inventory changes
+      console.log('🔄 [TV DISPLAY] Reloading page...')
       window.location.reload()
     } else if (command.command_type === 'update_theme') {
+      console.log('🎨 [TV DISPLAY] Updating theme...')
       const payload = command.payload
       const currentUrl = new URL(window.location.href)
       
@@ -129,6 +142,7 @@ function MenuDisplayContent() {
         currentUrl.searchParams.set('showImages', payload.singleMenu.showImages ? 'true' : 'false')
       }
       
+      console.log('✅ [TV DISPLAY] Applying new config:', currentUrl.search)
       window.location.href = currentUrl.href
     }
   }, [])
@@ -209,7 +223,7 @@ function MenuDisplayContent() {
             const locationInventory = product.inventory?.find((inv: any) => 
               inv.location_id?.toString() === locationId
             )
-            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || parseFloat(locationInventory.quantity?.toString() || '0') || 0) : 0
+            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || 0) : 0
             
             // Debug logging for products with 0 stock
             if (locationStock === 0 && product.name?.toLowerCase().includes('animal')) {
@@ -237,7 +251,7 @@ function MenuDisplayContent() {
             const locationInventory = product.inventory?.find((inv: any) => 
               inv.location_id?.toString() === locationId
             )
-            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || parseFloat(locationInventory.quantity?.toString() || '0') || 0) : 0
+            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || 0) : 0
             return locationStock > 0
           })
           
@@ -300,11 +314,12 @@ function MenuDisplayContent() {
     return (
       <div
         key={product.id}
-        className="group rounded-2xl p-4 flex flex-col backdrop-blur-xl"
+        className="group rounded-2xl p-4 flex flex-col"
         style={{ 
           background: `linear-gradient(135deg, ${containerColor}${containerAlpha} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 224).toString(16).padStart(2, '0')} 100%)`,
           border: `${borderWidth}px solid rgba(255, 255, 255, ${borderAlpha})`,
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+          backdropFilter: `blur(${blurIntensity}px)`,
           willChange: 'auto'
         }}
       >
@@ -312,11 +327,15 @@ function MenuDisplayContent() {
           <div 
             className="aspect-square rounded-xl overflow-hidden mb-3 flex-shrink-0" 
             style={{ 
-              background: `linear-gradient(135deg, ${imageBackgroundColor} 0%, ${imageBackgroundColor}CC 100%)`,
+              background: `${imageBackgroundColor}${Math.round((imageOpacity / 100) * 255).toString(16).padStart(2, '0')}`,
               boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.3)'
             }}
           >
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            <img 
+              src={product.image} 
+              alt={product.name} 
+              className="w-full h-full object-cover" 
+            />
           </div>
         )}
         <h3 
@@ -346,7 +365,7 @@ function MenuDisplayContent() {
                   }}
                 >
                   <span style={{ color: `${cardFontColor}CC`, fontFamily: pricingFont, fontSize: '0.85rem', fontWeight: 500 }}>{tier.label}</span>
-                  <span className="font-bold" style={{ color: '#10b981', fontFamily: pricingFont, fontSize: '1rem', textShadow: '0 0 12px rgba(16, 185, 129, 0.3)' }}>
+                  <span className="font-bold" style={{ color: cardFontColor, fontFamily: pricingFont, fontSize: '1rem' }}>
                     ${parseFloat(tier.price).toFixed(2)}
                   </span>
                 </div>
@@ -359,11 +378,8 @@ function MenuDisplayContent() {
             <div 
               className="text-2xl font-bold mt-auto" 
               style={{ 
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                fontFamily: pricingFont,
-                textShadow: '0 0 20px rgba(16, 185, 129, 0.2)'
+                color: cardFontColor,
+                fontFamily: pricingFont
               }}
             >
               ${priceNum.toFixed(2)}
@@ -402,7 +418,7 @@ function MenuDisplayContent() {
           borderBottom: `${borderWidth}px solid rgba(255, 255, 255, ${borderAlpha})`,
           color: fontColor,
           willChange: 'auto',
-          backdropFilter: 'blur(8px)'
+          backdropFilter: `blur(${blurIntensity}px)`
         }}
       >
         {/* Image */}
@@ -410,7 +426,7 @@ function MenuDisplayContent() {
           <div 
             className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0" 
             style={{ 
-              background: `linear-gradient(135deg, ${imageBackgroundColor}F0 0%, ${imageBackgroundColor}CC 100%)`,
+              background: `${imageBackgroundColor}${Math.round((imageOpacity / 100) * 255).toString(16).padStart(2, '0')}`,
               boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
               border: '1px solid rgba(255, 255, 255, 0.1)'
             }}
@@ -449,20 +465,18 @@ function MenuDisplayContent() {
             {pricingTiers.map((tier: any, idx: number) => (
               <div 
                 key={idx} 
-                className="text-center px-4 py-2 rounded-xl"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)',
-                  border: '1px solid rgba(16, 185, 129, 0.2)',
-                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)'
-                }}
+                  className="text-center px-4 py-2 rounded-xl"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                  }}
               >
                 <div className="text-[10px] mb-1 uppercase tracking-wider font-semibold" style={{ color: `${fontColor}CC`, fontFamily: cardFont }}>
                   {tier.label}
                 </div>
                 <div className="text-base font-bold" style={{ 
-                  color: '#10b981', 
-                  fontFamily: cardFont,
-                  textShadow: '0 0 12px rgba(16, 185, 129, 0.3)'
+                  color: fontColor, 
+                  fontFamily: cardFont
                 }}>
                   ${parseFloat(tier.price).toFixed(2)}
                 </div>
@@ -476,12 +490,11 @@ function MenuDisplayContent() {
           <div 
             className="text-2xl font-bold flex-shrink-0 text-right px-5 py-2 rounded-xl"
             style={{
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              color: '#10b981',
+              background: `${containerColor}60`,
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: fontColor,
               fontFamily: cardFont,
-              textShadow: '0 0 16px rgba(16, 185, 129, 0.4)',
-              boxShadow: '0 4px 16px rgba(16, 185, 129, 0.2)'
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)'
             }}
           >
             ${priceNum.toFixed(2)}
@@ -589,11 +602,15 @@ function MenuDisplayContent() {
 
     return (
       <div className="h-screen w-screen flex flex-col overflow-hidden tv-menu-display" style={{ backgroundColor }}>
+        {/* Magic Background */}
+        {customBackground && <MagicBackground htmlCode={customBackground} />}
+        
         {/* Header */}
-        <div className="px-8 py-6 flex-shrink-0 backdrop-blur-xl" style={{ 
+        <div className="px-8 py-6 flex-shrink-0" style={{ 
           background: `linear-gradient(180deg, ${containerColor}80 0%, ${containerColor}40 100%)`,
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)'
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
+          backdropFilter: `blur(${blurIntensity}px)`
         }}>
           <div className="flex items-center justify-between gap-6">
             <div className="flex items-center gap-5 min-w-0">
@@ -627,18 +644,17 @@ function MenuDisplayContent() {
                         key={idx} 
                         className="text-center px-6 py-4 rounded-2xl backdrop-blur-xl"
                         style={{
-                          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
-                          border: '1px solid rgba(16, 185, 129, 0.3)',
-                          boxShadow: '0 8px 24px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                          background: `${containerColor}80`,
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
                         }}
                       >
                         <div className="text-xs mb-2 uppercase tracking-widest font-bold" style={{ color: `${fontColor}DD`, fontFamily: pricingFont }}>
                           {tier.label} {tier.unit}
                         </div>
                         <div className="text-5xl font-black" style={{ 
-                          color: '#10b981', 
+                          color: fontColor, 
                           fontFamily: pricingFont,
-                          textShadow: '0 0 24px rgba(16, 185, 129, 0.5)',
                           letterSpacing: '-0.02em'
                         }}>
                           ${parseFloat(tier.price).toFixed(2)}
@@ -652,12 +668,11 @@ function MenuDisplayContent() {
                   <div 
                     className="text-5xl font-black px-8 py-4 rounded-2xl backdrop-blur-xl" 
                     style={{ 
-                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      color: '#10b981', 
+                      background: `${containerColor}80`,
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      color: fontColor, 
                       fontFamily: pricingFont,
-                      textShadow: '0 0 24px rgba(16, 185, 129, 0.5)',
-                      boxShadow: '0 8px 24px rgba(16, 185, 129, 0.2)'
+                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)'
                     }}
                   >
                     ${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}
@@ -776,6 +791,9 @@ function MenuDisplayContent() {
 
   return (
     <div className="h-screen w-screen flex overflow-hidden tv-menu-display" style={{ backgroundColor }}>
+      {/* Magic Background */}
+      {customBackground && <MagicBackground htmlCode={customBackground} />}
+      
       {/* Left Panel - with stacking support */}
       <div className="w-1/2 flex flex-col border-r overflow-hidden flex-shrink-0" style={{ borderRightColor: `${containerColor}40` }}>
         {/* Left Top Quadrant */}
