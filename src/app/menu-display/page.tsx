@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback, Suspense, memo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { apiFetch } from '../../lib/api-fetch'
 import { BlueprintPricingService } from '../../services/blueprint-pricing-service'
+import { InventoryVisibilityService } from '../../services/inventory-visibility-service'
 import { Product, Category } from '../../types'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { useTVRegistration } from '@/hooks/useTVRegistration'
@@ -84,7 +85,10 @@ function MenuDisplayContent() {
   
   // Handle incoming commands
   const handleCommand = useCallback((command: any) => {
-    if (command.command_type === 'update_theme') {
+    if (command.command_type === 'refresh_inventory') {
+      // Reload products when inventory changes
+      window.location.reload()
+    } else if (command.command_type === 'update_theme') {
       const payload = command.payload
       const currentUrl = new URL(window.location.href)
       
@@ -187,19 +191,31 @@ function MenuDisplayContent() {
             blueprintPricing: batchPricing[p.id] || null
           }))
           
+          // Filter out out-of-stock products for TV display
+          const inStockProducts = InventoryVisibilityService.filterProductsByStock(
+            enrichedProducts,
+            locationId
+          )
+          
           // Only update if products actually changed
           setProducts(prev => {
-            if (JSON.stringify(prev) === JSON.stringify(enrichedProducts)) {
+            if (JSON.stringify(prev) === JSON.stringify(inStockProducts)) {
               return prev
             }
-            return enrichedProducts
+            return inStockProducts
           })
         } catch (err) {
+          // Even on pricing error, filter by stock
+          const inStockProducts = InventoryVisibilityService.filterProductsByStock(
+            result.data,
+            locationId
+          )
+          
           setProducts(prev => {
-            if (JSON.stringify(prev) === JSON.stringify(result.data)) {
+            if (JSON.stringify(prev) === JSON.stringify(inStockProducts)) {
               return prev
             }
-            return result.data
+            return inStockProducts
           })
         }
         
@@ -230,6 +246,15 @@ function MenuDisplayContent() {
     }
 
     loadProducts()
+    
+    // Refresh products every 30 seconds to catch stock changes
+    const refreshInterval = setInterval(() => {
+      loadProducts()
+    }, 30000)
+    
+    return () => {
+      clearInterval(refreshInterval)
+    }
   }, [locationId])
 
   // Render product card - COMPACT & RESPONSIVE (memoized)
