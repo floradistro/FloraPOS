@@ -231,7 +231,13 @@ export const threeSceneCategories = {
     { name: '🌊 Purple Dream', code: threeSceneTemplates.gradientWaves('#667eea', '#764ba2') },
     { name: '🌊 Pink Paradise', code: threeSceneTemplates.gradientWaves('#ff0084', '#33001b') },
     { name: '🌊 Cyber Wave', code: threeSceneTemplates.gradientWaves('#00ff88', '#00d4ff') },
-    { name: '🌊 Fire Wave', code: threeSceneTemplates.gradientWaves('#ff0000', '#ff9900') }
+    { name: '🌊 Fire Wave', code: threeSceneTemplates.gradientWaves('#ff0000', '#ff9900') },
+    { name: '🎃 Halloween Poison', code: threeSceneTemplates.gradientWaves('#00ff00', '#003300') },
+    { name: '🎃 Spooky Purple', code: threeSceneTemplates.gradientWaves('#9933ff', '#330066') },
+    { name: '🎃 Pumpkin Waves', code: threeSceneTemplates.gradientWaves('#ff6600', '#ff3300') },
+    { name: '🎃 Haunted Forest', code: threeSceneTemplates.gradientWaves('#44ff00', '#001100') },
+    { name: '🎃 Witch Purple', code: threeSceneTemplates.gradientWaves('#aa00ff', '#4400aa') },
+    { name: '🎃 Jack-O-Lantern', code: threeSceneTemplates.gradientWaves('#ffaa00', '#ff4400') }
   ],
   'Geometric': [
     { name: 'Red Shapes', code: threeSceneTemplates.geometric('#ff4444') },

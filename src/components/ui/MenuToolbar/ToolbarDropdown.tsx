@@ -30,7 +30,7 @@ export const ToolbarDropdown: React.FC<ToolbarDropdownProps> = ({
   }, [isOpen]);
 
   return (
-    <div className={`relative z-10 ${className}`} ref={dropdownRef}>
+    <div className={`relative ${className}`} ref={dropdownRef} style={{ zIndex: isOpen ? 99999 : 50 }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm transition-all duration-200 ease-out ${
@@ -57,9 +57,10 @@ export const ToolbarDropdown: React.FC<ToolbarDropdownProps> = ({
       </button>
       
       {isOpen && (
-        <div className={`absolute top-full mt-2 bg-neutral-800/95 backdrop-blur-sm border border-neutral-600/50 rounded-lg shadow-xl z-[9999] min-w-56 max-h-[calc(100vh-120px)] overflow-y-auto ${
+        <div className={`absolute top-full mt-2 bg-neutral-800/95 backdrop-blur-sm border border-neutral-600/50 rounded-lg shadow-xl min-w-56 max-h-[calc(100vh-120px)] overflow-y-auto ${
           className?.includes('dropdown-right') ? 'right-0' : 'left-0'
-        }`}>
+        }`}
+        style={{ zIndex: 99999 }}>
           <div className="py-2">
             {children}
           </div>
