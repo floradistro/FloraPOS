@@ -9,7 +9,6 @@ import React, { useState, useEffect, useCallback, Suspense, memo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { apiFetch } from '../../lib/api-fetch'
 import { BlueprintPricingService } from '../../services/blueprint-pricing-service'
-import { InventoryVisibilityService } from '../../services/inventory-visibility-service'
 import { Product, Category } from '../../types'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { useTVRegistration } from '@/hooks/useTVRegistration'
@@ -163,13 +162,20 @@ function MenuDisplayContent() {
       
       const params = new URLSearchParams({
         per_page: '1000',
-          location_id: locationId,
-        _t: Date.now().toString()
+        page: '1',
+        location_id: locationId,
+        _t: Math.floor(Date.now() / 300000).toString() // Cache for 5 minutes (same as ProductGrid)
         })
       
 
         const response = await apiFetch(`/api/proxy/flora-im/products?${params}`, {
-        headers: { 'Cache-Control': 'no-cache' }
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
         })
         const result = await response.json()
         
@@ -191,11 +197,14 @@ function MenuDisplayContent() {
             blueprintPricing: batchPricing[p.id] || null
           }))
           
-          // Filter out out-of-stock products for TV display
-          const inStockProducts = InventoryVisibilityService.filterProductsByStock(
-            enrichedProducts,
-            locationId
-          )
+          // Filter to show products with stock at ANY location (same as ProductGrid)
+          const inStockProducts = enrichedProducts.filter((product: Product) => {
+            const totalStock = product.total_stock || 
+              (product.inventory?.reduce((sum: number, inv: any) => 
+                sum + (parseFloat(inv.stock?.toString() || '0') || parseFloat(inv.quantity?.toString() || '0') || 0), 0
+              ) || 0)
+            return totalStock > 0
+          })
           
           // Only update if products actually changed
           setProducts(prev => {
@@ -205,11 +214,14 @@ function MenuDisplayContent() {
             return inStockProducts
           })
         } catch (err) {
-          // Even on pricing error, filter by stock
-          const inStockProducts = InventoryVisibilityService.filterProductsByStock(
-            result.data,
-            locationId
-          )
+          // Even on pricing error, filter by stock (same as ProductGrid)
+          const inStockProducts = result.data.filter((product: Product) => {
+            const totalStock = product.total_stock || 
+              (product.inventory?.reduce((sum: number, inv: any) => 
+                sum + (parseFloat(inv.stock?.toString() || '0') || parseFloat(inv.quantity?.toString() || '0') || 0), 0
+              ) || 0)
+            return totalStock > 0
+          })
           
           setProducts(prev => {
             if (JSON.stringify(prev) === JSON.stringify(inStockProducts)) {
@@ -247,10 +259,10 @@ function MenuDisplayContent() {
 
     loadProducts()
     
-    // Refresh products every 30 seconds to catch stock changes
+    // Refresh products every 5 minutes (same as ProductGrid cache)
     const refreshInterval = setInterval(() => {
       loadProducts()
-    }, 30000)
+    }, 300000)
     
     return () => {
       clearInterval(refreshInterval)
