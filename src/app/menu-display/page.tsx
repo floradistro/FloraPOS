@@ -646,7 +646,7 @@ function MenuDisplayContent() {
     return (
       <div className="h-screen w-screen flex flex-col overflow-hidden tv-menu-display relative" style={{ backgroundColor }}>
         {/* Magic Background */}
-        {customBackground && <MagicBackground htmlCode={customBackground} />}
+        {customBackground && <MagicBackground key={customBackground} htmlCode={customBackground} />}
         
         {/* Header */}
         <div className="px-8 flex-shrink-0 relative z-10" style={{
@@ -847,7 +847,7 @@ function MenuDisplayContent() {
   return (
     <div className="h-screen w-screen flex overflow-hidden tv-menu-display relative" style={{ backgroundColor }}>
       {/* Magic Background */}
-      {customBackground && <MagicBackground htmlCode={customBackground} />}
+      {customBackground && <MagicBackground key={customBackground} htmlCode={customBackground} />}
       
       {/* Left Panel - with stacking support */}
       <div className="w-1/2 flex flex-col border-r overflow-hidden flex-shrink-0 relative z-10" style={{ borderRightColor: `${containerColor}40` }}>
