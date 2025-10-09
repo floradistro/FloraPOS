@@ -35,6 +35,11 @@ export const useMenuConfig = () => {
   const [titleFont, setTitleFont] = useState('Tiempos, serif');
   const [pricingFont, setPricingFont] = useState('Tiempos, serif');
   const [cardFont, setCardFont] = useState('Tiempos, serif');
+  
+  // Transparency and borders
+  const [containerOpacity, setContainerOpacity] = useState(100);
+  const [borderWidth, setBorderWidth] = useState(1);
+  const [borderOpacity, setBorderOpacity] = useState(100);
 
   // Selected quadrant for dual menu configuration
   const [selectedQuadrant, setSelectedQuadrant] = useState<'left' | 'right' | 'leftBottom' | 'rightBottom' | ''>('');
@@ -131,6 +136,9 @@ export const useMenuConfig = () => {
     titleFont,
     pricingFont,
     cardFont,
+    containerOpacity,
+    borderWidth,
+    borderOpacity,
     selectedQuadrant,
     
     // Current panel convenience properties
@@ -152,6 +160,9 @@ export const useMenuConfig = () => {
     setTitleFont,
     setPricingFont,
     setCardFont,
+    setContainerOpacity,
+    setBorderWidth,
+    setBorderOpacity,
     setSelectedQuadrant,
     
     // Helpers

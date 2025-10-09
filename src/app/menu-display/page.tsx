@@ -42,6 +42,11 @@ function MenuDisplayContent() {
   const showImages = searchParams.get('showImages') === 'true'
   const priceLocation = (searchParams.get('priceLocation') as 'none' | 'header' | 'inline') || 'none'
   
+  // Transparency and border controls
+  const containerOpacity = parseInt(searchParams.get('containerOpacity') || '100')
+  const borderWidth = parseInt(searchParams.get('borderWidth') || '1')
+  const borderOpacity = parseInt(searchParams.get('borderOpacity') || '100')
+  
   console.log('🎨 [TV DISPLAY] View mode from URL:', viewMode)
   console.log('📐 [TV DISPLAY] Orientation from URL:', orientation)
   
@@ -288,13 +293,17 @@ function MenuDisplayContent() {
     const pricingTiers = product.blueprintPricing?.ruleGroups?.[0]?.tiers || []
     const hasTiers = pricingTiers.length > 0
 
+    // Calculate alpha values for transparency
+    const containerAlpha = Math.round((containerOpacity / 100) * 240).toString(16).padStart(2, '0')
+    const borderAlpha = (borderOpacity / 100).toFixed(2)
+
     return (
       <div
         key={product.id}
         className="group rounded-2xl p-4 flex flex-col backdrop-blur-xl"
         style={{ 
-          background: `linear-gradient(135deg, ${containerColor}F0 0%, ${containerColor}E0 100%)`,
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: `linear-gradient(135deg, ${containerColor}${containerAlpha} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 224).toString(16).padStart(2, '0')} 100%)`,
+          border: `${borderWidth}px solid rgba(255, 255, 255, ${borderAlpha * 0.1})`,
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
           willChange: 'auto'
         }}
@@ -363,7 +372,7 @@ function MenuDisplayContent() {
         )}
       </div>
     )
-  }, [containerColor, imageBackgroundColor, cardFontColor, cardFont, pricingFont])
+  }, [containerColor, imageBackgroundColor, cardFontColor, cardFont, pricingFont, containerOpacity, borderWidth, borderOpacity])
   
   // Render product row (memoized)
   const renderProduct = useCallback((product: Product, index: number, panelPriceLocation: 'header' | 'inline' | 'none' = priceLocation, panelShowImages: boolean = showImages) => {
@@ -377,15 +386,20 @@ function MenuDisplayContent() {
     const pricingTiers = blueprintData?.ruleGroups?.[0]?.tiers || []
     const hasTiers = pricingTiers.length > 0
 
+    // Calculate alpha values for row transparency
+    const rowAlpha1 = Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')
+    const rowAlpha2 = Math.round((containerOpacity / 100) * 32).toString(16).padStart(2, '0')
+    const borderAlpha = (borderOpacity / 100 * 0.05).toFixed(3)
+
     return (
       <div
         key={product.id}
         className="group flex items-center gap-4 py-3 px-5"
         style={{
           background: index % 2 === 0 
-            ? `linear-gradient(90deg, ${containerColor}40 0%, ${containerColor}20 100%)` 
-            : 'rgba(255, 255, 255, 0.02)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+            ? `linear-gradient(90deg, ${containerColor}${rowAlpha1} 0%, ${containerColor}${rowAlpha2} 100%)` 
+            : `rgba(255, 255, 255, ${(containerOpacity / 100) * 0.02})`,
+          borderBottom: `${borderWidth}px solid rgba(255, 255, 255, ${borderAlpha})`,
           color: fontColor,
           willChange: 'auto',
           backdropFilter: 'blur(8px)'
@@ -476,7 +490,7 @@ function MenuDisplayContent() {
 
       </div>
     )
-  }, [containerColor, imageBackgroundColor, fontColor, cardFont, pricingFont, priceLocation, showImages])
+  }, [containerColor, imageBackgroundColor, fontColor, cardFont, pricingFont, priceLocation, showImages, containerOpacity, borderWidth, borderOpacity])
 
   // Loading
   if (loading) {
@@ -676,15 +690,15 @@ function MenuDisplayContent() {
                   return (
                     <div className="grid grid-cols-2 gap-4">
                       <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
-                        background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                        border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
                         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                       }}>
                         {leftCol.map((product, idx) => renderProduct(product, idx, priceLocation, showImages))}
                       </div>
                       <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
-                        background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                        border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
                         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                       }}>
                         {rightCol.map((product, idx) => renderProduct(product, idx, priceLocation, showImages))}
@@ -694,8 +708,8 @@ function MenuDisplayContent() {
                 } else {
                   return (
                     <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
-                      background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                      border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
                       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     }}>
                       {displayProducts.map((product, idx) => renderProduct(product, idx, priceLocation, showImages))}
@@ -812,15 +826,15 @@ function MenuDisplayContent() {
                 return (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
-                      background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                      border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
                       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     }}>
                       {leftCol.map((p, idx) => renderProduct(p, idx, leftPriceLocation, leftImages))}
                     </div>
                     <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
-                      background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                      border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
                       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     }}>
                       {rightCol.map((p, idx) => renderProduct(p, idx, leftPriceLocation, leftImages))}
@@ -889,8 +903,8 @@ function MenuDisplayContent() {
                   } else {
                     return (
                       <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
-                        background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                        border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
                         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                       }}>
                         {leftProducts2.map((p, idx) => renderProduct(p, idx, leftPriceLocation2, leftImages2))}
@@ -954,15 +968,15 @@ function MenuDisplayContent() {
                 return (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
-                      background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                      border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
                       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     }}>
                       {leftCol.map((p, idx) => renderProduct(p, idx, rightPriceLocation, rightImages))}
                     </div>
                     <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
-                      background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                      border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
                       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     }}>
                       {rightCol.map((p, idx) => renderProduct(p, idx, rightPriceLocation, rightImages))}
@@ -1031,8 +1045,8 @@ function MenuDisplayContent() {
                   } else {
                     return (
                       <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
-                        background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                        border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
                         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                       }}>
                         {rightProducts2.map((p, idx) => renderProduct(p, idx, rightPriceLocation2, rightImages2))}

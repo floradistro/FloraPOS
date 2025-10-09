@@ -7,6 +7,7 @@ import { LayoutDropdown } from './LayoutDropdown';
 import { DisplayDropdown } from './DisplayDropdown';
 import { ColorDropdown } from './ColorDropdown';
 import { FontDropdown } from './FontDropdown';
+import { TransparencyDropdown } from './TransparencyDropdown';
 import { MenuModeDropdown } from './MenuModeDropdown';
 import { CategoriesDropdown } from './CategoriesDropdown';
 import { ColumnSelector } from '../ColumnSelector';
@@ -32,6 +33,10 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   cardFont,
   onColorsChange,
   onFontsChange,
+  containerOpacity,
+  borderWidth,
+  borderOpacity,
+  onTransparencyChange,
   categories,
   categoryColumnConfigs,
   onColumnsChange,
@@ -159,6 +164,13 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             cardFontColor={cardFontColor}
             imageBackgroundColor={imageBackgroundColor}
             onColorsChange={onColorsChange}
+          />
+
+          <TransparencyDropdown
+            containerOpacity={containerOpacity}
+            borderWidth={borderWidth}
+            borderOpacity={borderOpacity}
+            onTransparencyChange={onTransparencyChange}
           />
 
           <FontDropdown

@@ -551,6 +551,9 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
     params.append('titleFont', menuConfig.titleFont)
     params.append('pricingFont', menuConfig.pricingFont)
     params.append('cardFont', menuConfig.cardFont)
+    params.append('containerOpacity', menuConfig.containerOpacity.toString())
+    params.append('borderWidth', menuConfig.borderWidth.toString())
+    params.append('borderOpacity', menuConfig.borderOpacity.toString())
 
     if (menuConfig.isDualMode) {
       params.append('dual', 'true')
@@ -1359,6 +1362,14 @@ export function MenuView({ searchQuery = '', categoryFilter }: MenuViewProps) {
           menuConfig.setTitleFont(fonts.titleFont)
           menuConfig.setPricingFont(fonts.pricingFont)
           menuConfig.setCardFont(fonts.cardFont)
+        }}
+        containerOpacity={menuConfig.containerOpacity}
+        borderWidth={menuConfig.borderWidth}
+        borderOpacity={menuConfig.borderOpacity}
+        onTransparencyChange={(values) => {
+          menuConfig.setContainerOpacity(values.containerOpacity)
+          menuConfig.setBorderWidth(values.borderWidth)
+          menuConfig.setBorderOpacity(values.borderOpacity)
         }}
         categories={categories}
         categoryColumnConfigs={categoryColumnConfigs}
