@@ -421,23 +421,22 @@ export const ProductGrid = forwardRef<{
 
       const productsWithInventory = result.data;
 
-      // Don't filter products by location - show ALL products with stock > 0 anywhere
-      // The user's location will still be used for display purposes
+      // Filter products by location-specific stock - only show products with stock > 0 at current location
       let filteredProducts = productsWithInventory.filter((product: any) => {
-        // Show products that have total stock > 0 (stock at any location)
-        const totalStock = product.total_stock || 
-          (product.inventory?.reduce((sum: number, inv: any) => sum + (parseFloat(inv.stock) || parseFloat(inv.quantity) || 0), 0) || 0);
-        const hasStock = totalStock > 0;
-        
-        // Debug logging for first few products in production
-        if (!hasStock && productsWithInventory.indexOf(product) < 3) {
+        // If user has a location, filter by location-specific stock
+        if (user?.location_id) {
+          const locationInventory = product.inventory?.find((inv: any) => 
+            inv.location_id?.toString() === user.location_id.toString()
+          );
+          const locationStock = locationInventory ? (parseFloat(locationInventory.stock) || parseFloat(locationInventory.quantity) || 0) : 0;
+          return locationStock > 0;
         }
         
-        return hasStock;
+        // Fallback: if no location, show products with any stock
+        const totalStock = product.total_stock || 
+          (product.inventory?.reduce((sum: number, inv: any) => sum + (parseFloat(inv.stock) || parseFloat(inv.quantity) || 0), 0) || 0);
+        return totalStock > 0;
       });
-      
-      if (user?.location_id) {
-      }
 
       // Filter by category if categoryFilter is set (client-side filtering)
       if (categoryFilter) {
