@@ -282,7 +282,7 @@ function MenuDisplayContent() {
     }
   }, [locationId])
 
-  // Render product card - COMPACT & RESPONSIVE (memoized)
+  // Render product card - PREMIUM APPLE-STYLE (memoized)
   const renderProductCard = useCallback((product: Product, panelShowImages: boolean, panelPriceLocation: 'header' | 'inline' | 'none') => {
     const priceNum = product.blueprintPricing?.calculated_price ? parseFloat(product.blueprintPricing.calculated_price.toString()) : parseFloat(product.regular_price || '0')
     const pricingTiers = product.blueprintPricing?.ruleGroups?.[0]?.tiers || []
@@ -291,36 +291,74 @@ function MenuDisplayContent() {
     return (
       <div
         key={product.id}
-        className="group rounded-lg p-2 border flex flex-col"
+        className="group rounded-2xl p-4 flex flex-col backdrop-blur-xl"
         style={{ 
-          backgroundColor: containerColor,
-          borderColor: `${containerColor}80`,
+          background: `linear-gradient(135deg, ${containerColor}F0 0%, ${containerColor}E0 100%)`,
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
           willChange: 'auto'
         }}
       >
         {panelShowImages && product.image && (
-          <div className="aspect-square rounded-lg overflow-hidden mb-1.5 flex-shrink-0" style={{ backgroundColor: imageBackgroundColor }}>
+          <div 
+            className="aspect-square rounded-xl overflow-hidden mb-3 flex-shrink-0" 
+            style={{ 
+              background: `linear-gradient(135deg, ${imageBackgroundColor} 0%, ${imageBackgroundColor}CC 100%)`,
+              boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.3)'
+            }}
+          >
             <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
           </div>
         )}
-        <h3 className="text-sm font-semibold mb-1 line-clamp-2 flex-shrink-0" style={{ color: cardFontColor, minHeight: '2.5rem', fontFamily: cardFont }}>{product.name}</h3>
+        <h3 
+          className="text-base font-bold mb-2 line-clamp-2 flex-shrink-0" 
+          style={{ 
+            color: cardFontColor, 
+            minHeight: '2.5rem', 
+            fontFamily: cardFont,
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+            letterSpacing: '-0.02em'
+          }}
+        >
+          {product.name}
+        </h3>
         
         {/* Only show pricing if inline mode */}
         {panelPriceLocation === 'inline' && (
           hasTiers ? (
-            <div className="space-y-0.5">
+            <div className="space-y-1.5">
               {pricingTiers.slice(0, 2).map((tier: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
-                  <span style={{ color: `${cardFontColor}70`, fontFamily: pricingFont }}>{tier.label}</span>
-                  <span className="font-bold text-sm" style={{ color: cardFontColor, fontFamily: pricingFont }}>${parseFloat(tier.price).toFixed(2)}</span>
+                <div 
+                  key={idx} 
+                  className="flex items-center justify-between text-sm rounded-lg px-2 py-1"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)'
+                  }}
+                >
+                  <span style={{ color: `${cardFontColor}CC`, fontFamily: pricingFont, fontSize: '0.85rem', fontWeight: 500 }}>{tier.label}</span>
+                  <span className="font-bold" style={{ color: '#10b981', fontFamily: pricingFont, fontSize: '1rem', textShadow: '0 0 12px rgba(16, 185, 129, 0.3)' }}>
+                    ${parseFloat(tier.price).toFixed(2)}
+                  </span>
                 </div>
               ))}
               {pricingTiers.length > 2 && (
-                <div className="text-xs text-center" style={{ color: `${cardFontColor}60`, fontFamily: pricingFont }}>+{pricingTiers.length - 2} more</div>
+                <div className="text-xs text-center py-1" style={{ color: `${cardFontColor}99`, fontFamily: pricingFont }}>+{pricingTiers.length - 2} more options</div>
               )}
             </div>
           ) : priceNum > 0 && (
-            <div className="text-lg font-bold" style={{ color: cardFontColor, fontFamily: pricingFont }}>${priceNum.toFixed(2)}</div>
+            <div 
+              className="text-2xl font-bold mt-auto" 
+              style={{ 
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontFamily: pricingFont,
+                textShadow: '0 0 20px rgba(16, 185, 129, 0.2)'
+              }}
+            >
+              ${priceNum.toFixed(2)}
+            </div>
           )
         )}
       </div>
@@ -342,17 +380,27 @@ function MenuDisplayContent() {
     return (
       <div
         key={product.id}
-        className="group flex items-center gap-2 py-1.5 px-3 border-b"
+        className="group flex items-center gap-4 py-3 px-5"
         style={{
-          backgroundColor: index % 2 === 0 ? `${containerColor}30` : 'transparent',
-          borderBottomColor: `${containerColor}50`,
+          background: index % 2 === 0 
+            ? `linear-gradient(90deg, ${containerColor}40 0%, ${containerColor}20 100%)` 
+            : 'rgba(255, 255, 255, 0.02)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
           color: fontColor,
-          willChange: 'auto'
+          willChange: 'auto',
+          backdropFilter: 'blur(8px)'
         }}
       >
         {/* Image */}
         {panelShowImages && (
-          <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0" style={{ backgroundColor: imageBackgroundColor }}>
+          <div 
+            className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0" 
+            style={{ 
+              background: `linear-gradient(135deg, ${imageBackgroundColor}F0 0%, ${imageBackgroundColor}CC 100%)`,
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}
+          >
             {product.image ? (
               <img
                 src={product.image}
@@ -361,7 +409,7 @@ function MenuDisplayContent() {
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <svg className="w-8 h-8" style={{ color: `${fontColor}40` }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8" style={{ color: `${fontColor}30` }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
@@ -371,20 +419,37 @@ function MenuDisplayContent() {
 
         {/* Name */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold truncate" style={{ color: fontColor, fontFamily: cardFont }}>
+          <h3 className="text-lg font-bold truncate" style={{ 
+            color: fontColor, 
+            fontFamily: cardFont,
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+            letterSpacing: '-0.01em'
+          }}>
             {product.name}
           </h3>
         </div>
         
-        {/* Pricing Tiers (inline mode) - Compact */}
+        {/* Pricing Tiers (inline mode) - Premium */}
         {panelPriceLocation === 'inline' && hasTiers && (
           <div className="flex items-center gap-3 flex-shrink-0">
             {pricingTiers.map((tier: any, idx: number) => (
-              <div key={idx} className="text-center">
-                <div className="text-[9px] mb-0.5 uppercase tracking-wide" style={{ color: `${fontColor}60`, fontFamily: cardFont }}>
+              <div 
+                key={idx} 
+                className="text-center px-4 py-2 rounded-xl"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)',
+                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)'
+                }}
+              >
+                <div className="text-[10px] mb-1 uppercase tracking-wider font-semibold" style={{ color: `${fontColor}CC`, fontFamily: cardFont }}>
                   {tier.label}
                 </div>
-                <div className="text-sm font-bold" style={{ color: fontColor, fontFamily: cardFont }}>
+                <div className="text-base font-bold" style={{ 
+                  color: '#10b981', 
+                  fontFamily: cardFont,
+                  textShadow: '0 0 12px rgba(16, 185, 129, 0.3)'
+                }}>
                   ${parseFloat(tier.price).toFixed(2)}
                 </div>
               </div>
@@ -394,7 +459,17 @@ function MenuDisplayContent() {
         
         {/* Single Price (inline mode, no tiers) */}
         {panelPriceLocation === 'inline' && !hasTiers && priceNum > 0 && (
-          <div className="text-base font-bold flex-shrink-0 text-right" style={{ color: fontColor, fontFamily: cardFont }}>
+          <div 
+            className="text-2xl font-bold flex-shrink-0 text-right px-5 py-2 rounded-xl"
+            style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              color: '#10b981',
+              fontFamily: cardFont,
+              textShadow: '0 0 16px rgba(16, 185, 129, 0.4)',
+              boxShadow: '0 4px 16px rgba(16, 185, 129, 0.2)'
+            }}
+          >
             ${priceNum.toFixed(2)}
           </div>
         )}
@@ -501,12 +576,24 @@ function MenuDisplayContent() {
     return (
       <div className="h-screen w-screen flex flex-col overflow-hidden tv-menu-display" style={{ backgroundColor }}>
         {/* Header */}
-        <div className="px-6 py-5 border-b flex-shrink-0" style={{ borderBottomColor: `${containerColor}40` }}>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="w-2 h-16 rounded-full flex-shrink-0" style={{ backgroundColor: `${fontColor}30` }} />
+        <div className="px-8 py-6 flex-shrink-0 backdrop-blur-xl" style={{ 
+          background: `linear-gradient(180deg, ${containerColor}80 0%, ${containerColor}40 100%)`,
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)'
+        }}>
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex items-center gap-5 min-w-0">
+              <div className="w-1.5 h-20 rounded-full flex-shrink-0" style={{ 
+                background: `linear-gradient(180deg, ${fontColor}FF 0%, ${fontColor}60 100%)`,
+                boxShadow: `0 0 20px ${fontColor}80, 0 0 40px ${fontColor}40`
+              }} />
               <div className="min-w-0">
-                <h1 className="text-5xl font-bold truncate" style={{ color: fontColor, fontFamily: titleFont }}>
+                <h1 className="text-6xl font-black truncate" style={{ 
+                  color: fontColor, 
+                  fontFamily: titleFont,
+                  textShadow: `0 4px 12px rgba(0, 0, 0, 0.5), 0 0 40px ${fontColor}30`,
+                  letterSpacing: '-0.03em'
+                }}>
                   {displayCategory}
                 </h1>
               </div>
@@ -520,13 +607,26 @@ function MenuDisplayContent() {
               
               return tierStructure.length > 0 ? (
                 <div className="text-right flex-shrink-0">
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-4">
                     {tierStructure.map((tier: any, idx: number) => (
-                      <div key={idx} className="text-center">
-                        <div className="text-sm mb-1 uppercase" style={{ color: `${fontColor}60`, fontFamily: pricingFont }}>
+                      <div 
+                        key={idx} 
+                        className="text-center px-6 py-4 rounded-2xl backdrop-blur-xl"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          boxShadow: '0 8px 24px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                        }}
+                      >
+                        <div className="text-xs mb-2 uppercase tracking-widest font-bold" style={{ color: `${fontColor}DD`, fontFamily: pricingFont }}>
                           {tier.label} {tier.unit}
                         </div>
-                        <div className="text-4xl font-bold" style={{ color: fontColor, fontFamily: pricingFont }}>
+                        <div className="text-5xl font-black" style={{ 
+                          color: '#10b981', 
+                          fontFamily: pricingFont,
+                          textShadow: '0 0 24px rgba(16, 185, 129, 0.5)',
+                          letterSpacing: '-0.02em'
+                        }}>
                           ${parseFloat(tier.price).toFixed(2)}
                         </div>
                       </div>
@@ -535,7 +635,17 @@ function MenuDisplayContent() {
                 </div>
               ) : minPrice > 0 ? (
                 <div className="text-right flex-shrink-0">
-                  <div className="text-4xl font-bold" style={{ color: fontColor, fontFamily: pricingFont }}>
+                  <div 
+                    className="text-5xl font-black px-8 py-4 rounded-2xl backdrop-blur-xl" 
+                    style={{ 
+                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      color: '#10b981', 
+                      fontFamily: pricingFont,
+                      textShadow: '0 0 24px rgba(16, 185, 129, 0.5)',
+                      boxShadow: '0 8px 24px rgba(16, 185, 129, 0.2)'
+                    }}
+                  >
                     ${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}
                   </div>
                 </div>
@@ -565,15 +675,17 @@ function MenuDisplayContent() {
                   
                   return (
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="rounded-xl overflow-hidden border" style={{ 
-                        borderColor: `${containerColor}60`,
-                        backgroundColor: `${containerColor}30`
+                      <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                        background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                       }}>
                         {leftCol.map((product, idx) => renderProduct(product, idx, priceLocation, showImages))}
                       </div>
-                      <div className="rounded-xl overflow-hidden border" style={{ 
-                        borderColor: `${containerColor}60`,
-                        backgroundColor: `${containerColor}30`
+                      <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                        background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                       }}>
                         {rightCol.map((product, idx) => renderProduct(product, idx, priceLocation, showImages))}
                       </div>
@@ -581,9 +693,10 @@ function MenuDisplayContent() {
                   );
                 } else {
                   return (
-                    <div className="rounded-xl overflow-hidden border" style={{ 
-                      borderColor: `${containerColor}60`,
-                      backgroundColor: `${containerColor}30`
+                    <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                      background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     }}>
                       {displayProducts.map((product, idx) => renderProduct(product, idx, priceLocation, showImages))}
                     </div>
@@ -698,15 +811,17 @@ function MenuDisplayContent() {
                 
                 return (
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl overflow-hidden border" style={{ 
-                      borderColor: `${containerColor}60`,
-                      backgroundColor: `${containerColor}30`
+                    <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                      background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     }}>
                       {leftCol.map((p, idx) => renderProduct(p, idx, leftPriceLocation, leftImages))}
                     </div>
-                    <div className="rounded-xl overflow-hidden border" style={{ 
-                      borderColor: `${containerColor}60`,
-                      backgroundColor: `${containerColor}30`
+                    <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                      background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     }}>
                       {rightCol.map((p, idx) => renderProduct(p, idx, leftPriceLocation, leftImages))}
                     </div>
@@ -773,9 +888,10 @@ function MenuDisplayContent() {
                     );
                   } else {
                     return (
-                      <div className="rounded-xl overflow-hidden border" style={{ 
-                        borderColor: `${containerColor}60`,
-                        backgroundColor: `${containerColor}30`
+                      <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                        background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                       }}>
                         {leftProducts2.map((p, idx) => renderProduct(p, idx, leftPriceLocation2, leftImages2))}
                       </div>
@@ -837,15 +953,17 @@ function MenuDisplayContent() {
                 
                 return (
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl overflow-hidden border" style={{ 
-                      borderColor: `${containerColor}60`,
-                      backgroundColor: `${containerColor}30`
+                    <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                      background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     }}>
                       {leftCol.map((p, idx) => renderProduct(p, idx, rightPriceLocation, rightImages))}
                     </div>
-                    <div className="rounded-xl overflow-hidden border" style={{ 
-                      borderColor: `${containerColor}60`,
-                      backgroundColor: `${containerColor}30`
+                    <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                      background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     }}>
                       {rightCol.map((p, idx) => renderProduct(p, idx, rightPriceLocation, rightImages))}
                     </div>
@@ -912,9 +1030,10 @@ function MenuDisplayContent() {
                     );
                   } else {
                     return (
-                      <div className="rounded-xl overflow-hidden border" style={{ 
-                        borderColor: `${containerColor}60`,
-                        backgroundColor: `${containerColor}30`
+                      <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                        background: `linear-gradient(135deg, ${containerColor}60 0%, ${containerColor}40 100%)`,
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                       }}>
                         {rightProducts2.map((p, idx) => renderProduct(p, idx, rightPriceLocation2, rightImages2))}
                       </div>
