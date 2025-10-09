@@ -182,6 +182,8 @@ function MenuDisplayContent() {
         if (!result.success || !result.data) {
           throw new Error(result.error || 'Failed to load products')
         }
+        
+        console.log(`📦 [TV DISPLAY] Loaded ${result.data.length} products for location ${locationId}`)
 
         // Apply blueprint pricing - BATCH (same as MenuView)
         try {
@@ -203,8 +205,19 @@ function MenuDisplayContent() {
               inv.location_id?.toString() === locationId
             )
             const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || parseFloat(locationInventory.quantity?.toString() || '0') || 0) : 0
+            
+            // Debug logging for products with 0 stock
+            if (locationStock === 0 && product.name?.toLowerCase().includes('animal')) {
+              console.log(`🚫 [TV DISPLAY] Filtering out "${product.name}" - Stock: ${locationStock} at location ${locationId}`, {
+                locationInventory,
+                allInventory: product.inventory
+              })
+            }
+            
             return locationStock > 0
           })
+          
+          console.log(`✅ [TV DISPLAY] Filtered to ${inStockProducts.length} in-stock products at location ${locationId}`)
           
           // Only update if products actually changed
           setProducts(prev => {
