@@ -13,7 +13,7 @@ interface TVDevice {
   tv_number: number
   device_name: string
   location_id: number
-  last_seen: string
+  last_seen: string | null
 }
 
 interface TVDashboardProps {
