@@ -174,15 +174,21 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
         }
       }
 
-      // Extract and apply code
+      // Extract code but don't auto-apply - let user confirm
       const code = extractCode(fullResponse);
       if (code) {
         const cleaned = cleanCode(code);
         console.log('🎨 Extracted code:', cleaned.substring(0, 200));
         setCodeInput(cleaned);
-        onChange(cleaned);
-        // Stay in chat mode so user can see the AI's explanation
-        console.log('✅ Code applied to preview');
+        
+        // Update the last message with extracted code
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          newMsgs[newMsgs.length - 1].extractedCode = cleaned;
+          return newMsgs;
+        });
+        
+        console.log('✅ Code extracted and ready to apply');
       } else {
         console.warn('⚠️ No code extracted from AI response');
       }
@@ -315,28 +321,95 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-900/50 min-h-0">
               {messages.length === 0 && (
-                <div className="text-center text-neutral-400 text-sm py-12">
-                  <div className="text-4xl mb-3">🎨</div>
-                  <div className="font-semibold mb-2">AI Background Designer</div>
-                  <div className="text-xs">Ask me to create any background...</div>
-                  <div className="mt-4 text-left space-y-2 max-w-sm mx-auto text-xs">
-                    <div>• "Purple gradient waves"</div>
-                    <div>• "Floating particles with stars"</div>
-                    <div>• "Aurora borealis effect"</div>
-                    <div>• "Geometric pattern animation"</div>
+                <div className="text-center text-neutral-400 text-sm py-8">
+                  <div className="text-5xl mb-4">🎨✨</div>
+                  <div className="font-bold text-white text-lg mb-2">AI Background Designer</div>
+                  <div className="text-sm mb-4 text-neutral-300">I create custom Three.js 3D scenes from scratch!</div>
+                  
+                  <div className="mt-6 text-left space-y-3 max-w-md mx-auto">
+                    <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
+                      <div className="font-semibold text-cyan-300 mb-2 text-xs">🎮 Three.js Examples:</div>
+                      <div className="space-y-1 text-xs text-neutral-300">
+                        <div>• "Create a Halloween vortex with pumpkins"</div>
+                        <div>• "Build a DNA helix made of glowing orbs"</div>
+                        <div>• "Make a fractal tree of particles"</div>
+                        <div>• "Create a kaleidoscope effect"</div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3">
+                      <div className="font-semibold text-purple-300 mb-2 text-xs">🎨 HTML/CSS Examples:</div>
+                      <div className="space-y-1 text-xs text-neutral-300">
+                        <div>• "Purple gradient with animated waves"</div>
+                        <div>• "Aurora borealis effect"</div>
+                        <div>• "Neon grid background"</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
               
               {messages.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                   <div className={`max-w-[80%] rounded-xl px-4 py-2 ${
                     msg.role === 'user' 
                       ? 'bg-blue-600 text-white' 
                       : 'bg-neutral-800 text-neutral-200'
                   }`}>
-                    <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+                    <ReactMarkdown
+                      className="text-sm prose prose-invert prose-sm max-w-none"
+                      components={{
+                        code: ({node, inline, className, children, ...props}) => {
+                          const content = String(children).replace(/\n$/, '');
+                          if (inline) {
+                            return <code className="bg-neutral-700 px-1.5 py-0.5 rounded text-xs font-mono text-cyan-300" {...props}>{content}</code>
+                          }
+                          const isThreeJs = content.includes('CUSTOM_THREE_SCENE') || content.includes('THREE_JS_SCENE');
+                          return (
+                            <pre className={`${isThreeJs ? 'bg-gradient-to-br from-cyan-900/40 to-purple-900/40 border border-cyan-500/30' : 'bg-neutral-900'} p-3 rounded-lg text-xs overflow-x-auto my-2 shadow-lg`}>
+                              <code className="font-mono text-cyan-100" {...props}>{content}</code>
+                            </pre>
+                          )
+                        },
+                        p: ({children}) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                        ul: ({children}) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
+                        ol: ({children}) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                        li: ({children}) => <li className="text-neutral-300">{children}</li>,
+                        strong: ({children}) => <strong className="font-bold text-white">{children}</strong>,
+                        em: ({children}) => <em className="italic text-neutral-300">{children}</em>,
+                        h1: ({children}) => <h1 className="text-xl font-bold text-white mb-2 mt-3">{children}</h1>,
+                        h2: ({children}) => <h2 className="text-lg font-bold text-white mb-2 mt-3">{children}</h2>,
+                        h3: ({children}) => <h3 className="text-base font-bold text-white mb-1 mt-2">{children}</h3>,
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
                   </div>
+                  
+                  {/* Show apply button if code was extracted */}
+                  {msg.role === 'assistant' && msg.extractedCode && (
+                    <div className="mt-2 space-y-2">
+                      <button
+                        onClick={() => {
+                          onChange(msg.extractedCode!);
+                          setCodeInput(msg.extractedCode!);
+                        }}
+                        className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg transition-all transform hover:scale-105"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                        {msg.extractedCode.includes('CUSTOM_THREE_SCENE') ? 'Apply Custom 3D Scene' : 
+                         msg.extractedCode.includes('THREE_JS_SCENE') ? 'Apply 3D Scene' : 
+                         'Apply Background'}
+                      </button>
+                      <div className="text-xs text-neutral-400 px-2">
+                        {msg.extractedCode.includes('CUSTOM_THREE_SCENE') && '🎮 Custom Three.js scene ready'}
+                        {msg.extractedCode.includes('THREE_JS_SCENE') && '🎮 Three.js scene configuration ready'}
+                        {!msg.extractedCode.includes('THREE') && '🎨 HTML/CSS background ready'}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               <div ref={messagesEndRef} />
