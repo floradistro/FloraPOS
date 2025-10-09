@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { aiAgentService } from '@/services/ai-agent-service';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Direct Claude API streaming endpoint
  * Used for pure code generation and general queries without database access

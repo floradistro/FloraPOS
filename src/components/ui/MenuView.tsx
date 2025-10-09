@@ -260,10 +260,28 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
   const handleLoadTheme = useCallback((config: MenuConfig) => {
     const data = config.config_data
     
-    // Apply ONLY visual settings - DON'T change layout or categories
-    console.log('🎨 Loading THEME (visuals only):', config.name)
+    // SAVE current menu structure before applying theme
+    const currentStructure = {
+      isDualMode: menuConfig.isDualMode,
+      orientation: menuConfig.orientation,
+      singlePanel: { ...menuConfig.singlePanel },
+      leftPanel: { ...menuConfig.leftPanel },
+      rightPanel: { ...menuConfig.rightPanel }
+    }
     
-    // Apply colors
+    console.log('🎨 Loading THEME (visuals only):', config.name)
+    console.log('📌 Current menu structure BEFORE theme:', currentStructure)
+    console.log('📦 Theme data received:', {
+      hasOrientation: !!data.orientation,
+      hasDualMenu: !!data.isDualMenu,
+      hasSingleMenu: !!data.singleMenu,
+      hasDualMenuData: !!data.dualMenu,
+      singleMenuCategory: data.singleMenu?.category,
+      dualLeftCategory: data.dualMenu?.left?.category,
+      dualRightCategory: data.dualMenu?.right?.category
+    })
+    
+    // Apply ONLY visual settings - DON'T change layout or categories
     menuConfig.setBackgroundColor(data.backgroundColor || '#000000')
     menuConfig.setFontColor(data.fontColor || '#ffffff')
     if (data.cardFontColor) menuConfig.setCardFontColor(data.cardFontColor)
@@ -280,14 +298,50 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     if (data.borderWidth !== undefined) menuConfig.setBorderWidth(data.borderWidth)
     if (data.borderOpacity !== undefined) menuConfig.setBorderOpacity(data.borderOpacity)
     
+    // Apply font sizes
+    if (data.headerTitleSize !== undefined) menuConfig.setHeaderTitleSize(data.headerTitleSize)
+    if (data.cardTitleSize !== undefined) menuConfig.setCardTitleSize(data.cardTitleSize)
+    if (data.priceSize !== undefined) menuConfig.setPriceSize(data.priceSize)
+    if (data.categorySize !== undefined) menuConfig.setCategorySize(data.categorySize)
+    
     // Apply custom background
     if (data.customBackground !== undefined) {
       menuConfig.setCustomBackground(data.customBackground)
-      console.log('🎨 Loaded custom background:', data.customBackground.substring(0, 100) + '...')
+      console.log('🎨 Loaded custom background')
     }
     
+    // FORCE RESTORE menu structure (defensive - in case React updates changed it)
+    setTimeout(() => {
+      if (menuConfig.isDualMode !== currentStructure.isDualMode) {
+        console.error('🚨 CRITICAL: isDualMode was changed by theme! Restoring...', menuConfig.isDualMode, '→', currentStructure.isDualMode)
+        menuConfig.setIsDualMode(currentStructure.isDualMode)
+      }
+      if (menuConfig.singlePanel.category !== currentStructure.singlePanel.category) {
+        console.error('🚨 CRITICAL: singlePanel.category was changed! Restoring...', menuConfig.singlePanel.category, '→', currentStructure.singlePanel.category)
+        menuConfig.setSingleMenu(currentStructure.singlePanel)
+      }
+      if (menuConfig.leftPanel.category !== currentStructure.leftPanel.category || 
+          menuConfig.rightPanel.category !== currentStructure.rightPanel.category) {
+        console.error('🚨 CRITICAL: dual panels were changed! Restoring...', menuConfig.leftPanel.category, '→', currentStructure.leftPanel.category)
+        menuConfig.setDualMenu({
+          left: currentStructure.leftPanel,
+          right: currentStructure.rightPanel,
+          leftBottom: menuConfig.dualMenu.leftBottom,
+          rightBottom: menuConfig.dualMenu.rightBottom,
+          enableLeftStacking: menuConfig.dualMenu.enableLeftStacking,
+          enableRightStacking: menuConfig.dualMenu.enableRightStacking
+        })
+      }
+      
+      console.log('✅ Theme applied - Final structure check:', {
+        isDualMode: menuConfig.isDualMode,
+        singleCategory: menuConfig.singlePanel.category,
+        leftCategory: menuConfig.leftPanel.category,
+        rightCategory: menuConfig.rightPanel.category
+      })
+    }, 100)
+    
     setLoadedConfigName(config.name)
-    console.log('✅ Theme applied to current menu structure')
   }, [menuConfig])
   
   // Load layout from API - APPLY EVERYTHING including structure
@@ -316,6 +370,14 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     if (data.containerOpacity !== undefined) menuConfig.setContainerOpacity(data.containerOpacity)
     if (data.borderWidth !== undefined) menuConfig.setBorderWidth(data.borderWidth)
     if (data.borderOpacity !== undefined) menuConfig.setBorderOpacity(data.borderOpacity)
+    if (data.imageOpacity !== undefined) menuConfig.setImageOpacity(data.imageOpacity)
+    if (data.blurIntensity !== undefined) menuConfig.setBlurIntensity(data.blurIntensity)
+    
+    // Apply font sizes
+    if (data.headerTitleSize !== undefined) menuConfig.setHeaderTitleSize(data.headerTitleSize)
+    if (data.cardTitleSize !== undefined) menuConfig.setCardTitleSize(data.cardTitleSize)
+    if (data.priceSize !== undefined) menuConfig.setPriceSize(data.priceSize)
+    if (data.categorySize !== undefined) menuConfig.setCategorySize(data.categorySize)
     
     // Apply custom background
     if (data.customBackground !== undefined) {
@@ -398,7 +460,13 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
       containerOpacity: menuConfig.containerOpacity,
       borderWidth: menuConfig.borderWidth,
       borderOpacity: menuConfig.borderOpacity,
-      customBackground: menuConfig.customBackground, // Save custom background in layouts too!
+      imageOpacity: menuConfig.imageOpacity,
+      blurIntensity: menuConfig.blurIntensity,
+      headerTitleSize: menuConfig.headerTitleSize,
+      cardTitleSize: menuConfig.cardTitleSize,
+      priceSize: menuConfig.priceSize,
+      categorySize: menuConfig.categorySize,
+      customBackground: menuConfig.customBackground,
       categoryColumnConfigs: {}
     }
     
@@ -440,9 +508,30 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
       containerOpacity: menuConfig.containerOpacity,
       borderWidth: menuConfig.borderWidth,
       borderOpacity: menuConfig.borderOpacity,
+      imageOpacity: menuConfig.imageOpacity,
+      blurIntensity: menuConfig.blurIntensity,
+      headerTitleSize: menuConfig.headerTitleSize,
+      cardTitleSize: menuConfig.cardTitleSize,
+      priceSize: menuConfig.priceSize,
+      categorySize: menuConfig.categorySize,
       customBackground: menuConfig.customBackground,
       categoryColumnConfigs: {}
     }
+    
+    console.log('💾 Saving theme with all visual settings:', {
+      fontSizes: {
+        headerTitleSize: menuConfig.headerTitleSize,
+        cardTitleSize: menuConfig.cardTitleSize,
+        priceSize: menuConfig.priceSize,
+        categorySize: menuConfig.categorySize
+      },
+      transparency: {
+        containerOpacity: menuConfig.containerOpacity,
+        borderOpacity: menuConfig.borderOpacity,
+        imageOpacity: menuConfig.imageOpacity,
+        blurIntensity: menuConfig.blurIntensity
+      }
+    })
     
     const newConfig = await menuConfigService.createConfig({
       name: name,
@@ -462,14 +551,32 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     try {
       const config = await menuConfigService.getConfig(configId)
       
+      console.log('📂 Loading config:', {
+        name: config.name,
+        type: config.config_type,
+        hasCategories: !!(config.config_data.singleMenu?.category || config.config_data.dualMenu?.left?.category)
+      })
+      
       // Check config type and route to appropriate handler
       if (config.config_type === 'theme') {
         console.log('🎨 Loading as THEME (visuals only - keeps current menu structure)')
         handleLoadTheme(config)
-      } else {
-        // config_type === 'layout' or legacy configs with categories
+      } else if (config.config_type === 'layout') {
         console.log('📐 Loading as LAYOUT (replaces everything)')
         handleLoadLayout(config)
+      } else {
+        // Legacy config - detect by checking for categories
+        const hasCategories = !!(config.config_data.singleMenu?.category || 
+                                 config.config_data.dualMenu?.left?.category ||
+                                 config.config_data.dualMenu?.right?.category)
+        
+        if (hasCategories) {
+          console.log('📐 Loading LEGACY config as LAYOUT (has categories)')
+          handleLoadLayout(config)
+        } else {
+          console.log('🎨 Loading LEGACY config as THEME (no categories)')
+          handleLoadTheme(config)
+        }
       }
       
       setShowLoadConfigModal(false)
@@ -642,6 +749,12 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     params.append('containerOpacity', menuConfig.containerOpacity.toString())
     params.append('borderWidth', menuConfig.borderWidth.toString())
     params.append('borderOpacity', menuConfig.borderOpacity.toString())
+    params.append('imageOpacity', menuConfig.imageOpacity.toString())
+    params.append('blurIntensity', menuConfig.blurIntensity.toString())
+    params.append('headerTitleSize', menuConfig.headerTitleSize.toString())
+    params.append('cardTitleSize', menuConfig.cardTitleSize.toString())
+    params.append('priceSize', menuConfig.priceSize.toString())
+    params.append('categorySize', menuConfig.categorySize.toString())
     
     // Store custom background in localStorage and pass just an ID (URL too long otherwise)
     if (menuConfig.customBackground) {
@@ -1492,6 +1605,16 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
           menuConfig.setImageOpacity(values.imageOpacity)
           menuConfig.setBlurIntensity(values.blurIntensity)
         }}
+        headerTitleSize={menuConfig.headerTitleSize}
+        cardTitleSize={menuConfig.cardTitleSize}
+        priceSize={menuConfig.priceSize}
+        categorySize={menuConfig.categorySize}
+        onFontSizesChange={(sizes) => {
+          menuConfig.setHeaderTitleSize(sizes.headerTitleSize)
+          menuConfig.setCardTitleSize(sizes.cardTitleSize)
+          menuConfig.setPriceSize(sizes.priceSize)
+          menuConfig.setCategorySize(sizes.categorySize)
+        }}
         customBackground={menuConfig.customBackground}
         onCustomBackgroundChange={(code) => {
           console.log('📝 MenuView: Custom background changed, length:', code.length);
@@ -1917,6 +2040,12 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                       containerOpacity: menuConfig.containerOpacity,
                                       borderWidth: menuConfig.borderWidth,
                                       borderOpacity: menuConfig.borderOpacity,
+                                      imageOpacity: menuConfig.imageOpacity,
+                                      blurIntensity: menuConfig.blurIntensity,
+                                      headerTitleSize: menuConfig.headerTitleSize,
+                                      cardTitleSize: menuConfig.cardTitleSize,
+                                      priceSize: menuConfig.priceSize,
+                                      categorySize: menuConfig.categorySize,
                                       customBackground: menuConfig.customBackground,
                                       orientation: menuConfig.orientation,
                                       isDualMenu: menuConfig.isDualMode,
@@ -2076,6 +2205,12 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                         containerOpacity: menuConfig.containerOpacity,
                         borderWidth: menuConfig.borderWidth,
                         borderOpacity: menuConfig.borderOpacity,
+                        imageOpacity: menuConfig.imageOpacity,
+                        blurIntensity: menuConfig.blurIntensity,
+                        headerTitleSize: menuConfig.headerTitleSize,
+                        cardTitleSize: menuConfig.cardTitleSize,
+                        priceSize: menuConfig.priceSize,
+                        categorySize: menuConfig.categorySize,
                         customBackground: menuConfig.customBackground,
                         orientation: menuConfig.orientation,
                         isDualMenu: menuConfig.isDualMode,
@@ -2185,6 +2320,10 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
               borderOpacity={menuConfig.borderOpacity}
               imageOpacity={menuConfig.imageOpacity}
               blurIntensity={menuConfig.blurIntensity}
+              headerTitleSize={menuConfig.headerTitleSize}
+              cardTitleSize={menuConfig.cardTitleSize}
+              priceSize={menuConfig.priceSize}
+              categorySize={menuConfig.categorySize}
               customBackground={menuConfig.customBackground || ''}
               pandaMode={false}
               priceLocation={menuConfig.isDualMode ? menuConfig.leftPanel.priceLocation : menuConfig.singlePanel.priceLocation}

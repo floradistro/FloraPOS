@@ -43,6 +43,12 @@ export const useMenuConfig = () => {
   const [imageOpacity, setImageOpacity] = useState(100);
   const [blurIntensity, setBlurIntensity] = useState(8);
   
+  // Font sizes
+  const [headerTitleSize, setHeaderTitleSize] = useState(60);
+  const [cardTitleSize, setCardTitleSize] = useState(18);
+  const [priceSize, setPriceSize] = useState(32);
+  const [categorySize, setCategorySize] = useState(40);
+  
   // Custom background
   const [customBackground, setCustomBackground] = useState<string>('');
   
@@ -152,6 +158,10 @@ export const useMenuConfig = () => {
     borderOpacity,
     imageOpacity,
     blurIntensity,
+    headerTitleSize,
+    cardTitleSize,
+    priceSize,
+    categorySize,
     customBackground,
     selectedQuadrant,
     
@@ -179,6 +189,10 @@ export const useMenuConfig = () => {
     setBorderOpacity,
     setImageOpacity,
     setBlurIntensity,
+    setHeaderTitleSize,
+    setCardTitleSize,
+    setPriceSize,
+    setCategorySize,
     setCustomBackground: updateCustomBackground,
     setSelectedQuadrant,
     

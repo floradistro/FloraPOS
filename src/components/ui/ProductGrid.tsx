@@ -425,8 +425,9 @@ export const ProductGrid = forwardRef<{
       let filteredProducts = productsWithInventory.filter((product: any) => {
         // If user has a location, filter by location-specific stock
         if (user?.location_id) {
+          const userLocationId = user.location_id;
           const locationInventory = product.inventory?.find((inv: any) => 
-            inv.location_id?.toString() === user.location_id.toString()
+            inv.location_id?.toString() === userLocationId.toString()
           );
           const locationStock = locationInventory ? (parseFloat(locationInventory.stock) || parseFloat(locationInventory.quantity) || 0) : 0;
           return locationStock > 0;

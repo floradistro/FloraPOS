@@ -8,6 +8,7 @@ import { DisplayDropdown } from './DisplayDropdown';
 import { ColorDropdown } from './ColorDropdown';
 import { FontDropdown } from './FontDropdown';
 import { TransparencyDropdown } from './TransparencyDropdown';
+import { FontSizeDropdown } from './FontSizeDropdown';
 import { BackgroundDropdown } from './BackgroundDropdown';
 import { MenuModeDropdown } from './MenuModeDropdown';
 import { CategoriesDropdown } from './CategoriesDropdown';
@@ -40,6 +41,11 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   imageOpacity,
   blurIntensity,
   onTransparencyChange,
+  headerTitleSize,
+  cardTitleSize,
+  priceSize,
+  categorySize,
+  onFontSizesChange,
   customBackground,
   onCustomBackgroundChange,
   categories,
@@ -180,16 +186,24 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             onTransparencyChange={onTransparencyChange}
           />
 
-          <BackgroundDropdown
-            value={customBackground}
-            onChange={onCustomBackgroundChange}
-          />
-
           <FontDropdown
             titleFont={titleFont}
             pricingFont={pricingFont}
             cardFont={cardFont}
             onFontsChange={onFontsChange}
+          />
+
+          <FontSizeDropdown
+            headerTitleSize={headerTitleSize}
+            cardTitleSize={cardTitleSize}
+            priceSize={priceSize}
+            categorySize={categorySize}
+            onFontSizesChange={onFontSizesChange}
+          />
+
+          <BackgroundDropdown
+            value={customBackground}
+            onChange={onCustomBackgroundChange}
           />
 
           <MenuModeDropdown
