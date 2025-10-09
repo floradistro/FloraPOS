@@ -52,7 +52,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
   
   // TV Devices from Supabase (shows ALL TVs across network)
   const { devices: tvDevices, isOnline, onlineCount, offlineCount, refresh: refreshTVs } = useTVDevices({
-    locationId: user?.location_id ? parseInt(user.location_id.toString()) : undefined,
+    locationId: user?.location_id ? parseInt(user.location_id?.toString() ?? '') : undefined,
   })
   
   // Category column configurations
@@ -87,7 +87,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     if (showLoadConfigModal) {
       const loadConfigs = async () => {
         try {
-          const locationId = user?.location_id ? parseInt(user.location_id.toString()) : undefined
+          const locationId = user?.location_id ? parseInt(user.location_id?.toString() ?? '') : undefined
           console.log(`🔄 Loading configs for location: ${locationId}`)
           const allConfigs = await menuConfigService.getAllConfigs(locationId, false)
           console.log(`✅ Received ${allConfigs.length} configs:`, allConfigs)
@@ -256,13 +256,12 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
   //   }
   // }, [products, menuConfig])
   
-  // Load theme from API
-  const handleLoadConfig = useCallback((config: MenuConfig) => {
+  // Load theme from API - ONLY APPLY VISUAL SETTINGS, keep current menu structure
+  const handleLoadTheme = useCallback((config: MenuConfig) => {
     const data = config.config_data
     
-    // Apply layout
-    menuConfig.setOrientation(data.orientation || 'horizontal')
-    menuConfig.setIsDualMode(data.isDualMenu || false)
+    // Apply ONLY visual settings - DON'T change layout or categories
+    console.log('🎨 Loading THEME (visuals only):', config.name)
     
     // Apply colors
     menuConfig.setBackgroundColor(data.backgroundColor || '#000000')
@@ -287,28 +286,76 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
       console.log('🎨 Loaded custom background:', data.customBackground.substring(0, 100) + '...')
     }
     
-    // Load panel configs
+    setLoadedConfigName(config.name)
+    console.log('✅ Theme applied to current menu structure')
+  }, [menuConfig])
+  
+  // Load layout from API - APPLY EVERYTHING including structure
+  const handleLoadLayout = useCallback((config: MenuConfig) => {
+    const data = config.config_data
+    
+    console.log('📐 Loading LAYOUT (structure + visuals):', config.name)
+    
+    // Apply layout structure
+    menuConfig.setOrientation(data.orientation || 'horizontal')
+    menuConfig.setIsDualMode(data.isDualMenu || false)
+    
+    // Apply colors
+    menuConfig.setBackgroundColor(data.backgroundColor || '#000000')
+    menuConfig.setFontColor(data.fontColor || '#ffffff')
+    if (data.cardFontColor) menuConfig.setCardFontColor(data.cardFontColor)
+    menuConfig.setContainerColor(data.containerColor || '#1a1a1a')
+    if (data.imageBackgroundColor) menuConfig.setImageBackgroundColor(data.imageBackgroundColor)
+    
+    // Apply fonts
+    if (data.titleFont) menuConfig.setTitleFont(data.titleFont)
+    if (data.pricingFont) menuConfig.setPricingFont(data.pricingFont)
+    if (data.cardFont) menuConfig.setCardFont(data.cardFont)
+    
+    // Apply transparency and borders
+    if (data.containerOpacity !== undefined) menuConfig.setContainerOpacity(data.containerOpacity)
+    if (data.borderWidth !== undefined) menuConfig.setBorderWidth(data.borderWidth)
+    if (data.borderOpacity !== undefined) menuConfig.setBorderOpacity(data.borderOpacity)
+    
+    // Apply custom background
+    if (data.customBackground !== undefined) {
+      menuConfig.setCustomBackground(data.customBackground)
+      console.log('🎨 Loaded custom background')
+    }
+    
+    // Load panel configs (categories and view modes)
     if (data.singleMenu) {
-      menuConfig.singlePanel.category = data.singleMenu.category
-      menuConfig.singlePanel.viewMode = data.singleMenu.viewMode
-      menuConfig.singlePanel.showImages = data.singleMenu.showImages
-      menuConfig.singlePanel.priceLocation = data.singleMenu.priceLocation || data.singlePriceLocation || 'none'
+      menuConfig.setSingleMenu({
+        category: data.singleMenu.category,
+        viewMode: data.singleMenu.viewMode,
+        showImages: data.singleMenu.showImages,
+        priceLocation: data.singleMenu.priceLocation || data.singlePriceLocation || 'none'
+      })
     }
     
     if (data.dualMenu) {
-      menuConfig.leftPanel.category = data.dualMenu.left.category
-      menuConfig.leftPanel.viewMode = data.dualMenu.left.viewMode
-      menuConfig.leftPanel.showImages = data.dualMenu.left.showImages
-      menuConfig.leftPanel.priceLocation = data.dualMenu.left.priceLocation || data.leftPriceLocation || 'none'
-      
-      menuConfig.rightPanel.category = data.dualMenu.right.category
-      menuConfig.rightPanel.viewMode = data.dualMenu.right.viewMode
-      menuConfig.rightPanel.showImages = data.dualMenu.right.showImages
-      menuConfig.rightPanel.priceLocation = data.dualMenu.right.priceLocation || data.rightPriceLocation || 'none'
+      menuConfig.setDualMenu({
+        left: {
+          category: data.dualMenu.left.category,
+          viewMode: data.dualMenu.left.viewMode,
+          showImages: data.dualMenu.left.showImages,
+          priceLocation: data.dualMenu.left.priceLocation || data.leftPriceLocation || 'none'
+        },
+        right: {
+          category: data.dualMenu.right.category,
+          viewMode: data.dualMenu.right.viewMode,
+          showImages: data.dualMenu.right.showImages,
+          priceLocation: data.dualMenu.right.priceLocation || data.rightPriceLocation || 'none'
+        },
+        leftBottom: data.dualMenu.leftBottom || { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
+        rightBottom: data.dualMenu.rightBottom || { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
+        enableLeftStacking: data.dualMenu.enableLeftStacking || false,
+        enableRightStacking: data.dualMenu.enableRightStacking || false
+      })
     }
     
     setLoadedConfigName(config.name)
-    console.log('✅ Loaded theme:', config.name)
+    console.log('✅ Loaded layout with full structure')
   }, [menuConfig])
   
   // Save as Layout (menu structure)
@@ -357,7 +404,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     
     const newConfig = await menuConfigService.createConfig({
       name: name,
-      location_id: user?.location_id ? parseInt(user.location_id.toString()) : null,
+      location_id: user?.location_id ? parseInt(user.location_id?.toString() ?? '') : null,
       config_data: configData,
       config_type: 'layout',
       is_active: false,
@@ -399,7 +446,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     
     const newConfig = await menuConfigService.createConfig({
       name: name,
-      location_id: user?.location_id ? parseInt(user.location_id.toString()) : null,
+      location_id: user?.location_id ? parseInt(user.location_id?.toString() ?? '') : null,
       config_data: configData,
       config_type: 'theme',
       is_active: false,
@@ -410,17 +457,27 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     setLoadedConfigName(newConfig.name)
   }, [menuConfig, user?.location_id])
   
-  // Handle load theme from modal
+  // Handle load config from modal - routes to correct handler based on type
   const handleLoadFromModal = useCallback(async (configId: number) => {
     try {
       const config = await menuConfigService.getConfig(configId)
-      handleLoadConfig(config)
+      
+      // Check config type and route to appropriate handler
+      if (config.config_type === 'theme') {
+        console.log('🎨 Loading as THEME (visuals only - keeps current menu structure)')
+        handleLoadTheme(config)
+      } else {
+        // config_type === 'layout' or legacy configs with categories
+        console.log('📐 Loading as LAYOUT (replaces everything)')
+        handleLoadLayout(config)
+      }
+      
       setShowLoadConfigModal(false)
     } catch (error) {
-      console.error('Failed to load theme:', error)
-      alert('Failed to load theme')
+      console.error('Failed to load config:', error)
+      alert('Failed to load config')
     }
-  }, [handleLoadConfig])
+  }, [handleLoadTheme, handleLoadLayout])
 
   // Fetch products
   const fetchProducts = useCallback(async () => {
@@ -439,7 +496,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
       })
       
       if (user?.location_id) {
-        params.append('location_id', user.location_id.toString())
+        params.append('location_id', user.location_id?.toString() ?? '')
       }
 
       const response = await apiFetch(`/api/proxy/flora-im/products?${params}`, {
@@ -487,9 +544,9 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
             if (!user?.location_id) return true
             
             const locationInventory = product.inventory?.find((inv: any) => 
-              inv.location_id?.toString() === user.location_id.toString()
+              inv.location_id?.toString() === user.location_id?.toString()
             )
-            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || parseFloat(locationInventory.quantity?.toString() || '0') || 0) : 0
+            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || 0) : 0
             return locationStock > 0
           })
           
@@ -585,14 +642,13 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     params.append('containerOpacity', menuConfig.containerOpacity.toString())
     params.append('borderWidth', menuConfig.borderWidth.toString())
     params.append('borderOpacity', menuConfig.borderOpacity.toString())
-    params.append('imageOpacity', menuConfig.imageOpacity.toString())
-    params.append('blurIntensity', menuConfig.blurIntensity.toString())
     
     // Store custom background in localStorage and pass just an ID (URL too long otherwise)
     if (menuConfig.customBackground) {
       const bgId = `magic-bg-${Date.now()}`
       localStorage.setItem(bgId, menuConfig.customBackground)
       params.append('magicBgId', bgId)
+      console.log('🎨 Launching with custom background, stored as:', bgId)
     }
 
     if (menuConfig.isDualMode) {
@@ -949,7 +1005,12 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
               
               {/* Layouts Section */}
               <div className="mb-6">
-                <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Layouts ({availableLayouts.length})</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Layouts ({availableLayouts.length})</h4>
+                  <div className="text-[10px] text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">
+                    Replaces current menu
+                  </div>
+                </div>
                 {availableLayouts.length === 0 ? (
                   <div className="text-center py-4 text-neutral-500 text-xs">
                     No layouts saved yet. Click "Save Layout" to create one.
@@ -970,11 +1031,17 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                               {layout.config_data.isDualMenu && layout.config_data.dualMenu ? 
                                 ` • ${layout.config_data.dualMenu.left.category || '?'} | ${layout.config_data.dualMenu.right.category || '?'}` 
                                 : layout.config_data.singleMenu?.category ? ` • ${layout.config_data.singleMenu.category}` : ''}
+                              {layout.config_data.customBackground ? ' • 🎨' : ''}
                             </p>
                           </div>
-                          <svg className="w-4 h-4 text-neutral-500 group-hover:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
+                          <div className="flex items-center gap-2">
+                            <div className="text-[9px] text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                              Replace all
+                            </div>
+                            <svg className="w-4 h-4 text-neutral-500 group-hover:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -984,7 +1051,12 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
 
               {/* Themes Section */}
               <div>
-                <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Themes ({availableThemes.length})</h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Themes ({availableThemes.length})</h4>
+                  <div className="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
+                    Applies visuals to current menu
+                  </div>
+                </div>
                 {availableThemes.length === 0 ? (
                   <div className="text-center py-4 text-neutral-500 text-xs">
                     No themes saved yet. Click "Save Theme" to create one.
@@ -1002,12 +1074,17 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             <h5 className="text-sm font-medium text-white group-hover:text-neutral-200 transition-colors">{theme.name}</h5>
                             <p className="text-xs text-neutral-400 mt-1 flex items-center gap-2">
                               <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: theme.config_data.backgroundColor }}></span>
-                              Colors & Fonts
+                              {theme.config_data.customBackground ? '🎨 ' : ''}Colors, Fonts{theme.config_data.customBackground ? ' & Magic BG' : ''}
                             </p>
                           </div>
-                          <svg className="w-4 h-4 text-neutral-500 group-hover:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
+                          <div className="flex items-center gap-2">
+                            <div className="text-[9px] text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                              Keep categories
+                            </div>
+                            <svg className="w-4 h-4 text-neutral-500 group-hover:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1962,7 +2039,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                     })
                     
                     // Send refresh command to all network TVs
-                    const locationId = user?.location_id ? parseInt(user.location_id.toString()) : 20
+                    const locationId = user?.location_id ? parseInt(user.location_id?.toString() ?? '') : 20
                     const count = await TVCommandService.broadcastToLocation(locationId, 'refresh')
                     
                     updateToast(toastId, `✓ Refreshed ${openWindows.size} local + ${count} network TVs`, 'success')
@@ -1986,7 +2063,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                     const toastId = showToast(`Pushing config to ${onlineCount} network TVs...`, 'loading')
                     
                     try {
-                      const locationId = user?.location_id ? parseInt(user.location_id.toString()) : 20
+                      const locationId = user?.location_id ? parseInt(user.location_id?.toString() ?? '') : 20
                       const count = await TVCommandService.broadcastToLocation(locationId, 'update_theme', {
                         backgroundColor: menuConfig.backgroundColor,
                         fontColor: menuConfig.fontColor,
