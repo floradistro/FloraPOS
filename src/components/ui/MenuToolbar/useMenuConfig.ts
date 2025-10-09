@@ -24,12 +24,12 @@ export const useMenuConfig = () => {
     enableRightStacking: false
   });
 
-  // Colors
+  // Colors - Fresh defaults
   const [backgroundColor, setBackgroundColor] = useState('#000000');
   const [fontColor, setFontColor] = useState('#ffffff');
-  const [containerColor, setContainerColor] = useState('#1f1f1f');
+  const [containerColor, setContainerColor] = useState('#000000');
   const [cardFontColor, setCardFontColor] = useState('#ffffff');
-  const [imageBackgroundColor, setImageBackgroundColor] = useState('#1a1a1a');
+  const [imageBackgroundColor, setImageBackgroundColor] = useState('#000000');
   
   // Fonts
   const [titleFont, setTitleFont] = useState('Tiempos, serif');
@@ -42,6 +42,7 @@ export const useMenuConfig = () => {
   const [borderOpacity, setBorderOpacity] = useState(100);
   const [imageOpacity, setImageOpacity] = useState(100);
   const [blurIntensity, setBlurIntensity] = useState(8);
+  const [glowIntensity, setGlowIntensity] = useState(40);
   
   // Font sizes
   const [headerTitleSize, setHeaderTitleSize] = useState(60);
@@ -158,6 +159,7 @@ export const useMenuConfig = () => {
     borderOpacity,
     imageOpacity,
     blurIntensity,
+    glowIntensity,
     headerTitleSize,
     cardTitleSize,
     priceSize,
@@ -189,6 +191,7 @@ export const useMenuConfig = () => {
     setBorderOpacity,
     setImageOpacity,
     setBlurIntensity,
+    setGlowIntensity,
     setHeaderTitleSize,
     setCardTitleSize,
     setPriceSize,

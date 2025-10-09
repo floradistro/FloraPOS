@@ -100,6 +100,57 @@ export function MenuConfigPanel({ onLoadConfig, onSaveConfig, currentConfigName 
     }
   };
 
+  const handleDelete = async (configId: number, configName: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent triggering the load action
+    
+    if (!confirm(`Delete "${configName}"?\n\nThis cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await menuConfigService.deleteConfig(configId);
+      console.log(`✅ Deleted config: ${configName}`);
+      await loadConfigs(); // Reload list
+    } catch (error) {
+      console.error('Failed to delete theme:', error);
+      alert('Failed to delete theme');
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!confirm(`⚠️ DELETE ALL THEMES?\n\nThis will permanently delete:\n- ${configs.length} saved themes\n- ${templates.length} templates\n\nThis CANNOT be undone!`)) {
+      return;
+    }
+
+    if (!confirm('Are you ABSOLUTELY SURE? Type confirmation is not possible, but this is your last chance.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Delete all configs and templates
+      const allToDelete = [...configs, ...templates];
+      
+      for (const item of allToDelete) {
+        if (item.id) {
+          await menuConfigService.deleteConfig(item.id);
+          console.log(`✅ Deleted: ${item.name}`);
+        }
+      }
+      
+      console.log(`✅ Deleted ${allToDelete.length} total items`);
+      await loadConfigs(); // Reload list
+      
+      alert('All themes and templates deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete all themes:', error);
+      alert('Failed to delete all themes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGenerateQR = async () => {
     if (!user?.location_id) {
       alert('No location selected');
@@ -210,20 +261,33 @@ export function MenuConfigPanel({ onLoadConfig, onSaveConfig, currentConfigName 
                   {templates.map(template => (
                     <div
                       key={template.id}
-                      onClick={() => handleLoad(template.id!)}
-                      className="p-4 bg-gradient-to-br from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-lg cursor-pointer hover:border-purple-400/50 transition-all group"
+                      className="p-4 bg-gradient-to-br from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-lg group relative"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h5 className="font-medium text-white group-hover:text-purple-300 transition-colors">{template.name}</h5>
-                          <p className="text-xs text-neutral-400 mt-1">
-                            {template.config_data.isDualMenu ? 'Dual Menu' : 'Single Menu'} • {template.config_data.orientation}
-                          </p>
+                      <div 
+                        onClick={() => handleLoad(template.id!)}
+                        className="cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h5 className="font-medium text-white group-hover:text-purple-300 transition-colors">{template.name}</h5>
+                            <p className="text-xs text-neutral-400 mt-1">
+                              {template.config_data.isDualMenu ? 'Dual Menu' : 'Single Menu'} • {template.config_data.orientation}
+                            </p>
+                          </div>
+                          <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
                         </div>
-                        <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
                       </div>
+                      <button
+                        onClick={(e) => handleDelete(template.id!, template.name, e)}
+                        className="absolute top-2 right-2 p-1.5 bg-red-600/80 hover:bg-red-500 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete template"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -231,7 +295,21 @@ export function MenuConfigPanel({ onLoadConfig, onSaveConfig, currentConfigName 
             )}
             
             {/* Saved Themes Section */}
-            <h4 className="text-sm font-semibold text-neutral-400 mb-3">💾 Saved Themes</h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-neutral-400">💾 Saved Themes</h4>
+              {(configs.length > 0 || templates.length > 0) && (
+                <button
+                  onClick={handleDeleteAll}
+                  className="px-3 py-1 text-xs bg-red-600/80 hover:bg-red-500 rounded text-white transition-colors flex items-center gap-1"
+                  disabled={loading}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete All
+                </button>
+              )}
+            </div>
             {configs.length === 0 ? (
               <div className="text-center py-8 text-neutral-500">
                 <p>No saved themes yet</p>
@@ -242,31 +320,44 @@ export function MenuConfigPanel({ onLoadConfig, onSaveConfig, currentConfigName 
                 {configs.map(config => (
                   <div
                     key={config.id}
-                    onClick={() => handleLoad(config.id!)}
-                    className="p-4 bg-neutral-800 border border-neutral-700 rounded-lg cursor-pointer hover:border-blue-500/50 hover:bg-neutral-750 transition-all group"
+                    className="p-4 bg-neutral-800 border border-neutral-700 rounded-lg hover:border-blue-500/50 hover:bg-neutral-750 transition-all group relative"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h5 className="font-medium text-white group-hover:text-blue-300 transition-colors">{config.name}</h5>
-                        <p className="text-xs text-neutral-400 mt-1">
-                          {config.config_data.isDualMenu ? 'Dual Menu' : 'Single Menu'} • 
-                          {config.location_id ? (
-                            <span className="text-blue-300">{locations[config.location_id] || `Location ${config.location_id}`}</span>
-                          ) : (
-                            <span className="text-purple-300">All Locations</span>
-                          )} •
-                          {new Date(config.updated_at || '').toLocaleDateString()}
-                        </p>
+                    <div 
+                      onClick={() => handleLoad(config.id!)}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h5 className="font-medium text-white group-hover:text-blue-300 transition-colors">{config.name}</h5>
+                          <p className="text-xs text-neutral-400 mt-1">
+                            {config.config_data.isDualMenu ? 'Dual Menu' : 'Single Menu'} • 
+                            {config.location_id ? (
+                              <span className="text-blue-300">{locations[config.location_id] || `Location ${config.location_id}`}</span>
+                            ) : (
+                              <span className="text-purple-300">All Locations</span>
+                            )} •
+                            {new Date(config.updated_at || '').toLocaleDateString()}
+                          </p>
+                        </div>
+                        {config.is_active && (
+                          <span className="px-2 py-0.5 bg-green-500/20 border border-green-500/30 rounded text-xs text-green-300 mr-2">
+                            Active
+                          </span>
+                        )}
+                        <svg className="w-5 h-5 text-neutral-400 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </div>
-                      {config.is_active && (
-                        <span className="px-2 py-0.5 bg-green-500/20 border border-green-500/30 rounded text-xs text-green-300">
-                          Active
-                        </span>
-                      )}
-                      <svg className="w-5 h-5 text-neutral-400 group-hover:text-blue-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
                     </div>
+                    <button
+                      onClick={(e) => handleDelete(config.id!, config.name, e)}
+                      className="absolute top-2 right-2 p-1.5 bg-red-600/80 hover:bg-red-500 rounded text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Delete theme"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 ))}
               </div>

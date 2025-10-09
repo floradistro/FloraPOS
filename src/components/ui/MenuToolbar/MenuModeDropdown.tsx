@@ -47,7 +47,7 @@ export const MenuModeDropdown: React.FC<MenuModeDropdownProps> = ({
 
   return (
     <ToolbarDropdown
-      label={isDualMode ? "Dual Menu" : "Single Menu"}
+      label={undefined}
       icon={
         isDualMode ? (
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
