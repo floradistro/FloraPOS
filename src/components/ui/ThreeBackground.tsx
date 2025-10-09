@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Stars, Sphere, Box, Torus, TorusKnot } from '@react-three/drei';
+import { Stars } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface ThreeBackgroundProps {
@@ -32,85 +32,160 @@ function parseSceneConfig(sceneCode: string): any {
 }
 
 /**
- * Dynamic Custom Scene Wrapper - Executes AI-generated Three.js code
+ * Pure Three.js Custom Scene Renderer
  */
-function DynamicCustomScene({ sceneCode }: { sceneCode: string }) {
-  const [SceneComponent, setSceneComponent] = React.useState<React.ComponentType | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
+function PureThreeScene({ sceneCode }: { sceneCode: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
-  React.useEffect(() => {
-    console.log('🔍 DynamicCustomScene: Parsing new scene code');
-    console.log('📝 Code preview:', sceneCode.substring(0, 300));
+  useEffect(() => {
+    if (!containerRef.current) return;
 
+    console.log('🎮 Initializing Pure Three.js scene');
+    console.log('📝 Code length:', sceneCode.length);
+
+    // Setup renderer
+    const renderer = new THREE.WebGLRenderer({ 
+      alpha: true, 
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    containerRef.current.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
+
+    // Setup scene
+    const scene = new THREE.Scene();
+    sceneRef.current = scene;
+
+    // Setup camera
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      containerRef.current.clientWidth / containerRef.current.clientHeight,
+      0.1,
+      1000
+    );
+    camera.position.z = 30;
+    cameraRef.current = camera;
+
+    // Add lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+    
+    const pointLight1 = new THREE.PointLight(0xffffff, 1);
+    pointLight1.position.set(10, 10, 10);
+    scene.add(pointLight1);
+    
+    const pointLight2 = new THREE.PointLight(0xffffff, 0.5);
+    pointLight2.position.set(-10, -10, -10);
+    scene.add(pointLight2);
+
+    // Execute custom scene code
     try {
-      // Extract the function code
-      const functionMatch = sceneCode.match(/function\s+(\w+)\s*\([^)]*\)\s*\{[\s\S]*\}/);
-      if (!functionMatch) {
-        throw new Error('Could not find function in scene code');
-      }
-
-      const functionCode = functionMatch[0];
-      const functionName = functionMatch[1];
-
-      console.log('✅ Found function:', functionName, 'length:', functionCode.length);
-
-      // Create wrapper component that executes the code
-      const WrapperComponent = () => {
-        try {
-          // Use eval in a controlled way to execute the function definition
-          const evalCode = `
-            (function(React, useRef, useFrame, THREE, useMemo, Stars, Sphere, Box, Torus, TorusKnot) {
-              ${functionCode}
-              return ${functionName};
-            })
-          `;
-          
-          // Execute to get the function
-          const sceneFn = eval(evalCode);
-          
-          // Call it with the required dependencies
-          const { Stars: StarsComp, Sphere, Box, Torus, TorusKnot } = require('@react-three/drei');
-          const SceneFunc = sceneFn(React, useRef, useFrame, THREE, React.useMemo, StarsComp, Sphere, Box, Torus, TorusKnot);
-          
-          // Render the scene component
-          return <SceneFunc />;
-        } catch (err) {
-          console.error('❌ Error executing custom scene:', err);
-          return (
-            <mesh>
-              <boxGeometry args={[1, 1, 1]} />
-              <meshStandardMaterial color="#ff0000" />
-            </mesh>
-          );
-        }
-      };
-
-      setSceneComponent(() => WrapperComponent);
-      setError(null);
-      console.log('✅ Custom scene component created');
+      console.log('🚀 Executing custom scene code...');
       
-    } catch (err) {
-      console.error('❌ Failed to create custom scene:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      setSceneComponent(null);
+      // Create animation function reference
+      let animateFunction: ((time: number) => void) | null = null;
+
+      // Execute the user's code with scene, camera, and THREE available
+      const sceneSetup = new Function('scene', 'camera', 'THREE', `
+        ${sceneCode}
+        
+        // Return the animate function if it exists
+        return typeof animate === 'function' ? animate : null;
+      `);
+
+      animateFunction = sceneSetup(scene, camera, THREE);
+      console.log('✅ Scene code executed, has animate function:', !!animateFunction);
+
+      // Animation loop
+    const clock = new THREE.Clock();
+      const animate = () => {
+        animationFrameRef.current = requestAnimationFrame(animate);
+
+      const elapsedTime = clock.getElapsedTime();
+
+        // Call custom animate function if provided
+        if (animateFunction) {
+          animateFunction(elapsedTime);
+        }
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    } catch (error) {
+      console.error('❌ Failed to execute custom scene:', error);
+      
+      // Fallback: red error cube
+      const geometry = new THREE.BoxGeometry(2, 2, 2);
+      const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+      const cube = new THREE.Mesh(geometry, material);
+      scene.add(cube);
+      
+      const animate = () => {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.01;
+        renderer.render(scene, camera);
+      };
+      animate();
     }
+
+    // Handle resize
+    const handleResize = () => {
+      if (!containerRef.current || !camera || !renderer) return;
+      const width = containerRef.current.clientWidth;
+      const height = containerRef.current.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        containerRef.current?.removeChild(rendererRef.current.domElement);
+      }
+      if (sceneRef.current) {
+        sceneRef.current.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            object.geometry.dispose();
+            if (Array.isArray(object.material)) {
+              object.material.forEach(m => m.dispose());
+            } else {
+              object.material.dispose();
+            }
+          }
+        });
+      }
+    };
   }, [sceneCode]);
 
-  if (error) {
-    console.error('Scene error:', error);
-    return (
-      <mesh>
-        <sphereGeometry args={[2, 32, 32]} />
-        <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={0.5} />
-      </mesh>
-    );
-  }
-
-  if (!SceneComponent) {
-    return null;
-  }
-
-  return <SceneComponent />;
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 0,
+        overflow: 'hidden',
+        pointerEvents: 'none'
+      }}
+    />
+  );
 }
 
 /**
@@ -302,7 +377,7 @@ function StarfieldScene({ color = '#ffffff', count = 5000 }: { color?: string; c
  * Tunnel Scene - Hypnotic rotating tunnel
  */
 function TunnelScene({ color = '#00ffff' }: { color?: string }) {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<THREE.Group>(null);
   const rings = 50;
 
   useFrame((state) => {
@@ -728,19 +803,20 @@ export function ThreeBackground({ sceneCode }: ThreeBackgroundProps) {
   console.log('🎮 ThreeBackground received:', {
     isCustom,
     codeLength: sceneCode.length,
-    hasFunction: sceneCode.includes('function'),
     codePreview: sceneCode.substring(0, 100)
   });
 
+  // If it's a custom scene, use Pure Three.js renderer
+  if (isCustom) {
+    console.log('✅ Using Pure Three.js renderer for custom scene');
+    return <PureThreeScene sceneCode={sceneCode} />;
+  }
+
+  // For pre-built scenes, use React Three Fiber
   const config = parseSceneConfig(sceneCode);
   const sceneType = config.type || 'particles';
 
   const renderScene = () => {
-    // Render custom scene using dynamic component
-    if (isCustom) {
-      console.log('✅ Rendering CUSTOM scene with DynamicCustomScene');
-      return <DynamicCustomScene sceneCode={sceneCode} />;
-    }
     switch (sceneType) {
       case 'particles':
         return <ParticlesScene color={config.color} count={config.count} />;
