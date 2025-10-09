@@ -48,16 +48,16 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
   };
 
   const extractCode = (text: string): string | null => {
-    const cleaned = cleanCode(text);
+    // Don't clean markdown for extraction - we need the structure
+    const withoutCodeBlocks = text.replace(/```(?:jsx|javascript|html|json)?\n/g, '').replace(/```/g, '');
     
-    // Check for CUSTOM Three.js scene (AI-generated code)
-    if (cleaned.includes('CUSTOM_THREE_SCENE')) {
-      // Extract everything from CUSTOM_THREE_SCENE onwards
-      // Need to match the entire function including all nested braces
-      const startIndex = cleaned.indexOf('CUSTOM_THREE_SCENE');
+    console.log('🔍 Extracting code from text, length:', text.length);
+    
+    // Check for CUSTOM Three.js scene (AI-generated code) - FIRST PRIORITY
+    if (withoutCodeBlocks.includes('CUSTOM_THREE_SCENE')) {
+      const startIndex = withoutCodeBlocks.indexOf('CUSTOM_THREE_SCENE');
       if (startIndex !== -1) {
-        // Find the function and capture all of it
-        const fromStart = cleaned.substring(startIndex);
+        const fromStart = withoutCodeBlocks.substring(startIndex);
         const funcMatch = fromStart.match(/function\s+\w+\s*\([^)]*\)\s*\{/);
         
         if (funcMatch && funcMatch.index !== undefined) {
@@ -66,7 +66,6 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
           let inFunction = false;
           let endIndex = -1;
           
-          // Parse through to find matching closing brace
           for (let i = funcStart; i < fromStart.length; i++) {
             if (fromStart[i] === '{') {
               braceCount++;
@@ -82,7 +81,7 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
           
           if (endIndex !== -1) {
             const extracted = fromStart.substring(0, endIndex).trim();
-            console.log('✅ Extracted custom Three.js scene, length:', extracted.length);
+            console.log('✅ Extracted CUSTOM Three.js scene, length:', extracted.length);
             return extracted;
           }
         }
@@ -90,28 +89,27 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
       console.warn('⚠️ Could not extract custom scene function');
     }
     
-    // Check for pre-built Three.js scene configuration
-    if (cleaned.includes('THREE_JS_SCENE')) {
-      // Extract the Three.js scene configuration
-      const sceneMatch = cleaned.match(/THREE_JS_SCENE[\s\S]*?\{[\s\S]*?\}/);
+    // Check for pre-built Three.js scene configuration - SECOND PRIORITY
+    if (withoutCodeBlocks.includes('THREE_JS_SCENE')) {
+      const sceneMatch = withoutCodeBlocks.match(/THREE_JS_SCENE[\s\S]*?\{[\s\S]*?\}/);
       if (sceneMatch) {
         console.log('✅ Extracted pre-built Three.js scene');
         return sceneMatch[0].trim();
       }
     }
     
-    // Find <div> tags for HTML/CSS backgrounds
-    const divMatch = cleaned.match(/<div[\s\S]*<\/div>/);
+    // Find <div> tags for HTML/CSS backgrounds - THIRD PRIORITY
+    const divMatch = withoutCodeBlocks.match(/<div[\s\S]*<\/div>/);
     if (divMatch) {
       console.log('✅ Extracted HTML/CSS background');
       return divMatch[0];
     }
     
-    if (cleaned.startsWith('<div')) {
-      return cleaned;
+    if (withoutCodeBlocks.trim().startsWith('<div')) {
+      return withoutCodeBlocks.trim();
     }
     
-    console.warn('⚠️ No valid code pattern found');
+    console.warn('⚠️ No valid code pattern found in:', withoutCodeBlocks.substring(0, 200));
     return null;
   };
 
@@ -177,7 +175,8 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
       // Extract code but don't auto-apply - let user confirm
       const code = extractCode(fullResponse);
       if (code) {
-        const cleaned = cleanCode(code);
+        // Don't clean CUSTOM_THREE_SCENE - preserve exact format
+        const cleaned = code.includes('CUSTOM_THREE_SCENE') ? code : cleanCode(code);
         console.log('🎨 Extracted code:', cleaned.substring(0, 200));
         setCodeInput(cleaned);
         
@@ -188,7 +187,10 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
           return newMsgs;
         });
         
-        console.log('✅ Code extracted and ready to apply');
+        console.log('✅ Code extracted and ready to apply:', {
+          type: cleaned.includes('CUSTOM_THREE_SCENE') ? 'CUSTOM' : cleaned.includes('THREE_JS_SCENE') ? 'PRESET' : 'HTML',
+          length: cleaned.length
+        });
       } else {
         console.warn('⚠️ No code extracted from AI response');
       }
@@ -356,34 +358,39 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
                       ? 'bg-blue-600 text-white' 
                       : 'bg-neutral-800 text-neutral-200'
                   }`}>
-                    <ReactMarkdown
-                      className="text-sm prose prose-invert prose-sm max-w-none"
-                      components={{
-                        code: ({node, inline, className, children, ...props}) => {
-                          const content = String(children).replace(/\n$/, '');
-                          if (inline) {
-                            return <code className="bg-neutral-700 px-1.5 py-0.5 rounded text-xs font-mono text-cyan-300" {...props}>{content}</code>
-                          }
-                          const isThreeJs = content.includes('CUSTOM_THREE_SCENE') || content.includes('THREE_JS_SCENE');
-                          return (
-                            <pre className={`${isThreeJs ? 'bg-gradient-to-br from-cyan-900/40 to-purple-900/40 border border-cyan-500/30' : 'bg-neutral-900'} p-3 rounded-lg text-xs overflow-x-auto my-2 shadow-lg`}>
-                              <code className="font-mono text-cyan-100" {...props}>{content}</code>
-                            </pre>
-                          )
-                        },
-                        p: ({children}) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
-                        ul: ({children}) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
-                        ol: ({children}) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
-                        li: ({children}) => <li className="text-neutral-300">{children}</li>,
-                        strong: ({children}) => <strong className="font-bold text-white">{children}</strong>,
-                        em: ({children}) => <em className="italic text-neutral-300">{children}</em>,
-                        h1: ({children}) => <h1 className="text-xl font-bold text-white mb-2 mt-3">{children}</h1>,
-                        h2: ({children}) => <h2 className="text-lg font-bold text-white mb-2 mt-3">{children}</h2>,
-                        h3: ({children}) => <h3 className="text-base font-bold text-white mb-1 mt-2">{children}</h3>,
-                      }}
-                    >
-                      {msg.content}
-                    </ReactMarkdown>
+                    <div className="text-sm prose prose-invert prose-sm max-w-none markdown-content">
+                      <ReactMarkdown
+                        components={{
+                          code: ({node, children, ...props}: any) => {
+                            const content = String(children).replace(/\n$/, '');
+                            const match = /language-(\w+)/.exec(props.className || '');
+                            const isBlock = !props.className || match;
+                            
+                            if (!isBlock) {
+                              return <code className="bg-neutral-700 px-1.5 py-0.5 rounded text-xs font-mono text-cyan-300">{content}</code>
+                            }
+                            
+                            const isThreeJs = content.includes('CUSTOM_THREE_SCENE') || content.includes('THREE_JS_SCENE');
+                            return (
+                              <pre className={`${isThreeJs ? 'bg-gradient-to-br from-cyan-900/40 to-purple-900/40 border border-cyan-500/30' : 'bg-neutral-900'} p-3 rounded-lg text-xs overflow-x-auto my-2 shadow-lg`}>
+                                <code className="font-mono text-cyan-100">{content}</code>
+                              </pre>
+                            )
+                          },
+                          p: ({children}: any) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                          ul: ({children}: any) => <ul className="list-disc list-inside space-y-1 my-2 ml-2">{children}</ul>,
+                          ol: ({children}: any) => <ol className="list-decimal list-inside space-y-1 my-2 ml-2">{children}</ol>,
+                          li: ({children}: any) => <li className="text-neutral-300">{children}</li>,
+                          strong: ({children}: any) => <strong className="font-bold text-white">{children}</strong>,
+                          em: ({children}: any) => <em className="italic text-neutral-300">{children}</em>,
+                          h1: ({children}: any) => <h1 className="text-xl font-bold text-white mb-2 mt-3">{children}</h1>,
+                          h2: ({children}: any) => <h2 className="text-lg font-bold text-white mb-2 mt-3">{children}</h2>,
+                          h3: ({children}: any) => <h3 className="text-base font-bold text-white mb-1 mt-2">{children}</h3>,
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                   
                   {/* Show apply button if code was extracted */}
