@@ -728,15 +728,26 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
     };
   }, [isClient]);
 
-  // Show loading state during SSR
+  // Show loading state during SSR with matrix rain
   if (!isClient) {
     return (
-      <div className="space-y-2">
-        <div className="relative bg-neutral-800 rounded-lg overflow-hidden" style={{ height: '200px', width: '100%' }}>
+      <div className="flex flex-col h-full min-h-[600px]">
+        <div className="relative bg-neutral-800 rounded-lg overflow-hidden flex-shrink-0" style={{ height: '200px', width: '100%' }}>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center text-white">
               <div className="animate-spin w-6 h-6 border-2 border-white border-t-transparent rounded-full mx-auto mb-1"></div>
               <p className="text-xs">Initializing scanner...</p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Show matrix immediately during loading */}
+        <div className="relative mt-4 flex-1 bg-black/20 rounded-lg overflow-hidden min-h-[200px]">
+          <MatrixRain size="sm" className="opacity-60" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center text-neutral-400/70">
+              <div className="text-xs font-mono mb-1">INITIALIZING...</div>
+              <div className="text-[10px] tracking-wider">LOADING SCANNER MODULE</div>
             </div>
           </div>
         </div>
@@ -745,9 +756,9 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
   }
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col h-full min-h-[600px]">
       {/* Scanner View - Wide rectangle for ID cards */}
-      <div className="relative bg-neutral-800 rounded-lg overflow-hidden" style={{ height: '200px', width: '100%' }}>
+      <div className="relative bg-neutral-800 rounded-lg overflow-hidden flex-shrink-0" style={{ height: '200px', width: '100%' }}>
         <div
           ref={viewRef}
           className="w-full h-full"
@@ -783,13 +794,13 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
       </div>
 
       {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs">
+        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-xs mt-2 flex-shrink-0">
           {error}
         </div>
       )}
 
       {/* Cancel Button Only - Scanner is always active */}
-      <div className="mt-2">
+      <div className="mt-2 flex-shrink-0">
         <button
           onClick={() => {
             stopScanning();
@@ -801,8 +812,8 @@ export function ScanditIDScanner({ onScanResult, onCancel }: ScanditIDScannerPro
         </button>
       </div>
 
-      {/* Matrix Rain Bottom Section */}
-      <div className="relative mt-4 h-32 bg-black/20 rounded-lg overflow-hidden">
+      {/* Matrix Rain Bottom Section - Fills remaining space */}
+      <div className="relative mt-4 flex-1 bg-black/20 rounded-lg overflow-hidden min-h-[200px]">
         <MatrixRain size="sm" className="opacity-60" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-neutral-400/70">

@@ -1378,12 +1378,12 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
                 </button>
               </div>
               
-              <div className={`flex flex-col overflow-hidden ${showIDScanner ? 'h-auto' : 'max-h-[45rem]'}`}>
+              <div className={`flex flex-col overflow-hidden ${showIDScanner ? 'h-[700px]' : 'max-h-[45rem]'}`}>
                 {/* Fixed Top Section - ID Scanner or New Customer Form */}
                 {(showIDScanner || showNewCustomerForm) && (
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 h-full">
                     {showIDScanner ? (
-                      <div className="px-4 py-4 border-b border-neutral-500/20">
+                      <div className="px-4 py-4 border-b border-neutral-500/20 h-full">
                         <ScanditIDScanner
                           onScanResult={handleIDScanResult}
                           onCancel={handleCancelIDScanner}
