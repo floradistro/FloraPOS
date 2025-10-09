@@ -41,6 +41,9 @@ interface SharedMenuDisplayProps {
   titleFont?: string
   pricingFont?: string
   cardFont?: string
+  containerOpacity?: number
+  borderWidth?: number
+  borderOpacity?: number
   pandaMode: boolean
   priceLocation?: 'none' | 'header' | 'inline'
   leftPriceLocation?: 'none' | 'header' | 'inline'
@@ -85,6 +88,9 @@ export function SharedMenuDisplay({
   titleFont = 'Tiempos, serif',
   pricingFont = 'Tiempos, serif',
   cardFont = 'Tiempos, serif',
+  containerOpacity = 100,
+  borderWidth = 1,
+  borderOpacity = 100,
   priceLocation = 'none',
   leftPriceLocation = 'none',
   rightPriceLocation = 'none',
@@ -138,30 +144,46 @@ export function SharedMenuDisplay({
     // Get blueprint fields to display (exclude 'name')
     const blueprintColumns = columns.filter(col => col !== 'name')
 
+    // Calculate alpha values for transparency
+    const containerAlpha = Math.round((containerOpacity / 100) * 240).toString(16).padStart(2, '0')
+    const borderAlpha = (borderOpacity / 100).toFixed(2)
+
     return (
       <div
         key={product.id}
-        className="group rounded-lg p-2 border hover:border-opacity-50 transition-all overflow-hidden"
+        className="group rounded-2xl p-4 flex flex-col backdrop-blur-xl overflow-hidden"
         style={{ 
-          backgroundColor: containerColor,
-          borderColor: `${containerColor}80`,
+          background: `linear-gradient(135deg, ${containerColor}${containerAlpha} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 224).toString(16).padStart(2, '0')} 100%)`,
+          border: `${borderWidth}px solid rgba(255, 255, 255, ${borderAlpha * 0.1})`,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
           color: fontColor 
         }}
       >
         {/* Product Image */}
         {showImg && hasImage && (
-          <div className="aspect-square rounded-lg overflow-hidden mb-1.5 flex-shrink-0" style={{ backgroundColor: imageBackgroundColor }}>
+          <div 
+            className="aspect-square rounded-xl overflow-hidden mb-3 flex-shrink-0" 
+            style={{ 
+              background: `linear-gradient(135deg, ${imageBackgroundColor} 0%, ${imageBackgroundColor}CC 100%)`,
+              boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.3)'
+            }}
+          >
             <img
               src={product.image}
               alt={product.name}
               className="w-full h-full object-cover"
-              loading="lazy"
             />
           </div>
         )}
 
         {/* Product Name */}
-        <h3 className="text-sm font-semibold mb-1 transition-colors line-clamp-2 flex-shrink-0" style={{ color: cardFontColor, minHeight: '2rem', fontFamily: cardFont }}>
+        <h3 className="text-base font-bold mb-2 line-clamp-2 flex-shrink-0" style={{ 
+          color: cardFontColor, 
+          minHeight: '2.5rem', 
+          fontFamily: cardFont,
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+          letterSpacing: '-0.02em'
+        }}>
           {product.name}
         </h3>
         
@@ -189,19 +211,37 @@ export function SharedMenuDisplay({
         {/* Pricing Tiers - Only show if inline mode */}
         {cardPriceLocation === 'inline' && (
           hasTiers ? (
-            <div className="space-y-0.5">
+            <div className="space-y-1.5">
               {pricingTiers.slice(0, 2).map((tier: any, idx: number) => (
-                <div key={idx} className="flex items-center justify-between text-[10px]">
-                  <span style={{ color: `${cardFontColor}70`, fontFamily: cardFont }}>{tier.label}</span>
-                  <span className="font-bold text-xs" style={{ color: cardFontColor, fontFamily: cardFont }}>${parseFloat(tier.price).toFixed(2)}</span>
+                <div 
+                  key={idx} 
+                  className="flex items-center justify-between text-sm rounded-lg px-2 py-1"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)'
+                  }}
+                >
+                  <span style={{ color: `${cardFontColor}CC`, fontFamily: pricingFont, fontSize: '0.85rem', fontWeight: 500 }}>{tier.label}</span>
+                  <span className="font-bold" style={{ color: '#10b981', fontFamily: pricingFont, fontSize: '1rem', textShadow: '0 0 12px rgba(16, 185, 129, 0.3)' }}>
+                    ${parseFloat(tier.price).toFixed(2)}
+                  </span>
                 </div>
               ))}
               {pricingTiers.length > 2 && (
-                <div className="text-[10px] text-center" style={{ color: `${cardFontColor}60`, fontFamily: cardFont }}>+{pricingTiers.length - 2} more</div>
+                <div className="text-xs text-center py-1" style={{ color: `${cardFontColor}99`, fontFamily: pricingFont }}>+{pricingTiers.length - 2} more options</div>
               )}
             </div>
           ) : priceNum > 0 && (
-            <div className="text-sm font-bold" style={{ color: cardFontColor, fontFamily: cardFont }}>
+            <div 
+              className="text-2xl font-bold mt-auto" 
+              style={{ 
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontFamily: pricingFont,
+                textShadow: '0 0 20px rgba(16, 185, 129, 0.2)'
+              }}
+            >
               ${priceNum.toFixed(2)}
             </div>
           )
@@ -260,29 +300,43 @@ export function SharedMenuDisplay({
     const pricingTiers = (product as any).blueprintPricing?.ruleGroups?.[0]?.tiers || []
     const hasTiers = pricingTiers.length > 0
 
+    // Calculate alpha values for row transparency
+    const rowAlpha1 = Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')
+    const rowAlpha2 = Math.round((containerOpacity / 100) * 32).toString(16).padStart(2, '0')
+    const borderAlpha = (borderOpacity / 100 * 0.05).toFixed(3)
+
     return (
       <div
         key={product.id}
-        className="group relative flex items-center gap-3 py-1.5 px-3 border-b transition-all duration-200 flex-shrink-0"
+        className="group relative flex items-center gap-4 py-3 px-5 flex-shrink-0"
         style={{
-          backgroundColor: index % 2 === 0 ? `${containerColor}30` : 'transparent',
-          borderBottomColor: `${containerColor}50`,
-          color: fontColor
+          background: index % 2 === 0 
+            ? `linear-gradient(90deg, ${containerColor}${rowAlpha1} 0%, ${containerColor}${rowAlpha2} 100%)` 
+            : `rgba(255, 255, 255, ${(containerOpacity / 100) * 0.02})`,
+          borderBottom: `${borderWidth}px solid rgba(255, 255, 255, ${borderAlpha})`,
+          color: fontColor,
+          backdropFilter: 'blur(8px)'
         }}
       >
         {/* Image */}
         {panelShowImages && (
-          <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0" style={{ backgroundColor: imageBackgroundColor }}>
+          <div 
+            className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0" 
+            style={{ 
+              background: `linear-gradient(135deg, ${imageBackgroundColor}F0 0%, ${imageBackgroundColor}CC 100%)`,
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}
+          >
             {hasImage ? (
               <img
                 src={product.image}
                 alt={product.name}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                loading="lazy"
+                className="w-full h-full object-cover"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <svg className="w-10 h-10" style={{ color: `${fontColor}40` }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8" style={{ color: `${fontColor}30` }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
@@ -303,7 +357,13 @@ export function SharedMenuDisplay({
             
             return (
               <div key={columnName} className="min-w-0">
-                <h3 className={`${idx === 0 ? 'text-base font-semibold' : 'text-sm'} transition-colors truncate`} style={{ color: fontColor, fontFamily: cardFont, textAlign: 'left' }}>
+                <h3 className={`${idx === 0 ? 'text-lg font-bold' : 'text-sm'} truncate`} style={{ 
+                  color: fontColor, 
+                  fontFamily: cardFont, 
+                  textAlign: 'left',
+                  textShadow: idx === 0 ? '0 2px 4px rgba(0, 0, 0, 0.2)' : 'none',
+                  letterSpacing: idx === 0 ? '-0.01em' : '0'
+                }}>
                   {value}
                 </h3>
               </div>
@@ -315,11 +375,23 @@ export function SharedMenuDisplay({
         {panelPriceLocation === 'inline' && hasTiers && (
           <div className="flex items-center gap-3 flex-shrink-0">
             {pricingTiers.map((tier: any, idx: number) => (
-              <div key={idx} className="text-center">
-                <div className="text-[9px] mb-0.5 uppercase tracking-wide" style={{ color: `${fontColor}60`, fontFamily: cardFont }}>
+              <div 
+                key={idx} 
+                className="text-center px-4 py-2 rounded-xl"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%)',
+                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)'
+                }}
+              >
+                <div className="text-[10px] mb-1 uppercase tracking-wider font-semibold" style={{ color: `${fontColor}CC`, fontFamily: cardFont }}>
                   {tier.label}
                 </div>
-                <div className="text-sm font-bold" style={{ color: fontColor, fontFamily: cardFont }}>
+                <div className="text-base font-bold" style={{ 
+                  color: '#10b981', 
+                  fontFamily: cardFont,
+                  textShadow: '0 0 12px rgba(16, 185, 129, 0.3)'
+                }}>
                   ${parseFloat(tier.price).toFixed(2)}
                 </div>
               </div>
@@ -329,7 +401,17 @@ export function SharedMenuDisplay({
         
         {/* Single Price (inline mode, no tiers) */}
         {panelPriceLocation === 'inline' && !hasTiers && price > 0 && (
-          <div className="text-base font-bold flex-shrink-0 text-right" style={{ color: fontColor, fontFamily: cardFont }}>
+          <div 
+            className="text-2xl font-bold flex-shrink-0 text-right px-5 py-2 rounded-xl"
+            style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              color: '#10b981',
+              fontFamily: cardFont,
+              textShadow: '0 0 16px rgba(16, 185, 129, 0.4)',
+              boxShadow: '0 4px 16px rgba(16, 185, 129, 0.2)'
+            }}
+          >
             ${price.toFixed(2)}
           </div>
         )}
@@ -408,9 +490,10 @@ export function SharedMenuDisplay({
             {categoryProducts.map(product => renderProductCard(product, showImg, priceLocation, category.slug))}
           </div>
         ) : (
-          <div className="rounded-xl overflow-hidden border backdrop-blur-sm" style={{ 
-            borderColor: `${containerColor}60`,
-            backgroundColor: `${containerColor}30`
+          <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+            background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+            border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
           }}>
             {renderTableHeader(category.slug)}
             {categoryProducts.map((product, idx) => renderProductRow(product, idx, category.slug))}
@@ -537,13 +620,21 @@ export function SharedMenuDisplay({
                   
                   return (
                     <div className="grid grid-cols-2 gap-4 w-full">
-                      <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50 backdrop-blur-sm">
+                      <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                        background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                        border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                      }}>
                         {renderTableHeader(singleCategory.category.slug, showImages)}
                         {leftColumn.map((product, idx) => 
                           renderProductRow(product, idx, singleCategory.category.slug)
                         )}
                       </div>
-                      <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50 backdrop-blur-sm">
+                      <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                        background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                        border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                      }}>
                         {renderTableHeader(singleCategory.category.slug, showImages)}
                         {rightColumn.map((product, idx) => 
                           renderProductRow(product, idx, singleCategory.category.slug)
@@ -553,7 +644,11 @@ export function SharedMenuDisplay({
                   );
                 } else {
                   return (
-                    <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50 backdrop-blur-sm w-full">
+                    <div className="rounded-2xl overflow-hidden backdrop-blur-xl w-full" style={{ 
+                      background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                      border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                    }}>
                       {renderTableHeader(singleCategory.category.slug, showImages)}
                       {visibleProducts.map((product, idx) => 
                         renderProductRow(product, idx, singleCategory.category.slug)
@@ -687,17 +782,29 @@ export function SharedMenuDisplay({
               
               return (
                 <div className="grid grid-cols-2 gap-2 w-full">
-                  <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50">
+                  <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                    background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                    border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                  }}>
                     {leftCol.map((product, idx) => renderProductRow(product, idx, leftMenuCategory || undefined, leftPriceLocation, leftMenuImages))}
                   </div>
-                  <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50">
+                  <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                    background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                    border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                  }}>
                     {rightCol.map((product, idx) => renderProductRow(product, idx, leftMenuCategory || undefined, leftPriceLocation, leftMenuImages))}
                   </div>
                 </div>
               );
             } else {
               return (
-                <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50 w-full">
+                <div className="rounded-2xl overflow-hidden backdrop-blur-xl w-full" style={{ 
+                  background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                  border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                }}>
                   {visibleProducts.map((product, idx) => renderProductRow(product, idx, leftMenuCategory || undefined, leftPriceLocation, leftMenuImages))}
                 </div>
               );
@@ -754,17 +861,29 @@ export function SharedMenuDisplay({
                     
                     return (
                       <div className="grid grid-cols-2 gap-3 w-full">
-                        <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50">
+                        <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                    background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                    border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                  }}>
                           {leftCol.map((p, idx) => renderProductRow(p, idx, leftMenuCategory2 || undefined, leftPriceLocation, leftMenuImages2))}
                         </div>
-                        <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50">
+                        <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                    background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                    border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                  }}>
                           {rightCol.map((p, idx) => renderProductRow(p, idx, leftMenuCategory2 || undefined, leftPriceLocation, leftMenuImages2))}
                         </div>
                       </div>
                     );
                   } else {
                     return (
-                      <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50 w-full">
+                      <div className="rounded-2xl overflow-hidden backdrop-blur-xl w-full" style={{ 
+                  background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                  border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                }}>
                         {leftProducts2.map((p, idx) => renderProductRow(p, idx, leftMenuCategory2 || undefined, leftPriceLocation, leftMenuImages2))}
                       </div>
                     );
@@ -863,17 +982,29 @@ export function SharedMenuDisplay({
               
               return (
                 <div className="grid grid-cols-2 gap-2 w-full">
-                  <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50">
+                  <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                    background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                    border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                  }}>
                     {leftCol.map((product, idx) => renderProductRow(product, idx, rightMenuCategory || undefined, rightPriceLocation, rightMenuImages))}
                   </div>
-                  <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50">
+                  <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                    background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                    border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                  }}>
                     {rightCol.map((product, idx) => renderProductRow(product, idx, rightMenuCategory || undefined, rightPriceLocation, rightMenuImages))}
                   </div>
                 </div>
               );
             } else {
               return (
-                <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50 w-full">
+                <div className="rounded-2xl overflow-hidden backdrop-blur-xl w-full" style={{ 
+                  background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                  border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                }}>
                   {visibleProducts.map((product, idx) => renderProductRow(product, idx, rightMenuCategory || undefined, rightPriceLocation, rightMenuImages))}
                 </div>
               );
@@ -930,17 +1061,29 @@ export function SharedMenuDisplay({
                     
                     return (
                       <div className="grid grid-cols-2 gap-3 w-full">
-                        <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50">
+                        <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                    background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                    border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                  }}>
                           {leftCol.map((p, idx) => renderProductRow(p, idx, rightMenuCategory2 || undefined, rightPriceLocation, rightMenuImages2))}
                         </div>
-                        <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50">
+                        <div className="rounded-2xl overflow-hidden backdrop-blur-xl" style={{ 
+                    background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                    border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                  }}>
                           {rightCol.map((p, idx) => renderProductRow(p, idx, rightMenuCategory2 || undefined, rightPriceLocation, rightMenuImages2))}
                         </div>
                       </div>
                     );
                   } else {
                     return (
-                      <div className="rounded-xl overflow-hidden border border-[#3e3e3e] bg-[#1e1e1e]/50 w-full">
+                      <div className="rounded-2xl overflow-hidden backdrop-blur-xl w-full" style={{ 
+                  background: `linear-gradient(135deg, ${containerColor}${Math.round((containerOpacity / 100) * 96).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 64).toString(16).padStart(2, '0')} 100%)`,
+                  border: `${borderWidth}px solid rgba(255, 255, 255, ${(borderOpacity / 100) * 0.1})`,
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                }}>
                         {rightProducts2.map((p, idx) => renderProductRow(p, idx, rightMenuCategory2 || undefined, rightPriceLocation, rightMenuImages2))}
                       </div>
                     );
