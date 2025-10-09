@@ -33,16 +33,8 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
   // Register TV device
   const registerDevice = useCallback(async () => {
     if (!tvId) {
-      console.warn('⚠️ No TV ID provided, skipping registration')
       return
     }
-
-    console.log('📡 Registering TV:', {
-      tvId,
-      tvNumber,
-      locationId,
-      deviceName
-    })
 
     try {
       // Delete any existing TV with same number and location first
@@ -68,15 +60,11 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
         })
         .select()
 
-      if (error) {
-        console.error('❌ Registration error:', error)
-        throw error
-      }
+      if (error) throw error
 
       setIsRegistered(true)
       setConnectionStatus('online')
     } catch (error) {
-      console.error('❌ Failed to register TV:', error)
       setConnectionStatus('offline')
     }
   }, [tvId, tvNumber, locationId, deviceName, currentConfigId])
@@ -84,14 +72,11 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
   // Send heartbeat
   const sendHeartbeat = useCallback(async () => {
     if (!tvId || !isRegistered) {
-      console.warn('⚠️ Cannot send heartbeat:', { tvId, isRegistered })
       return
     }
 
     try {
-      console.log('💓 Sending heartbeat for TV:', tvId)
-      
-      const { data, error } = await supabase
+      await supabase
         .from('tv_devices')
         .update({
           status: 'online',
@@ -99,22 +84,14 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
           current_config_id: currentConfigId,
         })
         .eq('id', tvId)
-        .select()
-
-      if (error) {
-        console.error('❌ Heartbeat error:', error)
-        throw error
-      }
       
     } catch (error) {
-      console.error('❌ Heartbeat failed:', error)
       setConnectionStatus('offline')
     }
   }, [tvId, isRegistered, currentConfigId])
 
   // Execute command
   const executeCommand = useCallback(async (command: any) => {
-    console.log('🎯 Executing command:', command.command_type, command)
     setLastCommand(command)
 
     try {
@@ -130,8 +107,6 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
 
         case 'change_config':
           if (command.payload?.url) {
-            // Full URL provided - navigate to it
-            console.log('🔄 Changing to new URL:', command.payload.url)
             window.location.href = command.payload.url
           } else if (command.payload?.config_id) {
             // Just config ID - update param
@@ -181,7 +156,6 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
       })
 
     } catch (error: any) {
-      console.error('Command execution failed:', error)
       await TVCommandService.markCompleted(command.id, false, error.message)
     }
   }, [tvId, onCommand])
@@ -189,11 +163,8 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
   // Subscribe to commands
   useEffect(() => {
     if (!tvId || !isRegistered) {
-      console.warn('⚠️ Cannot subscribe to commands:', { tvId, isRegistered })
       return
     }
-
-    console.log('🎧 Setting up command listener for TV:', tvId)
 
     const channel = supabase
       .channel(`tv-commands-${tvId}`)
@@ -206,24 +177,18 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
           filter: `tv_id=eq.${tvId}`,
         },
         (payload) => {
-          console.log('📨 Command received via realtime:', payload.new)
           if (payload.new.status === 'pending') {
             executeCommand(payload.new)
           }
         }
       )
       .subscribe((status) => {
-        console.log('📡 Subscription status:', status)
         if (status === 'SUBSCRIBED') {
-          console.log('✅ Now listening for commands on TV:', tvId)
-          
-          // Also check for any pending commands that might have been sent before we subscribed
           checkPendingCommands()
         }
       })
 
     return () => {
-      console.log('🔌 Unsubscribing from commands')
       supabase.removeChannel(channel)
     }
   }, [tvId, isRegistered, executeCommand])
@@ -243,13 +208,12 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
       if (error) throw error
       
       if (data && data.length > 0) {
-        console.log(`📬 Found ${data.length} pending commands, executing...`)
         for (const command of data) {
           await executeCommand(command)
         }
       }
     } catch (error) {
-      console.error('Failed to check pending commands:', error)
+      // Silent fail
     }
   }, [tvId, executeCommand])
 
@@ -257,51 +221,41 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
   useEffect(() => {
     if (tvId) {
       registerDevice().then(() => {
-        // Check for pending commands immediately
         setTimeout(() => {
-          console.log('🔍 Initial check for pending commands...')
           checkPendingCommands()
         }, 1000)
       })
     }
   }, [tvId])
   
-  // POLL for pending commands every 5 seconds (backup for when WebSocket fails)
+  // POLL for pending commands every 30 seconds (backup for when WebSocket fails)
   useEffect(() => {
     if (!tvId || !isRegistered) return
     
-    console.log('🔄 Starting command polling (every 5s as WebSocket backup)')
-    
     const interval = setInterval(() => {
-      console.log('🔍 Polling for pending commands...')
       checkPendingCommands()
-    }, 5000)
+    }, 30000) // Reduced from 5s to 30s
     
     return () => {
-      console.log('🛑 Stopping command polling')
       clearInterval(interval)
     }
   }, [tvId, isRegistered, checkPendingCommands])
 
-  // Heartbeat every 10 seconds
+  // Heartbeat every 30 seconds (reduced from 10s)
   useEffect(() => {
     if (!isRegistered) {
-      console.warn('⚠️ Not registered, heartbeat disabled')
       return
     }
-
-    console.log('💓 Starting heartbeat interval (every 10s)')
     
     // Send first heartbeat immediately
     sendHeartbeat()
     
-    // Then every 10 seconds
+    // Then every 30 seconds
     const interval = setInterval(() => {
       sendHeartbeat()
-    }, 10000)
+    }, 30000)
     
     return () => {
-      console.log('🛑 Stopping heartbeat interval')
       clearInterval(interval)
     }
   }, [isRegistered, sendHeartbeat])
@@ -317,7 +271,6 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
             last_seen: new Date().toISOString(),
           })
           .eq('id', tvId)
-          .then(() => console.log('TV unregistered'))
       }
     }
   }, [tvId, isRegistered])

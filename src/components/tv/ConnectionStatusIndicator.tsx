@@ -5,13 +5,15 @@
 
 'use client'
 
+import { memo } from 'react'
+
 interface ConnectionStatusIndicatorProps {
   status: 'connecting' | 'online' | 'offline'
   tvId?: string
   lastCommand?: any
 }
 
-export function ConnectionStatusIndicator({ 
+export const ConnectionStatusIndicator = memo(function ConnectionStatusIndicator({ 
   status, 
   tvId,
   lastCommand 
@@ -21,7 +23,7 @@ export function ConnectionStatusIndicator({
       case 'online':
         return 'bg-green-500'
       case 'connecting':
-        return 'bg-yellow-500 animate-pulse'
+        return 'bg-yellow-500'
       case 'offline':
         return 'bg-red-500'
     }
@@ -58,5 +60,5 @@ export function ConnectionStatusIndicator({
       </div>
     </div>
   )
-}
+})
 
