@@ -197,13 +197,13 @@ function MenuDisplayContent() {
             blueprintPricing: batchPricing[p.id] || null
           }))
           
-          // Filter to show products with stock at ANY location (same as ProductGrid)
+          // Filter to show only products with stock > 0 at current location
           const inStockProducts = enrichedProducts.filter((product: Product) => {
-            const totalStock = product.total_stock || 
-              (product.inventory?.reduce((sum: number, inv: any) => 
-                sum + (parseFloat(inv.stock?.toString() || '0') || parseFloat(inv.quantity?.toString() || '0') || 0), 0
-              ) || 0)
-            return totalStock > 0
+            const locationInventory = product.inventory?.find((inv: any) => 
+              inv.location_id?.toString() === locationId
+            )
+            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || parseFloat(locationInventory.quantity?.toString() || '0') || 0) : 0
+            return locationStock > 0
           })
           
           // Only update if products actually changed
@@ -214,13 +214,13 @@ function MenuDisplayContent() {
             return inStockProducts
           })
         } catch (err) {
-          // Even on pricing error, filter by stock (same as ProductGrid)
+          // Even on pricing error, filter by location-specific stock
           const inStockProducts = result.data.filter((product: Product) => {
-            const totalStock = product.total_stock || 
-              (product.inventory?.reduce((sum: number, inv: any) => 
-                sum + (parseFloat(inv.stock?.toString() || '0') || parseFloat(inv.quantity?.toString() || '0') || 0), 0
-              ) || 0)
-            return totalStock > 0
+            const locationInventory = product.inventory?.find((inv: any) => 
+              inv.location_id?.toString() === locationId
+            )
+            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || parseFloat(locationInventory.quantity?.toString() || '0') || 0) : 0
+            return locationStock > 0
           })
           
           setProducts(prev => {
