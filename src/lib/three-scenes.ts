@@ -184,6 +184,16 @@ THREE_JS_SCENE
   "type": "nebula",
   "color": "${color}",
   "count": 8000
+}`,
+
+  /**
+   * Gradient Waves - flowing waves with color gradients
+   */
+  gradientWaves: (color1: string = '#ff00ff', color2: string = '#00ffff') => `THREE_JS_SCENE
+{
+  "type": "gradientWaves",
+  "color": "${color1}",
+  "color2": "${color2}"
 }`
 };
 
@@ -215,7 +225,13 @@ export const threeSceneCategories = {
     { name: 'Green Tech', code: threeSceneTemplates.greenTech() },
     { name: 'Red Waves', code: threeSceneTemplates.waves('#ff3333') },
     { name: 'Purple Waves', code: threeSceneTemplates.waves('#9933ff') },
-    { name: 'Gold Waves', code: threeSceneTemplates.waves('#ffd700') }
+    { name: 'Gold Waves', code: threeSceneTemplates.waves('#ffd700') },
+    { name: '🌊 Sunset Gradient', code: threeSceneTemplates.gradientWaves('#ff6b6b', '#ffd93d') },
+    { name: '🌊 Ocean Gradient', code: threeSceneTemplates.gradientWaves('#00d2ff', '#3a47d5') },
+    { name: '🌊 Purple Dream', code: threeSceneTemplates.gradientWaves('#667eea', '#764ba2') },
+    { name: '🌊 Pink Paradise', code: threeSceneTemplates.gradientWaves('#ff0084', '#33001b') },
+    { name: '🌊 Cyber Wave', code: threeSceneTemplates.gradientWaves('#00ff88', '#00d4ff') },
+    { name: '🌊 Fire Wave', code: threeSceneTemplates.gradientWaves('#ff0000', '#ff9900') }
   ],
   'Geometric': [
     { name: 'Red Shapes', code: threeSceneTemplates.geometric('#ff4444') },
