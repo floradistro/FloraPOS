@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ToolbarDropdown } from './ToolbarDropdown';
+import { threeSceneCategories, isThreeJsScene } from '@/lib/three-scenes';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -17,7 +18,7 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
   value,
   onChange
 }) => {
-  const [mode, setMode] = useState<'chat' | 'code'>('chat');
+  const [mode, setMode] = useState<'chat' | 'code' | 'threejs'>('chat');
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
   const [codeInput, setCodeInput] = useState(value);
@@ -39,7 +40,7 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
   const cleanCode = (rawCode: string): string => {
     // Remove markdown code blocks
     return rawCode
-      .replace(/```(?:html|jsx|tsx|javascript|react)?\n?/g, '')
+      .replace(/```(?:html|jsx|tsx|javascript|react|json)?\n?/g, '')
       .replace(/```/g, '')
       .trim();
   };
@@ -47,9 +48,60 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
   const extractCode = (text: string): string | null => {
     const cleaned = cleanCode(text);
     
-    // Find <div> tags
+    // Check for CUSTOM Three.js scene (AI-generated code)
+    if (cleaned.includes('CUSTOM_THREE_SCENE')) {
+      // Extract everything from CUSTOM_THREE_SCENE onwards
+      // Need to match the entire function including all nested braces
+      const startIndex = cleaned.indexOf('CUSTOM_THREE_SCENE');
+      if (startIndex !== -1) {
+        // Find the function and capture all of it
+        const fromStart = cleaned.substring(startIndex);
+        const funcMatch = fromStart.match(/function\s+\w+\s*\([^)]*\)\s*\{/);
+        
+        if (funcMatch && funcMatch.index !== undefined) {
+          const funcStart = funcMatch.index;
+          let braceCount = 0;
+          let inFunction = false;
+          let endIndex = -1;
+          
+          // Parse through to find matching closing brace
+          for (let i = funcStart; i < fromStart.length; i++) {
+            if (fromStart[i] === '{') {
+              braceCount++;
+              inFunction = true;
+            } else if (fromStart[i] === '}') {
+              braceCount--;
+              if (inFunction && braceCount === 0) {
+                endIndex = i + 1;
+                break;
+              }
+            }
+          }
+          
+          if (endIndex !== -1) {
+            const extracted = fromStart.substring(0, endIndex).trim();
+            console.log('✅ Extracted custom Three.js scene, length:', extracted.length);
+            return extracted;
+          }
+        }
+      }
+      console.warn('⚠️ Could not extract custom scene function');
+    }
+    
+    // Check for pre-built Three.js scene configuration
+    if (cleaned.includes('THREE_JS_SCENE')) {
+      // Extract the Three.js scene configuration
+      const sceneMatch = cleaned.match(/THREE_JS_SCENE[\s\S]*?\{[\s\S]*?\}/);
+      if (sceneMatch) {
+        console.log('✅ Extracted pre-built Three.js scene');
+        return sceneMatch[0].trim();
+      }
+    }
+    
+    // Find <div> tags for HTML/CSS backgrounds
     const divMatch = cleaned.match(/<div[\s\S]*<\/div>/);
     if (divMatch) {
+      console.log('✅ Extracted HTML/CSS background');
       return divMatch[0];
     }
     
@@ -57,6 +109,7 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
       return cleaned;
     }
     
+    console.warn('⚠️ No valid code pattern found');
     return null;
   };
 
@@ -123,9 +176,13 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
       const code = extractCode(fullResponse);
       if (code) {
         const cleaned = cleanCode(code);
+        console.log('🎨 Extracted code:', cleaned.substring(0, 200));
         setCodeInput(cleaned);
         onChange(cleaned);
-        setMode('code');
+        // Stay in chat mode so user can see the AI's explanation
+        console.log('✅ Code applied to preview');
+      } else {
+        console.warn('⚠️ No code extracted from AI response');
       }
 
     } catch (error: any) {
@@ -143,11 +200,17 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
 
   const handleApply = () => {
     console.log('🎨 BackgroundDropdown: Apply clicked, raw code length:', codeInput.length);
-    const cleaned = cleanCode(codeInput);
+    
+    // Don't clean custom Three.js scenes - they need to stay as-is
+    const isCustomScene = codeInput.includes('CUSTOM_THREE_SCENE');
+    const cleaned = isCustomScene ? codeInput.trim() : cleanCode(codeInput);
+    
     console.log('🧹 BackgroundDropdown: Cleaned code length:', cleaned.length);
+    console.log('🎨 BackgroundDropdown: Type:', isCustomScene ? 'CUSTOM' : 'OTHER');
     console.log('🎨 BackgroundDropdown: First 100 chars:', cleaned.substring(0, 100));
+    
     onChange(cleaned);
-    console.log('✅ BackgroundDropdown: onChange called');
+    console.log('✅ BackgroundDropdown: onChange called with cleaned code');
   };
 
   const handleClear = () => {
@@ -177,6 +240,14 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
             🤖 AI Designer
           </button>
           <button
+            onClick={() => setMode('threejs')}
+            className={`flex-1 px-3 py-2 rounded text-sm font-medium ${
+              mode === 'threejs' ? 'bg-cyan-600 text-white' : 'bg-neutral-800 text-neutral-400 hover:text-white'
+            }`}
+          >
+            🎮 3D Scenes
+          </button>
+          <button
             onClick={() => setMode('code')}
             className={`flex-1 px-3 py-2 rounded text-sm font-medium ${
               mode === 'code' ? 'bg-blue-600 text-white' : 'bg-neutral-800 text-neutral-400 hover:text-white'
@@ -186,7 +257,58 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
           </button>
         </div>
 
-        {mode === 'chat' ? (
+        {mode === 'threejs' ? (
+          <div className="flex flex-col h-[600px] overflow-y-auto">
+            <div className="p-4 space-y-6">
+              {/* Three.js Scene Selector */}
+              <div className="text-center mb-4">
+                <div className="text-2xl mb-2">🎮</div>
+                <div className="font-semibold text-white mb-1">Three.js 3D Backgrounds</div>
+                <div className="text-xs text-neutral-400">Select a WebGL-powered animated background</div>
+              </div>
+
+              {Object.entries(threeSceneCategories).map(([category, scenes]) => (
+                <div key={category} className="space-y-2">
+                  <h3 className="text-sm font-semibold text-white uppercase tracking-wider px-2">
+                    {category}
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {scenes.map((scene) => (
+                      <button
+                        key={scene.name}
+                        onClick={() => {
+                          onChange(scene.code);
+                          setCodeInput(scene.code);
+                        }}
+                        className={`p-3 rounded-lg border-2 text-left transition-all ${
+                          value === scene.code
+                            ? 'border-cyan-500 bg-cyan-500/20'
+                            : 'border-neutral-700 bg-neutral-800 hover:border-neutral-600 hover:bg-neutral-750'
+                        }`}
+                      >
+                        <div className="font-medium text-sm text-white mb-1">
+                          {scene.name}
+                        </div>
+                        <div className="text-xs text-neutral-400">
+                          Click to apply
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {value && isThreeJsScene(value) && (
+                <button
+                  onClick={handleClear}
+                  className="w-full mt-4 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-lg text-sm"
+                >
+                  Clear Background
+                </button>
+              )}
+            </div>
+          </div>
+        ) : mode === 'chat' ? (
           <div className="flex flex-col h-[600px]">
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-neutral-900/50 min-h-0">
@@ -263,12 +385,32 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-white mb-2 block">
-                  Custom HTML/CSS Background
+                  {codeInput.includes('CUSTOM_THREE_SCENE') ? '🎮 Custom Three.js Scene Code' : 
+                   codeInput.includes('THREE_JS_SCENE') ? '🎮 Three.js Scene Config' : 
+                   '✏️ Custom HTML/CSS Background'}
                 </label>
+                <div className="text-xs text-neutral-400 mb-2">
+                  {codeInput.includes('CUSTOM_THREE_SCENE') ? 
+                    'Paste your AI-generated custom Three.js scene here' :
+                    codeInput.includes('THREE_JS_SCENE') ?
+                    'Pre-built scene configuration' :
+                    'Paste HTML/CSS code or custom Three.js scene'}
+                </div>
                 <textarea
                   value={codeInput}
                   onChange={(e) => setCodeInput(e.target.value)}
-                  placeholder='<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>'
+                  placeholder={`Paste your code here:
+
+For Custom Three.js Scene:
+CUSTOM_THREE_SCENE
+function MyScene() {
+  // Your Three.js code...
+}
+
+For HTML/CSS:
+<div style="...">
+  <!-- Your HTML -->
+</div>`}
                   className="w-full h-[500px] px-3 py-3 bg-neutral-900 border border-neutral-700 rounded-lg text-xs text-white font-mono resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                   spellCheck={false}
                 />
@@ -277,9 +419,12 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
               <div className="flex gap-2">
                 <button
                   onClick={handleApply}
-                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm"
+                  disabled={!codeInput.trim()}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-neutral-700 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm transition-colors"
                 >
-                  Apply Background
+                  {codeInput.includes('CUSTOM_THREE_SCENE') ? 'Apply Custom Scene' : 
+                   codeInput.includes('THREE_JS_SCENE') ? 'Apply Scene Config' :
+                   'Apply Background'}
                 </button>
                 <button
                   onClick={handleClear}
@@ -290,8 +435,18 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
               </div>
               
               {value && (
-                <div className="text-xs text-green-400 text-center bg-green-500/10 py-2 rounded border border-green-500/20">
-                  ✓ Background active ({value.length} chars)
+                <div className={`text-xs text-center py-2 rounded border ${
+                  value.includes('CUSTOM_THREE_SCENE') ? 
+                    'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' :
+                  value.includes('THREE_JS_SCENE') ?
+                    'text-blue-400 bg-blue-500/10 border-blue-500/20' :
+                    'text-green-400 bg-green-500/10 border-green-500/20'
+                }`}>
+                  ✓ Background active ({value.length} chars) {
+                    value.includes('CUSTOM_THREE_SCENE') ? '🎮 Custom Scene' :
+                    value.includes('THREE_JS_SCENE') ? '🎮 Pre-built Scene' :
+                    '🎨 HTML/CSS'
+                  }
                 </div>
               )}
             </div>

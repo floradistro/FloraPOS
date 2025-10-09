@@ -69,6 +69,11 @@ export interface MenuConfigData {
   leftPriceLocation?: 'none' | 'header' | 'inline';
   rightPriceLocation?: 'none' | 'header' | 'inline';
   categoryColumnConfigs: Record<string, string[]>;
+  // Font size controls
+  headerTitleSize?: number;
+  cardTitleSize?: number;
+  priceSize?: number;
+  categorySize?: number;
 }
 
 export interface DisplayLog {

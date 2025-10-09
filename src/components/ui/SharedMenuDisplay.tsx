@@ -48,6 +48,10 @@ interface SharedMenuDisplayProps {
   borderOpacity?: number
   imageOpacity?: number
   blurIntensity?: number
+  headerTitleSize?: number
+  cardTitleSize?: number
+  priceSize?: number
+  categorySize?: number
   customBackground?: string
   pandaMode: boolean
   priceLocation?: 'none' | 'header' | 'inline'
@@ -59,7 +63,6 @@ interface SharedMenuDisplayProps {
   onSideClick?: (side: string) => void
   selectedMenuSection?: string | null
   onSectionClick?: (section: string) => void
-  isPreview?: boolean
 }
 
 export function SharedMenuDisplay({
@@ -98,6 +101,10 @@ export function SharedMenuDisplay({
   borderOpacity = 100,
   imageOpacity = 100,
   blurIntensity = 8,
+  headerTitleSize = 60,
+  cardTitleSize = 18,
+  priceSize = 32,
+  categorySize = 40,
   customBackground = '',
   priceLocation = 'none',
   leftPriceLocation = 'none',
@@ -142,11 +149,14 @@ export function SharedMenuDisplay({
 
   // Render product card - COMPACT & RESPONSIVE
   const renderProductCard = (product: Product, showImg: boolean, cardPriceLocation: 'none' | 'header' | 'inline' = priceLocation, categorySlug?: string) => {
-    const priceNum = product.regular_price ? parseFloat(product.regular_price) : 0
+    // Use blueprint pricing if available, otherwise regular price (SAME AS LIVE MENU)
+    const priceNum = (product as any).blueprintPricing?.calculated_price 
+      ? parseFloat((product as any).blueprintPricing.calculated_price.toString()) 
+      : product.regular_price ? parseFloat(product.regular_price) : 0
     const hasImage = Boolean(product.image)
     const columns = categorySlug ? (categoryColumnConfigs.get(categorySlug) || ['name']) : ['name']
     
-    // Get pricing tiers
+    // Get pricing tiers from blueprint pricing (SAME AS LIVE MENU)
     const pricingTiers = (product as any).blueprintPricing?.ruleGroups?.[0]?.tiers || []
     const hasTiers = pricingTiers.length > 0
     
@@ -187,7 +197,8 @@ export function SharedMenuDisplay({
         )}
 
         {/* Product Name */}
-        <h3 className="text-base font-bold mb-2 line-clamp-2 flex-shrink-0" style={{ 
+        <h3 className="font-bold mb-2 line-clamp-2 flex-shrink-0" style={{ 
+          fontSize: `${cardTitleSize}px`,
           color: cardFontColor, 
           minHeight: '2.5rem', 
           fontFamily: cardFont,
@@ -231,8 +242,8 @@ export function SharedMenuDisplay({
                     border: '1px solid rgba(255, 255, 255, 0.05)'
                   }}
                 >
-                  <span style={{ color: `${cardFontColor}CC`, fontFamily: pricingFont, fontSize: '0.85rem', fontWeight: 500 }}>{tier.label}</span>
-                  <span className="font-bold" style={{ color: cardFontColor, fontFamily: pricingFont, fontSize: '1rem' }}>
+                  <span style={{ color: `${cardFontColor}CC`, fontFamily: pricingFont, fontSize: `${priceSize * 0.4}px`, fontWeight: 500 }}>{tier.label}</span>
+                  <span className="font-bold" style={{ color: cardFontColor, fontFamily: pricingFont, fontSize: `${priceSize * 0.6}px` }}>
                     ${parseFloat(tier.price).toFixed(2)}
                   </span>
                 </div>
@@ -243,8 +254,9 @@ export function SharedMenuDisplay({
             </div>
           ) : priceNum > 0 && (
             <div 
-              className="text-2xl font-bold mt-auto" 
+              className="font-bold mt-auto" 
               style={{ 
+                fontSize: `${priceSize}px`,
                 color: cardFontColor,
                 fontFamily: pricingFont
               }}
@@ -299,11 +311,14 @@ export function SharedMenuDisplay({
 
   // Render product row (modern table design)
   const renderProductRow = (product: Product, index: number, categorySlug?: string, panelPriceLocation: 'none' | 'header' | 'inline' = priceLocation, panelShowImages: boolean = showImages) => {
-    const price = product.regular_price ? parseFloat(product.regular_price) : 0
+    // Use blueprint pricing if available, otherwise regular price (SAME AS LIVE MENU)
+    const price = (product as any).blueprintPricing?.calculated_price 
+      ? parseFloat((product as any).blueprintPricing.calculated_price.toString()) 
+      : product.regular_price ? parseFloat(product.regular_price) : 0
     const columns = categorySlug ? (categoryColumnConfigs.get(categorySlug) || ['name']) : ['name']
     const hasImage = Boolean(product.image)
     
-    // Get pricing tiers from blueprint
+    // Get pricing tiers from blueprint (SAME AS LIVE MENU)
     const pricingTiers = (product as any).blueprintPricing?.ruleGroups?.[0]?.tiers || []
     const hasTiers = pricingTiers.length > 0
 
@@ -364,7 +379,8 @@ export function SharedMenuDisplay({
             
             return (
               <div key={columnName} className="min-w-0">
-                <h3 className={`${idx === 0 ? 'text-lg font-bold' : 'text-sm'} truncate`} style={{ 
+                <h3 className={`${idx === 0 ? 'font-bold' : ''} truncate`} style={{ 
+                  fontSize: idx === 0 ? `${cardTitleSize}px` : '14px',
                   color: fontColor, 
                   fontFamily: cardFont, 
                   textAlign: 'left',
@@ -390,10 +406,11 @@ export function SharedMenuDisplay({
                   border: '1px solid rgba(255, 255, 255, 0.1)'
                 }}
               >
-                <div className="text-[10px] mb-1 uppercase tracking-wider font-semibold" style={{ color: `${fontColor}CC`, fontFamily: cardFont }}>
+                <div className="mb-1 uppercase tracking-wider font-semibold" style={{ fontSize: `${priceSize * 0.3}px`, color: `${fontColor}CC`, fontFamily: cardFont }}>
                   {tier.label}
                 </div>
-                <div className="text-base font-bold" style={{ 
+                <div className="font-bold" style={{ 
+                  fontSize: `${priceSize * 0.6}px`,
                   color: fontColor, 
                   fontFamily: cardFont
                 }}>
@@ -407,8 +424,9 @@ export function SharedMenuDisplay({
         {/* Single Price (inline mode, no tiers) */}
         {panelPriceLocation === 'inline' && !hasTiers && price > 0 && (
           <div 
-            className="text-2xl font-bold flex-shrink-0 text-right px-5 py-2 rounded-xl"
+            className="font-bold flex-shrink-0 text-right px-5 py-2 rounded-xl"
             style={{
+              fontSize: `${priceSize}px`,
               background: `${containerColor}60`,
               border: '1px solid rgba(255, 255, 255, 0.2)',
               color: fontColor,
@@ -470,14 +488,22 @@ export function SharedMenuDisplay({
             
             {/* Pricing Tiers in Header (header mode) */}
             {priceLocation === 'header' && tierStructure.length > 0 && (
-              <div className="text-right">
-                <div className="flex items-center gap-8">
+              <div className="text-right flex-shrink-0">
+                <div className="flex items-center gap-4">
                   {tierStructure.map((tier: any, idx: number) => (
-                    <div key={idx} className="text-center">
-                      <div className="text-base mb-2 uppercase" style={{ color: `${fontColor}60`, fontFamily: pricingFont }}>
+                    <div 
+                      key={idx} 
+                      className="text-center px-4 py-3 rounded-xl backdrop-blur-xl"
+                      style={{
+                        background: `${containerColor}80`,
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      <div className="mb-2 uppercase font-semibold" style={{ fontSize: `${priceSize * 0.4}px`, color: `${fontColor}DD`, fontFamily: pricingFont }}>
                         {tier.label} {tier.unit}
                       </div>
-                      <div className="text-5xl font-bold" style={{ color: fontColor, fontFamily: pricingFont }}>
+                      <div className="font-bold" style={{ fontSize: `${priceSize}px`, color: fontColor, fontFamily: pricingFont }}>
                         ${parseFloat(tier.price).toFixed(2)}
                       </div>
                     </div>
@@ -554,7 +580,7 @@ export function SharedMenuDisplay({
             <div className="flex items-center gap-6">
               <div className="w-2 h-16 rounded-full" style={{ backgroundColor: `${fontColor}30` }}></div>
               <div>
-                <h1 className="text-5xl font-bold" style={{ color: fontColor, fontFamily: titleFont }}>
+                <h1 className="font-bold" style={{ fontSize: `${headerTitleSize}px`, color: fontColor, fontFamily: titleFont }}>
                   {singleCategory?.category.name || 'Select a Category'}
                 </h1>
               </div>
@@ -562,14 +588,22 @@ export function SharedMenuDisplay({
             
             {/* Pricing Tiers in Header (header mode) */}
             {priceLocation === 'header' && headerTiers.length > 0 && (
-              <div className="text-right">
-                <div className="flex items-center gap-8">
+              <div className="text-right flex-shrink-0">
+                <div className="flex items-center gap-4">
                   {headerTiers.map((tier: any, idx: number) => (
-                    <div key={idx} className="text-center">
-                      <div className="text-base mb-2 uppercase" style={{ color: `${fontColor}60`, fontFamily: pricingFont }}>
+                    <div 
+                      key={idx} 
+                      className="text-center px-6 py-4 rounded-2xl backdrop-blur-xl"
+                      style={{
+                        background: `${containerColor}80`,
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      <div className="mb-2 uppercase tracking-widest font-bold" style={{ fontSize: `${priceSize * 0.4}px`, color: `${fontColor}DD`, fontFamily: pricingFont }}>
                         {tier.label} {tier.unit}
                       </div>
-                      <div className="text-5xl font-bold" style={{ color: fontColor, fontFamily: pricingFont }}>
+                      <div className="font-black" style={{ fontSize: `${priceSize}px`, color: fontColor, fontFamily: pricingFont, letterSpacing: '-0.02em' }}>
                         ${parseFloat(tier.price).toFixed(2)}
                       </div>
                     </div>
@@ -730,7 +764,7 @@ export function SharedMenuDisplay({
                 backgroundColor: selectedSide === 'left' ? fontColor : `${fontColor}30`
               }} />
               <div className="min-w-0">
-                <h2 className="text-3xl font-bold truncate" style={{ color: fontColor, fontFamily: titleFont }}>
+                <h2 className="font-bold truncate" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont }}>
                   {categories.find(c => c.slug === leftMenuCategory)?.name || 'Select Category'}
                 </h2>
               </div>
@@ -740,11 +774,19 @@ export function SharedMenuDisplay({
             {leftPriceLocation === 'header' && leftHeaderTiers.length > 0 && (
               <div className="flex items-center gap-3 flex-shrink-0">
                 {leftHeaderTiers.map((tier: any, idx: number) => (
-                  <div key={idx} className="text-center">
-                    <div className="text-xs mb-1 uppercase" style={{ color: `${fontColor}60`, fontFamily: pricingFont }}>
+                  <div 
+                    key={idx} 
+                    className="text-center px-4 py-2 rounded-xl backdrop-blur-xl"
+                    style={{
+                      background: `${containerColor}80`,
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                    }}
+                  >
+                    <div className="mb-1 uppercase" style={{ fontSize: `${priceSize * 0.35}px`, color: `${fontColor}60`, fontFamily: pricingFont }}>
                       {tier.label} {tier.unit}
                     </div>
-                    <div className="text-2xl font-bold" style={{ color: fontColor, fontFamily: pricingFont }}>
+                    <div className="font-bold" style={{ fontSize: `${priceSize * 0.7}px`, color: fontColor, fontFamily: pricingFont }}>
                       ${parseFloat(tier.price).toFixed(2)}
                     </div>
                   </div>
@@ -843,7 +885,7 @@ export function SharedMenuDisplay({
                   backgroundColor: selectedSide === 'leftBottom' ? fontColor : `${fontColor}30`
                 }} />
                 <div className="min-w-0">
-                  <h2 className="text-3xl font-bold truncate" style={{ color: fontColor, fontFamily: titleFont }}>
+                  <h2 className="font-bold truncate" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont }}>
                     {categories.find(c => c.slug === leftMenuCategory2)?.name}
                   </h2>
                 </div>
@@ -930,7 +972,7 @@ export function SharedMenuDisplay({
                 backgroundColor: selectedSide === 'right' ? fontColor : `${fontColor}30`
               }} />
               <div className="min-w-0">
-                <h2 className="text-3xl font-bold truncate" style={{ color: fontColor, fontFamily: titleFont }}>
+                <h2 className="font-bold truncate" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont }}>
                   {categories.find(c => c.slug === rightMenuCategory)?.name || 'Select Category'}
                 </h2>
               </div>
@@ -940,11 +982,19 @@ export function SharedMenuDisplay({
             {rightPriceLocation === 'header' && rightHeaderTiers.length > 0 && (
               <div className="flex items-center gap-3 flex-shrink-0">
                 {rightHeaderTiers.map((tier: any, idx: number) => (
-                  <div key={idx} className="text-center">
-                    <div className="text-xs mb-1 uppercase" style={{ color: `${fontColor}60`, fontFamily: pricingFont }}>
+                  <div 
+                    key={idx} 
+                    className="text-center px-4 py-2 rounded-xl backdrop-blur-xl"
+                    style={{
+                      background: `${containerColor}80`,
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                    }}
+                  >
+                    <div className="mb-1 uppercase" style={{ fontSize: `${priceSize * 0.35}px`, color: `${fontColor}60`, fontFamily: pricingFont }}>
                       {tier.label} {tier.unit}
                     </div>
-                    <div className="text-2xl font-bold" style={{ color: fontColor, fontFamily: pricingFont }}>
+                    <div className="font-bold" style={{ fontSize: `${priceSize * 0.7}px`, color: fontColor, fontFamily: pricingFont }}>
                       ${parseFloat(tier.price).toFixed(2)}
                     </div>
                   </div>
@@ -1043,7 +1093,7 @@ export function SharedMenuDisplay({
                   backgroundColor: selectedSide === 'rightBottom' ? fontColor : `${fontColor}30`
                 }} />
                 <div className="min-w-0">
-                  <h2 className="text-3xl font-bold truncate" style={{ color: fontColor, fontFamily: titleFont }}>
+                  <h2 className="font-bold truncate" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont }}>
                     {categories.find(c => c.slug === rightMenuCategory2)?.name}
                   </h2>
                 </div>

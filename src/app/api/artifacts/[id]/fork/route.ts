@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { artifactService } from '@/services/artifact-service';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/artifacts/[id]/fork
  * Fork an artifact (create a personal copy)

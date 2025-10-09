@@ -7,14 +7,9 @@
 
 import React, { useState } from 'react'
 import { TVPreviewCard } from './TVPreview'
+import type { Database } from '@/types/supabase'
 
-interface TVDevice {
-  id: string
-  tv_number: number
-  device_name: string
-  location_id: number
-  last_seen: string | null
-}
+type TVDevice = Database['public']['Tables']['tv_devices']['Row']
 
 interface TVDashboardProps {
   tvDevices: TVDevice[]

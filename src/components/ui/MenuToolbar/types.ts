@@ -62,6 +62,13 @@ export interface MenuToolbarProps {
   blurIntensity: number;
   onTransparencyChange: (values: { containerOpacity: number; borderWidth: number; borderOpacity: number; imageOpacity: number; blurIntensity: number }) => void;
   
+  // Font sizes
+  headerTitleSize: number;
+  cardTitleSize: number;
+  priceSize: number;
+  categorySize: number;
+  onFontSizesChange: (sizes: { headerTitleSize: number; cardTitleSize: number; priceSize: number; categorySize: number }) => void;
+  
   // Custom background
   customBackground: string;
   onCustomBackgroundChange: (code: string) => void;

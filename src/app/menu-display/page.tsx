@@ -50,6 +50,12 @@ function MenuDisplayContent() {
   const imageOpacity = parseInt(searchParams.get('imageOpacity') || '100')
   const blurIntensity = parseInt(searchParams.get('blurIntensity') || '8')
   
+  // Font sizes
+  const headerTitleSize = parseInt(searchParams.get('headerTitleSize') || '60')
+  const cardTitleSize = parseInt(searchParams.get('cardTitleSize') || '18')
+  const priceSize = parseInt(searchParams.get('priceSize') || '32')
+  const categorySize = parseInt(searchParams.get('categorySize') || '40')
+  
   // Get custom background from localStorage (not URL to avoid 431 error)
   const magicBgId = searchParams.get('magicBgId')
   const customBackground = magicBgId && typeof window !== 'undefined' 
@@ -58,6 +64,12 @@ function MenuDisplayContent() {
   
   console.log('🎨 [TV DISPLAY] View mode from URL:', viewMode)
   console.log('📐 [TV DISPLAY] Orientation from URL:', orientation)
+  console.log('📏 [TV DISPLAY] Font sizes from URL:', {
+    headerTitleSize,
+    cardTitleSize,
+    priceSize,
+    categorySize
+  })
   
   // Dual menu params
   const leftCategory = searchParams.get('leftCategory')
@@ -119,6 +131,25 @@ function MenuDisplayContent() {
       if (payload.titleFont) currentUrl.searchParams.set('titleFont', payload.titleFont)
       if (payload.pricingFont) currentUrl.searchParams.set('pricingFont', payload.pricingFont)
       if (payload.cardFont) currentUrl.searchParams.set('cardFont', payload.cardFont)
+      if (payload.containerOpacity !== undefined) currentUrl.searchParams.set('containerOpacity', payload.containerOpacity.toString())
+      if (payload.borderWidth !== undefined) currentUrl.searchParams.set('borderWidth', payload.borderWidth.toString())
+      if (payload.borderOpacity !== undefined) currentUrl.searchParams.set('borderOpacity', payload.borderOpacity.toString())
+      if (payload.imageOpacity !== undefined) currentUrl.searchParams.set('imageOpacity', payload.imageOpacity.toString())
+      if (payload.blurIntensity !== undefined) currentUrl.searchParams.set('blurIntensity', payload.blurIntensity.toString())
+      
+      // Handle font sizes
+      if (payload.headerTitleSize !== undefined) currentUrl.searchParams.set('headerTitleSize', payload.headerTitleSize.toString())
+      if (payload.cardTitleSize !== undefined) currentUrl.searchParams.set('cardTitleSize', payload.cardTitleSize.toString())
+      if (payload.priceSize !== undefined) currentUrl.searchParams.set('priceSize', payload.priceSize.toString())
+      if (payload.categorySize !== undefined) currentUrl.searchParams.set('categorySize', payload.categorySize.toString())
+      
+      // Handle custom background
+      if (payload.customBackground) {
+        const bgId = `magic-bg-${Date.now()}`
+        localStorage.setItem(bgId, payload.customBackground)
+        currentUrl.searchParams.set('magicBgId', bgId)
+        console.log('🎨 [TV DISPLAY] Saved custom background to localStorage:', bgId)
+      }
       
       if (payload.isDualMenu) {
         currentUrl.searchParams.set('dual', 'true')
@@ -339,13 +370,15 @@ function MenuDisplayContent() {
           </div>
         )}
         <h3 
-          className="text-base font-bold mb-2 line-clamp-2 flex-shrink-0" 
+          className="font-bold mb-2 line-clamp-2 flex-shrink-0" 
           style={{ 
+            fontSize: `${cardTitleSize}px`,
             color: cardFontColor, 
-            minHeight: '2.5rem', 
+            minHeight: `${cardTitleSize * 2.5}px`, 
             fontFamily: cardFont,
             textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
-            letterSpacing: '-0.02em'
+            letterSpacing: '-0.02em',
+            lineHeight: '1.2'
           }}
         >
           {product.name}
@@ -376,8 +409,9 @@ function MenuDisplayContent() {
             </div>
           ) : priceNum > 0 && (
             <div 
-              className="text-2xl font-bold mt-auto" 
+              className="font-bold mt-auto" 
               style={{ 
+                fontSize: `${priceSize}px`,
                 color: cardFontColor,
                 fontFamily: pricingFont
               }}
@@ -388,7 +422,7 @@ function MenuDisplayContent() {
         )}
       </div>
     )
-  }, [containerColor, imageBackgroundColor, cardFontColor, cardFont, pricingFont, containerOpacity, borderWidth, borderOpacity])
+  }, [containerColor, imageBackgroundColor, cardFontColor, cardFont, pricingFont, containerOpacity, borderWidth, borderOpacity, cardTitleSize, priceSize])
   
   // Render product row (memoized)
   const renderProduct = useCallback((product: Product, index: number, panelPriceLocation: 'header' | 'inline' | 'none' = priceLocation, panelShowImages: boolean = showImages) => {
@@ -449,7 +483,8 @@ function MenuDisplayContent() {
 
         {/* Name */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold truncate" style={{ 
+          <h3 className="font-bold truncate" style={{ 
+            fontSize: `${cardTitleSize}px`,
             color: fontColor, 
             fontFamily: cardFont,
             textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
@@ -474,7 +509,8 @@ function MenuDisplayContent() {
                 <div className="text-[10px] mb-1 uppercase tracking-wider font-semibold" style={{ color: `${fontColor}CC`, fontFamily: cardFont }}>
                   {tier.label}
                 </div>
-                <div className="text-base font-bold" style={{ 
+                <div className="font-bold" style={{ 
+                  fontSize: `${priceSize * 0.5}px`,
                   color: fontColor, 
                   fontFamily: cardFont
                 }}>
@@ -488,8 +524,9 @@ function MenuDisplayContent() {
         {/* Single Price (inline mode, no tiers) */}
         {panelPriceLocation === 'inline' && !hasTiers && priceNum > 0 && (
           <div 
-            className="text-2xl font-bold flex-shrink-0 text-right px-5 py-2 rounded-xl"
+            className="font-bold flex-shrink-0 text-right px-5 py-2 rounded-xl"
             style={{
+              fontSize: `${priceSize}px`,
               background: `${containerColor}60`,
               border: '1px solid rgba(255, 255, 255, 0.2)',
               color: fontColor,
@@ -503,7 +540,7 @@ function MenuDisplayContent() {
 
       </div>
     )
-  }, [containerColor, imageBackgroundColor, fontColor, cardFont, pricingFont, priceLocation, showImages, containerOpacity, borderWidth, borderOpacity])
+  }, [containerColor, imageBackgroundColor, fontColor, cardFont, pricingFont, priceLocation, showImages, containerOpacity, borderWidth, borderOpacity, cardTitleSize, priceSize])
 
   // Loading
   if (loading) {
@@ -541,17 +578,23 @@ function MenuDisplayContent() {
     let showDefaultEmptyState = false
     
     if (categoryFilter) {
-      // Find category by slug
-      const cat = categories.find(c => c.slug === categoryFilter)
+      // ALWAYS filter by slug directly - don't rely on categories array being populated
+      displayProducts = products.filter(p => p.categories?.some(c => c.slug === categoryFilter))
       
-      if (cat) {
-        displayProducts = products.filter(p => p.categories?.some(c => c.id === cat.id))
-        displayCategory = cat.name
-      } else {
+      // Try to get nice display name from categories array if available
+      const cat = categories.find(c => c.slug === categoryFilter)
+      displayCategory = cat?.name || categoryFilter
+      
+      console.log(`📊 [TV DISPLAY] Category: "${displayCategory}" (slug: ${categoryFilter})`)
+      console.log(`📦 [TV DISPLAY] Showing ${displayProducts.length} of ${products.length} products`)
+      
+      // Only show empty state if we have products loaded but none match
+      if (products.length > 0 && displayProducts.length === 0) {
+        console.warn(`⚠️ [TV DISPLAY] No products found for category "${categoryFilter}"`)
         showDefaultEmptyState = true
-        displayProducts = []
       }
     } else {
+      // No category selected - show empty state
       showDefaultEmptyState = true
       displayProducts = []
     }
@@ -601,12 +644,14 @@ function MenuDisplayContent() {
     }
 
     return (
-      <div className="h-screen w-screen flex flex-col overflow-hidden tv-menu-display" style={{ backgroundColor }}>
+      <div className="h-screen w-screen flex flex-col overflow-hidden tv-menu-display relative" style={{ backgroundColor }}>
         {/* Magic Background */}
         {customBackground && <MagicBackground htmlCode={customBackground} />}
         
         {/* Header */}
-        <div className="px-8 py-6 flex-shrink-0" style={{ 
+        <div className="px-8 flex-shrink-0 relative z-10" style={{
+          paddingTop: `${Math.max(24, headerTitleSize * 0.3)}px`,
+          paddingBottom: `${Math.max(24, headerTitleSize * 0.3)}px`, 
           background: `linear-gradient(180deg, ${containerColor}80 0%, ${containerColor}40 100%)`,
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
@@ -614,12 +659,14 @@ function MenuDisplayContent() {
         }}>
           <div className="flex items-center justify-between gap-6">
             <div className="flex items-center gap-5 min-w-0">
-              <div className="w-1.5 h-20 rounded-full flex-shrink-0" style={{ 
+              <div className="w-1.5 rounded-full flex-shrink-0" style={{ 
+                minHeight: `${headerTitleSize * 1.2}px`,
                 background: `linear-gradient(180deg, ${fontColor}FF 0%, ${fontColor}60 100%)`,
                 boxShadow: `0 0 20px ${fontColor}80, 0 0 40px ${fontColor}40`
               }} />
               <div className="min-w-0">
-                <h1 className="text-6xl font-black truncate" style={{ 
+                <h1 className="font-black" style={{ 
+                  fontSize: `${headerTitleSize}px`,
                   color: fontColor, 
                   fontFamily: titleFont,
                   textShadow: `0 4px 12px rgba(0, 0, 0, 0.5), 0 0 40px ${fontColor}30`,
@@ -642,20 +689,26 @@ function MenuDisplayContent() {
                     {tierStructure.map((tier: any, idx: number) => (
                       <div 
                         key={idx} 
-                        className="text-center px-6 py-4 rounded-2xl backdrop-blur-xl"
+                        className="text-center rounded-2xl backdrop-blur-xl"
                         style={{
+                          paddingLeft: `${Math.max(16, priceSize * 0.3)}px`,
+                          paddingRight: `${Math.max(16, priceSize * 0.3)}px`,
+                          paddingTop: `${Math.max(12, priceSize * 0.25)}px`,
+                          paddingBottom: `${Math.max(12, priceSize * 0.25)}px`,
                           background: `${containerColor}80`,
                           border: '1px solid rgba(255, 255, 255, 0.2)',
                           boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
                         }}
                       >
-                        <div className="text-xs mb-2 uppercase tracking-widest font-bold" style={{ color: `${fontColor}DD`, fontFamily: pricingFont }}>
+                        <div className="mb-2 uppercase tracking-widest font-bold" style={{ fontSize: `${priceSize * 0.3}px`, color: `${fontColor}DD`, fontFamily: pricingFont }}>
                           {tier.label} {tier.unit}
                         </div>
-                        <div className="text-5xl font-black" style={{ 
+                        <div className="font-black" style={{ 
+                          fontSize: `${priceSize * 1.5}px`,
                           color: fontColor, 
                           fontFamily: pricingFont,
-                          letterSpacing: '-0.02em'
+                          letterSpacing: '-0.02em',
+                          lineHeight: '1'
                         }}>
                           ${parseFloat(tier.price).toFixed(2)}
                         </div>
@@ -684,7 +737,7 @@ function MenuDisplayContent() {
         </div>
 
         {/* Products */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 relative z-10">
           {displayProducts.length > 0 ? (
             (() => {
               const actualMode = viewMode === 'auto' ? (displayProducts.length > 20 ? 'table' : 'card') : viewMode;
@@ -776,10 +829,12 @@ function MenuDisplayContent() {
     ? products.filter(p => p.categories?.some(c => c.slug === rightCategory2))
     : []
   
-  const leftCatName = categories.find(c => c.slug === leftCategory)?.name || 'Menu'
-  const rightCatName = categories.find(c => c.slug === rightCategory)?.name || 'Menu'
-  const leftCatName2 = categories.find(c => c.slug === leftCategory2)?.name || ''
-  const rightCatName2 = categories.find(c => c.slug === rightCategory2)?.name || ''
+  const leftCatName = categories.find(c => c.slug === leftCategory)?.name || leftCategory || 'Menu'
+  const rightCatName = categories.find(c => c.slug === rightCategory)?.name || rightCategory || 'Menu'
+  const leftCatName2 = categories.find(c => c.slug === leftCategory2)?.name || leftCategory2 || ''
+  const rightCatName2 = categories.find(c => c.slug === rightCategory2)?.name || rightCategory2 || ''
+  
+  console.log(`📊 [TV DISPLAY] Dual menu products: Left=${leftProducts.length} (${leftCatName}), Right=${rightProducts.length} (${rightCatName})`)
   
   // Get pricing tiers for headers
   const leftFirstWithTiers = leftProducts.find(p => p.blueprintPricing?.ruleGroups?.[0]?.tiers?.length > 0)
@@ -790,20 +845,20 @@ function MenuDisplayContent() {
 
 
   return (
-    <div className="h-screen w-screen flex overflow-hidden tv-menu-display" style={{ backgroundColor }}>
+    <div className="h-screen w-screen flex overflow-hidden tv-menu-display relative" style={{ backgroundColor }}>
       {/* Magic Background */}
       {customBackground && <MagicBackground htmlCode={customBackground} />}
       
       {/* Left Panel - with stacking support */}
-      <div className="w-1/2 flex flex-col border-r overflow-hidden flex-shrink-0" style={{ borderRightColor: `${containerColor}40` }}>
+      <div className="w-1/2 flex flex-col border-r overflow-hidden flex-shrink-0 relative z-10" style={{ borderRightColor: `${containerColor}40` }}>
         {/* Left Top Quadrant */}
         <div className={`${enableLeftStacking && leftCategory2 ? 'h-1/2 border-b' : 'h-full'} flex flex-col`} style={{ borderColor: enableLeftStacking && leftCategory2 ? `${containerColor}40` : undefined }}>
         <div className="px-6 py-4 border-b flex-shrink-0" style={{ borderBottomColor: `${containerColor}40` }}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-1.5 h-12 rounded-full flex-shrink-0" style={{ backgroundColor: `${fontColor}30` }} />
+              <div className="w-1.5 rounded-full flex-shrink-0" style={{ minHeight: `${categorySize * 1.2}px`, backgroundColor: `${fontColor}30` }} />
               <div className="min-w-0">
-                <h2 className="text-4xl font-bold truncate" style={{ color: fontColor, fontFamily: titleFont }}>{leftCatName}</h2>
+                <h2 className="font-bold" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont, lineHeight: '1.2' }}>{leftCatName}</h2>
               </div>
             </div>
             
@@ -811,11 +866,23 @@ function MenuDisplayContent() {
             {leftPriceLocation === 'header' && leftHeaderTiers.length > 0 && (
               <div className="flex items-center gap-3 flex-shrink-0">
                 {leftHeaderTiers.map((tier: any, idx: number) => (
-                  <div key={idx} className="text-center">
-                    <div className="text-xs mb-1 uppercase" style={{ color: `${fontColor}60`, fontFamily: pricingFont }}>
+                  <div 
+                    key={idx} 
+                    className="text-center rounded-xl backdrop-blur-xl"
+                    style={{
+                      paddingLeft: `${Math.max(12, priceSize * 0.25)}px`,
+                      paddingRight: `${Math.max(12, priceSize * 0.25)}px`,
+                      paddingTop: `${Math.max(8, priceSize * 0.2)}px`,
+                      paddingBottom: `${Math.max(8, priceSize * 0.2)}px`,
+                      background: `${containerColor}80`,
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    <div className="mb-1 uppercase" style={{ fontSize: `${priceSize * 0.35}px`, color: `${fontColor}60`, fontFamily: pricingFont }}>
                       {tier.label} {tier.unit}
                     </div>
-                    <div className="text-2xl font-bold" style={{ color: fontColor, fontFamily: pricingFont }}>
+                    <div className="font-bold" style={{ fontSize: `${priceSize * 0.7}px`, color: fontColor, fontFamily: pricingFont, lineHeight: '1' }}>
                       ${parseFloat(tier.price).toFixed(2)}
                     </div>
                   </div>
@@ -879,9 +946,9 @@ function MenuDisplayContent() {
           <div className="h-1/2 flex flex-col">
             <div className="px-6 py-4 border-b flex-shrink-0" style={{ borderBottomColor: `${containerColor}40` }}>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-1.5 h-12 rounded-full flex-shrink-0" style={{ backgroundColor: `${fontColor}30` }} />
+                <div className="w-1.5 rounded-full flex-shrink-0" style={{ minHeight: `${categorySize * 1.2}px`, backgroundColor: `${fontColor}30` }} />
                 <div className="min-w-0">
-                  <h2 className="text-4xl font-bold truncate" style={{ color: fontColor, fontFamily: titleFont }}>{leftCatName2}</h2>
+                  <h2 className="font-bold" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont, lineHeight: '1.2' }}>{leftCatName2}</h2>
                 </div>
               </div>
             </div>
@@ -937,15 +1004,15 @@ function MenuDisplayContent() {
       </div>
 
       {/* Right Panel - with stacking support */}
-      <div className="w-1/2 flex flex-col overflow-hidden flex-shrink-0">
+      <div className="w-1/2 flex flex-col overflow-hidden flex-shrink-0 relative z-10">
         {/* Right Top Quadrant */}
         <div className={`${enableRightStacking && rightCategory2 ? 'h-1/2 border-b' : 'h-full'} flex flex-col`} style={{ borderColor: enableRightStacking && rightCategory2 ? `${containerColor}40` : undefined }}>
         <div className="px-6 py-4 border-b flex-shrink-0" style={{ borderBottomColor: `${containerColor}40` }}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-1.5 h-12 rounded-full flex-shrink-0" style={{ backgroundColor: `${fontColor}30` }} />
+              <div className="w-1.5 rounded-full flex-shrink-0" style={{ minHeight: `${categorySize * 1.2}px`, backgroundColor: `${fontColor}30` }} />
               <div className="min-w-0">
-                <h2 className="text-4xl font-bold truncate" style={{ color: fontColor, fontFamily: titleFont }}>{rightCatName}</h2>
+                <h2 className="font-bold" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont, lineHeight: '1.2' }}>{rightCatName}</h2>
               </div>
             </div>
             
@@ -953,11 +1020,23 @@ function MenuDisplayContent() {
             {rightPriceLocation === 'header' && rightHeaderTiers.length > 0 && (
               <div className="flex items-center gap-3 flex-shrink-0">
                 {rightHeaderTiers.map((tier: any, idx: number) => (
-                  <div key={idx} className="text-center">
-                    <div className="text-xs mb-1 uppercase" style={{ color: `${fontColor}60`, fontFamily: pricingFont }}>
+                  <div 
+                    key={idx} 
+                    className="text-center rounded-xl backdrop-blur-xl"
+                    style={{
+                      paddingLeft: `${Math.max(12, priceSize * 0.25)}px`,
+                      paddingRight: `${Math.max(12, priceSize * 0.25)}px`,
+                      paddingTop: `${Math.max(8, priceSize * 0.2)}px`,
+                      paddingBottom: `${Math.max(8, priceSize * 0.2)}px`,
+                      background: `${containerColor}80`,
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    <div className="mb-1 uppercase" style={{ fontSize: `${priceSize * 0.35}px`, color: `${fontColor}60`, fontFamily: pricingFont }}>
                       {tier.label} {tier.unit}
                     </div>
-                    <div className="text-2xl font-bold" style={{ color: fontColor, fontFamily: pricingFont }}>
+                    <div className="font-bold" style={{ fontSize: `${priceSize * 0.7}px`, color: fontColor, fontFamily: pricingFont, lineHeight: '1' }}>
                       ${parseFloat(tier.price).toFixed(2)}
                     </div>
                   </div>
@@ -1021,9 +1100,9 @@ function MenuDisplayContent() {
           <div className="h-1/2 flex flex-col">
             <div className="px-6 py-4 border-b flex-shrink-0" style={{ borderBottomColor: `${containerColor}40` }}>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-1.5 h-12 rounded-full flex-shrink-0" style={{ backgroundColor: `${fontColor}30` }} />
+                <div className="w-1.5 rounded-full flex-shrink-0" style={{ minHeight: `${categorySize * 1.2}px`, backgroundColor: `${fontColor}30` }} />
                 <div className="min-w-0">
-                  <h2 className="text-4xl font-bold truncate" style={{ color: fontColor, fontFamily: titleFont }}>{rightCatName2}</h2>
+                  <h2 className="font-bold" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont, lineHeight: '1.2' }}>{rightCatName2}</h2>
                 </div>
               </div>
             </div>
