@@ -55,7 +55,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
-      <ThreeBackground />
+      <ThreeBackground sceneCode="neural-network" />
       <MatrixRain active={showMatrix} />
       
       {/* CRT Scan Lines Overlay */}

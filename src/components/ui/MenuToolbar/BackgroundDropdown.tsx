@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { ToolbarDropdown } from './ToolbarDropdown';
 import { threeSceneCategories, isThreeJsScene } from '@/lib/three-scenes';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  extractedCode?: string;
 }
 
 interface BackgroundDropdownProps {
