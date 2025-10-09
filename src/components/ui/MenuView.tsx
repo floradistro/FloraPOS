@@ -276,6 +276,17 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     if (data.pricingFont) menuConfig.setPricingFont(data.pricingFont)
     if (data.cardFont) menuConfig.setCardFont(data.cardFont)
     
+    // Apply transparency and borders
+    if (data.containerOpacity !== undefined) menuConfig.setContainerOpacity(data.containerOpacity)
+    if (data.borderWidth !== undefined) menuConfig.setBorderWidth(data.borderWidth)
+    if (data.borderOpacity !== undefined) menuConfig.setBorderOpacity(data.borderOpacity)
+    
+    // Apply custom background
+    if (data.customBackground !== undefined) {
+      menuConfig.setCustomBackground(data.customBackground)
+      console.log('🎨 Loaded custom background:', data.customBackground.substring(0, 100) + '...')
+    }
+    
     // Load panel configs
     if (data.singleMenu) {
       menuConfig.singlePanel.category = data.singleMenu.category
@@ -461,7 +472,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
             const locationInventory = product.inventory?.find((inv: any) => 
               inv.location_id?.toString() === user.location_id?.toString()
             )
-            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || parseFloat(locationInventory.quantity?.toString() || '0') || 0) : 0
+            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || 0) : 0
             return locationStock > 0
           })
           
@@ -1826,6 +1837,10 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                       titleFont: menuConfig.titleFont,
                                       pricingFont: menuConfig.pricingFont,
                                       cardFont: menuConfig.cardFont,
+                                      containerOpacity: menuConfig.containerOpacity,
+                                      borderWidth: menuConfig.borderWidth,
+                                      borderOpacity: menuConfig.borderOpacity,
+                                      customBackground: menuConfig.customBackground,
                                       orientation: menuConfig.orientation,
                                       isDualMenu: menuConfig.isDualMode,
                                       singleMenu: menuConfig.singlePanel,
@@ -1981,6 +1996,10 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                         titleFont: menuConfig.titleFont,
                         pricingFont: menuConfig.pricingFont,
                         cardFont: menuConfig.cardFont,
+                        containerOpacity: menuConfig.containerOpacity,
+                        borderWidth: menuConfig.borderWidth,
+                        borderOpacity: menuConfig.borderOpacity,
+                        customBackground: menuConfig.customBackground,
                         orientation: menuConfig.orientation,
                         isDualMenu: menuConfig.isDualMode,
                         singleMenu: menuConfig.singlePanel,
