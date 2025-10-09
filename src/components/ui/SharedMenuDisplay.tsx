@@ -10,6 +10,7 @@ import React from 'react'
 import { Product, Category } from '../../types'
 import { ProductBlueprintFields } from '../../services/blueprint-fields-service'
 import { MagicBackground } from './MagicBackground'
+import { hexToRgba } from '@/lib/color-utils'
 
 interface SharedMenuDisplayProps {
   products: Product[]
@@ -48,6 +49,7 @@ interface SharedMenuDisplayProps {
   borderOpacity?: number
   imageOpacity?: number
   blurIntensity?: number
+  glowIntensity?: number
   headerTitleSize?: number
   cardTitleSize?: number
   priceSize?: number
@@ -101,6 +103,7 @@ export function SharedMenuDisplay({
   borderOpacity = 100,
   imageOpacity = 100,
   blurIntensity = 8,
+  glowIntensity = 40,
   headerTitleSize = 60,
   cardTitleSize = 18,
   priceSize = 32,
@@ -580,7 +583,12 @@ export function SharedMenuDisplay({
             <div className="flex items-center gap-6">
               <div className="w-2 h-16 rounded-full" style={{ backgroundColor: `${fontColor}30` }}></div>
               <div>
-                <h1 className="font-bold" style={{ fontSize: `${headerTitleSize}px`, color: fontColor, fontFamily: titleFont }}>
+                <h1 className="font-bold" style={{ 
+                  fontSize: `${headerTitleSize}px`, 
+                  color: fontColor, 
+                  fontFamily: titleFont,
+                  textShadow: `0 4px 12px rgba(0, 0, 0, 0.5), 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.6)}, 0 0 ${glowIntensity * 2}px ${hexToRgba(fontColor, 0.3)}`
+                }}>
                   {singleCategory?.category.name || 'Select a Category'}
                 </h1>
               </div>
@@ -764,7 +772,12 @@ export function SharedMenuDisplay({
                 backgroundColor: selectedSide === 'left' ? fontColor : `${fontColor}30`
               }} />
               <div className="min-w-0">
-                <h2 className="font-bold truncate" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont }}>
+                <h2 className="font-bold truncate" style={{ 
+                  fontSize: `${categorySize}px`, 
+                  color: fontColor, 
+                  fontFamily: titleFont,
+                  textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
+                }}>
                   {categories.find(c => c.slug === leftMenuCategory)?.name || 'Select Category'}
                 </h2>
               </div>
@@ -885,7 +898,12 @@ export function SharedMenuDisplay({
                   backgroundColor: selectedSide === 'leftBottom' ? fontColor : `${fontColor}30`
                 }} />
                 <div className="min-w-0">
-                  <h2 className="font-bold truncate" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont }}>
+                  <h2 className="font-bold truncate" style={{ 
+                    fontSize: `${categorySize}px`, 
+                    color: fontColor, 
+                    fontFamily: titleFont,
+                    textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
+                  }}>
                     {categories.find(c => c.slug === leftMenuCategory2)?.name}
                   </h2>
                 </div>
@@ -972,7 +990,12 @@ export function SharedMenuDisplay({
                 backgroundColor: selectedSide === 'right' ? fontColor : `${fontColor}30`
               }} />
               <div className="min-w-0">
-                <h2 className="font-bold truncate" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont }}>
+                <h2 className="font-bold truncate" style={{ 
+                  fontSize: `${categorySize}px`, 
+                  color: fontColor, 
+                  fontFamily: titleFont,
+                  textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
+                }}>
                   {categories.find(c => c.slug === rightMenuCategory)?.name || 'Select Category'}
                 </h2>
               </div>
@@ -1093,7 +1116,12 @@ export function SharedMenuDisplay({
                   backgroundColor: selectedSide === 'rightBottom' ? fontColor : `${fontColor}30`
                 }} />
                 <div className="min-w-0">
-                  <h2 className="font-bold truncate" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont }}>
+                  <h2 className="font-bold truncate" style={{ 
+                    fontSize: `${categorySize}px`, 
+                    color: fontColor, 
+                    fontFamily: titleFont,
+                    textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
+                  }}>
                     {categories.find(c => c.slug === rightMenuCategory2)?.name}
                   </h2>
                 </div>

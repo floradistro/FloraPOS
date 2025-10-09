@@ -40,6 +40,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   borderOpacity,
   imageOpacity,
   blurIntensity,
+  glowIntensity,
   onTransparencyChange,
   headerTitleSize,
   cardTitleSize,
@@ -175,6 +176,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             cardFontColor={cardFontColor}
             imageBackgroundColor={imageBackgroundColor}
             onColorsChange={onColorsChange}
+            iconOnly={true}
           />
 
           <TransparencyDropdown
@@ -183,6 +185,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             borderOpacity={borderOpacity}
             imageOpacity={imageOpacity}
             blurIntensity={blurIntensity}
+            glowIntensity={glowIntensity}
             onTransparencyChange={onTransparencyChange}
           />
 
@@ -191,6 +194,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             pricingFont={pricingFont}
             cardFont={cardFont}
             onFontsChange={onFontsChange}
+            iconOnly={true}
           />
 
           <FontSizeDropdown
@@ -199,6 +203,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             priceSize={priceSize}
             categorySize={categorySize}
             onFontSizesChange={onFontSizesChange}
+            iconOnly={true}
           />
 
           <BackgroundDropdown

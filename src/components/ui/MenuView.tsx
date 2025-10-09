@@ -751,6 +751,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     params.append('borderOpacity', menuConfig.borderOpacity.toString())
     params.append('imageOpacity', menuConfig.imageOpacity.toString())
     params.append('blurIntensity', menuConfig.blurIntensity.toString())
+    params.append('glowIntensity', menuConfig.glowIntensity.toString())
     params.append('headerTitleSize', menuConfig.headerTitleSize.toString())
     params.append('cardTitleSize', menuConfig.cardTitleSize.toString())
     params.append('priceSize', menuConfig.priceSize.toString())
@@ -1598,12 +1599,14 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
         borderOpacity={menuConfig.borderOpacity}
         imageOpacity={menuConfig.imageOpacity}
         blurIntensity={menuConfig.blurIntensity}
+        glowIntensity={menuConfig.glowIntensity}
         onTransparencyChange={(values) => {
           menuConfig.setContainerOpacity(values.containerOpacity)
           menuConfig.setBorderWidth(values.borderWidth)
           menuConfig.setBorderOpacity(values.borderOpacity)
           menuConfig.setImageOpacity(values.imageOpacity)
           menuConfig.setBlurIntensity(values.blurIntensity)
+          if (values.glowIntensity !== undefined) menuConfig.setGlowIntensity(values.glowIntensity)
         }}
         headerTitleSize={menuConfig.headerTitleSize}
         cardTitleSize={menuConfig.cardTitleSize}
@@ -2320,6 +2323,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
               borderOpacity={menuConfig.borderOpacity}
               imageOpacity={menuConfig.imageOpacity}
               blurIntensity={menuConfig.blurIntensity}
+              glowIntensity={menuConfig.glowIntensity}
               headerTitleSize={menuConfig.headerTitleSize}
               cardTitleSize={menuConfig.cardTitleSize}
               priceSize={menuConfig.priceSize}

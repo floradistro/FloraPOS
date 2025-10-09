@@ -867,6 +867,7 @@ export function ThreeBackground({ sceneCode }: ThreeBackgroundProps) {
     }
   };
 
+  // For pre-built scenes, render with React Three Fiber
   return (
     <div
       style={{
@@ -878,7 +879,7 @@ export function ThreeBackground({ sceneCode }: ThreeBackgroundProps) {
       }}
     >
       <Canvas
-        key={sceneCode.substring(0, 100)} // Force re-render when code changes
+        key={sceneCode.substring(0, 100)}
         camera={{ position: [0, 0, 30], fov: 75 }}
         gl={{ 
           alpha: true, 
@@ -887,12 +888,9 @@ export function ThreeBackground({ sceneCode }: ThreeBackgroundProps) {
         }}
         style={{ background: 'transparent' }}
       >
-        {/* Ambient light for visibility */}
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} intensity={1} />
         <pointLight position={[-10, -10, -10]} intensity={0.5} />
-
-        {/* Render the selected scene */}
         {renderScene()}
       </Canvas>
     </div>

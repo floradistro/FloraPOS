@@ -15,6 +15,7 @@ import { useTVRegistration } from '@/hooks/useTVRegistration'
 import { ConnectionStatusIndicator } from '@/components/tv/ConnectionStatusIndicator'
 import { MagicBackground } from '../../components/ui/MagicBackground'
 import { loadGoogleFont } from '../../lib/fonts'
+import { hexToRgba } from '../../lib/color-utils'
 
 function MenuDisplayContent() {
   const searchParams = useSearchParams()
@@ -49,6 +50,7 @@ function MenuDisplayContent() {
   const borderOpacity = parseInt(searchParams.get('borderOpacity') || '100')
   const imageOpacity = parseInt(searchParams.get('imageOpacity') || '100')
   const blurIntensity = parseInt(searchParams.get('blurIntensity') || '8')
+  const glowIntensity = parseInt(searchParams.get('glowIntensity') || '40')
   
   // Font sizes
   const headerTitleSize = parseInt(searchParams.get('headerTitleSize') || '60')
@@ -136,6 +138,7 @@ function MenuDisplayContent() {
       if (payload.borderOpacity !== undefined) currentUrl.searchParams.set('borderOpacity', payload.borderOpacity.toString())
       if (payload.imageOpacity !== undefined) currentUrl.searchParams.set('imageOpacity', payload.imageOpacity.toString())
       if (payload.blurIntensity !== undefined) currentUrl.searchParams.set('blurIntensity', payload.blurIntensity.toString())
+      if (payload.glowIntensity !== undefined) currentUrl.searchParams.set('glowIntensity', payload.glowIntensity.toString())
       
       // Handle font sizes
       if (payload.headerTitleSize !== undefined) currentUrl.searchParams.set('headerTitleSize', payload.headerTitleSize.toString())
@@ -649,28 +652,32 @@ function MenuDisplayContent() {
         {customBackground && <MagicBackground key={customBackground} htmlCode={customBackground} />}
         
         {/* Header */}
-        <div className="px-8 flex-shrink-0 relative z-10" style={{
-          paddingTop: `${Math.max(24, headerTitleSize * 0.3)}px`,
-          paddingBottom: `${Math.max(24, headerTitleSize * 0.3)}px`, 
+        <div className="flex-shrink-0 relative z-10" style={{
+          paddingLeft: `${Math.max(32, headerTitleSize * 0.4)}px`,
+          paddingRight: `${Math.max(32, headerTitleSize * 0.4)}px`,
+          paddingTop: `${Math.max(16, headerTitleSize * 0.25)}px`,
+          paddingBottom: `${Math.max(16, headerTitleSize * 0.25)}px`, 
           background: `linear-gradient(180deg, ${containerColor}80 0%, ${containerColor}40 100%)`,
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
           backdropFilter: `blur(${blurIntensity}px)`
         }}>
           <div className="flex items-center justify-between gap-6">
-            <div className="flex items-center gap-5 min-w-0">
-              <div className="w-1.5 rounded-full flex-shrink-0" style={{ 
-                minHeight: `${headerTitleSize * 1.2}px`,
+            <div className="flex items-center min-w-0" style={{ gap: `${Math.max(12, headerTitleSize * 0.2)}px` }}>
+              <div className="rounded-full flex-shrink-0" style={{ 
+                width: `${Math.max(6, headerTitleSize * 0.08)}px`,
+                minHeight: `${Math.max(60, headerTitleSize * 0.8)}px`,
                 background: `linear-gradient(180deg, ${fontColor}FF 0%, ${fontColor}60 100%)`,
-                boxShadow: `0 0 20px ${fontColor}80, 0 0 40px ${fontColor}40`
+                boxShadow: `0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.8)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.4)}`
               }} />
               <div className="min-w-0">
-                <h1 className="font-black" style={{ 
+                <h1 className="font-black truncate" style={{ 
                   fontSize: `${headerTitleSize}px`,
                   color: fontColor, 
                   fontFamily: titleFont,
-                  textShadow: `0 4px 12px rgba(0, 0, 0, 0.5), 0 0 40px ${fontColor}30`,
-                  letterSpacing: '-0.03em'
+                  textShadow: `0 4px 12px rgba(0, 0, 0, 0.5), 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.6)}, 0 0 ${glowIntensity * 2}px ${hexToRgba(fontColor, 0.3)}`,
+                  letterSpacing: '-0.03em',
+                  lineHeight: '1'
                 }}>
                   {displayCategory}
                 </h1>
@@ -853,12 +860,32 @@ function MenuDisplayContent() {
       <div className="w-1/2 flex flex-col border-r overflow-hidden flex-shrink-0 relative z-10" style={{ borderRightColor: `${containerColor}40` }}>
         {/* Left Top Quadrant */}
         <div className={`${enableLeftStacking && leftCategory2 ? 'h-1/2 border-b' : 'h-full'} flex flex-col`} style={{ borderColor: enableLeftStacking && leftCategory2 ? `${containerColor}40` : undefined }}>
-        <div className="px-6 py-4 border-b flex-shrink-0" style={{ borderBottomColor: `${containerColor}40` }}>
+        <div className="flex-shrink-0" style={{ 
+          paddingLeft: `${Math.max(16, categorySize * 0.4)}px`,
+          paddingRight: `${Math.max(16, categorySize * 0.4)}px`,
+          paddingTop: `${Math.max(12, categorySize * 0.3)}px`,
+          paddingBottom: `${Math.max(12, categorySize * 0.3)}px`,
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          borderBottomColor: `${containerColor}40`,
+          background: `linear-gradient(180deg, ${containerColor}60 0%, ${containerColor}30 100%)`,
+          backdropFilter: `blur(${blurIntensity * 0.5}px)`
+        }}>
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-1.5 rounded-full flex-shrink-0" style={{ minHeight: `${categorySize * 1.2}px`, backgroundColor: `${fontColor}30` }} />
+            <div className="flex items-center min-w-0" style={{ gap: `${Math.max(8, categorySize * 0.2)}px` }}>
+              <div className="rounded-full flex-shrink-0" style={{ 
+                width: `${Math.max(4, categorySize * 0.08)}px`,
+                minHeight: `${categorySize * 1.2}px`, 
+                backgroundColor: `${fontColor}30`,
+                boxShadow: `0 0 ${glowIntensity * 0.3}px ${hexToRgba(fontColor, 0.6)}`
+              }} />
               <div className="min-w-0">
-                <h2 className="font-bold" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont, lineHeight: '1.2' }}>{leftCatName}</h2>
+                <h2 className="font-bold truncate" style={{ 
+                  fontSize: `${categorySize}px`, 
+                  color: fontColor, 
+                  fontFamily: titleFont, 
+                  lineHeight: '1',
+                  textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
+                }}>{leftCatName}</h2>
               </div>
             </div>
             
@@ -944,11 +971,31 @@ function MenuDisplayContent() {
         {/* Left Bottom Quadrant (Stacking) - Match top styling */}
         {enableLeftStacking && leftCategory2 && leftProducts2.length > 0 && (
           <div className="h-1/2 flex flex-col">
-            <div className="px-6 py-4 border-b flex-shrink-0" style={{ borderBottomColor: `${containerColor}40` }}>
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-1.5 rounded-full flex-shrink-0" style={{ minHeight: `${categorySize * 1.2}px`, backgroundColor: `${fontColor}30` }} />
+            <div className="flex-shrink-0" style={{ 
+              paddingLeft: `${Math.max(16, categorySize * 0.4)}px`,
+              paddingRight: `${Math.max(16, categorySize * 0.4)}px`,
+              paddingTop: `${Math.max(12, categorySize * 0.3)}px`,
+              paddingBottom: `${Math.max(12, categorySize * 0.3)}px`,
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              borderBottomColor: `${containerColor}40`,
+              background: `linear-gradient(180deg, ${containerColor}60 0%, ${containerColor}30 100%)`,
+              backdropFilter: `blur(${blurIntensity * 0.5}px)`
+            }}>
+              <div className="flex items-center min-w-0" style={{ gap: `${Math.max(8, categorySize * 0.2)}px` }}>
+                <div className="rounded-full flex-shrink-0" style={{ 
+                  width: `${Math.max(4, categorySize * 0.08)}px`,
+                  minHeight: `${categorySize * 1.2}px`, 
+                  backgroundColor: `${fontColor}30`,
+                  boxShadow: `0 0 ${glowIntensity * 0.3}px ${hexToRgba(fontColor, 0.6)}`
+                }} />
                 <div className="min-w-0">
-                  <h2 className="font-bold" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont, lineHeight: '1.2' }}>{leftCatName2}</h2>
+                  <h2 className="font-bold truncate" style={{ 
+                    fontSize: `${categorySize}px`, 
+                    color: fontColor, 
+                    fontFamily: titleFont, 
+                    lineHeight: '1',
+                    textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
+                  }}>{leftCatName2}</h2>
                 </div>
               </div>
             </div>
@@ -1007,12 +1054,32 @@ function MenuDisplayContent() {
       <div className="w-1/2 flex flex-col overflow-hidden flex-shrink-0 relative z-10">
         {/* Right Top Quadrant */}
         <div className={`${enableRightStacking && rightCategory2 ? 'h-1/2 border-b' : 'h-full'} flex flex-col`} style={{ borderColor: enableRightStacking && rightCategory2 ? `${containerColor}40` : undefined }}>
-        <div className="px-6 py-4 border-b flex-shrink-0" style={{ borderBottomColor: `${containerColor}40` }}>
+        <div className="flex-shrink-0" style={{ 
+          paddingLeft: `${Math.max(16, categorySize * 0.4)}px`,
+          paddingRight: `${Math.max(16, categorySize * 0.4)}px`,
+          paddingTop: `${Math.max(12, categorySize * 0.3)}px`,
+          paddingBottom: `${Math.max(12, categorySize * 0.3)}px`,
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          borderBottomColor: `${containerColor}40`,
+          background: `linear-gradient(180deg, ${containerColor}60 0%, ${containerColor}30 100%)`,
+          backdropFilter: `blur(${blurIntensity * 0.5}px)`
+        }}>
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-1.5 rounded-full flex-shrink-0" style={{ minHeight: `${categorySize * 1.2}px`, backgroundColor: `${fontColor}30` }} />
+            <div className="flex items-center min-w-0" style={{ gap: `${Math.max(8, categorySize * 0.2)}px` }}>
+              <div className="rounded-full flex-shrink-0" style={{ 
+                width: `${Math.max(4, categorySize * 0.08)}px`,
+                minHeight: `${categorySize * 1.2}px`, 
+                backgroundColor: `${fontColor}30`,
+                boxShadow: `0 0 ${glowIntensity * 0.3}px ${hexToRgba(fontColor, 0.6)}`
+              }} />
               <div className="min-w-0">
-                <h2 className="font-bold" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont, lineHeight: '1.2' }}>{rightCatName}</h2>
+                <h2 className="font-bold truncate" style={{ 
+                  fontSize: `${categorySize}px`, 
+                  color: fontColor, 
+                  fontFamily: titleFont, 
+                  lineHeight: '1',
+                  textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
+                }}>{rightCatName}</h2>
               </div>
             </div>
             
@@ -1098,11 +1165,31 @@ function MenuDisplayContent() {
         {/* Right Bottom Quadrant (Stacking) - Match top styling */}
         {enableRightStacking && rightCategory2 && rightProducts2.length > 0 && (
           <div className="h-1/2 flex flex-col">
-            <div className="px-6 py-4 border-b flex-shrink-0" style={{ borderBottomColor: `${containerColor}40` }}>
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-1.5 rounded-full flex-shrink-0" style={{ minHeight: `${categorySize * 1.2}px`, backgroundColor: `${fontColor}30` }} />
+            <div className="flex-shrink-0" style={{ 
+              paddingLeft: `${Math.max(16, categorySize * 0.4)}px`,
+              paddingRight: `${Math.max(16, categorySize * 0.4)}px`,
+              paddingTop: `${Math.max(12, categorySize * 0.3)}px`,
+              paddingBottom: `${Math.max(12, categorySize * 0.3)}px`,
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              borderBottomColor: `${containerColor}40`,
+              background: `linear-gradient(180deg, ${containerColor}60 0%, ${containerColor}30 100%)`,
+              backdropFilter: `blur(${blurIntensity * 0.5}px)`
+            }}>
+              <div className="flex items-center min-w-0" style={{ gap: `${Math.max(8, categorySize * 0.2)}px` }}>
+                <div className="rounded-full flex-shrink-0" style={{ 
+                  width: `${Math.max(4, categorySize * 0.08)}px`,
+                  minHeight: `${categorySize * 1.2}px`, 
+                  backgroundColor: `${fontColor}30`,
+                  boxShadow: `0 0 ${glowIntensity * 0.3}px ${hexToRgba(fontColor, 0.6)}`
+                }} />
                 <div className="min-w-0">
-                  <h2 className="font-bold" style={{ fontSize: `${categorySize}px`, color: fontColor, fontFamily: titleFont, lineHeight: '1.2' }}>{rightCatName2}</h2>
+                  <h2 className="font-bold truncate" style={{ 
+                    fontSize: `${categorySize}px`, 
+                    color: fontColor, 
+                    fontFamily: titleFont, 
+                    lineHeight: '1',
+                    textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
+                  }}>{rightCatName2}</h2>
                 </div>
               </div>
             </div>

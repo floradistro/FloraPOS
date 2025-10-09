@@ -60,7 +60,8 @@ export interface MenuToolbarProps {
   borderOpacity: number;
   imageOpacity: number;
   blurIntensity: number;
-  onTransparencyChange: (values: { containerOpacity: number; borderWidth: number; borderOpacity: number; imageOpacity: number; blurIntensity: number }) => void;
+  glowIntensity: number;
+  onTransparencyChange: (values: { containerOpacity: number; borderWidth: number; borderOpacity: number; imageOpacity: number; blurIntensity: number; glowIntensity: number }) => void;
   
   // Font sizes
   headerTitleSize: number;
@@ -108,7 +109,7 @@ export interface MenuToolbarProps {
 }
 
 export interface ToolbarDropdownProps {
-  label: string;
+  label?: string;
   icon: React.ReactNode;
   isActive?: boolean;
   children: React.ReactNode;

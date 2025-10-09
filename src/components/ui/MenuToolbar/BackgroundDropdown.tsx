@@ -57,36 +57,43 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
     if (withoutCodeBlocks.includes('CUSTOM_THREE_SCENE')) {
       const startIndex = withoutCodeBlocks.indexOf('CUSTOM_THREE_SCENE');
       if (startIndex !== -1) {
+        // For pure Three.js, extract everything from CUSTOM_THREE_SCENE until end of last animate function
         const fromStart = withoutCodeBlocks.substring(startIndex);
-        const funcMatch = fromStart.match(/function\s+\w+\s*\([^)]*\)\s*\{/);
         
-        if (funcMatch && funcMatch.index !== undefined) {
-          const funcStart = funcMatch.index;
-          let braceCount = 0;
-          let inFunction = false;
-          let endIndex = -1;
-          
-          for (let i = funcStart; i < fromStart.length; i++) {
-            if (fromStart[i] === '{') {
-              braceCount++;
-              inFunction = true;
-            } else if (fromStart[i] === '}') {
-              braceCount--;
-              if (inFunction && braceCount === 0) {
-                endIndex = i + 1;
-                break;
-              }
-            }
+        // Find the last closing brace of animate function
+        const animateMatch = fromStart.match(/function\s+animate\s*\([^)]*\)\s*\{[\s\S]*?\n\}/);
+        
+        if (animateMatch) {
+          const endIndex = (animateMatch.index || 0) + animateMatch[0].length;
+          const extracted = fromStart.substring(0, endIndex).trim();
+          console.log('✅ Extracted CUSTOM Three.js scene (pure), length:', extracted.length);
+          return extracted;
+        }
+        
+        // Fallback: try to find end by looking for double newline or end of string
+        const lines = fromStart.split('\n');
+        let codeLines = ['CUSTOM_THREE_SCENE'];
+        let foundCode = false;
+        
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line && foundCode) {
+            // Empty line after code might mean end
+            break;
           }
-          
-          if (endIndex !== -1) {
-            const extracted = fromStart.substring(0, endIndex).trim();
-            console.log('✅ Extracted CUSTOM Three.js scene, length:', extracted.length);
-            return extracted;
+          if (line) {
+            codeLines.push(lines[i]);
+            foundCode = true;
           }
         }
+        
+        if (codeLines.length > 1) {
+          const extracted = codeLines.join('\n').trim();
+          console.log('✅ Extracted CUSTOM Three.js scene (fallback), length:', extracted.length);
+          return extracted;
+        }
       }
-      console.warn('⚠️ Could not extract custom scene function');
+      console.warn('⚠️ Could not extract custom scene');
     }
     
     // Check for pre-built Three.js scene configuration - SECOND PRIORITY
@@ -231,7 +238,6 @@ export const BackgroundDropdown: React.FC<BackgroundDropdownProps> = ({
 
   return (
     <ToolbarDropdown
-      label="Magic BG"
       icon={
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
