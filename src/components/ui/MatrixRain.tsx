@@ -19,18 +19,6 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size to parent container
-    const resizeCanvas = () => {
-      const parent = canvas.parentElement;
-      if (parent) {
-        canvas.width = parent.clientWidth;
-        canvas.height = parent.clientHeight;
-      }
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
     // Extended matrix characters (more code-like symbols)
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()_+-=[]{}|;:,.<>?/\\~`!abcdefghijklmnopqrstuvwxyz';
     const codeSymbols = '{}[]();,.<>?/\\|~`!@#$%^&*()_+-=:;';
@@ -40,39 +28,91 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
     const numArray = numbers.split('');
 
     const fontSize = 14; // Slightly smaller font for the popup
-    const columns = Math.floor(canvas.width / fontSize);
     
     // Array of drops with streak data
-    const drops: Array<{
+    let drops: Array<{
       y: number;
       speed: number;
       streak: string[];
       streakLength: number;
     }> = [];
     
-    // Initialize drops with streaks - spread them across the screen immediately
-    for (let i = 0; i < columns; i++) {
-      const streakLength = Math.floor(Math.random() * 6) + 3; // 3-8 characters long (shorter for popup)
-      const streak: string[] = [];
+    // Function to initialize/reinitialize drops
+    const initDrops = () => {
+      const columns = Math.floor(canvas.width / fontSize);
+      drops = [];
       
-      // Generate a streak of characters
-      for (let j = 0; j < streakLength; j++) {
-        const rand = Math.random();
-        if (rand < 0.3) {
-          streak.push(codeArray[Math.floor(Math.random() * codeArray.length)]);
-        } else if (rand < 0.6) {
-          streak.push(numArray[Math.floor(Math.random() * numArray.length)]);
-        } else {
-          streak.push(charArray[Math.floor(Math.random() * charArray.length)]);
+      // Initialize drops with streaks - spread them across the screen immediately
+      for (let i = 0; i < columns; i++) {
+        const streakLength = Math.floor(Math.random() * 6) + 3; // 3-8 characters long (shorter for popup)
+        const streak: string[] = [];
+        
+        // Generate a streak of characters
+        for (let j = 0; j < streakLength; j++) {
+          const rand = Math.random();
+          if (rand < 0.3) {
+            streak.push(codeArray[Math.floor(Math.random() * codeArray.length)]);
+          } else if (rand < 0.6) {
+            streak.push(numArray[Math.floor(Math.random() * numArray.length)]);
+          } else {
+            streak.push(charArray[Math.floor(Math.random() * charArray.length)]);
+          }
+        }
+        
+        drops[i] = {
+          y: Math.random() * (canvas.height / fontSize),
+          speed: Math.random() * 0.2 + 0.1, // Slower speed for popup
+          streak: streak,
+          streakLength: streakLength
+        };
+      }
+    };
+    
+    // Set canvas size to parent container
+    const resizeCanvas = () => {
+      const parent = canvas.parentElement;
+      if (parent) {
+        const width = parent.clientWidth;
+        const height = parent.clientHeight;
+        
+        // Always set canvas size and reinitialize if we have valid dimensions
+        if (width > 0 && height > 0) {
+          const needsResize = canvas.width !== width || canvas.height !== height;
+          
+          if (needsResize || drops.length === 0) {
+            canvas.width = width;
+            canvas.height = height;
+            console.log('📐 MatrixRain canvas resized:', width, 'x', height);
+            
+            // Reinitialize drops when canvas size changes or if empty
+            initDrops();
+          }
         }
       }
-      
-      drops[i] = {
-        y: Math.random() * (canvas.height / fontSize),
-        speed: Math.random() * 0.2 + 0.1, // Slower speed for popup
-        streak: streak,
-        streakLength: streakLength
-      };
+    };
+
+    // Initial resize and drop initialization (immediate)
+    resizeCanvas();
+    
+    // Quick retry if needed (only if drops are empty)
+    if (drops.length === 0) {
+      requestAnimationFrame(() => resizeCanvas());
+    }
+    
+    // One more delayed retry to catch flex layout
+    setTimeout(resizeCanvas, 100);
+    
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Use ResizeObserver to detect when parent container size changes
+    const parent = canvas.parentElement;
+    let resizeObserver: ResizeObserver | null = null;
+    
+    if (parent && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        resizeCanvas();
+      });
+      resizeObserver.observe(parent);
     }
 
     const draw = () => {
@@ -157,6 +197,9 @@ export const MatrixRain: React.FC<MatrixRainProps> = ({ className = '', size = '
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
