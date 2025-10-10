@@ -72,6 +72,7 @@ export const CategoriesDropdown: React.FC<CategoriesDropdownProps> = ({
 
   return (
     <ToolbarDropdown
+      icon={<></>}
       trigger={
         <div className="flex items-center gap-1.5 px-2.5 h-[28px] cursor-pointer text-white/80 hover:text-white transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
