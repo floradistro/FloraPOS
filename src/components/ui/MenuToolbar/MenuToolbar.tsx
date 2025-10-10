@@ -13,6 +13,9 @@ import { BackgroundDropdown } from './BackgroundDropdown';
 import { MenuModeDropdown } from './MenuModeDropdown';
 import { CategoriesDropdown } from './CategoriesDropdown';
 import { ColumnSelector } from '../ColumnSelector';
+import { TypographyDropdown } from './TypographyDropdown';
+import { ElementsDropdown } from './ElementsDropdown';
+import { LayoutDropdownV2 } from './LayoutDropdownV2';
 
 export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   orientation,
@@ -64,6 +67,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   onLoadConfig,
   onSaveLayout,
   onSaveTheme,
+  onLoadTheme,
   onQRCode,
   onStoreConfig,
   onToggleTVPanel,
@@ -139,105 +143,123 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   };
 
   return (
-    <div className="mb-2 relative z-50 pt-2 px-2 flex-shrink-0 w-full">
-      <div className="flex items-center justify-between bg-neutral-900/40 backdrop-blur-sm border border-neutral-700/50 rounded-lg px-2 py-2 w-full">
-        {/* Left Side - Configuration Dropdowns */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <ConfigDropdown
-            loadedConfigName={loadedConfigName}
-            onLoadConfig={onLoadConfig}
-            onSaveLayout={onSaveLayout}
-            onSaveTheme={onSaveTheme}
-            onQRCode={onQRCode}
-            onStoreConfig={onStoreConfig}
-            onToggleTVPanel={onToggleTVPanel}
-            showTVPanel={showTVPanel}
-            onlineCount={onlineCount}
-            totalTVs={totalTVs}
-            hasLocation={hasLocation}
-          />
-          
-          <LayoutDropdown
-            orientation={orientation}
-            onOrientationChange={onOrientationChange}
-          />
-
-          <DisplayDropdown
-            currentConfig={getCurrentConfig()}
-            onConfigChange={handleConfigChange}
-            pandaMode={pandaMode}
-            onPandaModeToggle={onPandaModeToggle}
-          />
-
-          <ColorDropdown
-            backgroundColor={backgroundColor}
-            fontColor={fontColor}
-            containerColor={containerColor}
-            cardFontColor={cardFontColor}
-            imageBackgroundColor={imageBackgroundColor}
-            onColorsChange={onColorsChange}
-            iconOnly={true}
-          />
-
-          <TransparencyDropdown
-            containerOpacity={containerOpacity}
-            borderWidth={borderWidth}
-            borderOpacity={borderOpacity}
-            imageOpacity={imageOpacity}
-            blurIntensity={blurIntensity}
-            glowIntensity={glowIntensity}
-            onTransparencyChange={onTransparencyChange}
-          />
-
-          <FontDropdown
-            titleFont={titleFont}
-            pricingFont={pricingFont}
-            cardFont={cardFont}
-            onFontsChange={onFontsChange}
-            iconOnly={true}
-          />
-
-          <FontSizeDropdown
-            headerTitleSize={headerTitleSize}
-            cardTitleSize={cardTitleSize}
-            priceSize={priceSize}
-            categorySize={categorySize}
-            onFontSizesChange={onFontSizesChange}
-            iconOnly={true}
-          />
-
-          <BackgroundDropdown
-            value={customBackground}
-            onChange={onCustomBackgroundChange}
-          />
-
-          <MenuModeDropdown
-            isDualMode={isDualMode}
-            onModeChange={onModeChange}
-            dualMenu={dualMenu}
-            onDualMenuChange={onDualMenuChange}
-            selectedQuadrant={selectedQuadrant}
-            onQuadrantChange={onQuadrantChange}
-            categories={categories}
-            orientation={orientation}
-            onLaunchDual={handleLaunchDual}
-          />
+    <div className="mb-3 relative z-50 pt-3 px-4 flex-shrink-0 w-full">
+      <div className="flex items-center justify-between bg-transparent px-0 py-0 w-full">
+        {/* Left Side - Primary Actions (Canva-style: Templates/Load) */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 bg-neutral-900/20 backdrop-blur-md border border-white/[0.06] rounded-2xl px-2 py-1.5 shadow-lg" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.03)' }}>
+            <ConfigDropdown
+              loadedConfigName={loadedConfigName}
+              onLoadConfig={onLoadConfig}
+              onSaveLayout={onSaveLayout}
+              onSaveTheme={onSaveTheme}
+              onLoadTheme={onLoadTheme}
+              onQRCode={onQRCode}
+              onStoreConfig={onStoreConfig}
+              onToggleTVPanel={onToggleTVPanel}
+              showTVPanel={showTVPanel}
+              onlineCount={onlineCount}
+              totalTVs={totalTVs}
+              hasLocation={hasLocation}
+            />
+            
+            <div className="w-px h-5 bg-white/[0.08]" />
+            
+            <LayoutDropdownV2
+              orientation={orientation}
+              onOrientationChange={onOrientationChange}
+              isDualMode={isDualMode}
+              onModeChange={onModeChange}
+              viewMode={getCurrentConfig()?.viewMode || 'auto'}
+              showImages={getCurrentConfig()?.showImages || false}
+              priceLocation={getCurrentConfig()?.priceLocation || 'none'}
+              onDisplayChange={(settings) => {
+                const currentConfig = getCurrentConfig()
+                if (settings.viewMode !== undefined && currentConfig) {
+                  handleConfigChange({ ...currentConfig, viewMode: settings.viewMode })
+                }
+                if (settings.showImages !== undefined && currentConfig) {
+                  handleConfigChange({ ...currentConfig, showImages: settings.showImages })
+                }
+                if (settings.priceLocation !== undefined && currentConfig) {
+                  handleConfigChange({ ...currentConfig, priceLocation: settings.priceLocation })
+                }
+              }}
+            />
+          </div>
         </div>
 
-        {/* Right Side - Categories, Columns & Launch */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <CategoriesDropdown
-            categories={categories}
-            isDualMode={isDualMode}
-            singleMenu={singleMenu}
-            dualMenu={dualMenu}
-            selectedQuadrant={selectedQuadrant}
-            onSingleMenuChange={onSingleMenuChange}
-            onDualMenuChange={onDualMenuChange}
-            onQuadrantChange={onQuadrantChange}
-            orientation={orientation}
-          />
-          
+        {/* Center - Design Tools & Content (Canva-style: Typography + Elements + Categories) */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 bg-neutral-900/20 backdrop-blur-md border border-white/[0.06] rounded-2xl px-2 py-1.5 shadow-lg" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.03)' }}>
+            <CategoriesDropdown
+              categories={categories}
+              isDualMode={isDualMode}
+              singleMenu={singleMenu}
+              dualMenu={dualMenu}
+              selectedQuadrant={selectedQuadrant}
+              onSingleMenuChange={onSingleMenuChange}
+              onDualMenuChange={onDualMenuChange}
+              onQuadrantChange={onQuadrantChange}
+              orientation={orientation}
+            />
+            
+            <div className="w-px h-5 bg-white/[0.08]" />
+            
+            <TypographyDropdown
+              titleFont={titleFont}
+              pricingFont={pricingFont}
+              cardFont={cardFont}
+              onFontsChange={onFontsChange}
+              headerTitleSize={headerTitleSize}
+              cardTitleSize={cardTitleSize}
+              priceSize={priceSize}
+              categorySize={categorySize}
+              onFontSizesChange={onFontSizesChange}
+              fontColor={fontColor}
+              cardFontColor={cardFontColor}
+              onTextColorsChange={(colors) => {
+                onColorsChange({
+                  backgroundColor,
+                  fontColor: colors.fontColor,
+                  containerColor,
+                  cardFontColor: colors.cardFontColor,
+                  imageBackgroundColor
+                })
+              }}
+            />
+            
+            <div className="w-px h-5 bg-white/[0.08]" />
+
+            <ElementsDropdown
+              backgroundColor={backgroundColor}
+              containerColor={containerColor}
+              imageBackgroundColor={imageBackgroundColor}
+              onBackgroundColorsChange={(colors) => {
+                onColorsChange({
+                  backgroundColor: colors.backgroundColor,
+                  fontColor,
+                  containerColor: colors.containerColor,
+                  cardFontColor,
+                  imageBackgroundColor: colors.imageBackgroundColor
+                })
+              }}
+              containerOpacity={containerOpacity}
+              borderWidth={borderWidth}
+              borderOpacity={borderOpacity}
+              imageOpacity={imageOpacity}
+              blurIntensity={blurIntensity}
+              glowIntensity={glowIntensity}
+              onEffectsChange={onTransparencyChange}
+              customBackground={customBackground}
+              onCustomBackgroundChange={onCustomBackgroundChange}
+            />
+            
+          </div>
+        </div>
+
+        {/* Right Side - Actions (Canva-style: Columns + Launch) */}
+        <div className="flex items-center gap-2 flex-shrink-0 bg-neutral-900/20 backdrop-blur-md border border-white/[0.06] rounded-2xl px-2 py-1.5 shadow-lg" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.03)' }}>
           <ColumnSelector
             categories={categories}
             selectedCategory={getCurrentConfig()?.category || undefined}
@@ -245,11 +267,17 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             onColumnsChange={onColumnsChange}
           />
           
-          {/* Launch Button */}
+          <div className="w-px h-5 bg-white/[0.08]" />
+          
+          {/* Launch Button - Primary Action */}
           <button
             onClick={onLaunch}
             disabled={!canLaunch || openWindowsCount >= maxWindows}
-            className="flex items-center gap-1.5 px-2 h-[28px] text-xs transition-all duration-200 ease-out rounded border bg-transparent text-white border-neutral-600/50 hover:bg-neutral-600/10 hover:border-neutral-500/70 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 px-4 h-[28px] text-xs font-medium transition-all duration-300 ease-out rounded-full bg-blue-500/[0.18] hover:bg-blue-500/[0.28] text-blue-200 hover:text-white border border-blue-400/[0.30] hover:border-blue-400/[0.50] disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:scale-[1.05] active:scale-[0.95]"
+            style={{ 
+              boxShadow: openWindowsCount >= maxWindows ? 'none' : '0 4px 16px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'
+            }}
             title={
               openWindowsCount >= maxWindows
                 ? `Maximum of ${maxWindows} windows reached. Close some windows first.`

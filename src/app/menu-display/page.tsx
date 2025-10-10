@@ -119,8 +119,16 @@ function MenuDisplayContent() {
       console.log('🔄 [TV DISPLAY] Reloading page...')
       window.location.reload()
     } else if (command.command_type === 'update_theme') {
-      console.log('🎨 [TV DISPLAY] Updating theme...')
       const payload = command.payload
+      
+      // Check if this is a close window command
+      if (payload?.closeWindow) {
+        console.log('🚪 [TV DISPLAY] Closing window...')
+        window.close()
+        return
+      }
+      
+      console.log('🎨 [TV DISPLAY] Updating theme...')
       const currentUrl = new URL(window.location.href)
       
       // Update URL params with new config

@@ -79,6 +79,7 @@ export interface MenuToolbarProps {
   onLoadConfig: () => void;
   onSaveLayout: () => void;
   onSaveTheme: () => void;
+  onLoadTheme: (themeId: number) => void;
   onQRCode: () => void;
   onStoreConfig: () => void;
   onToggleTVPanel: () => void;
