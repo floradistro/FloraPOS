@@ -57,6 +57,10 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
           last_seen: new Date().toISOString(),
           ip_address: typeof window !== 'undefined' ? window.location.hostname : null,
           user_agent: typeof window !== 'undefined' ? navigator.userAgent : null,
+          metadata: {
+            current_url: typeof window !== 'undefined' ? window.location.href : null,
+            last_updated: new Date().toISOString()
+          }
         })
         .select()
 
@@ -82,6 +86,10 @@ export function useTVRegistration(options: UseTVRegistrationOptions) {
           status: 'online',
           last_seen: new Date().toISOString(),
           current_config_id: currentConfigId,
+          metadata: {
+            current_url: typeof window !== 'undefined' ? window.location.href : null,
+            last_updated: new Date().toISOString()
+          }
         })
         .eq('id', tvId)
       

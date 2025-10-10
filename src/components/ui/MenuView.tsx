@@ -31,6 +31,7 @@ import { loadGoogleFont } from '../../lib/fonts'
 import { ToastProvider, useToast } from './Toast'
 import { TVPreview } from './TVPreview'
 import { TVDashboard } from './TVDashboard'
+import { StoreLayoutCanvas } from './StoreLayoutCanvas'
 
 interface MenuViewProps {
   searchQuery?: string
@@ -72,6 +73,9 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
   
   // Selected TV for editing
   const [selectedTV, setSelectedTV] = useState<string | null>(null)
+  
+  // View mode: builder or store-layout
+  const [viewMode, setViewMode] = useState<'builder' | 'store-layout'>('builder')
   
   // Modal states
   const [showLoadConfigModal, setShowLoadConfigModal] = useState(false)
@@ -826,10 +830,10 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     }
 
     const url = `${baseUrl}?${params.toString()}`
-    const newWindow = window.open(url, '_blank', 'width=1920,height=1080')
+    const windowKey = `tv-${nextTVNumber}-${Date.now()}`
+    const newWindow = window.open(url, windowKey, 'width=1920,height=1080')
     
     if (newWindow) {
-      const windowKey = `tv-${nextTVNumber}`
       const currentCategory = menuConfig.isDualMode 
         ? `${menuConfig.leftPanel.category || ''} / ${menuConfig.rightPanel.category || ''}`
         : menuConfig.singlePanel.category || 'All'
@@ -915,7 +919,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-transparent overflow-hidden">
+    <div className="h-full w-full flex flex-col bg-transparent overflow-hidden">
       {/* Save Layout Modal */}
       {showSaveLayoutModal && (
         <>
@@ -1562,7 +1566,8 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
         </>
       )}
 
-      {/* Top Toolbar */}
+      {/* Top Toolbar - Only show in Builder mode */}
+      {viewMode === 'builder' && (
       <MenuToolbar
         orientation={menuConfig.orientation}
         onOrientationChange={menuConfig.setOrientation}
@@ -1637,6 +1642,15 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
         onLoadConfig={() => setShowLoadConfigModal(true)}
         onSaveLayout={() => setShowSaveLayoutModal(true)}
         onSaveTheme={() => setShowSaveThemeModal(true)}
+        onLoadTheme={async (themeId: number) => {
+          try {
+            const config = await menuConfigService.getConfig(themeId)
+            handleLoadTheme(config)
+          } catch (error) {
+            console.error('Failed to load theme:', error)
+            showToast('Failed to load theme', 'error')
+          }
+        }}
         onQRCode={() => setShowQRCodeModal(true)}
         onStoreConfig={() => setShowStoreConfigModal(true)}
         onToggleTVPanel={() => setShowTVPanel(!showTVPanel)}
@@ -1645,41 +1659,74 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
         totalTVs={tvDevices.length}
         hasLocation={!!user?.location_id}
       />
+      )}
+
+      {/* Store Layout Toolbar */}
+      {viewMode === 'store-layout' && (
+        <div className="mb-3 relative z-50 pt-3 px-4 flex-shrink-0 w-full max-w-full">
+          <div className="flex items-center justify-between gap-3 bg-transparent px-0 py-0 w-full max-w-full overflow-hidden">
+            {/* Left Side - Store Layout Tools */}
+            <div className="flex items-center gap-2 flex-shrink min-w-0 bg-neutral-900/20 backdrop-blur-md border border-white/[0.06] rounded-2xl px-2 py-1.5 shadow-lg" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.03)' }}>
+              <button
+                onClick={() => setShowLoadConfigModal(true)}
+                className="flex items-center gap-1.5 px-3 h-[28px] text-xs font-medium transition-all duration-300 ease-out rounded-full bg-blue-500/[0.12] hover:bg-blue-500/[0.20] text-blue-300 hover:text-blue-200 border border-blue-400/[0.20] hover:border-blue-400/[0.35] hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                style={{ 
+                  boxShadow: '0 2px 12px rgba(59, 130, 246, 0.08)',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+                }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Load Layout
+              </button>
+              
+              <div className="w-px h-5 bg-white/[0.08]" />
+              
+              <button
+                onClick={() => setShowSaveLayoutModal(true)}
+                className="flex items-center gap-1.5 px-3 h-[28px] text-xs font-medium transition-all duration-300 ease-out rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white/90 hover:text-white border border-white/[0.12] hover:border-white/[0.24] hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                style={{ 
+                  boxShadow: '0 2px 12px rgba(255, 255, 255, 0.04)',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+                }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                Save Layout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative min-h-0">
         {/* Left Sidebar - TV Control Panel - Slide Out Overlay */}
         <div 
-          className={`absolute left-0 top-0 bottom-0 w-80 bg-[#1e1e1e]/95 backdrop-blur-xl border-r border-white/10 flex flex-col z-50 transition-transform duration-300 ease-out shadow-2xl ${
+          className={`absolute left-0 top-0 bottom-0 w-[700px] bg-[#1e1e1e]/95 backdrop-blur-xl border-r border-white/10 flex flex-col z-50 transition-transform duration-300 ease-out shadow-2xl ${
             showTVPanel ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-            {/* VSCode Style Tab */}
-            <button
-              onClick={() => setShowTVPanel(false)}
-              className="absolute -right-10 top-1/2 -translate-y-1/2 w-10 h-20 bg-[#1e1e1e]/95 backdrop-blur-xl border border-l-0 border-white/10 rounded-r-lg flex items-center justify-center hover:bg-white/5 transition-all duration-200 group"
-              style={{ boxShadow: '2px 0 8px rgba(0, 0, 0, 0.3)' }}
-            >
-              <svg className="w-4 h-4 text-white/40 group-hover:text-white/90 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-
-            {/* Panel Header */}
+            {/* Panel Header - Minimal */}
             <div className="px-4 pt-4 pb-3 border-b border-white/10">
-              <h3 className="text-sm font-medium text-white mb-2">TV Control Panel</h3>
-              <div className="flex items-center gap-3 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-white/80 animate-pulse" />
-                  <span className="text-white/70">{onlineCount} Online</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-white/20" />
-                  <span className="text-white/50">{offlineCount} Offline</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-white/60" />
-                  <span className="text-white/50">{openWindows.size} Local</span>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-medium text-white/60 uppercase tracking-wider">TVs</h3>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-white/80 font-mono">{onlineCount}</span>
+                    <span className="text-white/30">•</span>
+                    <span className="text-white/40 font-mono">{openWindows.size}</span>
+                  </div>
+                  <button
+                    onClick={() => setShowTVPanel(false)}
+                    className="text-white/40 hover:text-white/80 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1700,11 +1747,9 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
               {/* Local Windows Section */}
               {openWindows.size > 0 && (
                 <div>
-                  <div className="px-2 mb-3 flex items-center justify-between">
-                    <div className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                      Local Windows ({openWindows.size})
-                    </div>
-                    <div className="flex items-center gap-1.5">
+                  <div className="px-2 mb-2 flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Local</span>
+                    <div className="flex items-center gap-1">
                       <button
                         onClick={() => {
                           // Build URL with current config
@@ -1768,25 +1813,11 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                               count++;
                             }
                           });
-                          console.log(`📤 Pushed current config to ${count} windows`);
+                          console.log(`📤 Pushed config to ${count} windows`);
                         }}
-                        className="text-xs px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded transition-colors font-medium"
-                        title="Push current config to all windows"
+                        className="text-[10px] px-2 py-1 bg-white/[0.06] hover:bg-white/10 border border-white/10 text-white/80 rounded-lg transition-all"
                       >
-                        📤 Push to All
-                      </button>
-                      <button
-                        onClick={() => {
-                          openWindows.forEach(({window: win}) => {
-                            if (!win.closed) win.location.reload();
-                          });
-                        }}
-                        className="text-xs px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 rounded transition-colors"
-                        title="Refresh all windows"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
+                        Push All
                       </button>
                       <button
                         onClick={() => {
@@ -1795,8 +1826,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                             setOpenWindows(new Map());
                           }
                         }}
-                        className="text-xs px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white/50 rounded transition-colors"
-                        title="Close all windows"
+                        className="text-white/30 hover:text-white/60 transition-colors"
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1813,53 +1843,41 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 return (
                   <div
                     key={key}
-                    className={`group relative p-3 rounded border transition-all duration-200 cursor-pointer ${
+                    className={`group relative p-2.5 rounded-xl transition-all cursor-pointer ${
                       selectedTV === key
-                        ? 'bg-white/5 border-white/20'
-                        : 'bg-transparent border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
+                        ? 'bg-white/[0.06] border border-white/20'
+                        : 'bg-white/[0.02] border border-white/10 hover:bg-white/[0.04]'
                     }`}
                     onClick={() => setSelectedTV(selectedTV === key ? null : key)}
                   >
-                    {/* TV Number Badge */}
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 rounded bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-medium text-white/90">{tvData.tvNumber}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-white/90 truncate text-sm">
-                          TV {tvData.tvNumber}
-                        </div>
-                        <div className="text-xs text-white/50 truncate mt-0.5">
-                          {tvData.category}
-                        </div>
-                        <div className="text-xs flex items-center gap-2 mt-1">
-                          <div className={`flex items-center gap-1 ${
-                            isOpen ? 'text-white/80' : 'text-white/30'
-                          }`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${
-                              isOpen ? 'bg-white/80 animate-pulse' : 'bg-white/20'
-                            }`} />
-                            {isOpen ? 'Live' : 'Closed'}
-                          </div>
-                        </div>
+                    {/* TV Info - Minimal */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-white/60">Local</span>
+                        <span className="text-xs font-mono text-white/90">{tvData.tvNumber}</span>
+                        <div className="w-1 h-1 rounded-full bg-white/60 animate-pulse" />
                       </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           tvData.window.close()
+                          setOpenWindows(prev => {
+                            const updated = new Map(prev)
+                            updated.delete(key)
+                            return updated
+                          })
                         }}
-                        className="text-white/40 hover:text-white/90 transition-colors p-1"
-                        title="Close window"
+                        className="text-white/30 hover:text-white/60 transition-colors"
                       >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
                     </div>
 
-                    {/* Quick Actions */}
+                    {/* Quick Actions - Minimal */}
                     {selectedTV === key && isOpen && (
-                      <div className="space-y-1.5 mt-2 pt-2 border-t border-white/10">
+                      <div className="space-y-1 mt-2 pt-2 border-t border-white/10">
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -1964,68 +1982,58 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 </div>
               )}
 
-              {/* Network TVs Section (from Supabase) */}
+              {/* Network TVs Section */}
               {tvDevices.length > 0 && (
                 <div>
-                  <div className="px-2 mb-2 text-xs font-medium text-white/40 uppercase tracking-wider flex items-center justify-between">
-                    <span>Network TVs</span>
+                  <div className="px-2 mb-2 flex items-center justify-between">
+                    <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Network</span>
                     <button
                       onClick={async () => {
-                        const toastId = showToast('Refreshing TV list...', 'loading')
+                        const toastId = showToast('Refreshing...', 'loading')
                         try {
                           await refreshTVs()
-                          updateToast(toastId, '✓ TV list refreshed', 'success')
+                          updateToast(toastId, '✓ Refreshed', 'success')
                         } catch (error) {
-                          updateToast(toastId, '✗ Failed to refresh TV list', 'error')
+                          updateToast(toastId, '✗ Failed', 'error')
                         }
                       }}
-                      className="text-white/40 hover:text-white/90 transition-colors p-1"
-                      title="Refresh TV list"
+                      className="text-white/30 hover:text-white/60 transition-colors"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
                     </button>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {tvDevices.map(tv => {
                       const online = isOnline(tv)
                       
                       return (
                         <div
                           key={tv.id}
-                          className={`group relative p-3 rounded border transition-all duration-200 cursor-pointer ${
+                          className={`group relative p-2.5 rounded-xl transition-all cursor-pointer ${
                             selectedTV === tv.id
-                              ? 'bg-white/5 border-white/20'
-                              : 'bg-transparent border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
+                              ? 'bg-white/[0.06] border border-white/20'
+                              : 'bg-white/[0.02] border border-white/10 hover:bg-white/[0.04]'
                           }`}
                           onClick={() => setSelectedTV(selectedTV === tv.id ? null : tv.id)}
                         >
-                          {/* TV Number Badge */}
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 rounded bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
-                              <span className="text-sm font-medium text-white/90">{tv.tv_number}</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-normal text-white/90 truncate text-xs">
-                                {tv.device_name}
-                              </div>
-                              <div className="text-xs text-white/40 flex items-center gap-2 mt-0.5">
-                                <div className={`w-1 h-1 rounded-full ${
-                                  online ? 'bg-white/60' : 'bg-white/20'
-                                }`} />
-                                {online ? 'Online' : 'Offline'}
-                              </div>
+                          {/* TV Info - Minimal */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono text-white/60">TV</span>
+                              <span className="text-xs font-mono text-white/90">{tv.tv_number}</span>
+                              <div className={`w-1 h-1 rounded-full ${online ? 'bg-white/60' : 'bg-white/20'}`} />
                             </div>
                           </div>
 
-                          {/* Quick Actions */}
+                          {/* Quick Actions - Minimal */}
                           {selectedTV === tv.id && online && (
-                            <div className="space-y-1.5 mt-2 pt-2 border-t border-white/10">
+                            <div className="space-y-1 mt-2 pt-2 border-t border-white/10">
                               <button
                                 onClick={async (e) => {
                                   e.stopPropagation()
-                                  const toastId = showToast(`Pushing config to TV ${tv.tv_number}...`, 'loading')
+                                  const toastId = showToast(`Pushing to TV ${tv.tv_number}`, 'loading')
                                   
                                   // Add to pushing state
                                   setPushingTVs(prev => new Set(prev).add(tv.id))
@@ -2072,32 +2080,55 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                     })
                                   }
                                 }}
-                                className="w-full px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 rounded text-xs transition-colors flex items-center justify-center gap-2"
+                                className="w-full px-3 py-2 bg-white/[0.06] hover:bg-white/10 border border-white/10 text-white rounded-lg text-xs transition-all flex items-center justify-center gap-1.5"
                               >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
-                                Push Config
+                                Push
                               </button>
                               
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation()
-                                  const toastId = showToast(`Refreshing TV ${tv.tv_number}...`, 'loading')
-                                  try {
-                                    await TVCommandService.sendCommand(tv.id, 'refresh')
-                                    updateToast(toastId, `✓ TV ${tv.tv_number} refreshing`, 'success')
-                                  } catch (error) {
-                                    updateToast(toastId, `✗ Failed to refresh TV ${tv.tv_number}`, 'error')
-                                  }
-                                }}
-                                className="w-full px-3 py-1.5 bg-transparent hover:bg-white/5 border border-white/10 text-white/70 rounded text-xs transition-colors flex items-center justify-center gap-2"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                Refresh
-                              </button>
+                              <div className="grid grid-cols-2 gap-1">
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation()
+                                    const toastId = showToast(`Refreshing`, 'loading')
+                                    try {
+                                      await TVCommandService.sendCommand(tv.id, 'refresh')
+                                      updateToast(toastId, `✓ Done`, 'success')
+                                    } catch (error) {
+                                      updateToast(toastId, `✗ Failed`, 'error')
+                                    }
+                                  }}
+                                  className="px-2 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 text-white/70 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1"
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  </svg>
+                                  Refresh
+                                </button>
+                                
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation()
+                                    const toastId = showToast(`Closing`, 'loading')
+                                    try {
+                                      await TVCommandService.sendCommand(tv.id, 'update_theme', {
+                                        closeWindow: true
+                                      })
+                                      updateToast(toastId, `✓ Closed`, 'success')
+                                    } catch (error) {
+                                      updateToast(toastId, `✗ Failed`, 'error')
+                                    }
+                                  }}
+                                  className="px-2 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 text-white/60 rounded-lg text-[10px] transition-all flex items-center justify-center gap-1"
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                  Close
+                                </button>
+                              </div>
                               
                               {/* Live TV Preview */}
                               <TVPreview
@@ -2185,7 +2216,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Refresh All ({openWindows.size + onlineCount})
+                Refresh ({openWindows.size + onlineCount})
               </button>
               
               {/* Push Config to All Network TVs */}
@@ -2232,7 +2263,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                  Push to Network TVs ({onlineCount})
+                  Push ({onlineCount})
                 </button>
               )}
               
@@ -2249,31 +2280,34 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  Close Local Windows
+                  Close All
                 </button>
               )}
             </div>
-          </div>
 
-        {/* Show TV Panel Button (when hidden) - VSCode Style Tab */}
-        {!showTVPanel && (
+          {/* Half Moon Tab - Slides with panel */}
           <button
-            onClick={() => setShowTVPanel(true)}
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-20 bg-[#1e1e1e]/95 backdrop-blur-xl border border-white/10 rounded-r-lg flex items-center justify-center hover:bg-white/5 transition-all duration-200 group z-50"
-            style={{ boxShadow: '2px 0 8px rgba(0, 0, 0, 0.3)' }}
+            onClick={() => setShowTVPanel(!showTVPanel)}
+            className="absolute -right-8 top-1/2 -translate-y-1/2 w-8 h-16 bg-gradient-to-r from-[#2a2a2a] to-[#1e1e1e] backdrop-blur-xl flex items-center justify-center hover:from-[#333333] hover:to-[#252525] transition-all duration-300 group overflow-hidden"
+            style={{ 
+              boxShadow: '2px 0 12px rgba(0, 0, 0, 0.5)',
+              borderRadius: '0 100px 100px 0',
+              border: 'none'
+            }}
           >
-            <svg className="w-4 h-4 text-white/40 group-hover:text-white/90 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            <svg className={`w-3.5 h-3.5 text-white/50 group-hover:text-white/80 transition-all duration-300 ${showTVPanel ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
             </svg>
           </button>
-        )}
+        </div>
 
         {/* Main Preview Area */}
-        <div className="flex-1 overflow-hidden relative bg-[#0a0a0a]">
+        <div className="flex-1 overflow-hidden relative bg-transparent min-w-0 pr-4">
           {/* Preview - Full Width */}
-          <div className="w-full h-full overflow-hidden">
-            {(() => {
-              console.log('📤 Passing to SharedMenuDisplay:', {
+          {viewMode === 'builder' ? (
+            <div className="w-full h-full overflow-hidden rounded-2xl">
+              {(() => {
+                console.log('📤 Passing to SharedMenuDisplay:', {
                 isDualMode: menuConfig.isDualMode,
                 singleCategory: menuConfig.singlePanel.category,
                 leftTopCategory: menuConfig.leftPanel.category,
@@ -2343,8 +2377,40 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
               selectedMenuSection={null}
               isPreview={true}
             />
-          </div>
+            </div>
+          ) : (
+            <StoreLayoutCanvas
+              tvDevices={tvDevices}
+              isOnline={isOnline}
+              locationId={parseInt(user?.location_id?.toString() || '20')}
+            />
+          )}
         </div>
+      </div>
+
+      {/* View Mode Toggle - Bottom Status Bar - Text Only */}
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2">
+        <button
+          onClick={() => setViewMode('builder')}
+          className={`text-xs transition-colors ${
+            viewMode === 'builder'
+              ? 'text-white font-medium'
+              : 'text-neutral-500 hover:text-neutral-400'
+          }`}
+        >
+          Menu Builder
+        </button>
+        <span className="text-neutral-600">•</span>
+        <button
+          onClick={() => setViewMode('store-layout')}
+          className={`text-xs transition-colors ${
+            viewMode === 'store-layout'
+              ? 'text-white font-medium'
+              : 'text-neutral-500 hover:text-neutral-400'
+          }`}
+        >
+          Store Layout
+        </button>
       </div>
     </div>
   )

@@ -577,7 +577,8 @@ export function SharedMenuDisplay({
         {/* Magic Background */}
         {customBackground && <MagicBackground key={customBackground.length} htmlCode={customBackground} />}
         
-        {/* Header */}
+        {/* Header - Only show when category is selected */}
+        {singleCategory && (
         <div className="px-10 py-4 border-b flex-shrink-0 relative z-10" style={{ borderBottomColor: `${containerColor}40` }}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-6">
@@ -589,7 +590,7 @@ export function SharedMenuDisplay({
                   fontFamily: titleFont,
                   textShadow: `0 4px 12px rgba(0, 0, 0, 0.5), 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.6)}, 0 0 ${glowIntensity * 2}px ${hexToRgba(fontColor, 0.3)}`
                 }}>
-                  {singleCategory?.category.name || 'Select a Category'}
+                  {singleCategory.category.name}
                 </h1>
               </div>
             </div>
@@ -621,28 +622,214 @@ export function SharedMenuDisplay({
             )}
           </div>
         </div>
+        )}
 
         {/* Products - Fixed No Scroll */}
         <div className="flex-1 overflow-hidden px-8 py-4 flex items-start relative z-10">
           {!singleCategory ? (
-            <div className="flex items-center justify-center h-full w-full">
-              <div className="text-center">
-                <div className="mb-6">
-                  <img src="/logo123.png" alt="Flora" className="w-32 h-32 mx-auto opacity-30" />
+            <div className="flex items-center justify-center h-full w-full relative">
+              {/* Rich Black Background with Depth */}
+              <div className="absolute inset-0 overflow-hidden">
+                {/* Subtle Vignette */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.4) 100%)',
+                  pointerEvents: 'none'
+                }} />
+                
+                {/* Top Light Glow */}
+                <div style={{
+                  position: 'absolute',
+                  top: '-50%',
+                  left: '50%',
+                  width: '100%',
+                  height: '100%',
+                  transform: 'translateX(-50%)',
+                  background: 'radial-gradient(ellipse, rgba(255, 255, 255, 0.02) 0%, transparent 50%)',
+                  pointerEvents: 'none'
+                }} />
+                
+                {/* Subtle Noise Texture */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  opacity: 0.015,
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                  pointerEvents: 'none'
+                }} />
+              </div>
+              
+              {/* Subtle Geometric Background */}
+              <div className="absolute inset-0 overflow-hidden opacity-8">
+                {/* Fine Grid Pattern */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundSize: '50px 50px',
+                  backgroundImage: `
+                    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px)
+                  `
+                }} />
+                
+                {/* Rotating Ring 1 */}
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '800px',
+                  height: '800px',
+                  transform: 'translate(-50%, -50%) rotate(45deg)',
+                  border: '1px solid rgba(255, 255, 255, 0.04)',
+                  borderRadius: '25%',
+                  animation: 'rotate-slow 90s linear infinite'
+                }} />
+                
+                {/* Rotating Ring 2 */}
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '500px',
+                  height: '500px',
+                  transform: 'translate(-50%, -50%) rotate(-30deg)',
+                  border: '1px solid rgba(255, 255, 255, 0.03)',
+                  borderRadius: '35%',
+                  animation: 'rotate-slow-reverse 120s linear infinite'
+                }} />
+                
+                {/* Center Glow - Very Subtle */}
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '80%',
+                  height: '80%',
+                  transform: 'translate(-50%, -50%)',
+                  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.02) 0%, transparent 60%)',
+                  animation: 'pulse-glow 15s ease-in-out infinite'
+                }} />
+              </div>
+              
+              {/* Logo with Subtle Glow */}
+              <div className="text-center relative z-10">
+                <div style={{
+                  filter: 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.05)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3))'
+                }}>
+                  <img src="/logo123.png" alt="Flora" className="w-20 h-20 mx-auto opacity-12" style={{ filter: 'brightness(1.1) contrast(0.95)' }} />
                 </div>
-                <p className="text-2xl font-semibold mb-2" style={{ color: fontColor, fontFamily: titleFont }}>No Category Selected</p>
-                <p className="text-base" style={{ color: `${fontColor}60`, fontFamily: cardFont }}>Select a category from the toolbar above</p>
               </div>
             </div>
           ) : singleCategory.products.length === 0 ? (
-            <div className="flex items-center justify-center h-full w-full">
-              <div className="text-center">
-                <div className="mb-6">
-                  <img src="/logo123.png" alt="Flora" className="w-32 h-32 mx-auto opacity-30" />
-                </div>
-                <p className="text-2xl font-semibold mb-2" style={{ color: fontColor, fontFamily: titleFont }}>No Products</p>
-                <p className="text-base" style={{ color: `${fontColor}60`, fontFamily: cardFont }}>No products found in this category</p>
+            <div className="flex items-center justify-center h-full w-full relative">
+              {/* Rich Black Background with Depth */}
+              <div className="absolute inset-0 overflow-hidden">
+                {/* Subtle Vignette */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.15) 100%)',
+                  pointerEvents: 'none'
+                }} />
+                
+                {/* Top Light Glow */}
+                <div style={{
+                  position: 'absolute',
+                  top: '-50%',
+                  left: '50%',
+                  width: '100%',
+                  height: '100%',
+                  transform: 'translateX(-50%)',
+                  background: 'radial-gradient(ellipse, rgba(255, 255, 255, 0.008) 0%, transparent 50%)',
+                  pointerEvents: 'none'
+                }} />
+                
+                {/* Subtle Noise Texture */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  opacity: 0.005,
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                  pointerEvents: 'none'
+                }} />
               </div>
+              
+              {/* Subtle Geometric Background */}
+              <div className="absolute inset-0 overflow-hidden opacity-4">
+                {/* Fine Grid Pattern */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundSize: '60px 60px',
+                  backgroundImage: `
+                    linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px)
+                  `
+                }} />
+                
+                {/* Rotating Ring 1 */}
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '1000px',
+                  height: '1000px',
+                  transform: 'translate(-50%, -50%) rotate(45deg)',
+                  border: '1px solid rgba(255, 255, 255, 0.015)',
+                  borderRadius: '30%',
+                  animation: 'rotate-slow 120s linear infinite'
+                }} />
+                
+                {/* Rotating Ring 2 */}
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '600px',
+                  height: '600px',
+                  transform: 'translate(-50%, -50%) rotate(-30deg)',
+                  border: '1px solid rgba(255, 255, 255, 0.01)',
+                  borderRadius: '40%',
+                  animation: 'rotate-slow-reverse 150s linear infinite'
+                }} />
+                
+                {/* Center Glow - Very Subtle */}
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '70%',
+                  height: '70%',
+                  transform: 'translate(-50%, -50%)',
+                  background: 'radial-gradient(circle, rgba(255, 255, 255, 0.008) 0%, transparent 70%)',
+                  animation: 'pulse-glow 20s ease-in-out infinite'
+                }} />
+              </div>
+              
+              {/* Logo with Soft Shadow */}
+              <div className="text-center relative z-10">
+                <div style={{
+                  filter: 'drop-shadow(0 0 24px rgba(255, 255, 255, 0.015)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2))'
+                }}>
+                  <img src="/logo123.png" alt="Flora" className="w-20 h-20 mx-auto opacity-6" style={{ filter: 'brightness(1.01) contrast(0.8)' }} />
+                </div>
+              </div>
+              
+              <style jsx>{`
+                @keyframes rotate-slow {
+                  from { transform: translate(-50%, -50%) rotate(45deg); }
+                  to { transform: translate(-50%, -50%) rotate(405deg); }
+                }
+                @keyframes rotate-slow-reverse {
+                  from { transform: translate(-50%, -50%) rotate(-30deg); }
+                  to { transform: translate(-50%, -50%) rotate(-390deg); }
+                }
+                @keyframes pulse-glow {
+                  0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(1); }
+                  50% { opacity: 0.35; transform: translate(-50%, -50%) scale(1.03); }
+                }
+              `}</style>
             </div>
           ) : (() => {
               const actualMode = viewMode === 'auto' ? (singleCategory.products.length > 20 ? 'table' : 'card') : viewMode

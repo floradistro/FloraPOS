@@ -1091,7 +1091,8 @@ export default function HomePage() {
         
         {/* Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header Navigation */}
+          {/* Header Navigation - Hide on TV Menu view */}
+          {currentView !== 'menu' && (
           <Header 
             onSearch={handleSearch}
             searchValue={searchQuery}
@@ -1174,6 +1175,7 @@ export default function HomePage() {
             onClearAiCanvas={handleClearAiCanvas}
             aiCanvasRef={aiCanvasRef}
           />
+          )}
           
           {/* Main Content Area */}
           <div className="flex-1 flex min-h-0 relative overflow-hidden">

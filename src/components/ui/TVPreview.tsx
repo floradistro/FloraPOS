@@ -13,6 +13,7 @@ interface TVPreviewProps {
   locationId: number
   isOnline: boolean
   isPushing?: boolean
+  menuConfig?: any
 }
 
 export function TVPreview({ tvId, tvNumber, locationId, isOnline, isPushing = false }: TVPreviewProps) {
@@ -47,14 +48,8 @@ export function TVPreview({ tvId, tvNumber, locationId, isOnline, isPushing = fa
       {/* Preview Toggle */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 rounded text-xs transition-colors"
+        className="w-full flex items-center justify-center px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/90 rounded text-xs transition-colors"
       >
-        <div className="flex items-center gap-2">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          <span>{isExpanded ? 'Hide' : 'Show'} Live Preview</span>
-        </div>
         <svg 
           className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
           fill="none" 
@@ -107,25 +102,6 @@ export function TVPreview({ tvId, tvNumber, locationId, isOnline, isPushing = fa
             />
           </div>
 
-          {/* Preview Info */}
-          <div className="mt-1.5 flex items-center justify-between text-[10px] text-white/40 px-1">
-            <span>Live Preview • Updates in real-time</span>
-            <button
-              onClick={() => {
-                const iframe = document.getElementById(`tv-preview-${tvId}`) as HTMLIFrameElement
-                if (iframe) {
-                  setIsLoading(true)
-                  iframe.src = iframe.src
-                }
-              }}
-              className="text-white/40 hover:text-white/80 transition-colors"
-              title="Refresh preview"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          </div>
         </div>
       )}
     </div>
@@ -141,16 +117,43 @@ export function TVPreviewCard({
   tvNumber, 
   locationId, 
   isOnline,
-  onClick 
+  onClick
 }: TVPreviewProps & { onClick?: () => void }) {
   const [previewUrl, setPreviewUrl] = useState<string>('')
 
   useEffect(() => {
-    const url = new URL('/menu-display', window.location.origin)
-    url.searchParams.set('location_id', locationId.toString())
-    url.searchParams.set('tv_number', tvNumber.toString())
-    setPreviewUrl(url.toString())
-  }, [locationId, tvNumber])
+    // Fetch TV device to get its actual current URL from metadata
+    const fetchTVUrl = async () => {
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        
+        const { data: tvDevice } = await supabase
+          .from('tv_devices')
+          .select('metadata')
+          .eq('id', tvId)
+          .single()
+        
+        if (tvDevice?.metadata && typeof tvDevice.metadata === 'object' && 'current_url' in tvDevice.metadata) {
+          // Use the TV's actual current URL
+          const currentUrl = (tvDevice.metadata as { current_url?: string }).current_url
+          if (currentUrl) {
+            setPreviewUrl(currentUrl)
+            return
+          }
+        }
+      } catch (error) {
+        console.log('Could not fetch TV metadata, using fallback URL')
+      }
+      
+      // Fallback: basic URL with just location and TV number
+      const url = new URL('/menu-display', window.location.origin)
+      url.searchParams.set('location_id', locationId.toString())
+      url.searchParams.set('tv_number', tvNumber.toString())
+      setPreviewUrl(url.toString())
+    }
+    
+    fetchTVUrl()
+  }, [tvId, locationId, tvNumber])
 
   if (!isOnline) return null
 
@@ -160,22 +163,25 @@ export function TVPreviewCard({
       onClick={onClick}
     >
       <div className="aspect-video bg-neutral-900 rounded-lg overflow-hidden border border-white/10 group-hover:border-white/30 transition-colors">
-        <iframe
-          src={previewUrl}
-          className="w-full h-full"
-          title={`TV ${tvNumber} Thumbnail`}
-          style={{ 
-            border: 'none',
-            pointerEvents: 'none',
-            transform: 'scale(0.5)',
-            transformOrigin: 'top left',
-            width: '200%',
-            height: '200%'
-          }}
-        />
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2">
-        <span className="text-[10px] text-white/90 font-medium">Click to expand</span>
+        {previewUrl ? (
+          <iframe
+            src={previewUrl}
+            className="w-full h-full"
+            title={`TV ${tvNumber} Thumbnail`}
+            style={{ 
+              border: 'none',
+              pointerEvents: 'none',
+              transform: 'scale(0.18)',
+              transformOrigin: 'top left',
+              width: '556%',
+              height: '556%'
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-white/50 text-xs">
+            Loading...
+          </div>
+        )}
       </div>
     </div>
   )
