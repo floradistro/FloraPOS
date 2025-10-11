@@ -117,8 +117,9 @@ const CustomerPoints = ({ customerId }: { customerId: number }) => {
     return <span className="text-xs text-neutral-500">0 Points</span>;
   }
   
-  const [singular, plural] = pointsBalance.points_label.split(':') || ['Point', 'Points'];
-  const pointsUnit = pointsBalance.balance === 1 ? singular : plural;
+  const pointsLabel = pointsBalance.points_label || 'Point:Points';
+  const [singular, plural] = pointsLabel.split(':');
+  const pointsUnit = pointsBalance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
   
   return (
     <span className="text-white text-xs font-medium bg-purple-600/40 px-2 py-0.5 rounded ml-2 border border-purple-500/30 transition-all duration-200">

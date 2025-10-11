@@ -9,12 +9,28 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const credentials = getApiCredentials(apiEnv);
     const CONSUMER_KEY = credentials.consumerKey;
     const CONSUMER_SECRET = credentials.consumerSecret;
-    console.log(`🔄 [${apiEnv.toUpperCase()}] Updating order...`);
+    
+    // Validate credentials
+    if (!CONSUMER_KEY || !CONSUMER_SECRET) {
+      console.error('❌ Missing WooCommerce credentials');
+      return NextResponse.json(
+        { error: 'Server configuration error: Missing API credentials' },
+        { status: 500 }
+      );
+    }
     
     const body = await request.json();
     const orderId = params.id;
     
-    console.log(`🔄 [Orders API] Updating order ${orderId}:`, body);
+    // Validate order ID
+    if (!orderId || isNaN(parseInt(orderId))) {
+      return NextResponse.json(
+        { error: 'Invalid order ID' },
+        { status: 400 }
+      );
+    }
+    
+    console.log(`🔄 [${apiEnv.toUpperCase()}] Updating order ${orderId}...`);
     
     // Update order via WooCommerce API
     const updateUrl = `${woocommerceApiUrl}/wp-json/wc/v3/orders/${orderId}`;
@@ -29,18 +45,39 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(15000) // 15 second timeout
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('WooCommerce API update error:', response.status, response.statusText, errorText);
+      console.error('❌ WooCommerce API update error:', response.status, response.statusText, errorText);
+      
+      // Parse error message if possible
+      let errorMessage = `Failed to update order: ${response.status}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch (e) {
+        errorMessage = errorText.substring(0, 200) || errorMessage;
+      }
+      
       return NextResponse.json(
-        { error: `Failed to update order: ${response.status}`, details: errorText },
+        { error: errorMessage, details: errorText.substring(0, 500) },
         { status: response.status }
       );
     }
 
     const order = await response.json();
+    
+    // Validate response
+    if (!order || !order.id) {
+      console.error('❌ Invalid order update response');
+      return NextResponse.json(
+        { error: 'Order update failed - invalid response' },
+        { status: 500 }
+      );
+    }
+    
     console.log(`✅ [Orders API] Order ${orderId} updated to status: ${order.status}`);
     
     return NextResponse.json({
@@ -48,11 +85,20 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       data: order
     });
   } catch (error) {
-    console.error('Failed to update order:', error);
+    console.error('❌ Exception updating order:', error);
+    
+    let errorMessage = 'Failed to update order';
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        errorMessage = 'Order update timed out. Please try again.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
     
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to update order'
+      error: errorMessage
     }, { status: 500 });
   }
 }

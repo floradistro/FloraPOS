@@ -153,61 +153,6 @@ export default function HomePage() {
   }, [currentView]);
 
 
-  // Function to calculate and update quantities for sold products
-  const updateSoldProductQuantities = useCallback((soldItems: Array<{ productId: number; variantId?: number; soldQuantity: number }>) => {
-    console.log('🎯 Calculating quantity updates for sold items:', soldItems);
-    
-    // Get current ProductGrid state and calculate new quantities
-    if (productGridRef.current?.updateProductQuantities) {
-      // For now, we'll use the inventory deduction service result
-      // Since the backend has already deducted inventory, we need to get fresh data
-      // Let's use a simple approach: re-fetch just the sold products
-      
-      const updates = soldItems.map(item => ({
-        productId: item.productId,
-        variantId: item.variantId,
-        newQuantity: 0 // Will be updated when we get fresh data
-      }));
-      
-      // Trigger immediate state update with placeholder, then fetch real data
-      setTimeout(async () => {
-        try {
-          // Fetch the entire product list but only update sold products
-          const response = await apiFetch(`/api/proxy/flora-im/products?per_page=1000&_t=${Date.now()}`, {
-            headers: { 'Cache-Control': 'no-cache' }
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success && result.data) {
-              const realUpdates = soldItems.map(soldItem => {
-                const freshProduct = result.data.find((p: any) => p.id === soldItem.productId);
-                if (freshProduct) {
-                  const locationInventory = freshProduct.inventory?.find((inv: any) => 
-                    parseInt(inv.location_id) === parseInt(user?.location_id?.toString() || '0')
-                  );
-                  
-                  return {
-                    productId: soldItem.productId,
-                    variantId: soldItem.variantId,
-                    newQuantity: parseFloat(locationInventory?.stock || locationInventory?.quantity || 0)
-                  };
-                }
-                return null;
-              }).filter(update => update !== null) as Array<{ productId: number; variantId?: number; newQuantity: number }>;
-              
-              if (realUpdates.length > 0) {
-                productGridRef.current?.updateProductQuantities(realUpdates);
-                console.log('🎯 Updated quantities with fresh data:', realUpdates);
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching fresh quantities:', error);
-        }
-      }, 1000); // 1 second delay for backend processing
-    }
-  }, [user?.location_id]);
 
   const handleOpenCustomerSelector = useCallback(() => {
     unifiedSearchRef.current?.openCustomerMode();
@@ -926,61 +871,26 @@ export default function HomePage() {
   };
 
   const handleOrderComplete = async () => {
-    // Calculate quantity changes before clearing cart
-    const quantityUpdates = cartItems
-      .filter(item => !item.is_adjustment && item.quantity > 0)
-      .map(item => {
-        // Calculate new quantity by subtracting sold amount from current
-        // We'll get the current quantity from the ProductGrid state
-        return {
-          productId: parseInt(item.id.toString()),
-          variantId: item.variation_id,
-          soldQuantity: item.quantity
-        };
-      });
-
-    // Clear cart and close checkout immediately
+    console.log('✅ Order completed - updating UI...');
+    
+    // Clear cart and close checkout immediately for better UX
     setCartItems([]);
     setShowCheckout(false);
     setIsCheckoutLoading(false);
-    
-    // Update only the quantities of sold products
-    if (productGridRef.current?.updateProductQuantities && quantityUpdates.length > 0) {
-      // Calculate the new quantities based on current state
-      const updates = quantityUpdates.map(item => {
-        // For now, we'll fetch the current quantity from the grid and subtract
-        // This is a simplified approach - the exact current stock will be calculated
-        return {
-          productId: item.productId,
-          variantId: item.variantId,
-          newQuantity: 0 // Will be calculated from current state
-        };
-      });
-      
-      // Delay slightly to allow backend processing, then update quantities
-      setTimeout(() => {
-        try {
-          // Get fresh quantities for sold products only
-          updateSoldProductQuantities(quantityUpdates);
-        } catch (error) {
-          console.error('❌ Failed to update product quantities:', error);
-        }
-      }, 500);
-    }
-    
-    // Invalidate customer-related queries to refresh order history and points
-    console.log('🔄 Invalidating customer queries after order completion');
-    queryClient.invalidateQueries({ queryKey: ['customer-orders'] });
-    queryClient.invalidateQueries({ queryKey: ['customers'] });
-    queryClient.invalidateQueries({ queryKey: ['orders'] });
-    queryClient.invalidateQueries({ queryKey: ['products'] });
-    queryClient.invalidateQueries({ queryKey: ['inventory'] });
-    queryClient.invalidateQueries({ queryKey: ['user-balance'] });
-    queryClient.invalidateQueries({ queryKey: ['user-history'] });
-    queryClient.invalidateQueries({ queryKey: ['rewards'] });
-    
-    // Clear selected customer for next order
     setSelectedCustomer(null);
+    
+    // Invalidate ALL queries to force fresh data
+    console.log('🔄 Invalidating all queries to fetch fresh data...');
+    await queryClient.invalidateQueries({ queryKey: ['customer-orders'] });
+    await queryClient.invalidateQueries({ queryKey: ['customers'] });
+    await queryClient.invalidateQueries({ queryKey: ['orders'] });
+    await queryClient.invalidateQueries({ queryKey: ['products'] });
+    await queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    await queryClient.invalidateQueries({ queryKey: ['user-balance'] });
+    await queryClient.invalidateQueries({ queryKey: ['user-history'] });
+    await queryClient.invalidateQueries({ queryKey: ['rewards'] });
+    
+    console.log('✅ UI reset complete - fresh data will load automatically');
   };
 
   const handleCloseCheckout = () => {

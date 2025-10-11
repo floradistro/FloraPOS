@@ -9,9 +9,9 @@ export type ApiEnvironment = 'production' | 'docker';
 const PRODUCTION_URL = process.env.NEXT_PUBLIC_PRODUCTION_API_URL || 'https://api.floradistro.com';
 const DOCKER_URL = process.env.NEXT_PUBLIC_DOCKER_API_URL || 'http://localhost:8080';
 
-// API Credentials
-const CONSUMER_KEY = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY || '';
-const CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET || '';
+// API Credentials - Use server-side vars (WC_CONSUMER_KEY/SECRET)
+const CONSUMER_KEY = process.env.WC_CONSUMER_KEY || process.env.NEXT_PUBLIC_WC_CONSUMER_KEY || '';
+const CONSUMER_SECRET = process.env.WC_CONSUMER_SECRET || process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET || '';
 
 // Log warnings if credentials missing
 if (!CONSUMER_KEY || !CONSUMER_SECRET) {

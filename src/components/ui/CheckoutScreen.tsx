@@ -34,8 +34,9 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
   }
   
   // Extract singular/plural form from points_label
-  const [singular, plural] = pointsBalance.points_label.split(':') || ['Point', 'Points'];
-  const pointsUnit = pointsBalance.balance === 1 ? singular : plural;
+  const pointsLabel = pointsBalance.points_label || 'Point:Points';
+  const [singular, plural] = pointsLabel.split(':');
+  const pointsUnit = pointsBalance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
   
   return (
     <span className="text-xs text-white font-medium">
@@ -111,6 +112,16 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
 
   const processOrder = async () => {
+    // Validate cart has items
+    if (!items || items.length === 0) {
+      setAlertModal({
+        isOpen: true,
+        title: 'Empty Cart',
+        message: 'Cannot process an empty order.'
+      });
+      return;
+    }
+
     // Handle split payment validation with floating point tolerance
     if (splitPayments.length > 0) {
       const totalPaid = Math.round(splitPayments.reduce((sum, p) => sum + p.amount, 0) * 100) / 100;
@@ -133,6 +144,8 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
     }
 
     setIsProcessing(true);
+    let orderCreated = false;
+    let orderId: number | null = null;
 
     try {
       // Generate order number
@@ -386,105 +399,154 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
 
       
-      // Create order via API
-      const response = await apiFetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData),
-      });
+      // STEP 1: Create order via API with timeout
+      console.log('🔄 STEP 1: Creating order...');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      let response;
+      try {
+        response = await apiFetch('/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orderData),
+          signal: controller.signal
+        });
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Order creation timed out. Please try again.');
+        }
+        throw fetchError;
+      }
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        let errorMessage = `Failed to process order (${response.status})`;
+        let errorMessage = `Failed to create order (${response.status})`;
         try {
           const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
+          errorMessage = errorData.error || errorData.details || errorMessage;
         } catch (jsonError) {
           const errorText = await response.text().catch(() => 'Unknown error');
-          errorMessage = `Server error: ${errorText.substring(0, 100)}`;
+          errorMessage = `Server error: ${errorText.substring(0, 200)}`;
         }
         throw new Error(errorMessage);
       }
 
       const result = await response.json();
+      
+      if (!result.success || !result.data?.id) {
+        throw new Error('Order creation failed - no order ID returned');
+      }
 
+      orderId = result.data.id;
+      orderCreated = true;
+      console.log(`✅ STEP 1 Complete: Order #${orderId} created`);
 
+      // STEP 2: Deduct inventory BEFORE marking order complete
+      console.log('🔄 STEP 2: Deducting inventory...');
+      if (!orderId) {
+        throw new Error('Cannot deduct inventory - order ID is missing');
+      }
+      
+      let inventoryResult;
+      try {
+        inventoryResult = await InventoryDeductionService.deductInventoryForOrder(
+          items,
+          locationId,
+          orderId
+        );
+        
+        if (!inventoryResult.success) {
+          throw new Error(inventoryResult.error || 'Inventory deduction failed');
+        }
+        console.log(`✅ STEP 2 Complete: Inventory deducted successfully`);
+      } catch (inventoryError) {
+        console.error('❌ Inventory deduction failed:', inventoryError);
+        // Critical failure - don't complete the order
+        throw new Error(`Inventory deduction failed: ${inventoryError instanceof Error ? inventoryError.message : 'Unknown error'}. Order created but not completed.`);
+      }
 
-      // Complete the order and award points using native WooCommerce Points & Rewards logic
-      if (result.data?.id) {
+      // STEP 3: Mark order as completed (only if inventory deduction succeeded)
+      console.log('🔄 STEP 3: Marking order as completed...');
+      try {
+        const completeResponse = await apiFetch(`/api/orders/${orderId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: 'completed',
+            date_paid: new Date().toISOString(),
+            date_completed: new Date().toISOString()
+          }),
+        });
+        
+        if (!completeResponse.ok) {
+          throw new Error(`Failed to complete order: ${completeResponse.status}`);
+        }
+        console.log(`✅ STEP 3 Complete: Order marked as completed`);
+      } catch (completeError) {
+        console.error('❌ Failed to mark order as completed:', completeError);
+        throw new Error('Order created and inventory deducted, but failed to mark as completed. Please check order status manually.');
+      }
+      
+      // STEP 4: Award points (non-critical - can fail without blocking)
+      console.log('🔄 STEP 4: Awarding points...');
+      if (selectedCustomer && selectedCustomer.id && selectedCustomer.id > 0) {
         try {
-          // First, mark the order as completed and paid (POS transactions are immediate)
-          const completeResponse = await apiFetch(`/api/orders/${result.data.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              status: 'completed',
-              date_paid: new Date().toISOString(),
-              date_completed: new Date().toISOString()
-            }),
-          });
-          
-          // Award points using native WooCommerce logic
           const pointsResponse = await apiFetch('/api/orders/award-points-native', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              orderId: result.data.id,
-              customerId: selectedCustomer?.id || null
+              orderId: orderId,
+              customerId: selectedCustomer.id
             }),
           });
           
-          if (!pointsResponse.ok) {
-            console.error('❌ Points award failed:', pointsResponse.status);
+          if (pointsResponse.ok) {
+            const pointsData = await pointsResponse.json();
+            console.log(`✅ STEP 4 Complete: ${pointsData.pointsAwarded || 0} points awarded`);
+          } else {
+            console.warn('⚠️ Points award failed but order is complete');
           }
         } catch (pointsError) {
-          console.error('❌ Error in points/completion process:', pointsError);
+          console.warn('⚠️ Error awarding points (non-critical):', pointsError);
         }
-      }
-      
-      // Deduct inventory using Magic2 with conversion ratios
-      let inventoryResult;
-      try {
-        inventoryResult = await InventoryDeductionService.deductInventoryForOrder(
-          items,
-          locationId,
-          result.id || orderNum
-        );
-      } catch (inventoryError) {
-        console.error("Inventory deduction service error:", inventoryError);
-        inventoryResult = { success: false, error: inventoryError instanceof Error ? inventoryError.message : 'Unknown inventory error' };
+      } else {
+        console.log('⚠️ STEP 4 Skipped: Guest customer - no points to award');
       }
 
-      if (!inventoryResult.success) {
-        console.error('❌ Inventory deduction failed:', inventoryResult.error);
-        setAlertModal({
-          isOpen: true,
-          title: 'Inventory Warning',
-          message: `Order completed but inventory deduction failed: ${inventoryResult.error}`
-        });
-      }
-
-      // Complete the order and close checkout
+      // STEP 5: Complete the UI flow
+      console.log('✅ Order processing complete!');
       try {
         await onOrderComplete();
       } catch (error) {
-        console.error('Error during order completion:', error);
+        console.error('Error during order completion callback:', error);
       }
       
       onClose();
 
     } catch (error) {
-      console.error('Order processing failed:', error);
+      console.error('❌ Order processing failed:', error);
+      
+      // Provide context-specific error message
+      let errorTitle = 'Order Failed';
+      let errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      if (orderCreated && orderId) {
+        errorTitle = 'Partial Order Failure';
+        errorMessage = `Order #${orderId} was created but encountered an error: ${errorMessage}. Please check the order status in WooCommerce.`;
+      }
       
       setAlertModal({
         isOpen: true,
-        title: 'Order Failed',
-        message: `Failed to process order: ${error instanceof Error ? error.message : 'Unknown error'}`
+        title: errorTitle,
+        message: errorMessage
       });
     } finally {
       setIsProcessing(false);
