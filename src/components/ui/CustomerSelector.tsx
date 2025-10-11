@@ -26,7 +26,7 @@ const CustomerPoints = ({ customerId }: { customerId: number }) => {
   }
   
   // Extract singular/plural form from points_label
-  const pointsLabel = pointsBalance.points_label || 'Point:Points';
+  const pointsLabel = (pointsBalance as any).points_label || 'Point:Points';
   const [singular, plural] = pointsLabel.split(':');
   const pointsUnit = pointsBalance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
   

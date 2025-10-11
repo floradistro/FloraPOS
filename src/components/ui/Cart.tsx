@@ -39,7 +39,7 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
     return <span className="text-xs text-neutral-500">0 Points</span>;
   }
   
-  const pointsLabel = pointsBalance.points_label || 'Point:Points';
+  const pointsLabel = (pointsBalance as any).points_label || 'Point:Points';
   const [singular, plural] = pointsLabel.split(':');
   const pointsUnit = pointsBalance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
   
