@@ -32,7 +32,7 @@ export const SimpleRewardsView: React.FC<SimpleRewardsViewProps> = ({
             <InlinePointsAdjustment
               userId={userId}
               userName={userName}
-              currentBalance={balance?.balance}
+              currentBalance={(balance as any)?.balance}
             />
           </div>
         )}

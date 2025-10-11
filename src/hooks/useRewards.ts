@@ -27,7 +27,7 @@ export const useUserPointsBalance = (userId: number) => {
     queryFn: () => rewardsService.getUserBalance(userId),
     enabled: !!userId && userId > 0,
     staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
-    cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (renamed from cacheTime in v5)
     refetchInterval: false, // Don't auto-refetch, rely on invalidation
     retry: 1, // Only retry once for faster error handling
     refetchOnMount: false, // Don't refetch on every mount

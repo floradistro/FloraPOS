@@ -39,9 +39,10 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
     return <span className="text-xs text-neutral-500">0 Points</span>;
   }
   
-  const pointsLabel = (pointsBalance as any).points_label || 'Point:Points';
+  const balance = pointsBalance as any;
+  const pointsLabel = balance.points_label || 'Point:Points';
   const [singular, plural] = pointsLabel.split(':');
-  const pointsUnit = pointsBalance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
+  const pointsUnit = balance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
   
   return (
     <span 
@@ -51,7 +52,7 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
         animation: 'gradient 4s ease-in-out infinite, pulse 2s ease-in-out infinite'
       }}
     >
-      {pointsBalance.balance.toLocaleString()} {pointsUnit}
+      {balance.balance.toLocaleString()} {pointsUnit}
     </span>
   );
 };
