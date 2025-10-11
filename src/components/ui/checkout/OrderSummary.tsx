@@ -23,8 +23,9 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
     return <span className="text-xs text-neutral-500">0 Points</span>;
   }
 
-  const [singular, plural] = pointsBalance.points_label.split(':') || ['Point', 'Points'];
-  const pointsUnit = pointsBalance.balance === 1 ? singular : plural;
+  const pointsLabel = pointsBalance.points_label || 'Point:Points';
+  const [singular, plural] = pointsLabel.split(':');
+  const pointsUnit = pointsBalance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
   
   return (
     <span className="text-white text-xs font-medium bg-gradient-to-r from-purple-600 via-fuchsia-500 via-pink-500 via-rose-400 via-pink-400 via-fuchsia-400 to-purple-600 px-2 py-0.5 rounded animate-pulse bg-[length:300%_100%] animate-[gradient_4s_ease-in-out_infinite]" style={{ boxShadow: '0 0 8px rgba(217, 70, 239, 0.6), 0 0 16px rgba(217, 70, 239, 0.4)' }}>

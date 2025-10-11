@@ -210,10 +210,37 @@ export async function POST(request: NextRequest) {
     const credentials = getApiCredentials(apiEnv);
     const CONSUMER_KEY = credentials.consumerKey;
     const CONSUMER_SECRET = credentials.consumerSecret;
+    
+    // Validate credentials
+    if (!CONSUMER_KEY || !CONSUMER_SECRET) {
+      console.error('❌ Missing WooCommerce credentials');
+      return NextResponse.json(
+        { error: 'Server configuration error: Missing API credentials' },
+        { status: 500 }
+      );
+    }
+    
     console.log(`🔄 [${apiEnv.toUpperCase()}] Creating new order at ${WOOCOMMERCE_API_URL}...`);
     
     const body = await request.json();
-    console.log('🔄 [Orders API] Creating new order:', body);
+    
+    // Validate order data
+    if (!body.line_items || body.line_items.length === 0) {
+      return NextResponse.json(
+        { error: 'Order must contain at least one item' },
+        { status: 400 }
+      );
+    }
+    
+    // Validate payment method
+    if (!body.payment_method) {
+      return NextResponse.json(
+        { error: 'Payment method is required' },
+        { status: 400 }
+      );
+    }
+    
+    console.log(`🔄 [Orders API] Creating order with ${body.line_items.length} items`);
     
     // Create order via WooCommerce API
     const url = `${WOOCOMMERCE_API_URL}/wp-json/wc/v3/orders`;
@@ -228,19 +255,41 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(25000) // 25 second timeout
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('WooCommerce API error:', response.status, response.statusText, errorText);
+      console.error('❌ WooCommerce API error:', response.status, response.statusText, errorText);
+      
+      // Parse error message if possible
+      let errorMessage = `Failed to create order: ${response.status}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch (e) {
+        // Use raw error text if not JSON
+        errorMessage = errorText.substring(0, 200) || errorMessage;
+      }
+      
       return NextResponse.json(
-        { error: `Failed to create order: ${response.status}`, details: errorText },
+        { error: errorMessage, details: errorText.substring(0, 500) },
         { status: response.status }
       );
     }
 
     const order = await response.json();
-    console.log('✅ [Orders API] Order created successfully:', order.id);
+    
+    // Validate response
+    if (!order || !order.id) {
+      console.error('❌ Invalid order response - no ID returned');
+      return NextResponse.json(
+        { error: 'Order creation failed - no order ID in response' },
+        { status: 500 }
+      );
+    }
+    
+    console.log(`✅ [Orders API] Order #${order.id} created successfully`);
     
     return NextResponse.json({
       success: true,
@@ -249,11 +298,20 @@ export async function POST(request: NextRequest) {
       order_number: order.number
     });
   } catch (error) {
-    console.error('Failed to create order:', error);
+    console.error('❌ Exception creating order:', error);
+    
+    let errorMessage = 'Failed to create order';
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        errorMessage = 'Order creation timed out. Please try again.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
     
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create order'
+      error: errorMessage
     }, { status: 500 });
   }
 }

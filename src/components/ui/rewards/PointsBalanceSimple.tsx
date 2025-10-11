@@ -36,8 +36,9 @@ export const PointsBalanceSimple: React.FC<PointsBalanceSimpleProps> = ({ userId
   }
 
   // Extract just the number and unit from the points label
-  const [singular, plural] = balance.points_label.split(':') || ['Point', 'Points'];
-  const pointsUnit = balance.balance === 1 ? singular : plural;
+  const pointsLabel = balance.points_label || 'Point:Points';
+  const [singular, plural] = pointsLabel.split(':');
+  const pointsUnit = balance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
 
   return (
     <div className="space-y-2">

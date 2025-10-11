@@ -13,23 +13,42 @@ export async function POST(request: NextRequest) {
     const CONSUMER_KEY = credentials.consumerKey;
     const CONSUMER_SECRET = credentials.consumerSecret;
     const WOOCOMMERCE_API_URL = getApiBaseUrl(apiEnv);
+    
+    // Validate credentials
+    if (!CONSUMER_KEY || !CONSUMER_SECRET) {
+      console.error('❌ Missing WooCommerce credentials');
+      return NextResponse.json(
+        { error: 'Server configuration error: Missing API credentials' },
+        { status: 500 }
+      );
+    }
+    
     console.log(`🔄 [${apiEnv.toUpperCase()}] Awarding points at ${WOOCOMMERCE_API_URL}...`);
     
     const { orderId, customerId } = await request.json();
     
-    if (!orderId) {
-      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+    // Validate inputs
+    if (!orderId || isNaN(parseInt(orderId.toString()))) {
+      return NextResponse.json({ error: 'Valid order ID is required' }, { status: 400 });
     }
     
-    console.log(`🎯 [Native Points] Processing order ${orderId} for customer ${customerId}...`);
+    if (customerId && isNaN(parseInt(customerId.toString()))) {
+      return NextResponse.json({ error: 'Invalid customer ID' }, { status: 400 });
+    }
+    
+    console.log(`🎯 [Native Points] Processing order ${orderId} for customer ${customerId || 'guest'}...`);
 
-    // 1. Get the order
+    // 1. Get the order with timeout
     const orderResponse = await fetch(
-      `${WOOCOMMERCE_API_URL}/wp-json/wc/v3/orders/${orderId}?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`
+      `${WOOCOMMERCE_API_URL}/wp-json/wc/v3/orders/${orderId}?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+      {
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      }
     );
     
     if (!orderResponse.ok) {
-      throw new Error(`Failed to fetch order: ${orderResponse.status}`);
+      const errorText = await orderResponse.text().catch(() => '');
+      throw new Error(`Failed to fetch order: ${orderResponse.status} - ${errorText.substring(0, 100)}`);
     }
     
     const order = await orderResponse.json();
@@ -116,8 +135,7 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    // 5. Award points using WC Points & Rewards Manager logic
-    // Use direct API call instead of going through proxy for server-side calls
+    // 5. Award points using WC Points & Rewards Manager logic with timeout
     const adjustResponse = await fetch(
       `${WOOCOMMERCE_API_URL}/wp-json/wc-points-rewards/v1/user/${order.customer_id}/adjust?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
       {
@@ -128,12 +146,14 @@ export async function POST(request: NextRequest) {
           description: `Points earned for order #${orderId}`,
           event_type: 'order-placed',
           order_id: orderId
-        })
+        }),
+        signal: AbortSignal.timeout(10000) // 10 second timeout
       }
     );
     
     if (!adjustResponse.ok) {
-      throw new Error(`Failed to award points: ${adjustResponse.status}`);
+      const errorText = await adjustResponse.text().catch(() => '');
+      throw new Error(`Failed to award points: ${adjustResponse.status} - ${errorText.substring(0, 100)}`);
     }
     
     // 6. Update order meta (like the plugin does)
