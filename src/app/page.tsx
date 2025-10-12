@@ -60,6 +60,9 @@ export default function HomePage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentView, setCurrentView] = useState<ViewType>('products');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showProductImages, setShowProductImages] = useState(true);
+  const [productSortOrder, setProductSortOrder] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' | 'default'>('default');
   const [showCheckout, setShowCheckout] = useState(false);
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const [isAuditMode, setIsAuditMode] = useState(false);
@@ -78,7 +81,7 @@ export default function HomePage() {
       auditMode?: boolean;
       restockMode?: boolean;
       blueprintField?: string | null;
-      blueprintFieldValue?: string | null;
+      blueprintFieldValues?: string[];
     }
   }>({});
   
@@ -89,12 +92,13 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  // Blueprint field search state
+  // Blueprint field search state - supports multiple values
   const [selectedBlueprintField, setSelectedBlueprintField] = useState<string | null>(null);
-  const [blueprintFieldValue, setBlueprintFieldValue] = useState<string | null>(null);
+  const [blueprintFieldValues, setBlueprintFieldValues] = useState<string[]>([]);
   
-  // Products from ProductGrid for blueprint field extraction
-  const [gridProducts, setGridProducts] = useState<Product[]>([]);
+  // Products from ProductGrid - filtered and unfiltered
+  const [gridProducts, setGridProducts] = useState<Product[]>([]); // Filtered products
+  const [unfilteredGridProducts, setUnfilteredGridProducts] = useState<Product[]>([]); // Unfiltered - for blueprint extraction
   // All products (including zero stock) for blueprint-fields search
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   
@@ -110,14 +114,15 @@ export default function HomePage() {
         auditMode: isAuditMode,
         restockMode: isRestockMode,
         blueprintField: selectedBlueprintField,
-        blueprintFieldValue: blueprintFieldValue,
+        blueprintFieldValues: blueprintFieldValues,
       }
     }));
-  }, [currentView, selectedCustomer, selectedProduct, selectedCategory, searchQuery, isAuditMode, isRestockMode, selectedBlueprintField, blueprintFieldValue]);
+  }, [currentView, selectedCustomer, selectedProduct, selectedCategory, searchQuery, isAuditMode, isRestockMode, selectedBlueprintField, blueprintFieldValues]);
 
   // Restore selections for a specific view
   const restoreViewSelections = useCallback((view: ViewType) => {
     const viewData = viewSelections[view];
+    console.log('📂 Restoring view selections for', view, viewData);
     if (viewData) {
       setSelectedCustomer(viewData.customer || null);
       setSelectedProduct(viewData.product || null);
@@ -126,9 +131,15 @@ export default function HomePage() {
       setIsAuditMode(viewData.auditMode || false);
       setIsRestockMode(viewData.restockMode || false);
       setSelectedBlueprintField(viewData.blueprintField || null);
-      setBlueprintFieldValue(viewData.blueprintFieldValue || null);
+      setBlueprintFieldValues(viewData.blueprintFieldValues || []);
+      console.log('✅ Restored:', {
+        category: viewData.category,
+        blueprintField: viewData.blueprintField,
+        blueprintFieldValues: viewData.blueprintFieldValues
+      });
     } else {
       // Default values for new view
+      console.log('⚠️ No saved data for', view, '- using defaults');
       setSelectedCustomer(null);
       setSelectedProduct(null);
       setSelectedCategory(null);
@@ -136,7 +147,7 @@ export default function HomePage() {
       setIsAuditMode(view === 'adjustments'); // Default to audit mode for adjustments
       setIsRestockMode(false);
       setSelectedBlueprintField(null);
-      setBlueprintFieldValue(null);
+      setBlueprintFieldValues([]);
     }
   }, [viewSelections]);
 
@@ -366,22 +377,26 @@ export default function HomePage() {
     }));
   }, [currentView]);
 
-  const handleBlueprintFieldChange = useCallback((fieldName: string | null, fieldValue: string | null) => {
+  const handleBlueprintFieldChange = useCallback((fieldName: string | null, fieldValues: string[] | null) => {
     setSelectedBlueprintField(fieldName);
-    setBlueprintFieldValue(fieldValue);
+    setBlueprintFieldValues(fieldValues || []);
     // Update the current view's selections
     setViewSelections(prev => ({
       ...prev,
       [currentView]: {
         ...prev[currentView],
         blueprintField: fieldName,
-        blueprintFieldValue: fieldValue
+        blueprintFieldValues: fieldValues || []
       }
     }));
   }, [currentView]);
 
   const handleProductsChange = useCallback((products: Product[]) => {
-    setGridProducts(products);
+    setGridProducts(products); // Filtered products for display
+  }, []);
+  
+  const handleUnfilteredProductsChange = useCallback((products: Product[]) => {
+    setUnfilteredGridProducts(products); // Unfiltered products for blueprint field extraction
   }, []);
 
   // Fetch all products for blueprint-fields search (including zero stock)
@@ -762,14 +777,22 @@ export default function HomePage() {
 
 
   const handleViewChange = (view: ViewType) => {
+    console.log(`🔄 View change: ${currentView} → ${view}`);
+    
     // Save current view's selections before switching
     saveCurrentViewSelections();
+    console.log('💾 Saved selections for', currentView, {
+      category: selectedCategory,
+      blueprintField: selectedBlueprintField,
+      blueprintFieldValues: blueprintFieldValues
+    });
     
     // Switch to new view
     setCurrentView(view);
     
     // Restore selections for the new view
     restoreViewSelections(view);
+    console.log('📂 Restored selections for', view);
     
     // Clear cart when entering adjustments mode
     if (view === 'adjustments') {
@@ -916,7 +939,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex flex-col h-screen relative overflow-hidden bg-[#1a1a1a]">
+    <div className="flex flex-col h-screen relative overflow-hidden bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
       {/* Storybook-inspired Background */}
       <div className="absolute inset-0">
         {/* Parchment-like base gradient */}
@@ -1000,10 +1023,12 @@ export default function HomePage() {
         />
         
         {/* Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header Navigation - Hide on TV Menu view */}
-          {currentView !== 'menu' && (
-          <Header 
+        <div className="flex-1 flex overflow-hidden">
+          {/* Main Content Column */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Header Navigation - Hide on TV Menu view */}
+            {currentView !== 'menu' && (
+            <Header 
             onSearch={handleSearch}
             searchValue={searchQuery}
             onRefresh={handleRefresh}
@@ -1016,13 +1041,14 @@ export default function HomePage() {
             categoriesLoading={categoriesLoading}
             selectedBlueprintField={selectedBlueprintField}
             onBlueprintFieldChange={handleBlueprintFieldChange}
-            blueprintFieldValue={blueprintFieldValue}
+            blueprintFieldValues={blueprintFieldValues}
             selectedCustomer={selectedCustomer}
             onCustomerSelect={handleCustomerSelect}
             selectedProduct={selectedProduct}
             onProductSelect={handleProductSelect}
             products={(() => {
-              const productList = currentView === 'products' ? gridProducts :
+              // Always pass UNFILTERED products for blueprint field extraction
+              const productList = currentView === 'products' ? unfilteredGridProducts :
                 currentView === 'adjustments' ? adjustmentProducts : 
                 currentView === 'blueprint-fields' ? allProducts :
                 [];
@@ -1084,11 +1110,20 @@ export default function HomePage() {
             onAiCanvasBrushSizeChange={setAiCanvasBrushSize}
             onClearAiCanvas={handleClearAiCanvas}
             aiCanvasRef={aiCanvasRef}
-          />
-          )}
-          
-          {/* Main Content Area */}
-          <div className="flex-1 flex min-h-0 relative overflow-hidden">
+            // Product Grid View Mode
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            // Product Images Toggle
+            showProductImages={showProductImages}
+            onShowProductImagesChange={setShowProductImages}
+            // Product Sorting
+            productSortOrder={productSortOrder}
+            onProductSortOrderChange={setProductSortOrder}
+            />
+            )}
+            
+            {/* Main Content Area */}
+            <div className="flex-1 flex min-h-0 relative overflow-hidden">
         {/* Full Page Loading Overlay - Show when initially loading products only */}
         {(currentView === 'products' && isProductsLoading && !isRefreshing) && (
           <LoadingSpinner 
@@ -1098,9 +1133,7 @@ export default function HomePage() {
         )}
         
             {/* Main Content */}
-            <main className={`flex-1 relative transition-all duration-500 ease-in-out ${
-              currentView !== 'products' && currentView !== 'ai-view' ? 'mr-[-320px]' : 'mr-0'
-            }`}>
+            <main className="flex-1 relative transition-all duration-500 ease-in-out">
           {/* Loading Overlays - Only show refresh overlays for views without their own loading */}
           {isRefreshing && currentView !== 'blueprint-fields' && (
             <LoadingSpinner 
@@ -1116,9 +1149,13 @@ export default function HomePage() {
                 searchQuery={searchQuery}
                 categoryFilter={selectedCategory || undefined}
                 selectedBlueprintField={selectedBlueprintField}
-                blueprintFieldValue={blueprintFieldValue}
+                blueprintFieldValues={blueprintFieldValues}
                 onLoadingChange={handleProductsLoadingChange}
                 onProductsChange={handleProductsChange}
+                onUnfilteredProductsChange={handleUnfilteredProductsChange}
+                viewMode={viewMode}
+                showImages={showProductImages}
+                sortOrder={productSortOrder}
               />
             </div>
           )}
@@ -1208,57 +1245,61 @@ export default function HomePage() {
           )}
 
           {currentView === 'ai-view' && (
-            <div className="h-full">
+            <div className="h-full flex">
               <StandardErrorBoundary componentName="AICanvas">
-                <AICanvas ref={aiCanvasRef} />
+                <div className="flex-1">
+                  <AICanvas ref={aiCanvasRef} />
+                </div>
+              </StandardErrorBoundary>
+              <StandardErrorBoundary componentName="AIChatPanel">
+                <div className="w-80 flex-shrink-0">
+                  <AIChatPanel canvasRef={aiCanvasRef} />
+                </div>
               </StandardErrorBoundary>
             </div>
           )}
 
             </main>
-
-        {/* Cart Panel - Show for products view, AI Chat Panel for AI view */}
-        <div className={`w-80 flex-shrink-0 transition-transform duration-500 ease-in-out ${
-          currentView !== 'products' && currentView !== 'ai-view' ? 'transform translate-x-full' : 'transform translate-x-0'
-        }`}>
-          {currentView === 'ai-view' ? (
-            <StandardErrorBoundary componentName="AIChatPanel">
-              <AIChatPanel canvasRef={aiCanvasRef} />
-            </StandardErrorBoundary>
-          ) : !showCheckout && currentView === 'products' ? (
-            <StandardErrorBoundary componentName="Cart">
-              <Cart
-                items={cartItems}
-                onUpdateQuantity={handleUpdateQuantity}
-                onRemoveItem={handleRemoveItem}
-                onClearCart={handleClearCart}
-                onCheckout={handleCheckout}
-                selectedCustomer={selectedCustomer}
-                onCustomerSelect={handleCustomerSelect}
-                isProductsLoading={isProductsLoading}
-                isAuditMode={isAuditMode}
-                onOpenCustomerSelector={handleOpenCustomerSelector}
-                isCheckoutLoading={isCheckoutLoading}
-                onUpdatePriceOverride={handleUpdatePriceOverride}
-                onUpdateDiscountPercentage={handleUpdateDiscountPercentage}
-                // onApplyAdjustments={handleApplyAdjustments} - removed
-                // onUpdateAdjustment={handleUpdateAdjustment} - removed
-              />
-            </StandardErrorBoundary>
-          ) : (
-            <CriticalErrorBoundary componentName="Checkout">
-              <Suspense fallback={<LoadingSpinner size="lg" />}>
-                <CheckoutScreenLazy
-                  items={cartItems}
-                  selectedCustomer={selectedCustomer}
-                  onClose={handleCloseCheckout}
-                  onOrderComplete={handleOrderComplete}
-                />
-              </Suspense>
-            </CriticalErrorBoundary>
-          )}
-        </div>
+            </div>
           </div>
+
+          {/* Cart Panel - Full Height - Only show in products view */}
+          {currentView === 'products' && (
+            <div className="w-80 flex-shrink-0 transition-all duration-500 ease-in-out">
+              {!showCheckout ? (
+                <StandardErrorBoundary componentName="Cart">
+                  <Cart
+                    items={cartItems}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    onRemoveItem={handleRemoveItem}
+                    onClearCart={handleClearCart}
+                    onCheckout={handleCheckout}
+                    selectedCustomer={selectedCustomer}
+                    onCustomerSelect={handleCustomerSelect}
+                    isProductsLoading={isProductsLoading}
+                    isAuditMode={isAuditMode}
+                    onOpenCustomerSelector={handleOpenCustomerSelector}
+                    isCheckoutLoading={isCheckoutLoading}
+                    onUpdatePriceOverride={handleUpdatePriceOverride}
+                    onUpdateDiscountPercentage={handleUpdateDiscountPercentage}
+                    // onApplyAdjustments={handleApplyAdjustments} - removed
+                    // onUpdateAdjustment={handleUpdateAdjustment} - removed
+                  />
+                </StandardErrorBoundary>
+              ) : (
+                <CriticalErrorBoundary componentName="Checkout">
+                  <Suspense fallback={<LoadingSpinner size="lg" />}>
+                    <CheckoutScreenLazy
+                      items={cartItems}
+                      selectedCustomer={selectedCustomer}
+                      onClose={handleCloseCheckout}
+                      onOrderComplete={handleOrderComplete}
+                    />
+                  </Suspense>
+                </CriticalErrorBoundary>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

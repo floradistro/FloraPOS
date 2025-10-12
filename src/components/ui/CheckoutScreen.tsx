@@ -26,11 +26,11 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
   const { data: pointsBalance, isLoading } = useUserPointsBalance(customerId);
   
   if (isLoading) {
-    return <span className="text-xs text-neutral-500">Loading...</span>;
+    return <span className="text-xs font-mono text-neutral-500">loading...</span>;
   }
   
   if (!pointsBalance || customerId === 0) {
-    return <span className="text-xs text-neutral-500">0 Points</span>;
+    return <span className="text-xs font-mono text-neutral-500">0 points</span>;
   }
   
   // Extract singular/plural form from points_label
@@ -40,8 +40,8 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
   const pointsUnit = balance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
   
   return (
-    <span className="text-xs text-white font-medium">
-      {balance.balance.toLocaleString()} {pointsUnit}
+    <span className="text-white text-xs font-mono bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 px-2 py-0.5 rounded animate-pulse bg-[length:200%_100%]">
+      {balance.balance.toLocaleString()} {pointsUnit.toLowerCase()}
     </span>
   );
 };
@@ -556,8 +556,34 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
 
   return (
-    <div ref={ref} className="flex-1 bg-gradient-to-br from-neutral-900/40 via-neutral-800/30 to-neutral-900/40 backdrop-blur-xl flex flex-col h-full border-l border-white/[0.08] shadow-2xl">
+    <div ref={ref} className="flex-1 backdrop-blur-xl flex flex-col h-full">
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-600/50 scrollbar-track-transparent hover:scrollbar-thumb-neutral-500/50">
+        
+        {/* Customer Card - Shows at top when customer is selected */}
+        {selectedCustomer && selectedCustomer.id >= 0 && (
+          <div className="sticky top-0 z-20 mx-4 mt-4 mb-3">
+            <div className="bg-white/[0.02] backdrop-blur-xl rounded-2xl p-4 transition-all duration-300">
+              <div className="flex items-center gap-3">
+                {/* Customer Avatar */}
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neutral-700 to-neutral-800 flex items-center justify-center text-white font-mono font-bold text-lg flex-shrink-0">
+                  {selectedCustomer.id === 0 ? '👤' : (selectedCustomer.display_name || selectedCustomer.name || 'U')[0].toUpperCase()}
+                </div>
+                
+                {/* Customer Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-white truncate">
+                    {selectedCustomer.id === 0 ? 'Guest' : (selectedCustomer.display_name || selectedCustomer.name || selectedCustomer.username)}
+                  </div>
+                  {selectedCustomer.id > 0 && (
+                    <div className="text-xs text-neutral-500 font-mono mt-1">
+                      <CustomerPointsDisplay customerId={selectedCustomer.id} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Order Summary - Now has more room */}
         <OrderSummary
@@ -585,36 +611,37 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-white/[0.08] bg-gradient-to-t from-neutral-900/60 to-transparent backdrop-blur-md">
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            disabled={isProcessing}
-            className="flex-1 px-5 py-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/10 hover:border-red-500/40 text-neutral-300 hover:text-red-300 text-base font-medium transition-all duration-300 ease-out rounded-xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={processOrder}
-            disabled={
-              isProcessing || 
-              (splitPayments.length > 0 
-                ? Math.round(splitPayments.reduce((sum, p) => sum + p.amount, 0) * 100) / 100 < total - 0.02
-                : paymentMethod === 'cash' && (cashReceivedNum < total || !cashReceived)
-              )
-            }
-            className="flex-1 px-5 py-3 bg-gradient-to-r from-neutral-700/50 to-neutral-600/50 hover:from-neutral-600/60 hover:to-neutral-500/60 backdrop-blur-md border border-white/10 hover:border-white/20 text-neutral-100 hover:text-white text-base font-bold transition-all duration-300 ease-out rounded-xl shadow-lg hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:text-neutral-500"
-          >
-            {isProcessing ? (
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-5 h-5 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
-                <span>Processing...</span>
-              </div>
-            ) : (
-              `Pay $${total.toFixed(2)}`
-            )}
-          </button>
-        </div>
+      <div className="px-4 py-4 border-t border-white/5 space-y-2">
+        <button
+          onClick={onClose}
+          disabled={isProcessing}
+          className="w-full bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white font-mono font-medium py-2.5 px-4 transition-all duration-300 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-xs lowercase"
+        >
+          cancel
+        </button>
+        <button
+          onClick={processOrder}
+          disabled={
+            isProcessing || 
+            (splitPayments.length > 0 
+              ? Math.round(splitPayments.reduce((sum, p) => sum + p.amount, 0) * 100) / 100 < total - 0.02
+              : paymentMethod === 'cash' && (cashReceivedNum < total || !cashReceived)
+            )
+          }
+          className="w-full bg-neutral-200 text-neutral-900 hover:bg-neutral-100 font-mono font-bold py-4 px-5 transition-all duration-300 flex items-center justify-center gap-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:text-neutral-500 active:scale-95 text-sm lowercase"
+        >
+          {isProcessing ? (
+            <>
+              <div className="w-4 h-4 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin"></div>
+              <span>processing...</span>
+            </>
+          ) : (
+            <>
+              <span>pay</span>
+              <span className="ml-auto text-lg">${total.toFixed(2)}</span>
+            </>
+          )}
+        </button>
       </div>
       
       {/* Alert Modal */}
@@ -625,6 +652,40 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         message={alertModal.message}
       />
       
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes slide-in-from-top-4 {
+          from {
+            opacity: 0;
+            transform: translateY(-16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-in {
+          animation-fill-mode: both;
+        }
+        
+        .slide-in-from-top-4 {
+          animation-name: slide-in-from-top-4;
+        }
+        
+        .fade-in {
+          animation-name: fadeIn;
+        }
+        
+        .duration-500 {
+          animation-duration: 500ms;
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
 
     </div>
   );

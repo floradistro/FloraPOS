@@ -11,11 +11,11 @@ import ProductCard from './ProductCard';
 // Category Header Component with smooth animations
 const CategoryHeader = ({ categoryName, productCount }: { categoryName: string; productCount: number }) => (
   <div className="col-span-full px-6 py-4 sticky top-0 z-20 category-header-animate">
-    <div className="flex items-center justify-start gap-4">
-      <h2 className="text-4xl font-dongraffiti font-thin text-neutral-300 tracking-widest text-left category-title-animate transform transition-all duration-700 ease-out hover:scale-105 hover:text-neutral-100 hover:tracking-wider drop-shadow-lg">
+    <div className="flex items-center justify-center gap-4">
+      <h2 className="text-2xl font-mono font-medium text-neutral-300 tracking-wider text-center category-title-animate transform transition-all duration-700 ease-out hover:scale-105 hover:text-neutral-100 lowercase">
         {categoryName}
       </h2>
-      <span className="text-lg font-medium text-neutral-400 px-3 py-1 rounded-full drop-shadow-md">
+      <span className="text-xs font-mono font-medium text-neutral-500 bg-white/5 px-2.5 py-1 rounded-lg">
         {productCount}
       </span>
     </div>
@@ -73,21 +73,24 @@ interface ProductGridProps {
   searchQuery?: string;
   categoryFilter?: string;
   selectedBlueprintField?: string | null;
-  blueprintFieldValue?: string | null;
+  blueprintFieldValues?: string[] | undefined;
   onLoadingChange?: (loading: boolean, hasProducts: boolean) => void;
   onProductsChange?: (products: Product[]) => void;
+  onUnfilteredProductsChange?: (products: Product[]) => void;
+  viewMode?: 'grid' | 'list';
+  showImages?: boolean;
+  sortOrder?: 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' | 'default';
 }
 
 export const ProductGrid = forwardRef<{ 
   refreshInventory: () => Promise<void>;
   updateProductQuantities: (updates: Array<{ productId: number; variantId?: number; newQuantity: number }>) => void;
 }, ProductGridProps>(
-  ({ onAddToCart, searchQuery, categoryFilter, selectedBlueprintField, blueprintFieldValue, onLoadingChange, onProductsChange }, ref) => {
+  ({ onAddToCart, searchQuery, categoryFilter, selectedBlueprintField, blueprintFieldValues, onLoadingChange, onProductsChange, onUnfilteredProductsChange, viewMode = 'grid', showImages = true, sortOrder = 'default' }, ref) => {
     const { user } = useAuth();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
 
     // Simple refresh state - no more instant inventory complexity
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -139,30 +142,56 @@ export const ProductGrid = forwardRef<{
   // Store blueprint field data for filtering
   const [productBlueprintFields, setProductBlueprintFields] = useState<Record<number, any>>({});
 
-  // Fetch blueprint field data when filtering is active - NEW BLUEPRINTS PLUGIN
+  // Pre-fetch blueprint field data when products load - NEW BLUEPRINTS PLUGIN
   useEffect(() => {
-    if (selectedBlueprintField && blueprintFieldValue && products.length > 0) {
-      
+    if (products.length > 0) {
       const fetchBlueprintFields = async () => {
-        // Fetch products from Flower category with meta_data (ONE call instead of 100+)
+        // Fetch products from Flower category with meta_data (ONE call)
         try {
-          const response = await apiFetch('/api/proxy/woocommerce/products?category=18&per_page=100');
+          const productIds = products.map(p => p.id);
+          const response = await apiFetch(`/api/proxy/woocommerce/products?include=${productIds.slice(0, 100).join(',')}&per_page=100`);
           if (!response.ok) {
             console.error('Failed to fetch products for blueprint filtering');
             return;
           }
           
           const wcProducts = await response.json();
+          console.log(`📊 [ProductGrid] Loaded blueprint meta_data for ${wcProducts.length} products`);
           
           // Build map of product ID → blueprint meta_data only
           const blueprintFieldsMap: Record<number, any> = {};
           wcProducts.forEach((wcProduct: any) => {
             if (wcProduct.meta_data && Array.isArray(wcProduct.meta_data)) {
+              // Extract ALL blueprint-related meta (same logic as UnifiedSearchInput)
               blueprintFieldsMap[wcProduct.id] = wcProduct.meta_data.filter((meta: any) => 
-                meta.key.startsWith('_blueprint_')
+                meta.key && (
+                  meta.key.startsWith('_blueprint_') || 
+                  meta.key.startsWith('blueprint_') ||
+                  meta.key === 'effect' ||
+                  meta.key === 'lineage' ||
+                  meta.key === 'nose' ||
+                  meta.key === 'terpene' ||
+                  meta.key === 'strain_type' ||
+                  meta.key === 'thca_percentage' ||
+                  meta.key === 'supplier' ||
+                  meta.key === '_effect' ||
+                  meta.key === '_lineage' ||
+                  meta.key === '_nose' ||
+                  meta.key === '_terpene' ||
+                  meta.key === '_strain_type' ||
+                  meta.key === '_thca_percentage' ||
+                  meta.key === '_supplier' ||
+                  meta.key === 'effects' ||
+                  meta.key === '_effects' ||
+                  meta.key === 'thc_percentage' ||
+                  meta.key === '_thc_percentage'
+                )
               );
             }
           });
+          
+          const totalFields = Object.values(blueprintFieldsMap).reduce((sum: number, fields: any) => sum + fields.length, 0);
+          console.log(`✅ [ProductGrid] Extracted ${totalFields} blueprint fields from ${Object.keys(blueprintFieldsMap).length} products`);
           
           setProductBlueprintFields(blueprintFieldsMap);
         } catch (error) {
@@ -172,7 +201,7 @@ export const ProductGrid = forwardRef<{
       
       fetchBlueprintFields();
     }
-  }, [selectedBlueprintField, blueprintFieldValue, products]);
+  }, [products]);
 
   // Memoized filtered and grouped products for performance
   const { filteredProducts, groupedByCategory } = useMemo(() => {
@@ -185,28 +214,55 @@ export const ProductGrid = forwardRef<{
       const matchesCategory = !categoryFilter || 
         product.categories.some(cat => cat.slug === categoryFilter);
       
-      // Blueprint field filtering - new Blueprints plugin format
-      const matchesBlueprintField = !selectedBlueprintField || !blueprintFieldValue || (() => {
-        const blueprintMeta = productBlueprintFields[product.id];
-        if (!blueprintMeta || !Array.isArray(blueprintMeta)) return false;
+      // Blueprint field filtering - supports multiple values
+      const matchesBlueprintField = !selectedBlueprintField || !blueprintFieldValues || blueprintFieldValues.length === 0 || (() => {
+        // If blueprint data hasn't loaded yet, don't filter (show all products)
+        if (Object.keys(productBlueprintFields).length === 0) {
+          console.log('⏳ Blueprint data not loaded yet, showing all products');
+          return true;
+        }
         
-        // Look for _blueprint_FIELDNAME format (also check alternative names)
+        const blueprintMeta = productBlueprintFields[product.id];
+        if (!blueprintMeta || !Array.isArray(blueprintMeta)) {
+          console.log(`❌ No blueprint meta for product ${product.id}`);
+          return false;
+        }
+        
+        // Look for field with various possible formats (same as UnifiedSearchInput)
         const possibleKeys = [
+          selectedBlueprintField,
+          `_${selectedBlueprintField}`,
+          `blueprint_${selectedBlueprintField}`,
           `_blueprint_${selectedBlueprintField}`,
+          // Special cases for known field name variations
           selectedBlueprintField === 'effect' ? '_blueprint_effects' : null,
-          selectedBlueprintField === 'thca_percentage' ? '_blueprint_thc_percentage' : null
+          selectedBlueprintField === 'effect' ? 'effects' : null,
+          selectedBlueprintField === 'effect' ? '_effects' : null,
+          selectedBlueprintField === 'thca_percentage' ? '_blueprint_thc_percentage' : null,
+          selectedBlueprintField === 'thca_percentage' ? 'thc_percentage' : null,
+          selectedBlueprintField === 'thca_percentage' ? '_thc_percentage' : null
         ].filter(Boolean);
         
         const fieldMeta = blueprintMeta.find((meta: any) => possibleKeys.includes(meta.key));
         
-        if (!fieldMeta || !fieldMeta.value) return false;
+        if (!fieldMeta || !fieldMeta.value) {
+          console.log(`❌ Product ${product.id} missing field ${selectedBlueprintField}. Checked keys: ${possibleKeys.join(', ')}`);
+          return false;
+        }
         
-        // Check if value matches (support comma-separated values)
+        // Check if ANY selected value matches (support comma-separated values in product)
         const fieldValue = fieldMeta.value.toString().trim();
-        const valueParts = fieldValue.split(',').map((v: string) => v.trim());
-        const matches = valueParts.some((v: string) => v === blueprintFieldValue.trim());
+        const productValueParts = fieldValue.split(',').map((v: string) => v.trim());
+        
+        // Product matches if it has ANY of the selected filter values
+        const matches = blueprintFieldValues.some(filterValue => 
+          productValueParts.some(productValue => productValue === filterValue.trim())
+        );
         
         if (matches) {
+          console.log(`✅ Product ${product.id} (${product.name}) matches ${selectedBlueprintField} with values: ${blueprintFieldValues.join(', ')} (key: ${fieldMeta.key})`);
+        } else {
+          console.log(`❌ Product ${product.id} field value "${fieldValue}" doesn't match any of: ${blueprintFieldValues.join(', ')}`);
         }
         return matches;
       })();
@@ -245,6 +301,33 @@ export const ProductGrid = forwardRef<{
     // Sort products within each category
     categoryGroups.forEach((group) => {
       group.products.sort((a, b) => {
+        // Apply custom sort order if not default
+        if (sortOrder !== 'default') {
+          switch (sortOrder) {
+            case 'name-asc':
+              return a.name.localeCompare(b.name);
+            case 'name-desc':
+              return b.name.localeCompare(a.name);
+            case 'price-asc': {
+              const priceA = parseFloat(a.sale_price || a.regular_price || '0');
+              const priceB = parseFloat(b.sale_price || b.regular_price || '0');
+              return priceA - priceB;
+            }
+            case 'price-desc': {
+              const priceA = parseFloat(a.sale_price || a.regular_price || '0');
+              const priceB = parseFloat(b.sale_price || b.regular_price || '0');
+              return priceB - priceA;
+            }
+            case 'stock-asc':
+              return a.total_stock - b.total_stock;
+            case 'stock-desc':
+              return b.total_stock - a.total_stock;
+            default:
+              break;
+          }
+        }
+        
+        // Default sorting behavior
         // Primary sort: Products with variants go to the bottom (they are taller cards)
         const aHasVariants = (a.has_variants && a.variants && a.variants.length > 0) || a.type === 'variable';
         const bHasVariants = (b.has_variants && b.variants && b.variants.length > 0) || b.type === 'variable';
@@ -295,12 +378,17 @@ export const ProductGrid = forwardRef<{
       filteredProducts: filtered,
       groupedByCategory: groupedArray
     };
-  }, [products, searchQuery, categoryFilter, selectedBlueprintField, blueprintFieldValue, productBlueprintFields]);
+  }, [products, searchQuery, categoryFilter, selectedBlueprintField, blueprintFieldValues, productBlueprintFields, sortOrder]);
 
-  // Notify parent when filtered products change (for blueprint field extraction)
+  // Notify parent when filtered products change
   useEffect(() => {
     onProductsChange?.(filteredProducts);
   }, [filteredProducts, onProductsChange]);
+  
+  // Notify parent when unfiltered products change (for blueprint field extraction)
+  useEffect(() => {
+    onUnfilteredProductsChange?.(products);
+  }, [products, onUnfilteredProductsChange]);
 
 
   // Simple refresh method - just reload the products
@@ -572,8 +660,8 @@ export const ProductGrid = forwardRef<{
       // Always replace products since we're loading all at once
       setProducts(normalizedProducts);
       
-      // Notify parent of products change for blueprint field extraction
-      onProductsChange?.(normalizedProducts);
+      // Notify parent of UNFILTERED products for blueprint field extraction
+      onUnfilteredProductsChange?.(normalizedProducts);
 
     } catch (err) {
       const loadTime = Date.now() - startTime;
@@ -824,58 +912,45 @@ export const ProductGrid = forwardRef<{
   if (products.length === 0) {
     return (
       <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 120px)' }}>
-        <div className="text-center">
-          <div className="text-neutral-300 text-base font-normal mb-4" style={{ fontFamily: 'Tiempos, serif' }}>
-            <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          </div>
-          <p className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempos, serif' }}>No products found</p>
-          <p className="text-xs text-neutral-500 mt-2" style={{ fontFamily: 'Tiempos, serif' }}>
-            {searchQuery ? `No results for "${searchQuery}"` : 'Try adjusting your filters'}
-          </p>
-        </div>
+        <p className="text-sm font-mono text-neutral-500 lowercase">
+          {searchQuery ? `no results found` : 'no products available'}
+        </p>
       </div>
     );
   }
 
   return (
     <div className="relative smooth-scroll">
-      {/* Organized Grid View by Category */}
-      <div ref={gridRef} className="grid grid-cols-3 max-[1024px]:grid-cols-2 product-grid scrollable-container">
-        {groupedByCategory.map((categoryGroup, groupIndex) => {
-          const userLocationId = user?.location_id ? parseInt(user.location_id) : undefined;
-          
-          return (
-            <React.Fragment key={categoryGroup.category.slug}>
-              {/* Category Header */}
-              <CategoryHeader 
-                categoryName={categoryGroup.category.name} 
-                productCount={categoryGroup.products.length}
-              />
-              
-              {/* Products in this category */}
-              {categoryGroup.products.map((product, productIndex) => {
-                // Calculate global index for staggered animations
-                const globalIndex = groupedByCategory
-                  .slice(0, groupIndex)
-                  .reduce((sum, group) => sum + group.products.length, 0) + productIndex;
+      {/* Grid View */}
+      {viewMode === 'grid' && (
+        <div ref={gridRef} className="grid grid-cols-3 max-[1024px]:grid-cols-2 gap-3 py-3 product-grid scrollable-container">
+          {groupedByCategory.map((categoryGroup, groupIndex) => {
+            const userLocationId = user?.location_id ? parseInt(user.location_id) : undefined;
+            
+            return (
+              <React.Fragment key={categoryGroup.category.slug}>
+                {/* Category Header */}
+                <CategoryHeader 
+                  categoryName={categoryGroup.category.name} 
+                  productCount={categoryGroup.products.length}
+                />
                 
-                // Calculate grid column position within this category
-                const columnPosition = productIndex % 3; // 0, 1, 2 for 3-column grid
-                const columnPositionMobile = productIndex % 2; // 0, 1 for 2-column grid
-                
-                return (
-                  <div 
-                    key={product.id} 
-                    className={`product-grid-cell border-b border-neutral-500/20 relative group hover:bg-neutral-800/10 apple-smooth card-hover${
-                      columnPosition !== 0 ? ' border-l border-neutral-500/20' : ''
-                    }${columnPositionMobile !== 0 ? ' max-[1024px]:border-l' : ''}`}
-                    style={{
-                      animation: `fadeInUpEnhanced 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${globalIndex * 0.05}s both`,
-                      animationFillMode: 'both',
-                    }}
-                  >
+                {/* Products in this category */}
+                {categoryGroup.products.map((product, productIndex) => {
+                  // Calculate global index for staggered animations
+                  const globalIndex = groupedByCategory
+                    .slice(0, groupIndex)
+                    .reduce((sum, group) => sum + group.products.length, 0) + productIndex;
+                  
+                  return (
+                    <div 
+                      key={product.id} 
+                      className="product-grid-cell relative group bg-white/[0.02] backdrop-blur-sm hover:bg-white/[0.04] rounded-2xl overflow-hidden transition-all duration-300 apple-smooth card-hover"
+                      style={{
+                        animation: `fadeInUpEnhanced 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${globalIndex * 0.05}s both`,
+                        animationFillMode: 'both',
+                      }}
+                    >
                     <ProductCard
                       product={product}
                       userLocationId={userLocationId}
@@ -887,14 +962,192 @@ export const ProductGrid = forwardRef<{
                       onAddToCartWithVariant={handleAddToCartWithVariant}
                       onProductSelection={handleProductSelection}
                       isSelected={selectedProduct === product.id}
+                      showImage={showImages}
                     />
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      )}
+
+      {/* List View */}
+      {viewMode === 'list' && (
+        <div ref={gridRef} className="py-3">
+          {groupedByCategory.map((categoryGroup, groupIndex) => {
+            const userLocationId = user?.location_id ? parseInt(user.location_id) : undefined;
+            
+            return (
+              <div key={categoryGroup.category.slug} className="mb-6">
+                {/* Category Header for List View */}
+                <div className="px-6 py-4 backdrop-blur-xl bg-white/[0.02] rounded-xl mb-2">
+                  <div className="flex items-center justify-center gap-4">
+                    <h2 className="text-2xl font-mono font-medium text-neutral-300 tracking-wider text-center lowercase">
+                      {categoryGroup.category.name}
+                    </h2>
+                    <span className="text-xs font-mono font-medium text-neutral-500 bg-white/5 px-2.5 py-1 rounded-lg">
+                      {categoryGroup.products.length}
+                    </span>
                   </div>
-                );
-              })}
-            </React.Fragment>
-          );
-        })}
-      </div>
+                </div>
+                
+                {/* Products in List View */}
+                {categoryGroup.products.map((product, productIndex) => {
+                  const globalIndex = groupedByCategory
+                    .slice(0, groupIndex)
+                    .reduce((sum, group) => sum + group.products.length, 0) + productIndex;
+                  
+                  const locationInventory = userLocationId 
+                    ? product.inventory?.find(inv => inv.location_id === userLocationId.toString())
+                    : product.inventory?.[0];
+                  
+                  const stock = locationInventory ? locationInventory.stock : product.total_stock;
+                  const hasVariants = product.has_variants || (product.variants && product.variants.length > 0);
+                  const selectedVariantId = hasVariants ? selectedVariants[product.id] : undefined;
+                  const selectedVariant = selectedVariantId 
+                    ? product.variants?.find(v => v.id === selectedVariantId)
+                    : null;
+
+                  // Determine price and stock based on selection
+                  let displayPrice = product.sale_price || product.regular_price;
+                  let displayStock = stock;
+                  
+                  if (hasVariants && selectedVariant) {
+                    displayPrice = selectedVariant.sale_price || selectedVariant.regular_price;
+                    const variantInv = userLocationId
+                      ? selectedVariant.inventory?.find((inv: any) => inv.location_id === userLocationId)
+                      : selectedVariant.inventory?.[0];
+                    displayStock = variantInv?.quantity || selectedVariant.total_stock || 0;
+                  }
+
+                  const isProductSelected = selectedProduct === product.id;
+                  
+                  return (
+                    <div
+                      key={product.id}
+                      onClick={() => handleProductSelection(product)}
+                      className={`group transition-all duration-300 cursor-pointer border-l-[3px] rounded-xl my-1 ${
+                        isProductSelected 
+                          ? 'bg-white/[0.04] border-l-white/40 shadow-lg' 
+                          : 'border-l-transparent hover:bg-white/[0.02] hover:border-l-neutral-600/30'
+                      }`}
+                      style={{
+                        animation: `slideInRight 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${globalIndex * 0.03}s both`,
+                      }}
+                    >
+                      <div className="px-4 py-4 flex items-center gap-6">
+                        {/* Product Image */}
+                        {showImages && (
+                          <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-neutral-800/50 backdrop-blur-sm border border-neutral-700/30">
+                            {product.image ? (
+                              <img 
+                                src={product.image} 
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-neutral-600">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                                  <circle cx="8.5" cy="8.5" r="1.5" />
+                                  <polyline points="21 15 16 10 5 21" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Product Name & SKU */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-medium text-neutral-200 truncate">
+                            {product.name}
+                          </h3>
+                          <p className="text-xs text-neutral-500 mt-0.5">
+                            {product.sku}
+                          </p>
+                          {!isProductSelected && (
+                            <p className="text-[10px] text-neutral-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              Click to select
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Variant Selector - Only show when selected */}
+                        {isProductSelected && hasVariants && product.variants && product.variants.length > 0 && (
+                          <div className="flex-shrink-0 animate-in fade-in slide-in-from-left-4 duration-200">
+                            <select
+                              value={selectedVariantId || ''}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                const variantId = parseInt(e.target.value);
+                                if (variantId) {
+                                  handleVariantSelect(product.id, variantId);
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-neutral-800/50 text-neutral-200 text-xs rounded-lg px-3 py-2 border border-neutral-700/40 focus:outline-none focus:ring-2 focus:ring-neutral-600 backdrop-blur-sm"
+                            >
+                              <option value="">Select variant</option>
+                              {product.variants.map((variant) => (
+                                <option key={variant.id} value={variant.id}>
+                                  {variant.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {/* Quantity Selector - Only show when selected */}
+                        {isProductSelected && (
+                          <div className="flex-shrink-0 min-w-[280px] animate-in fade-in slide-in-from-right-4 duration-200">
+                            <QuantitySelector
+                              productId={hasVariants && selectedVariantId ? selectedVariantId : product.id}
+                              basePrice={parseFloat(displayPrice || '0')}
+                              blueprintPricing={product.blueprintPricing}
+                              onQuantityChange={(quantity, price, category) => 
+                                handleQuantityChange(product.id, quantity, price, category)
+                              }
+                              disabled={false}
+                              compact={true}
+                            />
+                          </div>
+                        )}
+
+                        {/* Stock Display */}
+                        <div className="flex-shrink-0 w-24 text-right">
+                          <div className="text-sm font-medium text-neutral-400">
+                            {displayStock.toFixed(1)}
+                          </div>
+                          <div className="text-xs text-neutral-500 mt-0.5">
+                            in stock
+                          </div>
+                        </div>
+
+                        {/* Add to Cart Button - Only show when selected and quantity chosen */}
+                        {isProductSelected && product.selected_quantity && (!hasVariants || selectedVariantId) && (
+                          <div className="flex-shrink-0 animate-in fade-in slide-in-from-right-4 duration-200">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddToCartWithVariant(product);
+                              }}
+                              className="px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 bg-white text-neutral-900 hover:bg-neutral-200 shadow-lg hover:shadow-xl"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
       
       {/* CSS Animations */}
       <style jsx>{`
@@ -938,6 +1191,68 @@ export const ProductGrid = forwardRef<{
           }
           to {
             transform: scaleX(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes slide-in-from-left-4 {
+          from {
+            opacity: 0;
+            transform: translateX(-16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes slide-in-from-right-4 {
+          from {
+            opacity: 0;
+            transform: translateX(16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        .animate-in {
+          animation-fill-mode: both;
+        }
+
+        .fade-in {
+          animation-name: fadeIn;
+        }
+
+        .slide-in-from-left-4 {
+          animation-name: slide-in-from-left-4;
+        }
+
+        .slide-in-from-right-4 {
+          animation-name: slide-in-from-right-4;
+        }
+
+        .duration-200 {
+          animation-duration: 200ms;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
             opacity: 1;
           }
         }

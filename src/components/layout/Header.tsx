@@ -26,10 +26,10 @@ interface HeaderProps {
   selectedCategory?: string;
   onCategoryChange?: (categorySlug: string | null) => void;
   categoriesLoading?: boolean;
-  // Blueprint field search props
+  // Blueprint field search props - supports multiple selections
   selectedBlueprintField?: string | null;
-  onBlueprintFieldChange?: (fieldName: string | null, fieldValue: string | null) => void;
-  blueprintFieldValue?: string | null;
+  onBlueprintFieldChange?: (fieldName: string | null, fieldValues: string[] | null) => void;
+  blueprintFieldValues?: string[];
   // Customer selector props
   selectedCustomer?: WordPressUser | null;
   onCustomerSelect?: (customer: WordPressUser | null) => void;
@@ -95,6 +95,15 @@ interface HeaderProps {
   onAiCanvasBrushSizeChange?: (size: number) => void;
   onClearAiCanvas?: () => void;
   aiCanvasRef?: React.RefObject<AICanvasRef>;
+  // Product Grid View Mode
+  viewMode?: 'grid' | 'list';
+  onViewModeChange?: (mode: 'grid' | 'list') => void;
+  // Product Images Toggle
+  showProductImages?: boolean;
+  onShowProductImagesChange?: (show: boolean) => void;
+  // Product Sorting
+  productSortOrder?: 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' | 'default';
+  onProductSortOrderChange?: (order: 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' | 'default') => void;
 }
 
 export function Header({ 
@@ -110,7 +119,7 @@ export function Header({
   categoriesLoading = false,
   selectedBlueprintField,
   onBlueprintFieldChange,
-  blueprintFieldValue,
+  blueprintFieldValues = [],
   selectedCustomer,
   onCustomerSelect,
   selectedProduct,
@@ -164,10 +173,20 @@ export function Header({
   aiCanvasBrushSize = 3,
   onAiCanvasBrushSizeChange,
   onClearAiCanvas,
-  aiCanvasRef
+  aiCanvasRef,
+  // View Mode
+  viewMode = 'grid',
+  onViewModeChange,
+  // Product Images
+  showProductImages = true,
+  onShowProductImagesChange,
+  // Product Sorting
+  productSortOrder = 'default',
+  onProductSortOrderChange
 }: HeaderProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAiToolsDropdown, setShowAiToolsDropdown] = useState(false);
+  const [showViewOptionsDropdown, setShowViewOptionsDropdown] = useState(false);
   const [apiEnvironment, setApiEnvironment] = useState<'production' | 'staging' | 'docker'>('production');
   
   // Click outside handler for menu config dropdown
@@ -251,74 +270,77 @@ export function Header({
   };
 
   return (
-    <div className="header-nav bg-transparent flex-shrink-0 relative z-40">
-      <div className="flex items-center h-full py-4 px-2 sm:px-4 relative gap-2">
-        {/* Back Button for History View */}
-        {currentView === 'history' && (
-          <button
-            onClick={() => onViewChange?.('adjustments')}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-transparent hover:bg-neutral-800/50 text-neutral-300 hover:text-neutral-100 rounded-lg transition-all duration-200 border border-neutral-500/30 hover:border-neutral-400/50"
-            style={{ fontFamily: 'Tiempo, serif' }}
-          >
-            <svg 
-              className="w-4 h-4" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M15 19l-7-7 7-7" 
-              />
-            </svg>
-            Back to Audit
-          </button>
-        )}
-
-        {/* Left Controls - Adjustments Controls */}
-        {currentView === 'adjustments' && (
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* A-Z Sort Toggle */}
+    <div className="header-nav flex-shrink-0 relative z-40">
+      {/* Apple 2035 Style Header */}
+      <div className="my-3">
+        <div className="flex items-center h-full py-3 px-6 relative gap-3">
+          {/* Back Button for History View */}
+          {currentView === 'history' && (
             <button
-              onClick={() => onSortAlphabeticallyChange?.(!sortAlphabetically)}
-              className={`px-3 h-[30px] rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-2 whitespace-nowrap border flex-shrink-0 ${
-                sortAlphabetically 
-                  ? 'bg-neutral-800/90 text-white border-neutral-500' 
-                  : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-              }`}
-              title={sortAlphabetically ? 'Disable alphabetical sorting' : 'Enable alphabetical sorting'}
+              onClick={() => onViewChange?.('adjustments')}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white rounded-xl transition-all duration-300 border border-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-black/20"
               style={{ fontFamily: 'Tiempo, serif' }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+              <svg 
+                className="w-4 h-4" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M15 19l-7-7 7-7" 
+                />
               </svg>
-              A-Z
+              Back to Audit
             </button>
+          )}
 
-            {/* Show Selected Toggle */}
-            <button
-              onClick={() => onShowOnlySelectedAdjustmentsChange?.(!showOnlySelectedAdjustments)}
-              className={`px-3 h-[30px] rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-2 whitespace-nowrap border flex-shrink-0 ${
-                showOnlySelectedAdjustments 
-                  ? 'bg-neutral-800/90 text-white border-neutral-500' 
-                  : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-              }`}
-              title={showOnlySelectedAdjustments ? 'Show all products' : 'Show only selected products'}
-              style={{ fontFamily: 'Tiempo, serif' }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
-              </svg>
-              {showOnlySelectedAdjustments ? `Selected (${selectedCount})` : 'Selected'}
-            </button>
-          </div>
-        )}
+          {/* Left Controls - Adjustments Controls */}
+          {currentView === 'adjustments' && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* A-Z Sort Toggle */}
+              <button
+                onClick={() => onSortAlphabeticallyChange?.(!sortAlphabetically)}
+                className={`px-4 py-2 rounded-xl transition-all duration-300 text-sm flex items-center gap-2 whitespace-nowrap border flex-shrink-0 ${
+                  sortAlphabetically 
+                    ? 'bg-white/10 text-white border-white/20 shadow-lg shadow-black/20' 
+                    : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-neutral-200'
+                }`}
+                title={sortAlphabetically ? 'Disable alphabetical sorting' : 'Enable alphabetical sorting'}
+                style={{ fontFamily: 'Tiempo, serif' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                A-Z
+              </button>
 
-        {/* Fixed Search Bar Container - Same position as adjustments view */}
-        <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0" style={{ marginLeft: (currentView === 'adjustments' || currentView === 'history' || currentView === 'menu') ? '0px' : '30px' }}>
+              {/* Show Selected Toggle */}
+              <button
+                onClick={() => onShowOnlySelectedAdjustmentsChange?.(!showOnlySelectedAdjustments)}
+                className={`px-4 py-2 rounded-xl transition-all duration-300 text-sm flex items-center gap-2 whitespace-nowrap border flex-shrink-0 ${
+                  showOnlySelectedAdjustments 
+                    ? 'bg-white/10 text-white border-white/20 shadow-lg shadow-black/20' 
+                    : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-neutral-200'
+                }`}
+                title={showOnlySelectedAdjustments ? 'Show all products' : 'Show only selected products'}
+                style={{ fontFamily: 'Tiempo, serif' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                </svg>
+                {showOnlySelectedAdjustments ? `Selected (${selectedCount})` : 'Selected'}
+              </button>
+            </div>
+          )}
+
+          {/* Fixed Search Bar Container - Same position as adjustments view */}
+          <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0" style={{ marginLeft: (currentView === 'adjustments' || currentView === 'history' || currentView === 'menu') ? '0px' : '30px' }}>
           <UnifiedSearchInput
+            key={`unified-search-${currentView}`}
             ref={unifiedSearchRef}
             searchValue={searchValue}
             onSearchChange={handleSearch}
@@ -330,13 +352,13 @@ export function Header({
             onProductSelect={onProductSelect}
             products={products}
             productsLoading={productsLoading}
-            categories={currentView === 'orders' ? [] : categories}
-            selectedCategory={currentView === 'orders' ? '' : selectedCategory}
-            onCategoryChange={currentView === 'orders' ? () => {} : onCategoryChange}
-            categoriesLoading={categoriesLoading}
+            categories={currentView === 'products' ? categories : undefined}
+            selectedCategory={currentView === 'products' ? selectedCategory : undefined}
+            onCategoryChange={currentView === 'products' ? onCategoryChange : undefined}
+            categoriesLoading={currentView === 'products' ? categoriesLoading : false}
             selectedBlueprintField={currentView === 'products' ? selectedBlueprintField : null}
             onBlueprintFieldChange={currentView === 'products' ? onBlueprintFieldChange : undefined}
-            blueprintFieldValue={currentView === 'products' ? blueprintFieldValue : null}
+            blueprintFieldValues={currentView === 'products' ? blueprintFieldValues : undefined}
             // Pass mode-specific props
             productOnlyMode={currentView === 'blueprint-fields'}
             isAuditMode={isAuditMode}
@@ -354,308 +376,498 @@ export function Header({
             onUpdateRestockQuantity={onUpdateRestockQuantity}
             isCreatingPO={isCreatingPO}
           />
-        </div>
 
-        
-        {/* Right group - All Navigation Buttons and Filters */}
-        <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
-          {/* Artifacts Library Dropdown - Show on all views */}
-          <ArtifactsDropdown 
-            canvasRef={aiCanvasRef}
-            onViewChange={onViewChange}
-          />
-
-          {/* Orders View Filters */}
-          {currentView === 'orders' && (
-            <>
-
-              {/* Status Filter with Icon */}
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" />
-                </svg>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => onStatusFilterChange?.(e.target.value)}
-                  className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out min-w-[120px]"
-                  style={{ fontFamily: 'Tiempo, serif' }}
-                >
-                  <option value="any">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="processing">Processing</option>
-                  <option value="on-hold">On Hold</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="refunded">Refunded</option>
-                  <option value="failed">Failed</option>
-                </select>
-              </div>
-
-              {/* Date Range Filters with Icon - Responsive */}
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <svg className="w-4 h-4 text-neutral-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => onDateFromChange?.(e.target.value)}
-                  className="px-2 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out w-28 sm:w-36"
-                  style={{ fontFamily: 'Tiempo, serif' }}
-                  title="From Date"
-                />
-                <span className="text-neutral-500 text-xs sm:text-sm" style={{ fontFamily: 'Tiempo, serif' }}>to</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => onDateToChange?.(e.target.value)}
-                  className="px-2 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out w-28 sm:w-36"
-                  style={{ fontFamily: 'Tiempo, serif' }}
-                  title="To Date"
-                />
-              </div>
-
-              {/* Show Selected Only Filter Toggle */}
+          {/* View Options Dropdown - Only show on products view - Next to search bar */}
+          {currentView === 'products' && onViewModeChange && onShowProductImagesChange && (
+            <div className="relative flex-shrink-0">
               <button
-                onClick={() => onShowSelectedOnlyChange?.(!showSelectedOnly)}
-                className={`px-3 h-[30px] rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-1 whitespace-nowrap border flex-shrink-0 ${
-                  showSelectedOnly 
-                    ? 'bg-neutral-800/90 text-white border-neutral-500' 
-                    : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50'
-                }`}
-                style={{ fontFamily: 'Tiempo, serif' }}
-                title={showSelectedOnly ? 'Show all orders' : 'Show only selected orders'}
+                onClick={() => setShowViewOptionsDropdown(!showViewOptionsDropdown)}
+                className="px-3 py-2.5 h-[42px] rounded-xl text-xs font-medium transition-all duration-300 backdrop-blur-sm flex items-center gap-1.5 bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 hover:shadow-lg hover:shadow-black/20"
+                title="View Options"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" />
-                </svg>
-                {showSelectedOnly ? 'Selected' : 'All'}
-              </button>
-
-              {/* Clear Selection Button */}
-              {selectedOrdersCount > 0 && onClearOrderSelection && (
-                <button
-                  onClick={onClearOrderSelection}
-                  className="px-3 h-[30px] bg-red-600/20 text-red-300 border border-red-500/30 hover:bg-red-600/30 rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-1 whitespace-nowrap flex-shrink-0"
-                  style={{ fontFamily: 'Tiempo, serif' }}
-                  title="Clear Selection"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  Clear
-                </button>
-              )}
-            </>
-          )}
-
-          {/* Adjustments view navigation buttons */}
-          {(currentView === 'adjustments' || currentView === 'history') && (
-            <>
-              {/* History Button - Icon Only */}
-              <button
-                onClick={() => onViewChange?.('history')}
-                className={`flex items-center justify-center w-[30px] h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border ${
-                  currentView === 'history'
-                    ? 'bg-neutral-800/90 text-white border-neutral-500' 
-                    : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-300'
-                }`}
-                title="View Adjustment History"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="1"/>
+                  <circle cx="12" cy="5" r="1"/>
+                  <circle cx="12" cy="19" r="1"/>
                 </svg>
               </button>
 
-              {/* History Filters - Only show in history view */}
-              {currentView === 'history' && (
+              {/* Dropdown Menu */}
+              {showViewOptionsDropdown && (
                 <>
-                  {/* Date Filter */}
-                  <select
-                    value={historyDateFilter}
-                    onChange={(e) => onHistoryDateFilterChange?.(e.target.value)}
-                    className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
-                    style={{ fontFamily: 'Tiempo, serif' }}
+                  {/* Backdrop */}
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowViewOptionsDropdown(false)}
+                  />
+                  
+                  {/* Dropdown - TV Menu Style */}
+                  <div 
+                    className="absolute right-0 mt-2 w-56 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl z-50 overflow-hidden"
+                    style={{ 
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                    }}
                   >
-                    <option value="1">Last 24 hours</option>
-                    <option value="7">Last 7 days</option>
-                    <option value="30">Last 30 days</option>
-                    <option value="90">Last 90 days</option>
-                    <option value="all">All time</option>
-                  </select>
+                    <div className="py-2 px-1">
+                      {/* View Mode Section */}
+                      <div className="mb-1">
+                        <div className="text-[10px] text-white/40 mb-2 px-3 uppercase tracking-wider font-medium">View Mode</div>
+                        <button
+                          onClick={() => {
+                            onViewModeChange('grid');
+                            setShowViewOptionsDropdown(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg transition-all duration-200 ease-out mx-1 ${
+                            viewMode === 'grid'
+                              ? 'bg-white/10 text-white shadow-sm'
+                              : 'text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                          }`}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                            <rect x="14" y="14" width="7" height="7" rx="1"/>
+                          </svg>
+                          <span className="text-xs font-medium">Grid View</span>
+                          {viewMode === 'grid' && (
+                            <svg className="ml-auto w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => {
+                            onViewModeChange('list');
+                            setShowViewOptionsDropdown(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg transition-all duration-200 ease-out mx-1 ${
+                            viewMode === 'list'
+                              ? 'bg-white/10 text-white shadow-sm'
+                              : 'text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                          }`}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="8" y1="6" x2="21" y2="6"/>
+                            <line x1="8" y1="12" x2="21" y2="12"/>
+                            <line x1="8" y1="18" x2="21" y2="18"/>
+                            <rect x="3" y="4" width="2" height="4" rx="1" fill="currentColor"/>
+                            <rect x="3" y="10" width="2" height="4" rx="1" fill="currentColor"/>
+                            <rect x="3" y="16" width="2" height="4" rx="1" fill="currentColor"/>
+                          </svg>
+                          <span className="text-xs font-medium">List View</span>
+                          {viewMode === 'list' && (
+                            <svg className="ml-auto w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
 
-                  {/* Action Filter */}
-                  <select
-                    value={historyActionFilter}
-                    onChange={(e) => onHistoryActionFilterChange?.(e.target.value)}
-                    className="px-3 h-[30px] bg-transparent hover:bg-neutral-600/10 border border-neutral-500/30 hover:border-neutral-400/50 rounded-lg text-neutral-400 text-sm focus:bg-neutral-600/10 focus:border-neutral-300 focus:outline-none transition-all duration-200 ease-out"
-                    style={{ fontFamily: 'Tiempo, serif' }}
-                  >
-                    <option value="all">All Actions</option>
-                    <option value="inventory_update">Inventory Updates</option>
-                    <option value="stock_transfer">Stock Transfers</option>
-                    <option value="stock_conversion">Stock Conversions</option>
-                    <option value="manual_adjustment">Manual Adjustments</option>
-                    <option value="order_deduction">Order Deductions</option>
-                    <option value="restock">Restocks</option>
-                  </select>
+                      {/* Divider */}
+                      <div className="border-t border-neutral-700/50 my-2" />
+
+                      {/* Image Toggle Section */}
+                      <div className="mb-1">
+                        <div className="text-[10px] text-white/40 mb-2 px-3 uppercase tracking-wider font-medium">Display</div>
+                        <button
+                          onClick={() => {
+                            onShowProductImagesChange(!showProductImages);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg transition-all duration-200 ease-out mx-1 ${
+                            showProductImages
+                              ? 'bg-white/10 text-white shadow-sm'
+                              : 'text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                          }`}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            {showProductImages ? (
+                              <>
+                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <polyline points="21 15 16 10 5 21" />
+                              </>
+                            ) : (
+                              <>
+                                <line x1="3" y1="3" x2="21" y2="21" />
+                                <path d="M21 15V5a2 2 0 0 0-2-2H9" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <path d="M3 21v-6a2 2 0 0 1 2-2h4" />
+                              </>
+                            )}
+                          </svg>
+                          <span className="text-xs font-medium">{showProductImages ? 'Hide Images' : 'Show Images'}</span>
+                          {showProductImages && (
+                            <svg className="ml-auto w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Divider */}
+                      {onProductSortOrderChange && <div className="border-t border-neutral-700/50 my-2" />}
+
+                      {/* Sort Order Section */}
+                      {onProductSortOrderChange && (
+                        <div>
+                          <div className="text-[10px] text-white/40 mb-2 px-3 uppercase tracking-wider font-medium">Sort By</div>
+                          {[
+                            { value: 'default', label: 'Default Order' },
+                            { value: 'name-asc', label: 'Name (A-Z)' },
+                            { value: 'name-desc', label: 'Name (Z-A)' },
+                            { value: 'price-asc', label: 'Price (Low to High)' },
+                            { value: 'price-desc', label: 'Price (High to Low)' },
+                            { value: 'stock-asc', label: 'Stock (Low to High)' },
+                            { value: 'stock-desc', label: 'Stock (High to Low)' }
+                          ].map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => {
+                                onProductSortOrderChange(option.value as any);
+                                setShowViewOptionsDropdown(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg transition-all duration-200 ease-out mx-1 ${
+                                productSortOrder === option.value
+                                  ? 'bg-white/10 text-white shadow-sm'
+                                  : 'text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                              }`}
+                            >
+                              <span className="text-xs font-medium">{option.label}</span>
+                              {productSortOrder === option.value && (
+                                <svg className="ml-auto w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </>
               )}
-              
-              {/* Restock Button - Show in adjustments view */}
-              {currentView === 'adjustments' && (
-                <button
-                  onClick={onRestock}
-                  className={`flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap ${
-                    isRestockMode
-                      ? 'bg-neutral-800/90 text-white border-neutral-500' 
-                      : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-300'
-                  }`}
-                  style={{ fontFamily: 'Tiempo, serif' }}
-                  title={isRestockMode ? "Exit Restock Mode" : "Enter Restock Mode - Show entire catalog"}
-                >
-                  <span>Restock</span>
-                </button>
-              )}
-              
-              {/* Audit Button - Show in adjustments view */}
-              {currentView === 'adjustments' && (
-                <button
-                  onClick={onAudit}
-                  className={`flex items-center gap-2 px-3 h-[30px] text-sm transition-all duration-200 ease-out rounded-lg border whitespace-nowrap ${
-                    isAuditMode
-                      ? 'bg-neutral-800/90 text-white border-neutral-500' 
-                      : 'bg-transparent text-neutral-500 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50 hover:text-neutral-300'
-                  }`}
-                  style={{ fontFamily: 'Tiempo, serif' }}
-                  title={isAuditMode ? "Exit Audit Mode" : "Enter Audit Mode - Show only products in stock"}
-                >
-                  <span>Audit</span>
-                </button>
-              )}
-            </>
+            </div>
           )}
+          </div>
 
-          {/* AI Canvas Tools */}
-          {currentView === 'ai-view' && (
-            <>
-              {/* Combined Tools Dropdown */}
-              <div className="relative">
+          {/* Right group - All Navigation Buttons and Filters */}
+          <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
+            {/* Artifacts Library Dropdown - Hide on products view */}
+            {currentView !== 'products' && (
+              <ArtifactsDropdown 
+                canvasRef={aiCanvasRef}
+                onViewChange={onViewChange}
+              />
+            )}
+
+
+            {/* Orders View Filters */}
+            {currentView === 'orders' && (
+              <>
+                {/* Status Filter with Icon */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" />
+                  </svg>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => onStatusFilterChange?.(e.target.value)}
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-black/20 cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[120px]"
+                    style={{ fontFamily: 'Tiempo, serif' }}
+                  >
+                    <option value="any">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="on-hold">On Hold</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="refunded">Refunded</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+
+                {/* Date Range Filters with Icon - Responsive */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <svg className="w-4 h-4 text-neutral-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => onDateFromChange?.(e.target.value)}
+                    className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-black/20 w-32 sm:w-36"
+                    style={{ fontFamily: 'Tiempo, serif' }}
+                    title="From Date"
+                  />
+                  <span className="text-neutral-400 text-xs sm:text-sm" style={{ fontFamily: 'Tiempo, serif' }}>to</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => onDateToChange?.(e.target.value)}
+                    className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-black/20 w-32 sm:w-36"
+                    style={{ fontFamily: 'Tiempo, serif' }}
+                    title="To Date"
+                  />
+                </div>
+
+                {/* Show Selected Only Filter Toggle */}
                 <button
-                  onClick={() => setShowAiToolsDropdown(!showAiToolsDropdown)}
-                  className="px-3 h-[30px] rounded-lg transition-all duration-200 ease-out text-sm flex items-center gap-2 whitespace-nowrap border bg-transparent text-neutral-400 border-neutral-500/30 hover:bg-neutral-600/10 hover:border-neutral-400/50"
+                  onClick={() => onShowSelectedOnlyChange?.(!showSelectedOnly)}
+                  className={`px-4 py-2 rounded-xl transition-all duration-300 text-xs flex items-center gap-2 whitespace-nowrap border flex-shrink-0 ${
+                    showSelectedOnly 
+                      ? 'bg-white/10 text-white border-white/20 shadow-lg shadow-black/20' 
+                      : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-neutral-200'
+                  }`}
                   style={{ fontFamily: 'Tiempo, serif' }}
-                  title="Drawing Tools"
+                  title={showSelectedOnly ? 'Show all orders' : 'Show only selected orders'}
                 >
-                  <span>Tools</span>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" />
+                  </svg>
+                  {showSelectedOnly ? 'Selected' : 'All'}
+                </button>
+
+                {/* Clear Selection Button */}
+                {selectedOrdersCount > 0 && onClearOrderSelection && (
+                  <button
+                    onClick={onClearOrderSelection}
+                    className="px-4 py-2 bg-red-500/10 text-red-300 border border-red-500/30 hover:bg-red-500/20 hover:border-red-400/40 rounded-xl transition-all duration-300 text-xs flex items-center gap-2 whitespace-nowrap flex-shrink-0 hover:shadow-lg hover:shadow-red-500/20"
+                    style={{ fontFamily: 'Tiempo, serif' }}
+                    title="Clear Selection"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Clear
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* Adjustments view navigation buttons */}
+            {(currentView === 'adjustments' || currentView === 'history') && (
+              <>
+                {/* History Button - Icon Only */}
+                <button
+                  onClick={() => onViewChange?.('history')}
+                  className={`flex items-center justify-center w-9 h-9 text-sm transition-all duration-300 rounded-xl border ${
+                    currentView === 'history'
+                      ? 'bg-white/10 text-white border-white/20 shadow-lg shadow-black/20' 
+                      : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-neutral-200'
+                  }`}
+                  title="View Adjustment History"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </button>
 
-                {/* Dropdown */}
-                {showAiToolsDropdown && (
+                {/* History Filters - Only show in history view */}
+                {currentView === 'history' && (
                   <>
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setShowAiToolsDropdown(false)}
-                    />
-                    <div className="absolute top-full right-0 mt-2 w-56 bg-neutral-900/95 backdrop-blur-md border border-neutral-700/50 rounded-lg shadow-2xl z-50 p-4">
-                      {/* Tool Selection */}
-                      <div className="mb-4">
-                        <label className="text-xs text-neutral-400 font-medium block mb-2" style={{ fontFamily: 'Tiempo, serif' }}>Tool</label>
-                        <div className="flex gap-1.5 p-1 bg-neutral-800/40 rounded-lg">
-                          <button
-                            onClick={() => onAiCanvasToolChange?.('brush')}
-                            className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 ${
-                              aiCanvasTool === 'brush'
-                                ? 'bg-white/10 text-white shadow-sm'
-                                : 'text-neutral-400 hover:text-neutral-300 hover:bg-white/5'
-                            }`}
-                            style={{ fontFamily: 'Tiempo, serif' }}
-                          >
-                            <svg className="w-4 h-4 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                            Brush
-                          </button>
-                          <button
-                            onClick={() => onAiCanvasToolChange?.('eraser')}
-                            className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all duration-200 ${
-                              aiCanvasTool === 'eraser'
-                                ? 'bg-white/10 text-white shadow-sm'
-                                : 'text-neutral-400 hover:text-neutral-300 hover:bg-white/5'
-                            }`}
-                            style={{ fontFamily: 'Tiempo, serif' }}
-                          >
-                            <svg className="w-4 h-4 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Eraser
-                          </button>
-                        </div>
-                      </div>
+                    {/* Date Filter */}
+                    <select
+                      value={historyDateFilter}
+                      onChange={(e) => onHistoryDateFilterChange?.(e.target.value)}
+                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-black/20 cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10"
+                      style={{ fontFamily: 'Tiempo, serif' }}
+                    >
+                      <option value="1">Last 24 hours</option>
+                      <option value="7">Last 7 days</option>
+                      <option value="30">Last 30 days</option>
+                      <option value="90">Last 90 days</option>
+                      <option value="all">All time</option>
+                    </select>
 
-                      {/* Colors - Only show for brush */}
-                      {aiCanvasTool === 'brush' && (
-                        <>
-                          <div className="h-px bg-gradient-to-r from-transparent via-neutral-700/50 to-transparent mb-3"></div>
-                          <div className="mb-4">
-                            <label className="text-xs text-neutral-400 font-medium block mb-2" style={{ fontFamily: 'Tiempo, serif' }}>Color</label>
-                            <div className="flex gap-1.5 flex-wrap">
-                              {['#ffffff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#ffd93d', '#6bcf7f', '#c77dff'].map((c) => (
-                                <button
-                                  key={c}
-                                  onClick={() => onAiCanvasColorChange?.(c)}
-                                  className={`w-8 h-8 rounded-md transition-all duration-200 hover:scale-110 ${
-                                    aiCanvasColor === c ? 'ring-2 ring-white/60 ring-offset-2 ring-offset-neutral-900 scale-110' : 'hover:ring-1 hover:ring-white/30'
-                                  }`}
-                                  style={{ backgroundColor: c }}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {/* Size */}
-                      <div className={aiCanvasTool === 'brush' ? '' : ''}>
-                        {aiCanvasTool === 'brush' && (
-                          <div className="h-px bg-gradient-to-r from-transparent via-neutral-700/50 to-transparent mb-3"></div>
-                        )}
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-xs text-neutral-400 font-medium" style={{ fontFamily: 'Tiempo, serif' }}>Size</label>
-                          <span className="text-xs text-neutral-500 font-mono">{aiCanvasBrushSize}px</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="1"
-                          max="20"
-                          value={aiCanvasBrushSize}
-                          onChange={(e) => onAiCanvasBrushSizeChange?.(parseInt(e.target.value))}
-                          className="w-full h-1.5 bg-neutral-800/60 rounded-full appearance-none cursor-pointer"
-                          style={{
-                            background: `linear-gradient(to right, white 0%, white ${(aiCanvasBrushSize - 1) / 19 * 100}%, rgba(38, 38, 38, 0.6) ${(aiCanvasBrushSize - 1) / 19 * 100}%, rgba(38, 38, 38, 0.6) 100%)`
-                          }}
-                        />
-                      </div>
-                    </div>
+                    {/* Action Filter */}
+                    <select
+                      value={historyActionFilter}
+                      onChange={(e) => onHistoryActionFilterChange?.(e.target.value)}
+                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-black/20 cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10"
+                      style={{ fontFamily: 'Tiempo, serif' }}
+                    >
+                      <option value="all">All Actions</option>
+                      <option value="inventory_update">Inventory Updates</option>
+                      <option value="stock_transfer">Stock Transfers</option>
+                      <option value="stock_conversion">Stock Conversions</option>
+                      <option value="manual_adjustment">Manual Adjustments</option>
+                      <option value="order_deduction">Order Deductions</option>
+                      <option value="restock">Restocks</option>
+                    </select>
                   </>
                 )}
-              </div>
+                
+                {/* Restock Button - Show in adjustments view */}
+                {currentView === 'adjustments' && (
+                  <button
+                    onClick={onRestock}
+                    className={`flex items-center gap-2 px-4 py-2 text-xs transition-all duration-300 rounded-xl border whitespace-nowrap ${
+                      isRestockMode
+                        ? 'bg-white/10 text-white border-white/20 shadow-lg shadow-black/20' 
+                        : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-neutral-200'
+                    }`}
+                    style={{ fontFamily: 'Tiempo, serif' }}
+                    title={isRestockMode ? "Exit Restock Mode" : "Enter Restock Mode - Show entire catalog"}
+                  >
+                    <span>Restock</span>
+                  </button>
+                )}
+                
+                {/* Audit Button - Show in adjustments view */}
+                {currentView === 'adjustments' && (
+                  <button
+                    onClick={onAudit}
+                    className={`flex items-center gap-2 px-4 py-2 text-xs transition-all duration-300 rounded-xl border whitespace-nowrap ${
+                      isAuditMode
+                        ? 'bg-white/10 text-white border-white/20 shadow-lg shadow-black/20' 
+                        : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-neutral-200'
+                    }`}
+                    style={{ fontFamily: 'Tiempo, serif' }}
+                    title={isAuditMode ? "Exit Audit Mode" : "Enter Audit Mode - Show only products in stock"}
+                  >
+                    <span>Audit</span>
+                  </button>
+                )}
+              </>
+            )}
 
-              {/* Clear Canvas Button */}
-              <button
-                onClick={onClearAiCanvas}
-                className="px-3 h-[30px] bg-transparent hover:bg-neutral-800/40 text-neutral-400 hover:text-neutral-200 rounded-lg text-xs font-medium border border-neutral-700/40 hover:border-neutral-600/60 transition-all duration-200"
-                style={{ fontFamily: 'Tiempo, serif' }}
-                title="Clear Canvas"
-              >
-                Clear
-              </button>
-            </>
-          )}
+            {/* AI Canvas Tools */}
+            {currentView === 'ai-view' && (
+              <>
+                {/* Combined Tools Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowAiToolsDropdown(!showAiToolsDropdown)}
+                    className="px-4 py-2 rounded-xl transition-all duration-300 text-xs flex items-center gap-2 whitespace-nowrap border bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white hover:shadow-lg hover:shadow-black/20"
+                    style={{ fontFamily: 'Tiempo, serif' }}
+                    title="Drawing Tools"
+                  >
+                    <span>Tools</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
 
+                  {/* Dropdown - TV Menu Style */}
+                  {showAiToolsDropdown && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setShowAiToolsDropdown(false)}
+                      />
+                      <div 
+                        className="absolute top-full right-0 mt-2 w-64 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl z-50 overflow-hidden"
+                        style={{ 
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                        }}
+                      >
+                        <div className="py-2 px-1">
+                          {/* Tool Selection */}
+                          <div className="mb-1">
+                            <div className="text-[10px] text-white/40 mb-2 px-3 uppercase tracking-wider font-medium">Tool</div>
+                            <button
+                              onClick={() => onAiCanvasToolChange?.('brush')}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg transition-all duration-200 ease-out mx-1 ${
+                                aiCanvasTool === 'brush'
+                                  ? 'bg-white/10 text-white shadow-sm'
+                                  : 'text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                              }`}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                              <span className="text-xs font-medium">Brush</span>
+                              {aiCanvasTool === 'brush' && (
+                                <svg className="ml-auto w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => onAiCanvasToolChange?.('eraser')}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 text-left rounded-lg transition-all duration-200 ease-out mx-1 ${
+                                aiCanvasTool === 'eraser'
+                                  ? 'bg-white/10 text-white shadow-sm'
+                                  : 'text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                              }`}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              <span className="text-xs font-medium">Eraser</span>
+                              {aiCanvasTool === 'eraser' && (
+                                <svg className="ml-auto w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Colors - Only show for brush */}
+                          {aiCanvasTool === 'brush' && (
+                            <>
+                              <div className="border-t border-neutral-700/50 my-2" />
+                              <div className="mb-1">
+                                <div className="text-[10px] text-white/40 mb-2 px-3 uppercase tracking-wider font-medium">Color</div>
+                                <div className="flex gap-2 flex-wrap px-3">
+                                  {['#ffffff', '#ff6b6b', '#4ecdc4', '#45b7d1', '#ffd93d', '#6bcf7f', '#c77dff'].map((c) => (
+                                    <button
+                                      key={c}
+                                      onClick={() => onAiCanvasColorChange?.(c)}
+                                      className={`w-8 h-8 rounded-lg transition-all duration-200 hover:scale-110 ${
+                                        aiCanvasColor === c ? 'ring-2 ring-white/60 ring-offset-2 ring-offset-neutral-900 scale-110' : 'hover:ring-1 hover:ring-white/30'
+                                      }`}
+                                      style={{ backgroundColor: c }}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </>
+                          )}
+
+                          {/* Size */}
+                          <div>
+                            {aiCanvasTool === 'brush' && (
+                              <div className="border-t border-neutral-700/50 my-2" />
+                            )}
+                            <div className="text-[10px] text-white/40 mb-2 px-3 uppercase tracking-wider font-medium">Size</div>
+                            <div className="px-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-white/70">Brush Size</span>
+                                <span className="text-xs text-white font-mono bg-white/10 px-2 py-0.5 rounded">{aiCanvasBrushSize}px</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="1"
+                                max="20"
+                                value={aiCanvasBrushSize}
+                                onChange={(e) => onAiCanvasBrushSizeChange?.(parseInt(e.target.value))}
+                                className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer"
+                                style={{
+                                  background: `linear-gradient(to right, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.3) ${(aiCanvasBrushSize - 1) / 19 * 100}%, rgba(255,255,255,0.1) ${(aiCanvasBrushSize - 1) / 19 * 100}%, rgba(255,255,255,0.1) 100%)`
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Clear Canvas Button */}
+                <button
+                  onClick={onClearAiCanvas}
+                  className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-red-200 rounded-xl text-xs font-medium border border-red-500/30 hover:border-red-400/40 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/20"
+                  style={{ fontFamily: 'Tiempo, serif' }}
+                  title="Clear Canvas"
+                >
+                  Clear
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

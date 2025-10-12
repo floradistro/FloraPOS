@@ -32,11 +32,11 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
   const { data: pointsBalance, isLoading } = useUserPointsBalance(customerId);
   
   if (isLoading) {
-    return <span className="text-xs text-neutral-500">Loading...</span>;
+    return <span className="text-xs font-mono text-neutral-500">loading...</span>;
   }
   
   if (!pointsBalance || customerId === 0) {
-    return <span className="text-xs text-neutral-500">0 Points</span>;
+    return <span className="text-xs font-mono text-neutral-500">0 points</span>;
   }
   
   const balance = pointsBalance as any;
@@ -45,14 +45,8 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
   const pointsUnit = balance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
   
   return (
-    <span 
-      className="text-white text-sm font-bold bg-gradient-to-r from-purple-600 via-fuchsia-500 via-pink-500 via-rose-400 via-pink-400 via-fuchsia-400 to-purple-600 px-4 py-2 rounded-full animate-pulse bg-[length:300%_100%] shadow-lg" 
-      style={{ 
-        boxShadow: '0 0 12px rgba(217, 70, 239, 0.8), 0 0 24px rgba(217, 70, 239, 0.5), 0 0 36px rgba(217, 70, 239, 0.3)',
-        animation: 'gradient 4s ease-in-out infinite, pulse 2s ease-in-out infinite'
-      }}
-    >
-      {balance.balance.toLocaleString()} {pointsUnit}
+    <span className="text-white text-xs font-mono bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 px-2 py-0.5 rounded animate-pulse bg-[length:200%_100%]">
+      {balance.balance.toLocaleString()} {pointsUnit.toLowerCase()}
     </span>
   );
 };
@@ -92,72 +86,76 @@ const CartComponent = function Cart({
   const adjustmentCount = items.filter(item => item.is_adjustment).length;
 
   return (
-    <div className="w-full bg-gradient-to-br from-neutral-900/40 via-neutral-800/30 to-neutral-900/40 backdrop-blur-xl flex flex-col h-full border-l border-white/[0.08] shadow-2xl">
+    <div className="w-full backdrop-blur-xl flex flex-col h-full">
       {/* Cart Items */}
       <div className="flex-1 overflow-hidden">
         {isProductsLoading ? (
           // Show nothing while products are loading
           <div className="h-full"></div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full p-10 text-center">
-            {/* Logo with conditional glow based on customer selection */}
-            <div className="w-40 h-40 flex items-center justify-center mb-6 relative">
-              <Image 
-                src="/logo123.png" 
-                alt="Flora POS Logo" 
-                width={160}
-                height={160}
-                className={`object-contain transition-all duration-500 ${
-                  selectedCustomer && selectedCustomer.id >= 0 ? 'opacity-90' : 'opacity-30'
-                }`}
-                style={{
-                  animation: 'subtle-float 3s ease-in-out infinite',
-                  ...(selectedCustomer && selectedCustomer.id >= 0 ? {
-                    filter: 'drop-shadow(0 0 20px rgba(236, 72, 153, 0.8)) drop-shadow(0 0 40px rgba(236, 72, 153, 0.5)) drop-shadow(0 0 60px rgba(236, 72, 153, 0.3))',
-                  } : {})
-                }}
-                priority
-              />
-            </div>
+          <div className="flex flex-col items-center justify-center h-full px-6 py-12 text-center">
+            {/* Logo - Only show when no customer selected */}
+            {!selectedCustomer && (
+              <div className="w-24 h-24 flex items-center justify-center mb-8 relative">
+                <Image 
+                  src="/logo123.png" 
+                  alt="Flora POS Logo" 
+                  width={96}
+                  height={96}
+                  className="object-contain opacity-20"
+                  priority
+                />
+              </div>
+            )}
             
             {/* Customer Info - Show when customer is selected */}
             {selectedCustomer && selectedCustomer.id >= 0 && !isAuditMode && (
-              <div className="mb-6 bg-white/[0.05] hover:bg-white/[0.08] backdrop-blur-lg border border-pink-500/30 rounded-2xl p-5 transition-all duration-300 shadow-xl" style={{ boxShadow: '0 0 20px rgba(236, 72, 153, 0.3)' }}>
+              <div className="w-full mb-8 bg-white/[0.02] backdrop-blur-lg rounded-2xl p-5 transition-all duration-300">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="text-xl font-bold text-pink-200 mb-1" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 0 10px rgba(236, 72, 153, 0.5)' }}>
-                    {selectedCustomer.id === 0 ? 'Guest Customer' : (selectedCustomer.display_name || selectedCustomer.name || selectedCustomer.username)}
+                  {/* Logo instead of Avatar */}
+                  <div className="w-16 h-16 flex items-center justify-center">
+                    <Image 
+                      src="/logo123.png" 
+                      alt="Flora POS Logo" 
+                      width={64}
+                      height={64}
+                      className="object-contain opacity-20"
+                      priority
+                    />
                   </div>
+                  
+                  <div className="text-base font-medium text-white">
+                    {selectedCustomer.id === 0 ? 'Guest' : (selectedCustomer.display_name || selectedCustomer.name || selectedCustomer.username)}
+                  </div>
+                  
                   {selectedCustomer.id > 0 && (
-                    <>
-                      <div className="text-sm text-neutral-400">
-                        {selectedCustomer.email}
-                      </div>
+                    <div className="text-xs text-neutral-500 font-mono mt-1">
                       <CustomerPointsDisplay customerId={selectedCustomer.id} />
-                    </>
+                    </div>
                   )}
-                  {selectedCustomer.id === 0 && (
-                    <div className="text-sm text-neutral-400">Walk-in customer</div>
-                  )}
+                  
                   <button
                     onClick={() => onCustomerSelect?.(null)}
-                    className="mt-2 px-4 py-2 text-sm font-medium text-pink-300 hover:text-pink-200 bg-pink-600/10 hover:bg-pink-600/20 border border-pink-500/30 hover:border-pink-500/50 rounded-xl transition-all duration-200 active:scale-95"
+                    className="mt-2 px-4 py-2 text-xs font-mono font-medium text-neutral-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-300 active:scale-95 lowercase"
                   >
-                    Clear Customer
+                    remove
                   </button>
                 </div>
               </div>
             )}
             
-            {/* Only show messages in audit mode */}
+            {/* Empty State Message */}
+            {!isAuditMode && (
+              <p className="text-sm font-mono text-neutral-500 lowercase">
+                {selectedCustomer ? 'add items to cart' : 'select customer to begin'}
+              </p>
+            )}
+            
+            {/* Audit Mode Message */}
             {isAuditMode && (
-              <>
-                <h3 className="text-neutral-300 text-lg font-medium mb-3" style={{ fontFamily: 'Tiempo, serif' }}>
-                  No adjustments pending
-                </h3>
-                <p className="text-base text-neutral-500 mb-8" style={{ fontFamily: 'Tiempo, serif' }}>
-                  Make inventory adjustments to see them here
-                </p>
-              </>
+              <p className="text-sm font-mono text-neutral-500 lowercase">
+                no adjustments pending
+              </p>
             )}
             
             {/* Add Customer Button - Only show in normal mode when no customer selected */}
@@ -166,9 +164,9 @@ const CartComponent = function Cart({
                 onClick={() => {
                   onOpenCustomerSelector?.();
                 }}
-                className="px-8 py-4 text-lg font-semibold bg-white/[0.05] hover:bg-white/[0.1] backdrop-blur-md border-2 border-neutral-500/40 hover:border-neutral-400/60 text-neutral-200 hover:text-white rounded-2xl transition-all duration-200 ease-out mt-8 shadow-xl active:scale-95"
+                className="mt-8 px-6 py-3 text-sm font-mono font-medium bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white rounded-xl transition-all duration-300 active:scale-95 lowercase"
               >
-                Add Customer
+                add customer
               </button>
             )}
 
@@ -204,6 +202,38 @@ const CartComponent = function Cart({
                   background-position: 100% 50%;
                 }
               }
+              
+              @keyframes slide-in-from-top-4 {
+                from {
+                  opacity: 0;
+                  transform: translateY(-16px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+              
+              .animate-in {
+                animation-fill-mode: both;
+              }
+              
+              .slide-in-from-top-4 {
+                animation-name: slide-in-from-top-4;
+              }
+              
+              .fade-in {
+                animation-name: fadeIn;
+              }
+              
+              .duration-500 {
+                animation-duration: 500ms;
+              }
+              
+              @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+              }
             `}</style>
           </div>
         ) : (
@@ -216,13 +246,71 @@ const CartComponent = function Cart({
                 </div>
               </div>
             )}
-            <div className="gap-4 pt-3 px-3 pb-3 flex flex-col">
+            
+            {/* Customer Card - Shows at top always */}
+            <div className="sticky top-0 z-20 mx-4 mt-4 mb-3">
+              {selectedCustomer && selectedCustomer.id >= 0 ? (
+                <div className="bg-white/[0.02] backdrop-blur-xl rounded-2xl p-4 transition-all duration-300">
+                  <div className="flex items-center gap-3">
+                    {/* Customer Avatar */}
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neutral-700 to-neutral-800 flex items-center justify-center text-white font-mono font-bold text-lg flex-shrink-0">
+                      {selectedCustomer.id === 0 ? '👤' : (selectedCustomer.display_name || selectedCustomer.name || 'U')[0].toUpperCase()}
+                    </div>
+                    
+                    {/* Customer Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white truncate">
+                        {selectedCustomer.id === 0 ? 'Guest' : (selectedCustomer.display_name || selectedCustomer.name || selectedCustomer.username)}
+                      </div>
+                      {selectedCustomer.id > 0 && (
+                        <div className="text-xs text-neutral-500 font-mono mt-1">
+                          <CustomerPointsDisplay customerId={selectedCustomer.id} />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Remove Customer Button */}
+                    <button
+                      onClick={() => onCustomerSelect?.(null)}
+                      className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-95 flex-shrink-0"
+                      title="Remove"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => onOpenCustomerSelector?.()}
+                  className="w-full bg-white/[0.02] hover:bg-white/[0.04] backdrop-blur-xl rounded-2xl p-4 transition-all duration-300 text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-neutral-500 flex-shrink-0">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-mono font-medium text-neutral-400 lowercase">add customer</div>
+                      <div className="text-xs font-mono text-neutral-600 mt-0.5">optional</div>
+                    </div>
+                    <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              )}
+            </div>
+            
+            <div className="space-y-2 pt-0 px-4 pb-3 flex flex-col">
               {items.map((item) => (
-                <div key={item.id} className="bg-white/[0.03] hover:bg-white/[0.06] backdrop-blur-lg border border-white/[0.12] hover:border-white/[0.2] rounded-2xl p-4 relative transition-all duration-200 shadow-xl">
+                <div key={item.id} className="bg-white/[0.02] backdrop-blur-sm hover:bg-white/[0.04] rounded-2xl p-4 relative transition-all duration-300">
                   {/* Header Row: Image, Name, Remove Button */}
-                  <div className="flex items-center gap-4 mb-4">
+                  <div className="flex items-center gap-3 mb-3">
                     {/* Product Image */}
-                    <div className="w-16 h-16 relative overflow-hidden flex-shrink-0 rounded-xl ring-2 ring-white/10 hover:ring-white/20 transition-all">
+                    <div className="w-12 h-12 relative overflow-hidden flex-shrink-0 rounded-xl bg-neutral-800/50">
                       {item.image ? (
                         <img 
                           src={item.image} 
@@ -231,40 +319,34 @@ const CartComponent = function Cart({
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-neutral-700/40">
+                        <div className="w-full h-full flex items-center justify-center">
                           <Image 
                             src="/logo123.png" 
                             alt="Flora POS Logo" 
-                            width={64}
-                            height={64}
-                            className="object-contain opacity-25"
+                            width={48}
+                            height={48}
+                            className="object-contain opacity-20"
                           />
                         </div>
                       )}
                     </div>
                     
-                    {/* Product Name, Category, and Price */}
+                    {/* Product Name and Info */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-lg font-bold text-neutral-100 mb-2 leading-tight" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)' }}>
+                      <h4 className="text-sm font-medium text-white mb-1 truncate">
                         {item.name}
                       </h4>
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
                         {item.category && (
-                          <span className="text-xs text-neutral-300 bg-neutral-600/40 backdrop-blur-sm px-3 py-1 rounded-full font-medium">
-                            {CATEGORY_DISPLAY_NAMES[item.category] || item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+                          <span className="text-[10px] font-mono text-neutral-400 bg-white/5 px-2 py-0.5 rounded lowercase">
+                            {item.category}
                           </span>
                         )}
-                        <span className="text-base text-neutral-300 font-semibold">${item.price.toFixed(2)}</span>
+                        <span className="text-xs font-mono text-neutral-400">${item.price.toFixed(2)}</span>
                       </div>
-                      {/* Pricing tier information */}
                       {item.pricing_tier && (
-                        <div className="text-xs text-neutral-400 mt-2 bg-neutral-600/20 px-2 py-1 rounded-lg inline-block">
-                          <span className="font-medium">{item.pricing_tier.tier_label}</span>
-                          {item.pricing_tier.conversion_ratio && (
-                            <span className="ml-1">
-                              ({item.pricing_tier.conversion_ratio.output_amount} {item.pricing_tier.conversion_ratio.output_unit})
-                            </span>
-                          )}
+                        <div className="text-[10px] font-mono text-neutral-500 mt-1">
+                          {item.pricing_tier.tier_label}
                         </div>
                       )}
                     </div>
@@ -272,11 +354,11 @@ const CartComponent = function Cart({
                     {/* Remove Button */}
                     <button
                       onClick={() => onRemoveItem?.(item.id)}
-                      className="w-11 h-11 bg-red-600/10 hover:bg-red-600/30 border border-red-500/20 hover:border-red-500/50 flex items-center justify-center transition-all duration-200 flex-shrink-0 rounded-xl active:scale-95"
-                      title="Remove item"
+                      className="p-1.5 bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all duration-200 flex-shrink-0 rounded-lg active:scale-95"
+                      title="Remove"
                     >
-                      <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                      <svg className="w-3.5 h-3.5 text-neutral-500 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
                   </div>
@@ -336,30 +418,30 @@ const CartComponent = function Cart({
                       </div>
                     ) : (
                       /* Normal Cart Item Display */
-                      <div className="flex items-center justify-between w-full gap-4">
-                        {/* Quantity Controls - Left Side */}
-                        <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 rounded-xl p-1.5">
+                      <div className="flex items-center justify-between w-full gap-3">
+                        {/* Quantity Controls - Minimal */}
+                        <div className="flex items-center gap-2 bg-white/5 rounded-xl p-1">
                           <button
                             onClick={() => onUpdateQuantity?.(item.id, Math.max(0, item.quantity - 1))}
-                            className="w-11 h-11 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-white/20 flex items-center justify-center transition-all duration-200 rounded-lg active:scale-95"
+                            className="w-8 h-8 hover:bg-white/10 flex items-center justify-center transition-all duration-200 rounded-lg active:scale-95"
                           >
-                            <svg className="w-5 h-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
+                            <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                             </svg>
                           </button>
-                          <span className="text-xl text-neutral-100 min-w-[3rem] text-center font-bold">{item.quantity}</span>
+                          <span className="text-base text-white min-w-[2rem] text-center font-mono">{item.quantity}</span>
                           <button
                             onClick={() => onUpdateQuantity?.(item.id, item.quantity + 1)}
-                            className="w-11 h-11 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-white/20 flex items-center justify-center transition-all duration-200 rounded-lg active:scale-95"
+                            className="w-8 h-8 hover:bg-white/10 flex items-center justify-center transition-all duration-200 rounded-lg active:scale-95"
                           >
-                            <svg className="w-5 h-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
                           </button>
                         </div>
                         
-                        {/* Subtotal - Right Side */}
-                        <span className="text-xl font-black text-neutral-50">
+                        {/* Subtotal - Clean */}
+                        <span className="text-base font-mono font-medium text-white">
                           ${(() => {
                             let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
                             if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
@@ -456,16 +538,27 @@ const CartComponent = function Cart({
 
       {/* Action Buttons */}
       {items.length > 0 && (
-        <div className="pt-4 px-4 pb-4 space-y-4 bg-gradient-to-t from-neutral-900/60 to-transparent backdrop-blur-md border-t border-white/[0.08]">
+        <div className="pt-4 px-4 pb-4 space-y-3 border-t border-white/5">
+          {/* Total Display - Minimal */}
+          <div className="flex items-center justify-between py-3 px-4 bg-white/[0.02] rounded-xl">
+            <span className="text-xs font-mono text-neutral-400 lowercase">total</span>
+            <span className="text-2xl font-mono font-bold text-white">${total.toFixed(2)}</span>
+          </div>
+          
+          {/* Item Count */}
+          <div className="text-[10px] font-mono text-neutral-500 text-center lowercase">
+            {itemCount} item{itemCount !== 1 ? 's' : ''}
+          </div>
+          
           {/* Empty Cart Button */}
           <button
             onClick={() => setShowEmptyConfirm(true)}
-            className="w-full bg-red-600/10 hover:bg-red-600/20 border border-red-500/30 hover:border-red-500/50 text-red-300 hover:text-red-200 font-semibold py-4 px-5 transition-all duration-200 flex items-center justify-center gap-3 rounded-2xl shadow-lg hover:shadow-xl active:scale-98"
+            className="w-full bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white font-mono font-medium py-2.5 px-4 transition-all duration-300 flex items-center justify-center gap-2 rounded-xl active:scale-95 text-xs lowercase"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
-            <span className="text-lg">Empty Cart</span>
+            <span>clear cart</span>
           </button>
 
           {/* Confirmation Dialog */}
@@ -546,23 +639,23 @@ const CartComponent = function Cart({
               </button>
             </div>
           ) : (
-            /* Checkout Button */
+            /* Checkout Button - Apple 2035 */
             <button
               onClick={() => onCheckout?.(selectedCustomer)}
               disabled={isCheckoutLoading}
-              className="w-full bg-gradient-to-r from-white/[0.06] to-white/[0.04] hover:from-white/[0.1] hover:to-white/[0.08] backdrop-blur-md border border-white/20 hover:border-white/30 text-neutral-100 hover:text-white font-black py-6 px-6 transition-all duration-200 flex items-center justify-between rounded-2xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl active:scale-98"
+              className="w-full bg-neutral-200 text-neutral-900 hover:bg-neutral-100 font-mono font-bold py-4 px-5 transition-all duration-300 flex items-center justify-center gap-3 rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-sm lowercase"
             >
-              <div className="flex items-center gap-4">
-                {isCheckoutLoading ? (
-                  <div className="animate-spin rounded-full h-7 w-7 border-3 border-white/80 border-t-transparent"></div>
-                ) : (
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                )}
-                <span className="text-xl">{isCheckoutLoading ? 'Processing...' : 'Checkout'}</span>
-              </div>
-              <span className="text-2xl font-black tracking-tight">${total.toFixed(2)}</span>
+              {isCheckoutLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-neutral-900 border-t-transparent"></div>
+                  <span>processing...</span>
+                </>
+              ) : (
+                <>
+                  <span>checkout</span>
+                  <span className="ml-auto text-lg">${total.toFixed(2)}</span>
+                </>
+              )}
             </button>
           )}
         </div>

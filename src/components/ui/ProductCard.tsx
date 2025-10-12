@@ -12,6 +12,7 @@ interface ProductCardProps {
   isAuditMode: boolean;
   isSalesView?: boolean; // New prop to identify sales view
   isSelected?: boolean; // New prop for persistent selection state
+  showImage?: boolean; // Control image visibility
   onVariantSelect: (productId: number, variantId: number) => void;
   onQuantityChange: (productId: number, quantity: number, price: number, category?: string) => void;
   onAddToCartWithVariant: (product: Product) => void;
@@ -34,6 +35,7 @@ const ProductCard = memo<ProductCardProps>(({
   isAuditMode,
   isSalesView = false,
   isSelected = false,
+  showImage = true,
   onVariantSelect,
   onQuantityChange,
   onAddToCartWithVariant,
@@ -216,27 +218,29 @@ const ProductCard = memo<ProductCardProps>(({
         {/* Product Image and Name Row */}
         <div className="flex gap-2 items-center mb-2">
           {/* Product Image */}
-          <div className="w-12 h-12 relative overflow-hidden flex-shrink-0 rounded bg-neutral-800/30 border border-white/10 group-hover:border-white/20 apple-smooth">
-            {product.image ? (
-              <img 
-                src={product.image} 
-                alt={product.name}
-                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
-                loading="lazy"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Image 
-                  src="/logo123.png" 
-                  alt="Flora POS Logo" 
-                  width={48}
-                  height={48}
-                  className="object-contain opacity-30 group-hover:opacity-40 transition-opacity duration-200"
-                  priority
+          {showImage && (
+            <div className="w-12 h-12 relative overflow-hidden flex-shrink-0 rounded bg-neutral-800/30 border border-white/10 group-hover:border-white/20 apple-smooth">
+              {product.image ? (
+                <img 
+                  src={product.image} 
+                  alt={product.name}
+                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                  loading="lazy"
                 />
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Image 
+                    src="/logo123.png" 
+                    alt="Flora POS Logo" 
+                    width={48}
+                    height={48}
+                    className="object-contain opacity-30 group-hover:opacity-40 transition-opacity duration-200"
+                    priority
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Product Name and Category - Centered in remaining space */}
           <div className="flex-1 flex flex-col justify-center items-center text-center">
