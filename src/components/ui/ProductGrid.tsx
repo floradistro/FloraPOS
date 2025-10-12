@@ -256,7 +256,7 @@ export const ProductGrid = forwardRef<{
         
         // Product matches if it has ANY of the selected filter values
         const matches = blueprintFieldValues.some(filterValue => 
-          productValueParts.some(productValue => productValue === filterValue.trim())
+          productValueParts.some((productValue: string) => productValue === filterValue.trim())
         );
         
         if (matches) {
