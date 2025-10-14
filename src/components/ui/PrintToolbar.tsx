@@ -135,8 +135,8 @@ interface PrintToolbarProps {
 }
 
 const PRESET_FONTS = [
-  { name: 'Tiempos', value: 'Tiempos, serif' },
-  { name: 'DonGraffiti', value: 'DonGraffiti, cursive' },
+  { name: 'Tiempos', value: 'Tiempos' },
+  { name: 'DonGraffiti', value: 'DonGraffiti' },
   { name: 'Helvetica', value: 'Helvetica, sans-serif' },
   { name: 'SF Pro', value: '-apple-system, BlinkMacSystemFont, sans-serif' },
   { name: 'Georgia', value: 'Georgia, serif' },
