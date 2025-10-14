@@ -962,25 +962,38 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
               opacity: focusedPreview === null ? 0.6 : focusedPreview === 'label' ? 0.85 : 0.4,
             }}
           >
-            <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Full Label</div>
+            <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
+              {bulkPrintMode && bulkProductsData.length > 0 ? `Bulk Preview (${bulkProductsData.length} products)` : 'Full Label'}
+            </div>
             <div className="text-xs text-white/30 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>
               {template.grid.label_width}" × {template.grid.label_height}"
             </div>
           </div>
           <div 
-            className="flex-1 flex items-center justify-center p-4 md:p-6 lg:p-8 cursor-pointer transition-all duration-700 ease-out overflow-hidden"
+            className="flex-1 flex items-center justify-center p-4 md:p-6 lg:p-8 cursor-pointer transition-all duration-700 ease-out overflow-auto"
             onClick={() => setFocusedPreview(focusedPreview === 'label' ? null : 'label')}
             style={{
               opacity: focusedPreview === null ? 0.6 : focusedPreview === 'label' ? 0.85 : 0.4,
             }}
           >
             <div
-              className="transition-transform duration-700 ease-out w-full h-full flex items-center justify-center"
+              className="transition-transform duration-700 ease-out flex flex-col gap-6"
               style={{
                 transform: focusedPreview === 'label' ? 'scale(1.02)' : 'scale(1)',
               }}
             >
-              {generateSingleLabel()}
+              {bulkPrintMode && bulkProductsData.length > 0 ? (
+                bulkProductsData.slice(0, 5).map((product, idx) => (
+                  <div key={idx} className="flex flex-col gap-1">
+                    {generateSingleLabel()}
+                    <div className="text-[8px] text-white/30 text-center" style={{ fontFamily: 'Tiempos, serif' }}>
+                      {product.name}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                generateSingleLabel()
+              )}
             </div>
           </div>
           <div 
