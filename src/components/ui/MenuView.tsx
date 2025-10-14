@@ -617,51 +617,41 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
       if (result.success && result.data) {
         console.log(`✅ Loaded ${result.data.length} products`)
         
-        // Load blueprint pricing using BATCH API
-        try {
-          const productsWithCategories = result.data.map((product: Product) => ({
-            id: product.id,
-            categoryIds: product.categories?.map(cat => cat.id) || []
+        // Filter to show only products with stock > 0 at current location
+        const inStockProducts = result.data.filter((product: Product) => {
+          if (!user?.location_id) return true // Show all if no location
+          
+          const locationInventory = product.inventory?.find((inv: any) => 
+            inv.location_id?.toString() === user.location_id?.toString()
+          )
+          const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || 0) : 0
+          return locationStock > 0
+        })
+        
+        // Show products immediately without pricing (INSTANT RENDER)
+        const productsWithoutPricing = inStockProducts.map(p => ({ ...p, blueprintPricing: null }))
+        setProducts(productsWithoutPricing)
+        console.log(`⚡ MenuView: Showing ${inStockProducts.length} products instantly (pricing loading in background...)`)
+        
+        // Load pricing in background (non-blocking)
+        BlueprintPricingService.getBlueprintPricingBatch(
+          inStockProducts.map(p => ({
+            id: p.id,
+            categoryIds: p.categories?.map(cat => cat.id) || []
           }))
-          
-          const batchPricingResponse = await BlueprintPricingService.getBlueprintPricingBatch(productsWithCategories)
-          
-          // Apply pricing to products
-          const productsWithPricing = result.data.map((product: Product) => {
-            const pricingData = batchPricingResponse[product.id]
-            return { ...product, blueprintPricing: pricingData || null }
-          })
-          
-          // Filter to show only products with stock > 0 at current location (same as TV menu and ProductGrid)
-          const inStockProducts = productsWithPricing.filter((product: Product) => {
-            if (!user?.location_id) return true // Show all if no location
-            
-            const locationInventory = product.inventory?.find((inv: any) => 
-              inv.location_id?.toString() === user.location_id?.toString()
-            )
-            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || 0) : 0
-            return locationStock > 0
-          })
-          
-          console.log(`✅ Preview showing ${inStockProducts.length} in-stock products at location ${user?.location_id}`)
-          
-          setProducts(inStockProducts)
-        } catch (err) {
-          console.warn('Failed to load blueprint pricing:', err)
-          
-          // Even on pricing error, filter by stock
-          const inStockProducts = result.data.filter((product: Product) => {
-            if (!user?.location_id) return true
-            
-            const locationInventory = product.inventory?.find((inv: any) => 
-              inv.location_id?.toString() === user.location_id?.toString()
-            )
-            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || 0) : 0
-            return locationStock > 0
-          })
-          
-          setProducts(inStockProducts)
-        }
+        ).then(batchPricingResponse => {
+          setProducts(prev => 
+            prev.map(product => {
+              const pricingData = batchPricingResponse[product.id]
+              return pricingData ? { ...product, blueprintPricing: pricingData } : product
+            })
+          )
+          const successCount = Object.values(batchPricingResponse).filter(p => p !== null).length
+          console.log(`✅ MenuView pricing loaded: ${successCount}/${inStockProducts.length} products`)
+        }).catch(err => {
+          console.warn('Background pricing load failed:', err)
+          // Products already visible without pricing - no action needed
+        })
       } else {
         throw new Error(result.error || 'Failed to load products')
       }

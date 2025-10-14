@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('⚡ Orders API - Using FAST bulk endpoint');
+    console.log('📦 Orders API - Fetching WooCommerce orders with full data');
     
     const { searchParams } = new URL(request.url);
     const customer = searchParams.get('customer');
@@ -14,18 +14,6 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('date_from');
     const dateTo = searchParams.get('date_to');
     
-    // Build params for bulk endpoint
-    const bulkParams = new URLSearchParams({
-      page,
-      per_page: perPage,
-      status
-    });
-    
-    if (locationId) bulkParams.append('location_id', locationId);
-    if (customer) bulkParams.append('customer_id', customer);
-    if (dateFrom) bulkParams.append('date_from', dateFrom);
-    if (dateTo) bulkParams.append('date_to', dateTo);
-    
     // Get API environment for credentials
     const apiEnv = getApiEnvironmentFromRequest(request);
     const credentials = getApiCredentials(apiEnv);
@@ -33,24 +21,41 @@ export async function GET(request: NextRequest) {
     const CONSUMER_SECRET = credentials.consumerSecret;
     const BASE_URL = getApiBaseUrl(apiEnv);
     
-    // Call bulk orders endpoint directly
-    const bulkUrl = `${BASE_URL}/wp-json/flora-im/v1/orders/bulk?${bulkParams.toString()}&consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
+    // Build params for WooCommerce orders endpoint
+    const params = new URLSearchParams({
+      page,
+      per_page: perPage,
+      status,
+      orderby: 'date',
+      order: 'desc',
+      consumer_key: CONSUMER_KEY,
+      consumer_secret: CONSUMER_SECRET
+    });
     
-    const response = await fetch(bulkUrl, {
+    if (locationId) params.append('location_id', locationId);
+    if (customer) params.append('customer', customer);
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+    
+    // Use Flora IM orders endpoint which supports location filtering and returns full WooCommerce data
+    const ordersUrl = `${BASE_URL}/wp-json/flora-im/v1/orders?${params.toString()}`;
+    
+    const response = await fetch(ordersUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(15000),
     });
     
     if (!response.ok) {
-      throw new Error(`Bulk orders API error: ${response.status}`);
+      throw new Error(`Orders API error: ${response.status}`);
     }
     
     const result = await response.json();
     
-    console.log(`⚡ Loaded ${result.meta?.total || 0} orders in ${result.meta?.load_time_ms || 0}ms (${result.meta?.queries_executed || 0} queries)`);
+    // Flora IM endpoint returns { success, data, meta } structure
+    console.log(`📦 Loaded ${result.data?.length || 0} orders (Total: ${result.meta?.total || 0})`);
     
     return NextResponse.json(result);
     

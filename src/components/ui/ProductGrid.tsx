@@ -517,35 +517,12 @@ export const ProductGrid = forwardRef<{
             };
       });
 
-      // Load blueprint pricing using BATCH API (same as MenuView)
-      console.log(`🔄 Fetching pricing tiers for ${baseProducts.length} products...`);
-      try {
-        const productsWithCategories = baseProducts.map((product: Product) => ({
-          id: product.id,
-          categoryIds: product.categories?.map(cat => cat.id) || []
-        }));
-        
-        const batchPricingResponse = await BlueprintPricingService.getBlueprintPricingBatch(productsWithCategories);
-        
-        // Apply pricing to products
-        baseProducts.forEach(product => {
-          const pricingData = batchPricingResponse[product.id];
-          product.blueprintPricing = pricingData || null;
-        });
-        
-        const successCount = baseProducts.filter(p => p.blueprintPricing !== null).length;
-        console.log(`✅ Loaded pricing tiers for ${successCount}/${baseProducts.length} products`);
-      } catch (error) {
-        console.error('❌ Error loading batch pricing:', error);
-        // Continue without pricing tiers
-        baseProducts.forEach(product => {
-          product.blueprintPricing = null;
-        });
-      }
-
-      // OPTIMIZATION: Skip variant pre-loading for faster initial load
-      // Variants will be loaded on-demand when user selects a product
+      // OPTIMIZATION: Show products immediately, load pricing in background
+      // This makes initial render INSTANT (~100ms) instead of waiting for pricing (~2s)
       const normalizedProducts: Product[] = baseProducts.map(baseProduct => {
+        // Initially null pricing - will be loaded in background
+        baseProduct.blueprintPricing = null;
+        
         if (baseProduct.type === 'variable') {
           baseProduct.has_variants = true;
           baseProduct.variants = []; // Load on-demand when selected
@@ -554,10 +531,32 @@ export const ProductGrid = forwardRef<{
       });
 
       const loadTime = Date.now() - startTime;
-      console.log(`⚡ Products loaded in ${loadTime}ms (bulk endpoint + pricing + transform)`);
+      console.log(`⚡ Products loaded in ${loadTime}ms (bulk endpoint only - INSTANT)`);
 
-      // Always replace products since we're loading all at once
+      // Show products immediately
       setProducts(normalizedProducts);
+      
+      // Load blueprint pricing in background (non-blocking)
+      console.log(`🔄 Loading pricing tiers in background for ${baseProducts.length} products...`);
+      BlueprintPricingService.getBlueprintPricingBatch(
+        baseProducts.map(p => ({
+          id: p.id,
+          categoryIds: p.categories?.map(cat => cat.id) || []
+        }))
+      ).then(batchPricingResponse => {
+        // Update products with pricing data
+        setProducts(prevProducts => 
+          prevProducts.map(product => {
+            const pricingData = batchPricingResponse[product.id];
+            return pricingData ? { ...product, blueprintPricing: pricingData } : product;
+          })
+        );
+        const successCount = Object.values(batchPricingResponse).filter(p => p !== null).length;
+        console.log(`✅ Pricing tiers loaded in background: ${successCount}/${baseProducts.length} products`);
+      }).catch(error => {
+        console.error('❌ Background pricing load failed:', error);
+        // Products already visible, just without pricing tiers
+      });
       
       // Notify parent of UNFILTERED products for blueprint field extraction
       onUnfilteredProductsChange?.(normalizedProducts);

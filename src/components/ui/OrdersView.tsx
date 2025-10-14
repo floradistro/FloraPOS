@@ -156,6 +156,16 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
   } = useQuery({
     queryKey: ['orders', currentPage, statusFilter, selectedEmployee, dateFrom, dateTo, user?.location_id, selectedCustomer?.id],
     queryFn: async () => {
+      console.log('🔄 Fetching orders with params:', {
+        page: currentPage,
+        per_page: 50,
+        status: statusFilter,
+        location_id: user?.location_id,
+        dateFrom,
+        dateTo,
+        customer: selectedCustomer?.id
+      });
+      
       const params = new URLSearchParams({
         page: currentPage.toString(),
         per_page: '50',
@@ -186,15 +196,24 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
         params.append('customer', selectedCustomer.id.toString());
       }
 
-      // Use /api/orders (now uses fast bulk endpoint internally)
-      const response = await fetch(`/api/orders?${params}`);
+      // Use /api/orders
+      const url = `/api/orders?${params}`;
+      console.log('🌐 Fetching from:', url);
+      const response = await fetch(url);
       if (!response.ok) {
+        console.error('❌ Orders fetch failed:', response.status, response.statusText);
         throw new Error('Failed to fetch orders');
       }
-      return response.json();
+      const data = await response.json();
+      console.log('✅ Orders response:', {
+        success: data.success,
+        count: data.data?.length,
+        total: data.meta?.total
+      });
+      return data;
     },
     enabled: !!user?.location_id, // Only run if user has location_id
-    staleTime: 1000 * 60 * 2, // 2 minutes for filtered results
+    staleTime: 0, // Always fetch fresh data
     gcTime: 1000 * 60 * 15, // 15 minutes cache retention
     retry: (failureCount, error) => {
       // Don't retry if it's a 404 or 401 error
@@ -249,6 +268,14 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
 
   // Handle React Query data updates
   useEffect(() => {
+    console.log('📊 Orders Data Update:', {
+      hasData: !!ordersData,
+      success: ordersData?.success,
+      dataLength: ordersData?.data?.length,
+      meta: ordersData?.meta,
+      userLocationId: user?.location_id
+    });
+    
     if (ordersData?.success) {
       setOrders(ordersData.data || []);
       setTotalOrders(ordersData.meta?.total || 0);
@@ -709,11 +736,11 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                             <div className="flex-1 min-w-0">
                               <div className="text-base font-light text-white mb-1" 
                                    style={{ fontFamily: 'Tiempos, serif' }}>
-                                {order.billing.first_name} {order.billing.last_name}
+                                {order.billing?.first_name || 'Guest'} {order.billing?.last_name || ''}
                               </div>
                               <div className="text-xs text-neutral-600" 
                                    style={{ fontFamily: 'Tiempos, serif' }}>
-                                {order.billing.email}
+                                {order.billing?.email || 'No email'}
                               </div>
                             </div>
                           )}
