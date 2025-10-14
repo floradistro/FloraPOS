@@ -189,13 +189,21 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         // Ensure positive quantity
         const quantity = Math.max(0.01, item.quantity || 1);
         
+        // Validate quantity is a valid number
+        if (isNaN(quantity) || !isFinite(quantity)) {
+          throw new Error(`Invalid quantity for "${item.name}": ${item.quantity}`);
+        }
+        
+        // Validate price is a valid number
+        if (isNaN(finalPrice) || !isFinite(finalPrice) || finalPrice < 0) {
+          throw new Error(`Invalid price for "${item.name}": ${finalPrice}`);
+        }
+        
         const lineItem: any = {
           product_id: productId,
-          name: item.name,
           quantity: quantity,
           subtotal: (finalPrice * quantity).toFixed(2),
           total: (finalPrice * quantity).toFixed(2),
-          sku: item.sku || '',
           meta_data: [
             {
               key: '_actual_quantity',
@@ -211,6 +219,15 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
             }
           ]
         };
+        
+        // Add optional fields only if they have valid values
+        if (item.name && item.name.trim()) {
+          lineItem.name = item.name.trim();
+        }
+        
+        if (item.sku && item.sku.trim()) {
+          lineItem.sku = item.sku.trim();
+        }
           
           // Add variation_id for variants to enable proper inventory tracking
           if (item.is_variant && item.variation_id) {
@@ -257,31 +274,35 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
               }
             ];
 
-            // Add conversion ratio metadata if present
+            // Add conversion ratio metadata if present - with strict validation
             if (item.pricing_tier.conversion_ratio) {
-              const conversionMetadata = [
-                {
-                  key: '_conversion_ratio_input_amount',
-                  value: item.pricing_tier.conversion_ratio.input_amount.toString()
-                },
-                {
-                  key: '_conversion_ratio_input_unit',
-                  value: item.pricing_tier.conversion_ratio.input_unit
-                },
-                {
-                  key: '_conversion_ratio_output_amount',
-                  value: item.pricing_tier.conversion_ratio.output_amount.toString()
-                },
-                {
-                  key: '_conversion_ratio_output_unit',
-                  value: item.pricing_tier.conversion_ratio.output_unit
-                },
-                {
-                  key: '_conversion_ratio_description',
-                  value: item.pricing_tier.conversion_ratio.description || ''
-                }
-              ];
-              tierMetadata.push(...conversionMetadata);
+              const cr = item.pricing_tier.conversion_ratio;
+              // Only add if all required fields are valid
+              if (cr.input_amount && cr.input_unit && cr.output_amount && cr.output_unit) {
+                const conversionMetadata = [
+                  {
+                    key: '_conversion_ratio_input_amount',
+                    value: cr.input_amount.toString()
+                  },
+                  {
+                    key: '_conversion_ratio_input_unit',
+                    value: cr.input_unit.toString()
+                  },
+                  {
+                    key: '_conversion_ratio_output_amount',
+                    value: cr.output_amount.toString()
+                  },
+                  {
+                    key: '_conversion_ratio_output_unit',
+                    value: cr.output_unit.toString()
+                  },
+                  {
+                    key: '_conversion_ratio_description',
+                    value: (cr.description || '').toString()
+                  }
+                ];
+                tierMetadata.push(...conversionMetadata);
+              }
             }
             
             lineItem.meta_data = [...lineItem.meta_data, ...tierMetadata];
@@ -290,17 +311,54 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
           return lineItem;
         }));
       
-      // CRITICAL VALIDATION: Ensure line_items array is valid
-      console.log(`📦 Line items validation:`, {
-        count: mappedLineItems.length,
-        sample: mappedLineItems[0],
-        allHaveProductId: mappedLineItems.every(li => li.product_id && !isNaN(li.product_id) && li.product_id > 0),
-        allHaveQuantity: mappedLineItems.every(li => li.quantity && li.quantity > 0)
+      // CRITICAL VALIDATION: Ensure line_items array is valid before sending to WooCommerce
+      console.log(`📦 Line items validation (${mappedLineItems.length} items):`);
+      
+      // Validate each line item field individually
+      const validationErrors: string[] = [];
+      
+      mappedLineItems.forEach((li, idx) => {
+        console.log(`   Item ${idx + 1}:`, {
+          name: li.name,
+          product_id: li.product_id,
+          variation_id: li.variation_id || 'none',
+          quantity: li.quantity,
+          subtotal: li.subtotal,
+          total: li.total,
+          sku: li.sku || 'none',
+          meta_data_count: li.meta_data?.length || 0
+        });
+        
+        // Check required fields
+        if (!li.product_id || isNaN(li.product_id) || li.product_id <= 0) {
+          validationErrors.push(`Item ${idx + 1} (${li.name}): Invalid product_id (${li.product_id})`);
+        }
+        if (!li.quantity || isNaN(li.quantity) || li.quantity <= 0) {
+          validationErrors.push(`Item ${idx + 1} (${li.name}): Invalid quantity (${li.quantity})`);
+        }
+        if (li.subtotal === undefined || li.subtotal === null || isNaN(parseFloat(li.subtotal))) {
+          validationErrors.push(`Item ${idx + 1} (${li.name}): Invalid subtotal (${li.subtotal})`);
+        }
+        if (li.total === undefined || li.total === null || isNaN(parseFloat(li.total))) {
+          validationErrors.push(`Item ${idx + 1} (${li.name}): Invalid total (${li.total})`);
+        }
+        
+        // Check for variation_id data type if present
+        if (li.variation_id !== undefined && (isNaN(li.variation_id) || li.variation_id <= 0)) {
+          validationErrors.push(`Item ${idx + 1} (${li.name}): Invalid variation_id (${li.variation_id})`);
+        }
       });
+      
+      if (validationErrors.length > 0) {
+        console.error('❌ Line items validation failed:', validationErrors);
+        throw new Error(`Order validation failed:\n${validationErrors.join('\n')}`);
+      }
       
       if (mappedLineItems.length === 0) {
         throw new Error('Order must contain at least one item');
       }
+      
+      console.log(`✅ All line items validated successfully`);
       
       // Prepare order data
       const isSplitPayment = splitPayments.length > 0;
@@ -433,7 +491,19 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         created_via: 'posv1' // Identify as POSV1 order for Magic2 integration
       };
 
-
+      
+      // EXTENSIVE LOGGING BEFORE ORDER CREATION
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📦 FULL ORDER PAYLOAD TO WOOCOMMERCE:');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(JSON.stringify(orderData, null, 2));
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      // Sanity check: Ensure line_items is an array
+      if (!Array.isArray(orderData.line_items)) {
+        console.error('❌ CRITICAL: line_items is not an array!', typeof orderData.line_items);
+        throw new Error('Internal error: line_items must be an array');
+      }
       
       // STEP 1: Create order via API with timeout
       console.log('🔄 STEP 1: Creating order...');
