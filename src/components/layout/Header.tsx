@@ -99,6 +99,9 @@ interface HeaderProps {
   // Product Sorting
   productSortOrder?: 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' | 'default';
   onProductSortOrderChange?: (order: 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' | 'default') => void;
+  // Customer Segment Filter
+  customerSegmentFilter?: 'all' | 'vip' | 'regular' | 'at-risk' | 'dormant';
+  onCustomerSegmentFilterChange?: (segment: 'all' | 'vip' | 'regular' | 'at-risk' | 'dormant') => void;
 }
 
 export function Header({ 
