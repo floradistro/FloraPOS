@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../../lib/api-fetch';
 import { useAuth } from '../../contexts/AuthContext';
+import { AdvancedProductSearch } from './AdvancedProductSearch';
 
 interface Product {
   id: number;
@@ -73,9 +74,9 @@ interface PrintToolbarProps {
   showLogo: boolean;
   onShowLogoChange: (show: boolean) => void;
   onPrint: () => void;
+  onLibraryClick: () => void;
   templates: Array<{ id: string; name: string; description: string }>;
   
-  // Field toggles
   showDate: boolean;
   onShowDateChange: (show: boolean) => void;
   showPrice: boolean;
@@ -87,7 +88,6 @@ interface PrintToolbarProps {
   showMargin: boolean;
   onShowMarginChange: (show: boolean) => void;
   
-  // Blueprint fields
   showEffect: boolean;
   onShowEffectChange: (show: boolean) => void;
   showLineage: boolean;
@@ -103,7 +103,6 @@ interface PrintToolbarProps {
   showSupplier: boolean;
   onShowSupplierChange: (show: boolean) => void;
   
-  // Pricing tiers
   selectedTier: string;
   onSelectedTierChange: (tier: string) => void;
   showTierPrice: boolean;
@@ -111,8 +110,40 @@ interface PrintToolbarProps {
   showTierLabel: boolean;
   onShowTierLabelChange: (show: boolean) => void;
   
+  productNameFont: string;
+  onProductNameFontChange: (font: string) => void;
+  productNameSize: number;
+  onProductNameSizeChange: (size: number) => void;
+  productNameColor: string;
+  onProductNameColorChange: (color: string) => void;
+  productNameWeight: 'normal' | 'bold';
+  onProductNameWeightChange: (weight: 'normal' | 'bold') => void;
+  
+  detailsFont: string;
+  onDetailsFontChange: (font: string) => void;
+  detailsSize: number;
+  onDetailsSizeChange: (size: number) => void;
+  detailsColor: string;
+  onDetailsColorChange: (color: string) => void;
+  
+  labelLineHeight: number;
+  onLabelLineHeightChange: (height: number) => void;
+  logoSize: number;
+  onLogoSizeChange: (size: number) => void;
+  
   template: LabelTemplate;
 }
+
+const PRESET_FONTS = [
+  { name: 'Tiempos', value: 'Tiempos, serif' },
+  { name: 'DonGraffiti', value: 'DonGraffiti, cursive' },
+  { name: 'Helvetica', value: 'Helvetica, sans-serif' },
+  { name: 'SF Pro', value: '-apple-system, BlinkMacSystemFont, sans-serif' },
+  { name: 'Georgia', value: 'Georgia, serif' },
+  { name: 'Roboto', value: 'Roboto, sans-serif' },
+  { name: 'Courier', value: 'Courier New, monospace' },
+  { name: 'Inter', value: 'Inter, sans-serif' },
+];
 
 export const PrintToolbar: React.FC<PrintToolbarProps> = ({
   selectedProduct,
@@ -124,6 +155,7 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
   showLogo,
   onShowLogoChange,
   onPrint,
+  onLibraryClick,
   templates,
   showDate,
   onShowDateChange,
@@ -155,27 +187,55 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
   onShowTierPriceChange,
   showTierLabel,
   onShowTierLabelChange,
+  productNameFont,
+  onProductNameFontChange,
+  productNameSize,
+  onProductNameSizeChange,
+  productNameColor,
+  onProductNameColorChange,
+  productNameWeight,
+  onProductNameWeightChange,
+  detailsFont,
+  onDetailsFontChange,
+  detailsSize,
+  onDetailsSizeChange,
+  detailsColor,
+  onDetailsColorChange,
+  labelLineHeight,
+  onLabelLineHeightChange,
+  logoSize,
+  onLogoSizeChange,
   template
 }) => {
   const { user } = useAuth();
   const [showProductSearch, setShowProductSearch] = useState(false);
+  const [showFieldsMenu, setShowFieldsMenu] = useState(false);
+  const [showTypographyMenu, setShowTypographyMenu] = useState(false);
+  const [typographyTab, setTypographyTab] = useState<'font' | 'size' | 'color'>('font');
+  const [typographyTarget, setTypographyTarget] = useState<'productName' | 'details' | 'logo'>('productName');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const fieldsMenuRef = useRef<HTMLDivElement>(null);
+  const typographyMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowProductSearch(false);
+      }
+      if (fieldsMenuRef.current && !fieldsMenuRef.current.contains(event.target as Node)) {
+        setShowFieldsMenu(false);
+      }
+      if (typographyMenuRef.current && !typographyMenuRef.current.contains(event.target as Node)) {
+        setShowTypographyMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Search products
   useEffect(() => {
     if (!searchQuery || !showProductSearch) {
       setSearchResults([]);
@@ -185,7 +245,6 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
     const searchProducts = async () => {
       setIsSearching(true);
       try {
-        // Use optimized bulk endpoint
         const response = await apiFetch(
           `/api/proxy/flora-im/products/bulk?per_page=50&search=${encodeURIComponent(searchQuery)}&location_id=${user?.location_id || 20}`
         );
@@ -205,80 +264,37 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
     return () => clearTimeout(debounce);
   }, [searchQuery, showProductSearch, user?.location_id]);
 
+  const activeFieldsCount = [
+    showDate, showPrice, showSKU, showCategory, showMargin,
+    showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier,
+    showTierPrice, showTierLabel
+  ].filter(Boolean).length;
+
   return (
-    <div className="flex-shrink-0 w-full bg-neutral-950/80 backdrop-blur-xl border-b border-white/[0.06]" style={{ zIndex: 100 }}>
-      <div className="flex items-center justify-between px-6 py-3 w-full">
-        {/* Left Side - Product Selection */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="flex items-center gap-3 bg-neutral-900/40 backdrop-blur-md border border-white/[0.06] rounded-2xl px-3 py-2 shadow-lg">
-            {/* Product Selector */}
-            <div className="relative" ref={searchRef} style={{ zIndex: 9999 }}>
-              <button
-                onClick={() => setShowProductSearch(!showProductSearch)}
-                className="flex items-center gap-2 px-4 h-7 text-xs font-medium transition-all duration-300 rounded-full bg-neutral-800/60 hover:bg-neutral-700/60 text-neutral-300 hover:text-white border border-white/[0.08]"
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <span>{selectedProduct ? selectedProduct.name.substring(0, 20) + (selectedProduct.name.length > 20 ? '...' : '') : 'Select Product'}</span>
-              </button>
+    <>
+      <AdvancedProductSearch
+        selectedProduct={selectedProduct}
+        onProductSelect={onProductSelect}
+        isOpen={showProductSearch}
+        onClose={() => setShowProductSearch(false)}
+      />
 
-              {/* Product Search Dropdown */}
-              {showProductSearch && (
-                <div className="absolute top-full left-0 mt-2 w-96 bg-neutral-900 border border-white/[0.1] rounded-xl shadow-2xl overflow-hidden" style={{ zIndex: 9999 }}>
-                  {/* Search Input */}
-                  <div className="p-3 border-b border-white/[0.06]">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search products..."
-                      className="w-full px-4 py-2 bg-neutral-800 text-white text-sm rounded-lg border border-white/[0.08] focus:outline-none focus:border-blue-400/50"
-                      style={{ fontFamily: 'Tiempos, serif' }}
-                      autoFocus
-                    />
-                  </div>
-
-                  {/* Results */}
-                  <div className="max-h-96 overflow-y-auto">
-                    {isSearching ? (
-                      <div className="p-8 text-center text-neutral-500 text-sm">Searching...</div>
-                    ) : searchResults.length > 0 ? (
-                      searchResults.map((product) => (
-                        <button
-                          key={product.id}
-                          onClick={() => {
-                            onProductSelect(product);
-                            setShowProductSearch(false);
-                            setSearchQuery('');
-                          }}
-                          className="w-full px-4 py-3 hover:bg-white/[0.04] transition-colors flex items-center gap-3 text-left"
-                        >
-                          {product.image && (
-                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-neutral-800 flex-shrink-0">
-                              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm text-white truncate" style={{ fontFamily: 'Tiempos, serif' }}>
-                              {product.name}
-                            </div>
-                            <div className="text-xs text-neutral-500">
-                              {product.sku || `#${product.id}`} • ${parseFloat(product.regular_price || '0').toFixed(2)}
-                            </div>
-                          </div>
-                        </button>
-                      ))
-                    ) : searchQuery ? (
-                      <div className="p-8 text-center text-neutral-500 text-sm">No products found</div>
-                    ) : (
-                      <div className="p-8 text-center text-neutral-500 text-sm">Type to search products</div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+      <div className="my-3">
+        <div className="flex items-center h-full py-3 px-6 relative gap-3">
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowProductSearch(!showProductSearch)}
+              className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
+              style={{ fontFamily: 'Tiempos, serif' }}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span className="max-w-[180px] truncate">
+                {selectedProduct ? selectedProduct.name : 'Select Product'}
+              </span>
+            </button>
 
             {selectedProduct && (
               <button
@@ -286,98 +302,482 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
                   onProductSelect(null);
                   setSearchQuery('');
                 }}
-                className="flex items-center gap-1 px-3 h-7 text-xs font-medium transition-all duration-300 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 border border-red-400/20"
+                className="px-3 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
                 style={{ fontFamily: 'Tiempos, serif' }}
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span>Clear</span>
+                Clear
               </button>
             )}
+          </div>
 
-            <div className="w-px h-5 bg-white/[0.08]" />
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedTemplate}
+            onChange={(e) => onTemplateChange(e.target.value)}
+            className="px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white focus:bg-white/10 focus:border-white/20 focus:outline-none transition-all duration-200 backdrop-blur-sm cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[140px]"
+            style={{ fontFamily: 'Tiempos, serif' }}
+          >
+            {templates.map((t) => (
+              <option key={t.id} value={t.id} className="bg-neutral-800">{t.name}</option>
+            ))}
+          </select>
 
-            {/* Template Selector */}
-            <select
-              value={selectedTemplate}
-              onChange={(e) => onTemplateChange(e.target.value)}
-              className="px-4 h-7 text-xs font-medium bg-neutral-800/60 hover:bg-neutral-700/60 text-white rounded-full border border-white/[0.08] focus:outline-none focus:border-blue-400/50 appearance-none cursor-pointer"
+          <button
+            onClick={() => onShowBordersChange(!showBorders)}
+            className={`px-4 py-2 text-xs rounded-xl transition-all duration-200 backdrop-blur-sm border ${
+              showBorders
+                ? 'bg-white/10 text-white border-white/20 shadow-sm'
+                : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20'
+            }`}
+            style={{ fontFamily: 'Tiempos, serif' }}
+          >
+            Borders
+          </button>
+
+          <button
+            onClick={() => onShowLogoChange(!showLogo)}
+            className={`px-4 py-2 text-xs rounded-xl transition-all duration-200 backdrop-blur-sm border ${
+              showLogo
+                ? 'bg-white/10 text-white border-white/20 shadow-sm'
+                : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20'
+            }`}
+            style={{ fontFamily: 'Tiempos, serif' }}
+          >
+            Logo
+          </button>
+
+          <div className="relative" ref={fieldsMenuRef}>
+            <button
+              onClick={() => setShowFieldsMenu(!showFieldsMenu)}
+              className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
               style={{ fontFamily: 'Tiempos, serif' }}
             >
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+              <span>Fields</span>
+              {activeFieldsCount > 0 && (
+                <span className="px-1.5 py-0.5 text-[10px] bg-white/20 text-white rounded">{activeFieldsCount}</span>
+              )}
+            </button>
 
-        {/* Center - Display Options */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="flex items-center gap-2 bg-neutral-900/40 backdrop-blur-md border border-white/[0.06] rounded-2xl px-2 py-1.5 shadow-lg">
+            {showFieldsMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowFieldsMenu(false)} />
+                <div className="absolute top-full right-0 mt-2 w-72 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden z-50" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)' }}>
+                  <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
+                    
+                    <div>
+                      <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider mb-2 px-3" style={{ fontFamily: 'Tiempos, serif' }}>
+                        Basic Fields
+                      </div>
+                      <div className="space-y-1.5">
+                        {[
+                          { label: 'Date', value: showDate, onChange: onShowDateChange },
+                          { label: 'Price', value: showPrice, onChange: onShowPriceChange },
+                          { label: 'SKU', value: showSKU, onChange: onShowSKUChange },
+                          { label: 'Category', value: showCategory, onChange: onShowCategoryChange },
+                          { label: 'Margin', value: showMargin, onChange: onShowMarginChange }
+                        ].map((field) => (
+                          <button
+                            key={field.label}
+                            onClick={() => selectedProduct && field.onChange(!field.value)}
+                            disabled={!selectedProduct}
+                            className={`w-full px-3 py-2.5 text-xs font-medium rounded-lg transition-all duration-200 ease-out mx-1 text-left flex items-center justify-between ${
+                              !selectedProduct 
+                                ? 'bg-white/[0.02] text-white/20 cursor-not-allowed' 
+                                : field.value 
+                                  ? 'bg-white/10 text-white shadow-sm' 
+                                  : 'text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                            }`}
+                            style={{ fontFamily: 'Tiempos, serif' }}
+                          >
+                            <span>{field.label}</span>
+                            {field.value && <span className="text-[10px]">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border-t border-neutral-700/50" />
+
+                    <div>
+                      <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider mb-2 px-3" style={{ fontFamily: 'Tiempos, serif' }}>
+                        Blueprint Fields
+                      </div>
+                      <div className="space-y-1.5">
+                        {[
+                          { label: 'Effect', value: showEffect, onChange: onShowEffectChange },
+                          { label: 'Lineage', value: showLineage, onChange: onShowLineageChange },
+                          { label: 'Nose', value: showNose, onChange: onShowNoseChange },
+                          { label: 'Terpene', value: showTerpene, onChange: onShowTerpeneChange },
+                          { label: 'Strain Type', value: showStrainType, onChange: onShowStrainTypeChange },
+                          { label: 'THCA', value: showTHCA, onChange: onShowTHCAChange },
+                          { label: 'Supplier', value: showSupplier, onChange: onShowSupplierChange }
+                        ].map((field) => (
+                          <button
+                            key={field.label}
+                            onClick={() => selectedProduct && field.onChange(!field.value)}
+                            disabled={!selectedProduct}
+                            className={`w-full px-3 py-2.5 text-xs font-medium rounded-lg transition-all duration-200 ease-out mx-1 text-left flex items-center justify-between ${
+                              !selectedProduct 
+                                ? 'bg-white/[0.02] text-white/20 cursor-not-allowed' 
+                                : field.value 
+                                  ? 'bg-white/10 text-white shadow-sm' 
+                                  : 'text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                            }`}
+                            style={{ fontFamily: 'Tiempos, serif' }}
+                          >
+                            <span>{field.label}</span>
+                            {field.value && <span className="text-[10px]">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {selectedProduct?.blueprintPricing?.ruleGroups && (
+                      <>
+                        <div className="border-t border-neutral-700/50" />
+                        <div>
+                          <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider mb-2 px-3" style={{ fontFamily: 'Tiempos, serif' }}>
+                            Pricing Tiers
+                          </div>
+                          <select
+                            value={selectedTier}
+                            onChange={(e) => onSelectedTierChange(e.target.value)}
+                            className="w-full px-3 py-2 bg-neutral-800 text-white text-xs rounded border border-white/10 focus:outline-none focus:border-white/30 mb-2"
+                            style={{ fontFamily: 'Tiempos, serif' }}
+                          >
+                            <option value="" className="bg-neutral-800">Select Tier</option>
+                            {selectedProduct.blueprintPricing.ruleGroups.flatMap((group: any) => 
+                              group.tiers.map((tier: any) => (
+                                <option 
+                                  key={`${group.ruleName}-${tier.label}`} 
+                                  value={`${group.ruleName}-${tier.label}`}
+                                  className="bg-neutral-800"
+                                >
+                                  {group.ruleName} - {tier.label} (${tier.price.toFixed(2)})
+                                </option>
+                              ))
+                            )}
+                          </select>
+                          
+                          {selectedTier && (
+                            <div className="space-y-1.5">
+                              <button
+                                onClick={() => onShowTierPriceChange(!showTierPrice)}
+                                className={`w-full px-3 py-2.5 text-xs font-medium rounded-lg transition-all duration-200 ease-out mx-1 text-left flex items-center justify-between ${
+                                  showTierPrice 
+                                    ? 'bg-white/10 text-white shadow-sm' 
+                                    : 'text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                                }`}
+                                style={{ fontFamily: 'Tiempos, serif' }}
+                              >
+                                <span>Show Tier Price</span>
+                                {showTierPrice && <span className="text-[10px]">✓</span>}
+                              </button>
+                              <button
+                                onClick={() => onShowTierLabelChange(!showTierLabel)}
+                                className={`w-full px-3 py-2.5 text-xs font-medium rounded-lg transition-all duration-200 ease-out mx-1 text-left flex items-center justify-between ${
+                                  showTierLabel 
+                                    ? 'bg-white/10 text-white shadow-sm' 
+                                    : 'text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                                }`}
+                                style={{ fontFamily: 'Tiempos, serif' }}
+                              >
+                                <span>Show Tier Label</span>
+                                {showTierLabel && <span className="text-[10px]">✓</span>}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="relative" ref={typographyMenuRef}>
             <button
-              onClick={() => onShowBordersChange(!showBorders)}
-              className={`flex items-center gap-1.5 px-3 h-7 text-xs font-medium transition-all duration-300 rounded-full ${
-                showBorders
-                  ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
-                  : 'bg-neutral-800/60 text-neutral-400 hover:text-white border border-white/[0.08]'
-              }`}
+              onClick={() => setShowTypographyMenu(!showTypographyMenu)}
+              className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
               style={{ fontFamily: 'Tiempos, serif' }}
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
               </svg>
-              <span>Borders</span>
+              <span>Typography</span>
             </button>
 
-            <button
-              onClick={() => onShowLogoChange(!showLogo)}
-              className={`flex items-center gap-1.5 px-3 h-7 text-xs font-medium transition-all duration-300 rounded-full ${
-                showLogo
-                  ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
-                  : 'bg-neutral-800/60 text-neutral-400 hover:text-white border border-white/[0.08]'
-              }`}
-              style={{ fontFamily: 'Tiempos, serif' }}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>Logo</span>
-            </button>
+            {showTypographyMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowTypographyMenu(false)} />
+                <div className="absolute top-full right-0 mt-2 w-96 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden z-50" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)' }}>
+                  
+                  <div className="flex gap-1 p-3 bg-white/5 border-b border-white/[0.06]">
+                    <button
+                      onClick={() => setTypographyTab('font')}
+                      className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                        typographyTab === 'font'
+                          ? 'bg-white/10 text-white shadow-sm'
+                          : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                      }`}
+                      style={{ fontFamily: 'Tiempos, serif' }}
+                    >
+                      Font
+                    </button>
+                    <button
+                      onClick={() => setTypographyTab('size')}
+                      className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                        typographyTab === 'size'
+                          ? 'bg-white/10 text-white shadow-sm'
+                          : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                      }`}
+                      style={{ fontFamily: 'Tiempos, serif' }}
+                    >
+                      Size
+                    </button>
+                    <button
+                      onClick={() => setTypographyTab('color')}
+                      className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all relative overflow-hidden ${
+                        typographyTab === 'color'
+                          ? 'text-white shadow-sm'
+                          : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                      }`}
+                      style={{
+                        fontFamily: 'Tiempos, serif',
+                        background: typographyTab === 'color' 
+                          ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(168, 85, 247, 0.15) 50%, rgba(236, 72, 153, 0.15) 100%)'
+                          : 'transparent'
+                      }}
+                    >
+                      Color
+                    </button>
+                  </div>
+
+                  <div className="p-4 space-y-4">
+                    {/* Target Selector */}
+                    <div className="flex gap-1 p-1 bg-white/5 rounded-lg">
+                      <button
+                        onClick={() => setTypographyTarget('productName')}
+                        className={`flex-1 px-2 py-1.5 text-[10px] font-medium rounded transition-all ${
+                          typographyTarget === 'productName'
+                            ? 'bg-white/10 text-white'
+                            : 'text-white/50 hover:text-white/80'
+                        }`}
+                        style={{ fontFamily: 'Tiempos, serif' }}
+                      >
+                        Name
+                      </button>
+                      <button
+                        onClick={() => setTypographyTarget('details')}
+                        className={`flex-1 px-2 py-1.5 text-[10px] font-medium rounded transition-all ${
+                          typographyTarget === 'details'
+                            ? 'bg-white/10 text-white'
+                            : 'text-white/50 hover:text-white/80'
+                        }`}
+                        style={{ fontFamily: 'Tiempos, serif' }}
+                      >
+                        Details
+                      </button>
+                      <button
+                        onClick={() => setTypographyTarget('logo')}
+                        className={`flex-1 px-2 py-1.5 text-[10px] font-medium rounded transition-all ${
+                          typographyTarget === 'logo'
+                            ? 'bg-white/10 text-white'
+                            : 'text-white/50 hover:text-white/80'
+                        }`}
+                        style={{ fontFamily: 'Tiempos, serif' }}
+                      >
+                        Logo
+                      </button>
+                    </div>
+
+                    {typographyTab === 'font' && typographyTarget !== 'logo' && (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {PRESET_FONTS.map(font => (
+                          <button
+                            key={font.value}
+                            onClick={() => {
+                              if (typographyTarget === 'productName') {
+                                onProductNameFontChange(font.value);
+                              } else {
+                                onDetailsFontChange(font.value);
+                              }
+                            }}
+                            className={`w-full flex items-center px-4 py-3 rounded-lg transition-all ${
+                              (typographyTarget === 'productName' ? productNameFont : detailsFont) === font.value
+                                ? 'bg-white/10 text-white shadow-sm'
+                                : 'bg-white/[0.02] text-white/70 hover:bg-white/[0.06] hover:text-white/90'
+                            }`}
+                          >
+                            <span className="text-sm" style={{ fontFamily: font.value }}>{font.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {typographyTab === 'size' && (
+                      <div className="space-y-4">
+                        {typographyTarget === 'productName' && (
+                          <>
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-white/60" style={{ fontFamily: 'Tiempos, serif' }}>Name Size</span>
+                                <span className="text-xs text-white/70 font-mono bg-white/10 px-2 py-0.5 rounded">{productNameSize}pt</span>
+                              </div>
+                              <input
+                                type="range"
+                                min="6"
+                                max="48"
+                                value={productNameSize}
+                                onChange={(e) => onProductNameSizeChange(parseInt(e.target.value))}
+                                className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer"
+                              />
+                            </div>
+                            <div>
+                              <div className="text-xs text-white/60 mb-2" style={{ fontFamily: 'Tiempos, serif' }}>Font Weight</div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => onProductNameWeightChange('normal')}
+                                  className={`flex-1 px-3 py-2 text-xs rounded transition-all ${
+                                    productNameWeight === 'normal'
+                                      ? 'bg-white/10 text-white'
+                                      : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+                                  }`}
+                                  style={{ fontFamily: 'Tiempos, serif' }}
+                                >
+                                  Normal
+                                </button>
+                                <button
+                                  onClick={() => onProductNameWeightChange('bold')}
+                                  className={`flex-1 px-3 py-2 text-xs rounded transition-all ${
+                                    productNameWeight === 'bold'
+                                      ? 'bg-white/10 text-white'
+                                      : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+                                  }`}
+                                  style={{ fontFamily: 'Tiempos, serif' }}
+                                >
+                                  Bold
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        {typographyTarget === 'details' && (
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs text-white/60" style={{ fontFamily: 'Tiempos, serif' }}>Details Size</span>
+                              <span className="text-xs text-white/70 font-mono bg-white/10 px-2 py-0.5 rounded">{detailsSize}pt</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="4"
+                              max="32"
+                              value={detailsSize}
+                              onChange={(e) => onDetailsSizeChange(parseInt(e.target.value))}
+                              className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer"
+                            />
+                          </div>
+                        )}
+                        {typographyTarget === 'logo' && (
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs text-white/60" style={{ fontFamily: 'Tiempos, serif' }}>Logo Size</span>
+                              <span className="text-xs text-white/70 font-mono bg-white/10 px-2 py-0.5 rounded">{logoSize}px</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="6"
+                              max="72"
+                              value={logoSize}
+                              onChange={(e) => onLogoSizeChange(parseInt(e.target.value))}
+                              className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer"
+                            />
+                          </div>
+                        )}
+                        <div className="border-t border-neutral-700/50 pt-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-white/60" style={{ fontFamily: 'Tiempos, serif' }}>Line Height</span>
+                            <span className="text-xs text-white/70 font-mono bg-white/10 px-2 py-0.5 rounded">{labelLineHeight.toFixed(1)}</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.8"
+                            max="2.0"
+                            step="0.1"
+                            value={labelLineHeight}
+                            onChange={(e) => onLabelLineHeightChange(parseFloat(e.target.value))}
+                            className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {typographyTab === 'color' && typographyTarget !== 'logo' && (
+                      <div>
+                        <label className="text-xs text-white/60 mb-2 block font-medium" style={{ fontFamily: 'Tiempos, serif' }}>
+                          {typographyTarget === 'productName' ? 'Product Name Color' : 'Details Color'}
+                        </label>
+                        <div className="flex items-center gap-2 p-2 bg-white/[0.03] rounded-xl">
+                          <input
+                            type="color"
+                            value={typographyTarget === 'productName' ? productNameColor : detailsColor}
+                            onChange={(e) => {
+                              if (typographyTarget === 'productName') {
+                                onProductNameColorChange(e.target.value);
+                              } else {
+                                onDetailsColorChange(e.target.value);
+                              }
+                            }}
+                            className="w-10 h-10 rounded-lg cursor-pointer bg-transparent"
+                            style={{ border: 'none' }}
+                          />
+                          <input
+                            type="text"
+                            value={typographyTarget === 'productName' ? productNameColor : detailsColor}
+                            onChange={(e) => {
+                              if (typographyTarget === 'productName') {
+                                onProductNameColorChange(e.target.value);
+                              } else {
+                                onDetailsColorChange(e.target.value);
+                              }
+                            }}
+                            className="flex-1 px-3 py-2 bg-white/5 rounded-lg text-xs text-white/90 font-mono border-0 focus:bg-white/10 focus:outline-none transition-colors"
+                            placeholder="#000000"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-        </div>
 
-        {/* Right Side - Print Action */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="flex items-center gap-2 bg-neutral-900/40 backdrop-blur-md border border-white/[0.06] rounded-2xl px-2 py-1.5 shadow-lg">
-            {/* Template Info */}
-            <div className="px-3 text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-              {template.grid.rows}×{template.grid.columns} • {template.data_mapping.records_per_page} labels
-            </div>
+          <button
+            onClick={onLibraryClick}
+            className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
+            style={{ fontFamily: 'Tiempos, serif' }}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+            <span>Library</span>
+          </button>
 
-            <div className="w-px h-5 bg-white/[0.08]" />
-
-            {/* Print Button */}
-            <button
-              onClick={onPrint}
-              className="flex items-center gap-2 px-5 h-7 text-xs font-medium transition-all duration-300 rounded-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 hover:text-white border border-blue-400/30 hover:border-blue-400/50 hover:shadow-lg hover:scale-105 active:scale-95"
-              style={{ 
-                fontFamily: 'Tiempos, serif',
-                boxShadow: '0 4px 16px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-                textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'
-              }}
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-              <span>Print</span>
-            </button>
-          </div>
+          <button
+            onClick={onPrint}
+            className="flex items-center gap-2 px-5 py-2 text-xs bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white transition-all duration-300 shadow-lg hover:shadow-xl backdrop-blur-sm hover:scale-105 active:scale-95"
+            style={{ fontFamily: 'Tiempos, serif' }}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            <span>Print</span>
+          </button>
         </div>
       </div>
     </div>
+    </>
   );
 };
-

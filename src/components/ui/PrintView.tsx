@@ -2,6 +2,11 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { PrintToolbar } from './PrintToolbar';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+
+const LARGE_PREVIEW_SCALE = 2.8;
+const SHEET_PREVIEW_SCALE = 0.6;
 
 interface LabelTemplate {
   template_name: string;
@@ -88,190 +93,71 @@ interface Product {
   }>;
 }
 
+interface SavedTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  config_data: any;
+  created_at: string;
+}
+
 interface PrintViewProps {
   template?: LabelTemplate;
   data?: Array<{ line1: string; line2?: string; line3?: string }>;
   selectedProduct?: Product | null;
 }
 
-// Template Definitions
 const TEMPLATES = {
   avery_5160: {
-    template_name: "Avery_5160_30up",
-    description: "30-up address labels on US Letter; 1.000 x 2.625 in each (Avery 5160-compatible).",
+    template_name: "Avery 5160",
+    description: "30-up address labels on US Letter",
     units: "in",
-    page: {
-      size: "letter",
-      width: 8.5,
-      height: 11.0,
-      margin_top: 0.5,
-      margin_bottom: 0.5,
-      margin_left: 0.1875,
-      margin_right: 0.1875
-    },
-    grid: {
-      rows: 10,
-      columns: 3,
-      label_width: 2.625,
-      label_height: 1.0,
-      horizontal_pitch: 2.75,
-      vertical_pitch: 1.0,
-      origin: "top-left"
-    },
-    label_style: {
-      safe_padding: { top: 0.0625, right: 0.0625, bottom: 0.0625, left: 0.0625 },
-      corner_radius: 0.0625,
-      background: "none",
-      border: { enabled: false }
-    },
-    text_style: {
-      font_family: "Helvetica",
-      font_size_pt: 9,
-      line_height_em: 1.1,
-      color: "#000000",
-      align: "left",
-      vertical_align: "top",
-      overflow: "shrink-to-fit"
-    },
+    page: { size: "letter", width: 8.5, height: 11.0, margin_top: 0.5, margin_bottom: 0.5, margin_left: 0.1875, margin_right: 0.1875 },
+    grid: { rows: 10, columns: 3, label_width: 2.625, label_height: 1.0, horizontal_pitch: 2.75, vertical_pitch: 1.0, origin: "top-left" },
+    label_style: { safe_padding: { top: 0.0625, right: 0.0625, bottom: 0.0625, left: 0.0625 }, corner_radius: 0.0625, background: "none", border: { enabled: false } },
+    text_style: { font_family: "Helvetica", font_size_pt: 9, line_height_em: 1.1, color: "#000000", align: "left", vertical_align: "top", overflow: "shrink-to-fit" },
     fields: [
       { name: "line1", type: "text", required: true, max_length: 48 },
       { name: "line2", type: "text", required: false, max_length: 48 },
       { name: "line3", type: "text", required: false, max_length: 48 }
     ],
-    layout: [
-      {
-        type: "text_block",
-        binding: ["line1", "line2", "line3"],
-        join_with: "\n",
-        box: { x: 0.0625, y: 0.0625, width: 2.5, height: 0.875 },
-        style_overrides: { line_break: "auto", max_lines: 3 }
-      }
-    ],
-    data_mapping: {
-      records_per_page: 30,
-      fill_order: "row-major"
-    },
-    sample_data: [
-      { line1: "Flora Distro", line2: "1234 Market St", line3: "Charlotte, NC 28202" }
-    ]
+    layout: [{ type: "text_block", binding: ["line1", "line2", "line3"], join_with: "\n", box: { x: 0.0625, y: 0.0625, width: 2.5, height: 0.875 }, style_overrides: { line_break: "auto", max_lines: 3 } }],
+    data_mapping: { records_per_page: 30, fill_order: "row-major" },
+    sample_data: [{ line1: "Flora Distro", line2: "1234 Market St", line3: "Charlotte, NC 28202" }]
   },
   avery_5161: {
-    template_name: "Avery_5161_20up",
-    description: "20-up address labels on US Letter; 1.000 x 4.000 in each (Avery 5161-compatible).",
+    template_name: "Avery 5161",
+    description: "20-up address labels on US Letter",
     units: "in",
-    page: {
-      size: "letter",
-      width: 8.5,
-      height: 11.0,
-      margin_top: 0.5,
-      margin_bottom: 0.5,
-      margin_left: 0.16,
-      margin_right: 0.16
-    },
-    grid: {
-      rows: 10,
-      columns: 2,
-      label_width: 4.0,
-      label_height: 1.0,
-      horizontal_pitch: 4.18,
-      vertical_pitch: 1.0,
-      origin: "top-left"
-    },
-    label_style: {
-      safe_padding: { top: 0.0625, right: 0.0625, bottom: 0.0625, left: 0.0625 },
-      corner_radius: 0.0625,
-      background: "none",
-      border: { enabled: false }
-    },
-    text_style: {
-      font_family: "Helvetica",
-      font_size_pt: 9,
-      line_height_em: 1.1,
-      color: "#000000",
-      align: "left",
-      vertical_align: "top",
-      overflow: "shrink-to-fit"
-    },
+    page: { size: "letter", width: 8.5, height: 11.0, margin_top: 0.5, margin_bottom: 0.5, margin_left: 0.16, margin_right: 0.16 },
+    grid: { rows: 10, columns: 2, label_width: 4.0, label_height: 1.0, horizontal_pitch: 4.18, vertical_pitch: 1.0, origin: "top-left" },
+    label_style: { safe_padding: { top: 0.0625, right: 0.0625, bottom: 0.0625, left: 0.0625 }, corner_radius: 0.0625, background: "none", border: { enabled: false } },
+    text_style: { font_family: "Helvetica", font_size_pt: 9, line_height_em: 1.1, color: "#000000", align: "left", vertical_align: "top", overflow: "shrink-to-fit" },
     fields: [
       { name: "line1", type: "text", required: true, max_length: 60 },
       { name: "line2", type: "text", required: false, max_length: 60 },
       { name: "line3", type: "text", required: false, max_length: 60 }
     ],
-    layout: [
-      {
-        type: "text_block",
-        binding: ["line1", "line2", "line3"],
-        join_with: "\n",
-        box: { x: 0.0625, y: 0.0625, width: 3.875, height: 0.875 },
-        style_overrides: { line_break: "auto", max_lines: 3 }
-      }
-    ],
-    data_mapping: {
-      records_per_page: 20,
-      fill_order: "row-major"
-    },
-    sample_data: [
-      { line1: "Flora Distro", line2: "1234 Market St", line3: "Charlotte, NC 28202" }
-    ]
+    layout: [{ type: "text_block", binding: ["line1", "line2", "line3"], join_with: "\n", box: { x: 0.0625, y: 0.0625, width: 3.875, height: 0.875 }, style_overrides: { line_break: "auto", max_lines: 3 } }],
+    data_mapping: { records_per_page: 20, fill_order: "row-major" },
+    sample_data: [{ line1: "Flora Distro", line2: "1234 Market St", line3: "Charlotte, NC 28202" }]
   },
   avery_5162: {
-    template_name: "Avery_5162_14up",
-    description: "14-up address labels on US Letter; 1.33 x 4.00 in each (Avery 5162-compatible).",
+    template_name: "Avery 5162",
+    description: "14-up address labels on US Letter",
     units: "in",
-    page: {
-      size: "letter",
-      width: 8.5,
-      height: 11.0,
-      margin_top: 0.83,
-      margin_bottom: 0.83,
-      margin_left: 0.16,
-      margin_right: 0.16
-    },
-    grid: {
-      rows: 7,
-      columns: 2,
-      label_width: 4.0,
-      label_height: 1.33,
-      horizontal_pitch: 4.18,
-      vertical_pitch: 1.33,
-      origin: "top-left"
-    },
-    label_style: {
-      safe_padding: { top: 0.08, right: 0.08, bottom: 0.08, left: 0.08 },
-      corner_radius: 0.0625,
-      background: "none",
-      border: { enabled: false }
-    },
-    text_style: {
-      font_family: "Helvetica",
-      font_size_pt: 10,
-      line_height_em: 1.2,
-      color: "#000000",
-      align: "left",
-      vertical_align: "top",
-      overflow: "shrink-to-fit"
-    },
+    page: { size: "letter", width: 8.5, height: 11.0, margin_top: 0.83, margin_bottom: 0.83, margin_left: 0.16, margin_right: 0.16 },
+    grid: { rows: 7, columns: 2, label_width: 4.0, label_height: 1.33, horizontal_pitch: 4.18, vertical_pitch: 1.33, origin: "top-left" },
+    label_style: { safe_padding: { top: 0.08, right: 0.08, bottom: 0.08, left: 0.08 }, corner_radius: 0.0625, background: "none", border: { enabled: false } },
+    text_style: { font_family: "Helvetica", font_size_pt: 10, line_height_em: 1.2, color: "#000000", align: "left", vertical_align: "top", overflow: "shrink-to-fit" },
     fields: [
       { name: "line1", type: "text", required: true, max_length: 60 },
       { name: "line2", type: "text", required: false, max_length: 60 },
       { name: "line3", type: "text", required: false, max_length: 60 }
     ],
-    layout: [
-      {
-        type: "text_block",
-        binding: ["line1", "line2", "line3"],
-        join_with: "\n",
-        box: { x: 0.08, y: 0.08, width: 3.84, height: 1.17 },
-        style_overrides: { line_break: "auto", max_lines: 4 }
-      }
-    ],
-    data_mapping: {
-      records_per_page: 14,
-      fill_order: "row-major"
-    },
-    sample_data: [
-      { line1: "Flora Distro", line2: "1234 Market St", line3: "Charlotte, NC 28202" }
-    ]
+    layout: [{ type: "text_block", binding: ["line1", "line2", "line3"], join_with: "\n", box: { x: 0.08, y: 0.08, width: 3.84, height: 1.17 }, style_overrides: { line_break: "auto", max_lines: 4 } }],
+    data_mapping: { records_per_page: 14, fill_order: "row-major" },
+    sample_data: [{ line1: "Flora Distro", line2: "1234 Market St", line3: "Charlotte, NC 28202" }]
   }
 };
 
@@ -282,23 +168,19 @@ const TEMPLATE_LIST = [
 ];
 
 export function PrintView({ template: propTemplate, data: propData, selectedProduct: propSelectedProduct }: PrintViewProps) {
-  // State Management
+  const { user } = useAuth();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(propSelectedProduct || null);
   const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof TEMPLATES>('avery_5160');
   const [showBorders, setShowBorders] = useState(true);
   const [showLogo, setShowLogo] = useState(true);
-  const [sheetScale, setSheetScale] = useState(1.0);
-  const [labelPreviewFocused, setLabelPreviewFocused] = useState(false);
-  const [sheetPreviewFocused, setSheetPreviewFocused] = useState(false);
+  const [sheetScale, setSheetScale] = useState(0.7);
   
-  // Field toggles
   const [showDate, setShowDate] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
   const [showPrice, setShowPrice] = useState(false);
   const [showSKU, setShowSKU] = useState(false);
   const [showMargin, setShowMargin] = useState(false);
   
-  // Blueprint field toggles
   const [showEffect, setShowEffect] = useState(false);
   const [showLineage, setShowLineage] = useState(false);
   const [showNose, setShowNose] = useState(false);
@@ -307,57 +189,205 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   const [showTHCA, setShowTHCA] = useState(false);
   const [showSupplier, setShowSupplier] = useState(false);
   
-  // Pricing tier options
   const [selectedTier, setSelectedTier] = useState<string>('');
   const [showTierPrice, setShowTierPrice] = useState(false);
   const [showTierLabel, setShowTierLabel] = useState(false);
   
-  const [showFieldsPanel, setShowFieldsPanel] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
+  const [saveName, setSaveName] = useState('');
+  const [saveDescription, setSaveDescription] = useState('');
+  const [focusedPreview, setFocusedPreview] = useState<'label' | 'sheet' | null>(null);
+  
+  const [productNameFont, setProductNameFont] = useState('Helvetica, sans-serif');
+  const [productNameSize, setProductNameSize] = useState(10);
+  const [productNameColor, setProductNameColor] = useState('#000000');
+  const [productNameWeight, setProductNameWeight] = useState<'normal' | 'bold'>('bold');
+  
+  const [detailsFont, setDetailsFont] = useState('Helvetica, sans-serif');
+  const [detailsSize, setDetailsSize] = useState(8);
+  const [detailsColor, setDetailsColor] = useState('#666666');
+  
+  const [labelLineHeight, setLabelLineHeight] = useState(1.1);
+  const [logoSize, setLogoSize] = useState(16);
   
   const printRef = useRef<HTMLDivElement>(null);
   const sheetContainerRef = useRef<HTMLDivElement>(null);
 
-  // Get active template
   const template = propTemplate || TEMPLATES[selectedTemplate];
 
-  // Update selected product when prop changes
   useEffect(() => {
     if (propSelectedProduct) {
       setSelectedProduct(propSelectedProduct);
     }
   }, [propSelectedProduct]);
 
-  // Auto-scale sheet to fit
   useEffect(() => {
     const updateScale = () => {
-      if (!sheetContainerRef.current || !printRef.current) return;
-      
+      if (!sheetContainerRef.current) return;
       const container = sheetContainerRef.current;
-      const pageWidth = template.page.width * 96; // inches to pixels
+      const pageWidth = template.page.width * 96;
       const pageHeight = template.page.height * 96;
-      
-      const containerWidth = container.clientWidth - 40; // padding
+      const containerWidth = container.clientWidth - 40;
       const containerHeight = container.clientHeight - 40;
-      
       const scaleX = containerWidth / pageWidth;
       const scaleY = containerHeight / pageHeight;
-      const newScale = Math.min(scaleX, scaleY, 0.9); // max 90%
-      
+      const newScale = Math.min(scaleX, scaleY, 0.9);
       setSheetScale(newScale);
     };
     
     updateScale();
+    const resizeObserver = new ResizeObserver(updateScale);
+    if (sheetContainerRef.current) {
+      resizeObserver.observe(sheetContainerRef.current);
+    }
     window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateScale);
+    };
   }, [template]);
 
-  // Generate product label data
+  useEffect(() => {
+    loadSavedTemplates();
+  }, [user]);
+
+  const loadSavedTemplates = async () => {
+    if (!user) return;
+    
+    console.log('📥 Loading templates...');
+    
+    const { data, error } = await (supabase as any)
+      .from('label_templates')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('❌ Load error:', error);
+      return;
+    }
+    
+    console.log('✅ Templates loaded:', data?.length || 0);
+    if (data) {
+      setSavedTemplates(data as any);
+    }
+  };
+
+  const saveCurrentConfig = async () => {
+    if (!user || !saveName.trim()) {
+      console.warn('⚠️ Cannot save: user or name missing', { user: !!user, saveName });
+      return;
+    }
+    
+    console.log('💾 Saving template...', { userId: user.id, saveName });
+    
+    const config = {
+      selectedTemplate,
+      showBorders,
+      showLogo,
+      showDate,
+      showCategory,
+      showPrice,
+      showSKU,
+      showMargin,
+      showEffect,
+      showLineage,
+      showNose,
+      showTerpene,
+      showStrainType,
+      showTHCA,
+      showSupplier,
+      selectedTier,
+      showTierPrice,
+      showTierLabel,
+      productNameFont,
+      productNameSize,
+      productNameColor,
+      productNameWeight,
+      detailsFont,
+      detailsSize,
+      detailsColor,
+      labelLineHeight,
+      logoSize
+    };
+
+    const { data, error } = await (supabase as any)
+      .from('label_templates')
+      .insert({
+        user_id: user.id,
+        location_id: user.location_id ? parseInt(user.location_id) : null,
+        name: saveName.trim(),
+        description: saveDescription.trim() || null,
+        template_type: selectedTemplate,
+        config_data: config
+      })
+      .select();
+
+    if (error) {
+      console.error('❌ Save error:', error);
+      alert(`Failed to save template: ${error.message}`);
+      return;
+    }
+
+    console.log('✅ Template saved:', data);
+    setSaveName('');
+    setSaveDescription('');
+    await loadSavedTemplates();
+  };
+
+  const loadTemplate = (template: SavedTemplate) => {
+    const config = template.config_data;
+    setSelectedTemplate(config.selectedTemplate || 'avery_5160');
+    setShowBorders(config.showBorders ?? true);
+    setShowLogo(config.showLogo ?? true);
+    setShowDate(config.showDate ?? false);
+    setShowCategory(config.showCategory ?? false);
+    setShowPrice(config.showPrice ?? false);
+    setShowSKU(config.showSKU ?? false);
+    setShowMargin(config.showMargin ?? false);
+    setShowEffect(config.showEffect ?? false);
+    setShowLineage(config.showLineage ?? false);
+    setShowNose(config.showNose ?? false);
+    setShowTerpene(config.showTerpene ?? false);
+    setShowStrainType(config.showStrainType ?? false);
+    setShowTHCA(config.showTHCA ?? false);
+    setShowSupplier(config.showSupplier ?? false);
+    setSelectedTier(config.selectedTier || '');
+    setShowTierPrice(config.showTierPrice ?? false);
+    setShowTierLabel(config.showTierLabel ?? false);
+    setProductNameFont(config.productNameFont || 'Helvetica, sans-serif');
+    setProductNameSize(config.productNameSize || 10);
+    setProductNameColor(config.productNameColor || '#000000');
+    setProductNameWeight(config.productNameWeight || 'bold');
+    setDetailsFont(config.detailsFont || 'Helvetica, sans-serif');
+    setDetailsSize(config.detailsSize || 8);
+    setDetailsColor(config.detailsColor || '#666666');
+    setLabelLineHeight(config.labelLineHeight || 1.1);
+    setLogoSize(config.logoSize || 16);
+    setShowLibrary(false);
+  };
+
+  const deleteTemplate = async (id: string) => {
+    console.log('🗑️ Deleting template:', id);
+    
+    const { error } = await (supabase as any)
+      .from('label_templates')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('❌ Delete error:', error);
+      alert(`Failed to delete: ${error.message}`);
+      return;
+    }
+    
+    console.log('✅ Template deleted');
+    loadSavedTemplates();
+  };
+
   const generateProductLabelData = (product: Product | null) => {
     if (!product) {
-      return [
-        { line1: "Flora Distro", line2: "1234 Market St", line3: "Charlotte, NC 28202" },
-        { line1: "Sample Product", line2: "Price: $12.99", line3: "SKU: ABC123" }
-      ];
+      return [{ line1: "Flora Distro", line2: "Select a product", line3: "to begin" }];
     }
 
     const productName = product.name || 'Unknown Product';
@@ -390,12 +420,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       const selectedTierData = allTiers.find((tier: any) => tier.tierKey === selectedTier);
       
       if (selectedTierData) {
-        if (showTierPrice) {
-          additionalFields.push(`${selectedTierData.label}: $${selectedTierData.price.toFixed(2)}`);
-        }
-        if (showTierLabel) {
-          additionalFields.push(`Tier: ${selectedTierData.label}`);
-        }
+        if (showTierPrice) additionalFields.push(`${selectedTierData.label}: $${selectedTierData.price.toFixed(2)}`);
+        if (showTierLabel) additionalFields.push(`Tier: ${selectedTierData.label}`);
       }
     }
     
@@ -452,23 +478,34 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
 
   const printData = propData || generateProductLabelData(selectedProduct);
 
-  // Convert inches to pixels (96 DPI)
   const inchesToPx = (inches: number) => Math.round(inches * 96);
   const ptToPx = (points: number) => Math.round(points * 1.333);
 
-  // Print Handler
   const handlePrint = () => {
     if (printRef.current) {
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         let printableContent = printRef.current.innerHTML;
         
-        if (showLogo) {
-          printableContent = printableContent
-            .replace(/<img[^>]*src="\/logoprint\.png"[^>]*>/g, '<img class="label-logo" src="/logoprint.png" alt="Logo">');
-        }
-        printableContent = printableContent
-          .replace(/<div style="[^"]*flex: 1[^"]*">/g, '<div class="label-text">');
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = printableContent;
+        
+        tempDiv.querySelectorAll('img[src="/logoprint.png"]').forEach(img => {
+          img.className = 'label-logo';
+        });
+        
+        tempDiv.querySelectorAll('.flex-1.flex.flex-col').forEach(container => {
+          const newContainer = document.createElement('div');
+          newContainer.className = 'label-text';
+          Array.from(container.children).forEach(child => {
+            const newDiv = document.createElement('div');
+            newDiv.textContent = child.textContent;
+            newContainer.appendChild(newDiv);
+          });
+          container.parentNode?.replaceChild(newContainer, container);
+        });
+        
+        printableContent = tempDiv.innerHTML;
 
         printWindow.document.write(`
           <!DOCTYPE html>
@@ -509,10 +546,10 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 }
                 .label-content {
                   position: absolute;
-                  top: ${template.label_style.safe_padding.top}in;
-                  left: ${template.label_style.safe_padding.left}in;
-                  right: ${template.label_style.safe_padding.right}in;
-                  bottom: ${template.label_style.safe_padding.bottom}in;
+                  top: ${template.label_style.safe_padding.top / 2}in;
+                  left: ${template.label_style.safe_padding.left / 2}in;
+                  right: ${template.label_style.safe_padding.right / 2}in;
+                  bottom: ${template.label_style.safe_padding.bottom / 2}in;
                   display: flex;
                   flex-direction: row;
                   align-items: flex-start;
@@ -520,22 +557,36 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                   overflow: hidden;
                 }
                 .label-logo {
-                  width: 12pt;
-                  height: 12pt;
+                  width: ${logoSize}px;
+                  height: ${logoSize}px;
                   flex-shrink: 0;
                   object-fit: contain;
                 }
                 .label-text {
                   flex: 1;
-                  font-size: ${template.text_style.font_size_pt}pt;
-                  line-height: ${template.text_style.line_height_em};
-                  color: ${template.text_style.color};
-                  text-align: ${template.text_style.align};
-                  font-family: ${template.text_style.font_family}, sans-serif;
-                  white-space: pre-line;
-                  word-wrap: break-word;
-                  font-weight: normal;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 2px;
                   overflow: hidden;
+                }
+                .label-text > div:first-child {
+                  font-size: ${productNameSize}pt;
+                  line-height: ${labelLineHeight};
+                  color: ${productNameColor};
+                  font-family: ${productNameFont};
+                  font-weight: ${productNameWeight};
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                }
+                .label-text > div:not(:first-child) {
+                  font-size: ${detailsSize}pt;
+                  line-height: ${labelLineHeight};
+                  color: ${detailsColor};
+                  font-family: ${detailsFont};
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
                 }
               </style>
             </head>
@@ -554,10 +605,11 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     }
   };
 
-  // Generate Label Grid
   const generateLabelGrid = () => {
     const labels = [];
     const totalLabels = template.grid.rows * template.grid.columns;
+    const basePadding = inchesToPx(template.label_style.safe_padding.top / 2);
+    const baseGap = 3;
     
     for (let i = 0; i < totalLabels; i++) {
       const row = Math.floor(i / template.grid.columns);
@@ -568,67 +620,36 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       
       const dataIndex = i % printData.length;
       const labelData = printData[dataIndex];
-      const labelText = [labelData.line1, labelData.line2, labelData.line3]
-        .filter(line => line && line.trim())
-        .join('\n');
 
       labels.push(
         <div
           key={i}
-          className="label"
           style={{
             position: 'absolute',
             left: `${inchesToPx(left)}px`,
             top: `${inchesToPx(top)}px`,
             width: `${inchesToPx(template.grid.label_width)}px`,
             height: `${inchesToPx(template.grid.label_height)}px`,
-            border: showBorders ? '1px dashed #ccc' : 'none',
+            border: showBorders ? '1px dashed rgba(0,0,0,0.15)' : 'none',
             borderRadius: `${inchesToPx(template.label_style.corner_radius)}px`,
             overflow: 'hidden',
           }}
         >
           <div
-            className="label-content"
             style={{
               position: 'absolute',
-              top: `${inchesToPx(template.label_style.safe_padding.top)}px`,
-              left: `${inchesToPx(template.label_style.safe_padding.left)}px`,
-              right: `${inchesToPx(template.label_style.safe_padding.right)}px`,
-              bottom: `${inchesToPx(template.label_style.safe_padding.bottom)}px`,
+              top: `${basePadding}px`,
+              left: `${basePadding}px`,
+              right: `${basePadding}px`,
+              bottom: `${basePadding}px`,
               display: 'flex',
               flexDirection: 'row',
               alignItems: 'flex-start',
-              gap: '4px',
+              gap: `${baseGap}px`,
               overflow: 'hidden',
             }}
           >
-            {showLogo && (
-              <img
-                src="/logoprint.png"
-                alt="Logo"
-                style={{
-                  width: '16px',
-                  height: '16px',
-                  flexShrink: 0,
-                  objectFit: 'contain',
-                }}
-              />
-            )}
-            <div
-              style={{
-                flex: 1,
-                fontSize: `${ptToPx(template.text_style.font_size_pt)}px`,
-                lineHeight: template.text_style.line_height_em,
-                color: template.text_style.color,
-                textAlign: template.text_style.align as any,
-                fontFamily: template.text_style.font_family,
-                whiteSpace: 'pre-line',
-                wordWrap: 'break-word',
-                overflow: 'hidden',
-              }}
-            >
-              {labelText}
-            </div>
+            {renderLabelContent(labelData, 1)}
           </div>
         </div>
       );
@@ -637,77 +658,111 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     return labels;
   };
 
-  // Generate single label for editor
-  const generateSingleLabel = () => {
-    const labelData = printData[0];
-    const labelText = [labelData.line1, labelData.line2, labelData.line3]
-      .filter(line => line && line.trim())
-      .join('\n');
-
-    // Calculate responsive scale - fit to container width
-    const baseWidth = inchesToPx(template.grid.label_width) * 2.2;
-    const maxWidth = 440; // Max width to fit in 480px column with padding
-    const scale = Math.min(1, maxWidth / baseWidth);
-
+  const renderLabelContent = (labelData: any, scale: number = 1) => {
+    const ptToPx = (pt: number) => pt * 1.333;
+    
     return (
-      <div
-        className="relative bg-white rounded-xl overflow-hidden"
-        style={{
-          width: `${baseWidth * scale}px`,
-          height: `${inchesToPx(template.grid.label_height) * 2.2 * scale}px`,
-          border: showBorders ? '2px solid #3b82f6' : '2px solid transparent',
-          boxShadow: '0 20px 60px -12px rgba(59, 130, 246, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            top: `${inchesToPx(template.label_style.safe_padding.top) * 2.2 * scale}px`,
-            left: `${inchesToPx(template.label_style.safe_padding.left) * 2.2 * scale}px`,
-            right: `${inchesToPx(template.label_style.safe_padding.right) * 2.2 * scale}px`,
-            bottom: `${inchesToPx(template.label_style.safe_padding.bottom) * 2.2 * scale}px`,
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            gap: `${8 * scale}px`,
-            overflow: 'hidden',
-          }}
-        >
-          {showLogo && (
-            <img
-              src="/logoprint.png"
-              alt="Logo"
-              style={{
-                width: `${28 * scale}px`,
-                height: `${28 * scale}px`,
-                flexShrink: 0,
-                objectFit: 'contain',
-              }}
-            />
-          )}
+      <>
+        {showLogo && (
+          <img
+            src="/logoprint.png"
+            alt="Logo"
+            className="flex-shrink-0"
+            style={{
+              width: `${logoSize * scale}px`,
+              height: `${logoSize * scale}px`,
+              objectFit: 'contain',
+            }}
+          />
+        )}
+        <div className="flex-1 flex flex-col" style={{ gap: `${2 * scale}px`, overflow: 'hidden' }}>
           <div
             style={{
-              flex: 1,
-              fontSize: `${ptToPx(template.text_style.font_size_pt) * 2.2 * scale}px`,
-              lineHeight: template.text_style.line_height_em,
-              color: template.text_style.color,
-              textAlign: template.text_style.align as any,
-              fontFamily: template.text_style.font_family,
-              whiteSpace: 'pre-line',
-              wordWrap: 'break-word',
+              fontSize: `${ptToPx(productNameSize) * scale}px`,
+              lineHeight: labelLineHeight,
+              color: productNameColor,
+              fontFamily: productNameFont,
+              fontWeight: productNameWeight,
+              whiteSpace: 'nowrap',
+              textOverflow: 'ellipsis',
               overflow: 'hidden',
             }}
           >
-            {labelText}
+            {labelData.line1}
           </div>
+          {labelData.line2 && (
+            <div
+              style={{
+                fontSize: `${ptToPx(detailsSize) * scale}px`,
+                lineHeight: labelLineHeight,
+                color: detailsColor,
+                fontFamily: detailsFont,
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+              }}
+            >
+              {labelData.line2}
+            </div>
+          )}
+          {labelData.line3 && (
+            <div
+              style={{
+                fontSize: `${ptToPx(detailsSize) * scale}px`,
+                lineHeight: labelLineHeight,
+                color: detailsColor,
+                fontFamily: detailsFont,
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+              }}
+            >
+              {labelData.line3}
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
+
+  const generateSingleLabel = () => {
+    const labelData = printData[0];
+    const basePadding = inchesToPx(template.label_style.safe_padding.top / 2);
+    const baseGap = 3;
+
+    return (
+      <div
+        className="relative bg-white rounded overflow-hidden transition-shadow duration-700"
+        style={{
+          width: `${inchesToPx(template.grid.label_width)}px`,
+          height: `${inchesToPx(template.grid.label_height)}px`,
+          transform: `scale(${LARGE_PREVIEW_SCALE})`,
+          transformOrigin: 'center',
+          border: showBorders ? '1px solid rgba(0,0,0,0.1)' : 'none',
+          boxShadow: focusedPreview === 'label' 
+            ? '0 30px 90px -20px rgba(255, 255, 255, 0.12), 0 0 40px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
+            : '0 20px 60px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+        }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: `${baseGap}px`,
+            overflow: 'hidden',
+            padding: `${basePadding}px`,
+          }}
+        >
+          {renderLabelContent(labelData, 1)}
         </div>
       </div>
     );
   };
 
   return (
-    <div className="h-full flex flex-col bg-neutral-950">
-      {/* Custom Toolbar */}
+    <div className="h-full flex flex-col bg-transparent">
       <PrintToolbar
         selectedProduct={selectedProduct}
         onProductSelect={setSelectedProduct}
@@ -718,6 +773,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
         showLogo={showLogo}
         onShowLogoChange={setShowLogo}
         onPrint={handlePrint}
+        onLibraryClick={() => setShowLibrary(true)}
         templates={TEMPLATE_LIST}
         showDate={showDate}
         onShowDateChange={setShowDate}
@@ -749,165 +805,149 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
         onShowTierPriceChange={setShowTierPrice}
         showTierLabel={showTierLabel}
         onShowTierLabelChange={setShowTierLabel}
+        productNameFont={productNameFont}
+        onProductNameFontChange={setProductNameFont}
+        productNameSize={productNameSize}
+        onProductNameSizeChange={setProductNameSize}
+        productNameColor={productNameColor}
+        onProductNameColorChange={setProductNameColor}
+        productNameWeight={productNameWeight}
+        onProductNameWeightChange={setProductNameWeight}
+        detailsFont={detailsFont}
+        onDetailsFontChange={setDetailsFont}
+        detailsSize={detailsSize}
+        onDetailsSizeChange={setDetailsSize}
+        detailsColor={detailsColor}
+        onDetailsColorChange={setDetailsColor}
+        labelLineHeight={labelLineHeight}
+        onLabelLineHeightChange={setLabelLineHeight}
+        logoSize={logoSize}
+        onLogoSizeChange={setLogoSize}
         template={template}
       />
 
-      {/* Main Content Area - Three Column Layout */}
-      <div className="flex-1 flex relative overflow-hidden">
-        {/* Left: Single Label Editor (Primary Focus) */}
-        <div className="w-[480px] flex-shrink-0 flex flex-col border-r border-white/[0.06]">
-          {/* Editor Header */}
-          <div className="px-8 py-6 border-b border-white/[0.06]">
-            <h2 className="text-xl font-light text-white mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
-              Label Editor
-            </h2>
-            <p className="text-sm text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-              {template.grid.label_width}" × {template.grid.label_height}" • {template.template_name}
-            </p>
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col bg-transparent">
+          <div 
+            className="px-6 py-4 border-b border-white/[0.06] transition-all duration-700"
+            style={{
+              opacity: focusedPreview === null ? 0.6 : focusedPreview === 'label' ? 0.85 : 0.4,
+            }}
+          >
+            <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Full Label</div>
+            <div className="text-xs text-white/30 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>
+              {template.grid.label_width}" × {template.grid.label_height}"
+            </div>
           </div>
-
-          {/* Single Label Preview (Enlarged) */}
-          <div className="flex-1 flex items-center justify-center p-6 bg-transparent relative group">
-            <div 
-              className={`relative cursor-pointer transition-all duration-500 ease-out ${
-                labelPreviewFocused ? 'opacity-100 scale-105' : 'opacity-60 scale-100 hover:opacity-80'
-              }`}
-              style={{ maxWidth: '100%' }}
-              onClick={() => setLabelPreviewFocused(!labelPreviewFocused)}
+          <div 
+            className="flex-1 flex items-center justify-center p-4 md:p-6 lg:p-8 cursor-pointer transition-all duration-700 ease-out overflow-hidden"
+            onClick={() => setFocusedPreview(focusedPreview === 'label' ? null : 'label')}
+            style={{
+              opacity: focusedPreview === null ? 0.6 : focusedPreview === 'label' ? 0.85 : 0.4,
+            }}
+          >
+            <div
+              className="transition-transform duration-700 ease-out w-full h-full flex items-center justify-center"
+              style={{
+                transform: focusedPreview === 'label' ? 'scale(1.02)' : 'scale(1)',
+              }}
             >
               {generateSingleLabel()}
-              
-              {/* Label Dimensions Overlay */}
-              <div className="absolute -bottom-8 left-0 right-0 text-center">
-                <span className="text-xs text-neutral-600" style={{ fontFamily: 'Tiempos, serif' }}>
-                  2.2× scale preview
-                </span>
-              </div>
-
-              {/* Focus Indicator */}
-              {labelPreviewFocused && (
-                <div className="absolute -top-3 -right-3 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-blue-500/50">
-                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-              )}
             </div>
-
-            {/* Hover Hint */}
-            {!labelPreviewFocused && (
-              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                <div className="bg-neutral-900/90 backdrop-blur-xl border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
-                  Click to focus
-                </div>
-              </div>
-            )}
           </div>
-
-          {/* Quick Stats */}
-          <div className="px-8 py-6 border-t border-white/[0.06] grid grid-cols-3 gap-4">
+          <div 
+            className="px-6 py-4 border-t border-white/[0.06] flex items-center justify-center gap-8 transition-all duration-700"
+            style={{
+              opacity: focusedPreview === null ? 0.6 : focusedPreview === 'label' ? 0.85 : 0.4,
+            }}
+          >
             <div className="text-center">
-              <div className="text-2xl font-light text-white mb-1" style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-sm font-medium text-white/90" style={{ fontFamily: 'Tiempos, serif' }}>
                 {template.data_mapping.records_per_page}
               </div>
-              <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-                labels/sheet
-              </div>
+              <div className="text-[10px] text-white/40 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>labels/sheet</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-light text-white mb-1" style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-sm font-medium text-white/90" style={{ fontFamily: 'Tiempos, serif' }}>
                 {template.grid.rows}×{template.grid.columns}
               </div>
-              <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-                grid layout
-              </div>
+              <div className="text-[10px] text-white/40 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>grid</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-light text-white mb-1" style={{ fontFamily: 'Tiempos, serif' }}>
-                {printData.length}
+              <div className="text-sm font-medium text-white/90" style={{ fontFamily: 'Tiempos, serif' }}>
+                {template.page.size.toUpperCase()}
               </div>
-              <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-                data records
-              </div>
+              <div className="text-[10px] text-white/40 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>size</div>
             </div>
           </div>
         </div>
 
-        {/* Center: Full Sheet Preview */}
-        <div className="flex-1 flex flex-col">
-          {/* Sheet Header */}
-          <div className="px-8 py-6 border-b border-white/[0.06] flex items-center justify-between">
+        <div className="w-[420px] flex flex-col border-l border-white/[0.06] bg-transparent">
+          <div 
+            className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between transition-all duration-700"
+            style={{
+              opacity: focusedPreview === null ? 0.6 : focusedPreview === 'sheet' ? 0.85 : 0.4,
+            }}
+          >
             <div>
-              <h2 className="text-xl font-light text-white mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
-                Full Sheet Preview
-              </h2>
-              <p className="text-sm text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
-                {template.page.size.toUpperCase()} • {template.page.width}" × {template.page.height}"
-              </p>
+              <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Sheet</div>
+              <div className="text-xs text-white/30 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>
+                {Math.round(sheetScale * 100)}% scale
+              </div>
             </div>
-
-            {/* Zoom Controls */}
-            <div className="flex items-center gap-2 bg-neutral-900/60 backdrop-blur-xl border border-white/[0.08] rounded-2xl px-3 py-2">
+            <div className="flex items-center gap-1">
               <button
-                onClick={() => setSheetScale(Math.max(0.2, sheetScale - 0.1))}
-                className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSheetScale(Math.max(0.2, sheetScale - 0.1));
+                }}
+                className="w-6 h-6 flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/5 rounded transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                 </svg>
               </button>
-              <div className="text-xs text-neutral-400 font-medium w-12 text-center" style={{ fontFamily: 'Tiempos, serif' }}>
-                {Math.round(sheetScale * 100)}%
-              </div>
               <button
-                onClick={() => setSheetScale(Math.min(1.5, sheetScale + 0.1))}
-                className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSheetScale(Math.min(1.2, sheetScale + 0.1));
+                }}
+                className="w-6 h-6 flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/5 rounded transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
               </button>
-              <div className="w-px h-5 bg-white/[0.08] mx-1" />
-              <button
-                onClick={() => setSheetScale(0.7)}
-                className="px-3 h-8 text-xs font-medium text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                Fit
-              </button>
             </div>
           </div>
-
-          {/* Sheet Preview Area */}
           <div 
             ref={sheetContainerRef}
-            className="flex-1 flex items-center justify-center p-4 overflow-auto bg-transparent relative group"
+            className="flex-1 flex items-center justify-center p-4 overflow-hidden cursor-pointer transition-all duration-700 ease-out"
+            onClick={() => setFocusedPreview(focusedPreview === 'sheet' ? null : 'sheet')}
+            style={{
+              opacity: focusedPreview === null ? 0.6 : focusedPreview === 'sheet' ? 0.85 : 0.4,
+            }}
           >
             <div
-              className={`cursor-pointer transition-all duration-500 ease-out ${
-                sheetPreviewFocused ? 'opacity-100' : 'opacity-60 hover:opacity-80'
-              }`}
+              className="transition-transform duration-700 ease-out"
               style={{
-                transform: `scale(${sheetPreviewFocused ? sheetScale * 1.05 : sheetScale})`,
+                transform: `scale(${sheetScale * (focusedPreview === 'sheet' ? 1.03 : 1)})`,
                 transformOrigin: 'center',
-                transition: 'transform 0.5s ease-out, opacity 0.5s ease-out'
               }}
-              onClick={() => setSheetPreviewFocused(!sheetPreviewFocused)}
             >
               <div 
                 ref={printRef}
-                className="print-page bg-white shadow-2xl relative"
+                className="bg-white transition-shadow duration-700"
                 style={{
                   width: `${inchesToPx(template.page.width)}px`,
                   height: `${inchesToPx(template.page.height)}px`,
-                  boxShadow: sheetPreviewFocused 
-                    ? '0 30px 70px -12px rgba(59, 130, 246, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.2)'
-                    : '0 25px 50px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.1)',
-                  transition: 'box-shadow 0.5s ease-out'
+                  position: 'relative',
+                  boxShadow: focusedPreview === 'sheet'
+                    ? '0 40px 100px -30px rgba(255, 255, 255, 0.15), 0 0 50px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
+                    : '0 25px 80px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06)',
                 }}
               >
                 <div
-                  className="label-grid"
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -918,207 +958,106 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 >
                   {generateLabelGrid()}
                 </div>
-
-                {/* Focus Indicator */}
-                {sheetPreviewFocused && (
-                  <div className="absolute -top-4 -right-4 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-blue-500/50">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                )}
               </div>
             </div>
-
-            {/* Hover Hint */}
-            {!sheetPreviewFocused && (
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
-                <div className="bg-neutral-900/90 backdrop-blur-xl border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
-                  Click to focus
-                </div>
-              </div>
-            )}
           </div>
         </div>
+      </div>
 
-        {/* Right: Sliding Fields Panel */}
-        <div
-          className={`absolute top-0 right-0 h-full w-80 bg-neutral-900/95 backdrop-blur-xl border-l border-white/[0.06] transform transition-transform duration-300 ease-in-out ${
-            showFieldsPanel ? 'translate-x-0' : 'translate-x-full'
-          }`}
-          style={{ zIndex: 40 }}
-        >
-          <div className="h-full flex flex-col">
-            {/* Panel Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-              <h3 className="text-sm font-medium text-white uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
-                Label Fields
-              </h3>
+      {showLibrary && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)' }}>
+            <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
+              <h2 className="text-base font-medium text-white" style={{ fontFamily: 'Tiempos, serif' }}>Label Library</h2>
               <button
-                onClick={() => setShowFieldsPanel(false)}
-                className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                onClick={() => setShowLibrary(false)}
+                className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/5 rounded transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-
-            {/* Scrollable Content */}
+            
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {!selectedProduct && (
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 text-xs text-yellow-200" style={{ fontFamily: 'Tiempos, serif' }}>
-                  Select a product to enable field options
-                </div>
-              )}
-
-              {/* Extra Fields */}
               <div className="space-y-3">
-                <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
-                  Extra Fields
-                </h4>
-                <div className="space-y-2">
-                  {[
-                    { label: 'Date', value: showDate, onChange: setShowDate },
-                    { label: 'Price', value: showPrice, onChange: setShowPrice },
-                    { label: 'SKU', value: showSKU, onChange: setShowSKU },
-                    { label: 'Category', value: showCategory, onChange: setShowCategory },
-                    { label: 'Margin', value: showMargin, onChange: setShowMargin }
-                  ].map((field) => (
-                    <button
-                      key={field.label}
-                      onClick={() => selectedProduct && field.onChange(!field.value)}
-                      disabled={!selectedProduct}
-                      className={`w-full px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-xl flex items-center justify-between ${
-                        !selectedProduct 
-                          ? 'bg-neutral-800/40 text-neutral-600 cursor-not-allowed' 
-                          : field.value 
-                            ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30' 
-                            : 'bg-neutral-800/60 text-neutral-400 hover:text-white hover:bg-neutral-800'
-                      }`}
-                      style={{ fontFamily: 'Tiempos, serif' }}
-                    >
-                      <span>{field.label}</span>
-                      <span className={`text-xs ${field.value && selectedProduct ? 'text-blue-400' : 'text-neutral-600'}`}>
-                        {field.value ? 'ON' : 'OFF'}
-                      </span>
-                    </button>
-                  ))}
+                <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider px-3" style={{ fontFamily: 'Tiempos, serif' }}>
+                  Save Current Configuration
                 </div>
+                <input
+                  type="text"
+                  value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  placeholder="Template name"
+                  className="w-full px-3 py-2 bg-neutral-800 text-white text-sm rounded border border-white/10 focus:outline-none focus:border-white/30"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                />
+                <input
+                  type="text"
+                  value={saveDescription}
+                  onChange={(e) => setSaveDescription(e.target.value)}
+                  placeholder="Description (optional)"
+                  className="w-full px-3 py-2 bg-neutral-800 text-white text-sm rounded border border-white/10 focus:outline-none focus:border-white/30"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                />
+                <button
+                  onClick={saveCurrentConfig}
+                  disabled={!saveName.trim()}
+                  className="w-full px-4 py-2 text-sm font-medium bg-white/10 hover:bg-white/20 text-white rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                >
+                  Save Template
+                </button>
               </div>
 
-              {/* Blueprint Fields */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
-                  Blueprint Fields
-                </h4>
-                <div className="space-y-2">
-                  {[
-                    { label: 'Effect', value: showEffect, onChange: setShowEffect },
-                    { label: 'Lineage', value: showLineage, onChange: setShowLineage },
-                    { label: 'Nose', value: showNose, onChange: setShowNose },
-                    { label: 'Terpene', value: showTerpene, onChange: setShowTerpene },
-                    { label: 'Strain Type', value: showStrainType, onChange: setShowStrainType },
-                    { label: 'THCA', value: showTHCA, onChange: setShowTHCA },
-                    { label: 'Supplier', value: showSupplier, onChange: setShowSupplier }
-                  ].map((field) => (
-                    <button
-                      key={field.label}
-                      onClick={() => selectedProduct && field.onChange(!field.value)}
-                      disabled={!selectedProduct}
-                      className={`w-full px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-xl flex items-center justify-between ${
-                        !selectedProduct 
-                          ? 'bg-neutral-800/40 text-neutral-600 cursor-not-allowed' 
-                          : field.value 
-                            ? 'bg-purple-500/20 text-purple-300 border border-purple-400/30' 
-                            : 'bg-neutral-800/60 text-neutral-400 hover:text-white hover:bg-neutral-800'
-                      }`}
-                      style={{ fontFamily: 'Tiempos, serif' }}
-                    >
-                      <span>{field.label}</span>
-                      <span className={`text-xs ${field.value && selectedProduct ? 'text-purple-400' : 'text-neutral-600'}`}>
-                        {field.value ? 'ON' : 'OFF'}
-                      </span>
-                    </button>
-                  ))}
+              <div className="space-y-2">
+                <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider px-3" style={{ fontFamily: 'Tiempos, serif' }}>
+                  Saved Templates ({savedTemplates.length})
                 </div>
-              </div>
-
-              {/* Pricing Tiers */}
-              {selectedProduct?.blueprintPricing?.ruleGroups && (
-                <div className="space-y-3">
-                  <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
-                    Pricing Tiers
-                  </h4>
-                  <select
-                    value={selectedTier}
-                    onChange={(e) => setSelectedTier(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-neutral-800/60 text-white text-sm rounded-xl border border-white/[0.08] focus:outline-none focus:border-blue-400/50"
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  >
-                    <option value="">Select Tier</option>
-                    {selectedProduct.blueprintPricing.ruleGroups.flatMap((group: any) => 
-                      group.tiers.map((tier: any) => (
-                        <option 
-                          key={`${group.ruleName}-${tier.label}`} 
-                          value={`${group.ruleName}-${tier.label}`}
+                {savedTemplates.length === 0 ? (
+                  <div className="py-8 text-center text-white/30 text-sm" style={{ fontFamily: 'Tiempos, serif' }}>
+                    No saved templates yet
+                  </div>
+                ) : (
+                  savedTemplates.map((t) => (
+                    <div
+                      key={t.id}
+                      className="p-3 bg-white/[0.02] rounded-lg border border-white/[0.06] hover:border-white/10 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <button
+                          onClick={() => loadTemplate(t)}
+                          className="flex-1 text-left"
                         >
-                          {group.ruleName} - {tier.label} (${tier.price.toFixed(2)})
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  
-                  {selectedTier && (
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => setShowTierPrice(!showTierPrice)}
-                        className={`w-full px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-xl flex items-center justify-between ${
-                          showTierPrice 
-                            ? 'bg-green-500/20 text-green-300 border border-green-400/30' 
-                            : 'bg-neutral-800/60 text-neutral-400 hover:text-white hover:bg-neutral-800'
-                        }`}
-                        style={{ fontFamily: 'Tiempos, serif' }}
-                      >
-                        <span>Show Tier Price</span>
-                        <span className={`text-xs ${showTierPrice ? 'text-green-400' : 'text-neutral-600'}`}>
-                          {showTierPrice ? 'ON' : 'OFF'}
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => setShowTierLabel(!showTierLabel)}
-                        className={`w-full px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-xl flex items-center justify-between ${
-                          showTierLabel 
-                            ? 'bg-green-500/20 text-green-300 border border-green-400/30' 
-                            : 'bg-neutral-800/60 text-neutral-400 hover:text-white hover:bg-neutral-800'
-                        }`}
-                        style={{ fontFamily: 'Tiempos, serif' }}
-                      >
-                        <span>Show Tier Label</span>
-                        <span className={`text-xs ${showTierLabel ? 'text-green-400' : 'text-neutral-600'}`}>
-                          {showTierLabel ? 'ON' : 'OFF'}
-                        </span>
-                      </button>
+                          <div className="text-sm font-medium text-white" style={{ fontFamily: 'Tiempos, serif' }}>
+                            {t.name}
+                          </div>
+                          {t.description && (
+                            <div className="text-xs text-white/40 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>
+                              {t.description}
+                            </div>
+                          )}
+                          <div className="text-xs text-white/30 mt-1" style={{ fontFamily: 'Tiempos, serif' }}>
+                            {new Date(t.created_at).toLocaleDateString()}
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => deleteTemplate(t.id)}
+                          className="w-7 h-7 flex items-center justify-center text-white/40 hover:text-red-400 hover:bg-white/5 rounded transition-colors"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Fields Panel Toggle Button (Bottom Left) */}
-        <button
-          onClick={() => setShowFieldsPanel(!showFieldsPanel)}
-          className="absolute bottom-6 left-[500px] flex items-center gap-2 px-4 py-2.5 bg-neutral-900/60 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-lg hover:bg-neutral-900/80 transition-colors text-white z-30"
-          style={{ fontFamily: 'Tiempos, serif' }}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-          </svg>
-          <span className="text-xs font-medium">Customize Fields</span>
-        </button>
-      </div>
+      )}
     </div>
   );
 }
