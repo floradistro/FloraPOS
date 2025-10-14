@@ -28,9 +28,9 @@ const createLazyComponent = <P extends {}>(
 };
 const CheckoutScreenLazy = createLazyComponent(() => import('../components/ui/CheckoutScreen'));
 const OrdersViewLazy = createLazyComponent(() => import('../components/ui/OrdersView'));
-const OrdersDashboardLazy = lazy(() => import('../components/ui/OrdersDashboard').then(m => ({ default: m.OrdersDashboard as any })));
+const OrdersDashboardLazy = lazy(() => import('../components/ui/OrdersDashboard').then(m => ({ default: m.OrdersDashboard })));
 const CustomersViewLazy = createLazyComponent(() => import('../components/ui/CustomersView'));
-const CustomerDashboardLazy = lazy(() => import('../components/ui/CustomerDashboard').then(m => ({ default: m.CustomerDashboard as any })));
+const CustomerDashboardLazy = lazy(() => import('../components/ui/CustomerDashboard').then(m => ({ default: m.CustomerDashboard })));
 
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
