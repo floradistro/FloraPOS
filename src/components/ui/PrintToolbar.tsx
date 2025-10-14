@@ -67,6 +67,10 @@ interface LabelTemplate {
 interface PrintToolbarProps {
   selectedProduct: Product | null;
   onProductSelect: (product: Product | null) => void;
+  selectedProducts: Set<number>;
+  onSelectedProductsChange: (products: Set<number>) => void;
+  bulkPrintMode: boolean;
+  onBulkPrintModeChange: (mode: boolean) => void;
   selectedTemplate: string;
   onTemplateChange: (template: string) => void;
   showBorders: boolean;
@@ -148,6 +152,10 @@ const PRESET_FONTS = [
 export const PrintToolbar: React.FC<PrintToolbarProps> = ({
   selectedProduct,
   onProductSelect,
+  selectedProducts,
+  onSelectedProductsChange,
+  bulkPrintMode,
+  onBulkPrintModeChange,
   selectedTemplate,
   onTemplateChange,
   showBorders,
@@ -275,6 +283,9 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
       <AdvancedProductSearch
         selectedProduct={selectedProduct}
         onProductSelect={onProductSelect}
+        selectedProducts={selectedProducts}
+        onSelectedProductsChange={onSelectedProductsChange}
+        bulkMode={bulkPrintMode}
         isOpen={showProductSearch}
         onClose={() => setShowProductSearch(false)}
       />
@@ -282,33 +293,46 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
       <div className="my-3">
         <div className="flex items-center h-full py-3 px-6 relative gap-3">
           
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onBulkPrintModeChange(!bulkPrintMode)}
+            className={`px-3 py-2 text-xs rounded-xl transition-all duration-200 backdrop-blur-sm border ${
+              bulkPrintMode
+                ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20'
+            }`}
+            style={{ fontFamily: 'Tiempos, serif' }}
+          >
+            {bulkPrintMode ? `Bulk (${selectedProducts.size})` : 'Single'}
+          </button>
+
+          <button
+            onClick={() => setShowProductSearch(!showProductSearch)}
+            className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
+            style={{ fontFamily: 'Tiempos, serif' }}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span className="max-w-[180px] truncate">
+              {selectedProduct ? selectedProduct.name : bulkPrintMode ? 'Add Products' : 'Select Product'}
+            </span>
+          </button>
+
+          {(selectedProduct || selectedProducts.size > 0) && (
             <button
-              onClick={() => setShowProductSearch(!showProductSearch)}
-              className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
+              onClick={() => {
+                onProductSelect(null);
+                onSelectedProductsChange(new Set());
+                setSearchQuery('');
+              }}
+              className="px-3 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
               style={{ fontFamily: 'Tiempos, serif' }}
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <span className="max-w-[180px] truncate">
-                {selectedProduct ? selectedProduct.name : 'Select Product'}
-              </span>
+              Clear
             </button>
-
-            {selectedProduct && (
-              <button
-                onClick={() => {
-                  onProductSelect(null);
-                  setSearchQuery('');
-                }}
-                className="px-3 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                Clear
-              </button>
-            )}
-          </div>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           <select

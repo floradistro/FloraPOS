@@ -170,10 +170,12 @@ const TEMPLATE_LIST = [
 export function PrintView({ template: propTemplate, data: propData, selectedProduct: propSelectedProduct }: PrintViewProps) {
   const { user } = useAuth();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(propSelectedProduct || null);
+  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
   const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof TEMPLATES>('avery_5160');
   const [showBorders, setShowBorders] = useState(true);
   const [showLogo, setShowLogo] = useState(true);
   const [sheetScale, setSheetScale] = useState(0.7);
+  const [bulkPrintMode, setBulkPrintMode] = useState(false);
   
   const [showDate, setShowDate] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
@@ -549,6 +551,12 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       console.log('📦 Using propData');
       return propData;
     }
+    
+    if (bulkPrintMode && selectedProducts.size > 0) {
+      console.log('🏭 Generating bulk label data for', selectedProducts.size, 'products');
+      return [];
+    }
+    
     console.log('🏭 Generating new label data from product');
     const result = generateProductLabelData(selectedProduct);
     console.log('✅ printData result:', result[0]);
@@ -556,6 +564,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   }, [
     propData, 
     selectedProduct,
+    selectedProducts,
+    bulkPrintMode,
     showDate, showPrice, showSKU, showCategory, showMargin,
     showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier,
     selectedTier, showTierPrice, showTierLabel
@@ -856,6 +866,10 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       <PrintToolbar
         selectedProduct={selectedProduct}
         onProductSelect={setSelectedProduct}
+        selectedProducts={selectedProducts}
+        onSelectedProductsChange={setSelectedProducts}
+        bulkPrintMode={bulkPrintMode}
+        onBulkPrintModeChange={setBulkPrintMode}
         selectedTemplate={selectedTemplate}
         onTemplateChange={(t) => setSelectedTemplate(t as keyof typeof TEMPLATES)}
         showBorders={showBorders}
