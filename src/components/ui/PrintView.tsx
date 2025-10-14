@@ -252,6 +252,20 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     loadSavedTemplates();
   }, [user]);
 
+  useEffect(() => {
+    const applyDefaultTemplate = async () => {
+      if (!user || savedTemplates.length === 0) return;
+      
+      const defaultTemplate = savedTemplates.find(t => t.name.toLowerCase() === 'default');
+      if (defaultTemplate) {
+        console.log('✅ Auto-applying "Default" template');
+        loadTemplate(defaultTemplate);
+      }
+    };
+    
+    applyDefaultTemplate();
+  }, [savedTemplates]);
+
   const loadSavedTemplates = async () => {
     if (!user) return;
     
