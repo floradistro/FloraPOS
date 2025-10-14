@@ -157,18 +157,27 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       
       // Map cart items to include WooCommerce product IDs for rewards integration
       const mappedLineItems = await Promise.all(items.map(async item => {
-        const wooCommerceProductId = await ProductMappingService.findWooCommerceProductId(item.name);
-        const productId = wooCommerceProductId || item.product_id || parseInt(item.id);
+        // CRITICAL FIX: Use item.product_id FIRST (set by CartService), not name search
+        // ProductMappingService.findWooCommerceProductId is slow and unreliable
+        let productId = item.product_id;
+        
+        // Only fallback to name search if product_id is missing
+        if (!productId || productId <= 0) {
+          console.warn(`⚠️ Cart item missing product_id, attempting name search for: ${item.name}`);
+          const wooCommerceProductId = await ProductMappingService.findWooCommerceProductId(item.name);
+          productId = wooCommerceProductId || undefined;
+        }
         
         // CRITICAL VALIDATION: Ensure product_id is valid
         if (!productId || isNaN(productId) || productId <= 0) {
           console.error(`❌ Invalid product_id for item: ${item.name}`, {
-            wooCommerceProductId,
             item_product_id: item.product_id,
             item_id: item.id,
-            final_productId: productId
+            item_sku: item.sku,
+            final_productId: productId,
+            cart_item: item
           });
-          throw new Error(`Invalid product ID for "${item.name}". Product must have a valid WooCommerce ID.`);
+          throw new Error(`Invalid product ID for "${item.name}". Cannot create order with invalid product. Remove this item and try again.`);
         }
         
         // Calculate final price after overrides and discounts

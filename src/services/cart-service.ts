@@ -104,6 +104,18 @@ export class CartService {
         : product.id.toString();
       itemName = product.name;
     }
+    
+    // CRITICAL VALIDATION: Ensure productId is valid
+    if (!productId || isNaN(productId) || productId <= 0) {
+      console.error('❌ CartService: Invalid product ID detected', {
+        product_id: product.id,
+        product_name: product.name,
+        product_type: product.type,
+        parent_id: (product as any).parent_id,
+        calculated_productId: productId
+      });
+      throw new Error(`Cannot add "${product.name}" to cart: Invalid product ID`);
+    }
 
     return {
       itemId,

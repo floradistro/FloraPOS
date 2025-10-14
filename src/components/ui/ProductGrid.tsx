@@ -692,26 +692,40 @@ export const ProductGrid = forwardRef<{
       }
 
       // Transform variants with inventory data
-      const transformedVariants = variants.map((variant: any) => {
-        const inventoryKey = `${productId}_${variant.id}`;
-        const inventoryData = inventoryMap[inventoryKey];
-        
-        // Extract variant name from attributes
-        const variantName = variant.attributes?.map((attr: any) => attr.option).filter(Boolean).join(', ') || 
-                           variant.name || 
-                           `Variant #${variant.id}`;
-        
-        
-        return {
-          id: variant.id,
-          name: variantName,
-          sku: variant.sku || '',
-          regular_price: variant.regular_price || '0',
-          sale_price: variant.sale_price || undefined,
-          inventory: inventoryData?.inventory || [],
-          total_stock: inventoryData?.total_stock || 0
-        };
-      });
+      const transformedVariants = variants
+        .filter((variant: any) => {
+          // CRITICAL: Filter out variants with invalid IDs
+          if (!variant.id || isNaN(variant.id) || variant.id <= 0) {
+            console.error(`❌ Skipping variant with invalid ID:`, variant);
+            return false;
+          }
+          return true;
+        })
+        .map((variant: any) => {
+          const inventoryKey = `${productId}_${variant.id}`;
+          const inventoryData = inventoryMap[inventoryKey];
+          
+          // Extract variant name from attributes
+          const variantName = variant.attributes?.map((attr: any) => attr.option).filter(Boolean).join(', ') || 
+                             variant.name || 
+                             `Variant #${variant.id}`;
+          
+          
+          return {
+            id: variant.id,
+            name: variantName,
+            sku: variant.sku || '',
+            regular_price: variant.regular_price || '0',
+            sale_price: variant.sale_price || undefined,
+            inventory: inventoryData?.inventory || [],
+            total_stock: inventoryData?.total_stock || 0
+          };
+        });
+
+      if (transformedVariants.length === 0) {
+        console.warn(`⚠️ No valid variants after filtering for product ${productId}`);
+        return null;
+      }
 
       return transformedVariants;
 
@@ -762,6 +776,17 @@ export const ProductGrid = forwardRef<{
       
       if (!selectedVariant) {
         // No variant selected yet, do nothing
+        console.warn(`⚠️ No variant selected for ${product.name}`);
+        return;
+      }
+      
+      // CRITICAL VALIDATION: Ensure variant has valid ID
+      if (!selectedVariant.id || isNaN(selectedVariant.id) || selectedVariant.id <= 0) {
+        console.error(`❌ Invalid variant ID for ${product.name}`, {
+          variant: selectedVariant,
+          variant_id: selectedVariant.id
+        });
+        alert(`Error: Variant has invalid ID. Please try selecting a different option.`);
         return;
       }
 
