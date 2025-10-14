@@ -129,20 +129,32 @@ export function AdvancedProductSearch({
     : recentProducts;
 
   const handleSelectProduct = async (product: Product) => {
+    console.log('🔍 Fetching custom fields for product:', product.id);
+    
     try {
-      console.log('🔍 Fetching full product details for:', product.id);
-      const response = await apiFetch(`/api/proxy/flora-im/products/${product.id}?location_id=${user?.location_id || 20}`);
-      if (response.ok) {
-        const result = await response.json();
-        const fullProduct = result.success ? result.data : result;
-        console.log('✅ Full product loaded:', fullProduct.name, 'meta_data:', fullProduct.meta_data?.length || 0);
-        onProductSelect(fullProduct);
+      const [fieldsRes] = await Promise.all([
+        apiFetch(`/api/blueprint-fields/products?ids=${product.id}`)
+      ]);
+      
+      if (fieldsRes.ok) {
+        const fieldsData = await fieldsRes.json();
+        console.log('✅ Custom fields loaded:', fieldsData);
+        
+        const customFields = fieldsData[product.id] || {};
+        const meta_data = Object.entries(customFields).map(([key, value]) => ({
+          id: Math.random(),
+          key,
+          value
+        }));
+        
+        console.log('✅ Product with meta_data:', product.name, 'fields:', meta_data.length);
+        onProductSelect({ ...product, meta_data });
       } else {
-        console.warn('⚠️ Failed to load full product, using bulk data');
+        console.warn('⚠️ Failed to load custom fields, using product without meta_data');
         onProductSelect(product);
       }
     } catch (error) {
-      console.error('❌ Failed to load full product:', error);
+      console.error('❌ Failed to load custom fields:', error);
       onProductSelect(product);
     }
     
