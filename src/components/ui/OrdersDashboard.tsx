@@ -738,7 +738,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                     </div>
                     <div className="text-sm text-neutral-500" 
                          style={{ fontFamily: 'Tiempos, serif' }}>
-                      {order.customer_name || order.billing?.first_name + ' ' + order.billing?.last_name || 'Guest'}
+                      {order.customer_name || (order.billing?.first_name && order.billing?.last_name ? `${order.billing.first_name} ${order.billing.last_name}` : 'Guest')}
                     </div>
                     <div className="text-xs text-neutral-600 mt-1" 
                          style={{ fontFamily: 'Tiempos, serif' }}>
