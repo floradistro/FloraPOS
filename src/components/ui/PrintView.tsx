@@ -514,22 +514,15 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
 
     console.log('📋 Total additionalFields:', additionalFields.length, additionalFields);
     
-    const line2 = additionalFields.slice(0, 3).join(' • ');
-    const line3 = additionalFields.slice(3, 6).join(' • ');
-    
     console.log('🏷️ FINAL Label data:', {
       productName,
-      'line2 (should show on label)': line2,
-      'line3 (should show on label)': line3,
-      'line2 empty?': !line2,
-      'line3 empty?': !line3,
-      additionalFields
+      fields: additionalFields,
+      totalLines: 1 + additionalFields.length
     });
     
     return Array(template.data_mapping.records_per_page).fill(null).map(() => ({
       line1: productName,
-      line2: line2 || '',
-      line3: line3 || ''
+      additionalLines: additionalFields
     }));
   };
 
@@ -762,15 +755,13 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
               fontWeight: productNameWeight,
               wordWrap: 'break-word',
               overflow: 'hidden',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
             }}
           >
             {labelData.line1}
           </div>
-          {labelData.line2 && labelData.line2.trim() && (
+          {labelData.additionalLines && labelData.additionalLines.map((line: string, idx: number) => (
             <div
+              key={idx}
               style={{
                 fontSize: `${ptToPx(detailsSize) * scale}px`,
                 lineHeight: labelLineHeight,
@@ -778,31 +769,11 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 fontFamily: detailsFont,
                 wordWrap: 'break-word',
                 overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
               }}
             >
-              {labelData.line2}
+              {line}
             </div>
-          )}
-          {labelData.line3 && labelData.line3.trim() && (
-            <div
-              style={{
-                fontSize: `${ptToPx(detailsSize) * scale}px`,
-                lineHeight: labelLineHeight,
-                color: detailsColor,
-                fontFamily: detailsFont,
-                wordWrap: 'break-word',
-                overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-              }}
-            >
-              {labelData.line3}
-            </div>
-          )}
+          ))}
         </div>
       </>
     );
