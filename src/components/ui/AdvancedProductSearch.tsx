@@ -129,32 +129,28 @@ export function AdvancedProductSearch({
     : recentProducts;
 
   const handleSelectProduct = async (product: Product) => {
-    console.log('🔍 Fetching custom fields for product:', product.id);
+    console.log('🔍 Fetching full product with meta_data for:', product.id);
     
     try {
-      const [fieldsRes] = await Promise.all([
-        apiFetch(`/api/blueprint-fields/products?ids=${product.id}`)
-      ]);
+      const response = await fetch(`/api/proxy/woocommerce/products?include=${product.id}&per_page=1`);
       
-      if (fieldsRes.ok) {
-        const fieldsData = await fieldsRes.json();
-        console.log('✅ Custom fields loaded:', fieldsData);
-        
-        const customFields = fieldsData[product.id] || {};
-        const meta_data = Object.entries(customFields).map(([key, value]) => ({
-          id: Math.random(),
-          key,
-          value
-        }));
-        
-        console.log('✅ Product with meta_data:', product.name, 'fields:', meta_data.length);
-        onProductSelect({ ...product, meta_data });
-      } else {
-        console.warn('⚠️ Failed to load custom fields, using product without meta_data');
+      if (!response.ok) {
+        console.warn('⚠️ Failed to load full product from WooCommerce');
         onProductSelect(product);
+      } else {
+        const wcProducts = await response.json();
+        if (wcProducts && wcProducts.length > 0) {
+          const fullProduct = wcProducts[0];
+          console.log('✅ Full product loaded:', fullProduct.name, 'meta_data:', fullProduct.meta_data?.length || 0);
+          console.log('📦 Meta keys:', fullProduct.meta_data?.map((m: any) => m.key).slice(0, 20));
+          onProductSelect(fullProduct);
+        } else {
+          console.warn('⚠️ No product data returned');
+          onProductSelect(product);
+        }
       }
     } catch (error) {
-      console.error('❌ Failed to load custom fields:', error);
+      console.error('❌ Failed to load full product:', error);
       onProductSelect(product);
     }
     
