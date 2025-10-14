@@ -130,15 +130,19 @@ export function AdvancedProductSearch({
 
   const handleSelectProduct = async (product: Product) => {
     try {
-      const response = await apiFetch(`/api/products/${product.id}`);
+      console.log('🔍 Fetching full product details for:', product.id);
+      const response = await apiFetch(`/api/proxy/flora-im/products/${product.id}?location_id=${user?.location_id || 20}`);
       if (response.ok) {
-        const fullProduct = await response.json();
+        const result = await response.json();
+        const fullProduct = result.success ? result.data : result;
+        console.log('✅ Full product loaded:', fullProduct.name, 'meta_data:', fullProduct.meta_data?.length || 0);
         onProductSelect(fullProduct);
       } else {
+        console.warn('⚠️ Failed to load full product, using bulk data');
         onProductSelect(product);
       }
     } catch (error) {
-      console.error('Failed to load full product:', error);
+      console.error('❌ Failed to load full product:', error);
       onProductSelect(product);
     }
     

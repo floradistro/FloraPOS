@@ -511,12 +511,12 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     const line2 = additionalFields.slice(0, 3).join(' • ');
     const line3 = additionalFields.slice(3, 6).join(' • ');
     
-    console.log('🏷️ Label data generated:', {
+    console.log('🏷️ FINAL Label data:', {
       productName,
-      line2,
-      line3,
-      line2Length: line2.length,
-      line3Length: line3.length,
+      'line2 (should show on label)': line2,
+      'line3 (should show on label)': line3,
+      'line2 empty?': !line2,
+      'line3 empty?': !line3,
       additionalFields
     });
     
