@@ -378,7 +378,13 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
                         ].map((field) => (
                           <button
                             key={field.label}
-                            onClick={() => selectedProduct && field.onChange(!field.value)}
+                            onClick={() => {
+                              console.log(`🖱️ Clicked ${field.label}, current value:`, field.value, 'selectedProduct:', !!selectedProduct);
+                              if (selectedProduct) {
+                                console.log(`✅ Toggling ${field.label} from ${field.value} to ${!field.value}`);
+                                field.onChange(!field.value);
+                              }
+                            }}
                             disabled={!selectedProduct}
                             className={`w-full px-3 py-2.5 text-xs font-medium rounded-lg transition-all duration-200 ease-out mx-1 text-left flex items-center justify-between ${
                               !selectedProduct 
