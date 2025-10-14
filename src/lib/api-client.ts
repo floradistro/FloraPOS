@@ -282,7 +282,7 @@ export class ApiClient {
    */
   async getBlueprintPricing(products: Array<{id: number, categoryIds: number[]}>): Promise<any> {
     return this.post('/api/pricing/batch-blueprint', { products }, {
-      cacheTime: 5 * 60 * 1000 // Cache for 5 minutes for blueprint pricing
+      cacheTime: 10 * 60 * 1000 // Cache for 10 minutes (increased from 5 for better performance)
     });
   }
 }

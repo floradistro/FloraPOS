@@ -168,7 +168,9 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         
         if (isAuditMode) {
           // Audit mode: only show products with stock > 0
-          matchesStockCriteria = product.total_stock > 0;
+          // IMPORTANT: Variable products have 0 parent stock - always include them if they have variants
+          const hasVariantsWithStock = !!(product.has_variants && product.variants && product.variants.some(v => v.total_stock > 0));
+          matchesStockCriteria = product.total_stock > 0 || hasVariantsWithStock;
         } else if (isRestockMode) {
           // Restock mode: show entire catalog (no stock filtering)
           matchesStockCriteria = true;
@@ -198,8 +200,8 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
     }, [products, searchQuery, categoryFilter, isAuditMode, isRestockMode, showOnlySelected, selectedProducts, sortAlphabetically]);
 
 
-    // Handle product selection
-    const handleProductSelection = (product: Product, event?: React.MouseEvent) => {
+    // Handle product selection with lazy variant loading
+    const handleProductSelection = async (product: Product, event?: React.MouseEvent) => {
       if (event?.target && (event.target as HTMLElement).closest('input, button')) {
         return;
       }
@@ -216,6 +218,24 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         
         return newSelected;
       });
+      
+      // Lazy load variants for variable products when clicked
+      if (product.has_variants && (!product.variants || product.variants.length === 0)) {
+        console.log(`🔄 Lazy loading variants for ${product.name}...`);
+        const loadedVariants = await loadVariantsForProduct(product.id);
+        
+        if (loadedVariants && loadedVariants.length > 0) {
+          console.log(`✅ Loaded ${loadedVariants.length} variants for ${product.name}`);
+          // Update product in state
+          setProducts(prev => 
+            prev.map(p => 
+              p.id === product.id 
+                ? { ...p, variants: loadedVariants }
+                : p
+            )
+          );
+        }
+      }
     };
 
     // Refresh inventory
@@ -340,7 +360,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
 
         // Use optimized bulk endpoint
         const floraApiUrl = `/api/proxy/flora-im/products/bulk?${params}`;
-        console.log('🔄 Fetching from Flora IM Bulk API...');
+        console.log(`🔄 Fetching from Flora IM Bulk API (Mode: ${isRestockMode ? 'RESTOCK' : isAuditMode ? 'AUDIT' : 'NORMAL'}): ${floraApiUrl}`);
         
         const response = await fetch(floraApiUrl, {
           method: 'GET',
@@ -361,7 +381,11 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         }
 
         const productsWithInventory = result.data;
-        console.log(`✅ Fetched ${productsWithInventory.length} products`);
+        console.log(`✅ Fetched ${productsWithInventory.length} products (Mode from API: ${result.meta?.mode || 'unknown'})`);
+        
+        // Count variable products in response
+        const variableProductsCount = productsWithInventory.filter((p: any) => p.type === 'variable').length;
+        console.log(`   🔍 Variable products in API response: ${variableProductsCount}`);
 
         // Don't filter products by location - show ALL products
         // The user's location will still be used for display purposes
@@ -407,26 +431,19 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           };
         });
 
-        // Load variants for variable products
-        const normalizedProducts = await Promise.all(
-          baseProducts.map(async (product) => {
-            if (product.type === 'variable') {
-              try {
-                const variants = await loadVariantsForProduct(product.id);
-                if (variants && variants.length > 0) {
-                  product.has_variants = true;
-                  product.variants = variants;
-                }
-              } catch (error) {
-                console.error(`Failed to load variants for product ${product.id}:`, error);
-              }
-            }
-            return product;
-          })
-        );
+        // OPTIMIZATION: Skip eager variant loading - load on-demand when product is clicked
+        // This saves 20+ API calls on initial load (4 variable products × 5 variants each)
+        const normalizedProducts = baseProducts.map(product => {
+          if (product.type === 'variable') {
+            product.has_variants = true;
+            product.variants = []; // Empty array signals variants need to be loaded
+          }
+          return product;
+        });
 
         const loadTime = Date.now() - startTime;
-        console.log(`✅ Processed ${normalizedProducts.length} products in ${loadTime}ms`);
+        const finalVariableCount = normalizedProducts.filter(p => p.type === 'variable').length;
+        console.log(`⚡ Processed ${normalizedProducts.length} products in ${loadTime}ms (${finalVariableCount} variable products, variants lazy-loaded)`);
 
         setProducts(normalizedProducts);
 
@@ -441,7 +458,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       } finally {
         setLoading(false);
       }
-    }, [searchQuery, categoryFilter, user?.location_id]);
+    }, [searchQuery, categoryFilter, user?.location_id, isAuditMode, isRestockMode]);
 
     // Load products on mount and when filters change
     // Products are needed for all tabs (dashboard, audit, restock)
@@ -460,6 +477,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       total_stock: number;
     }> | null> => {
       try {
+        console.log(`     🔍 Fetching variants from API for product ${productId}...`);
         const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=100&_t=${Date.now()}`;
         const variantsResponse = await fetch(variantsUrl, {
           method: 'GET',
@@ -470,16 +488,20 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         });
 
         if (!variantsResponse.ok) {
+          console.error(`     ❌ Variants API error for product ${productId}: ${variantsResponse.status}`);
           return null;
         }
 
         const variants = await variantsResponse.json();
+        console.log(`     📦 Variants API returned ${variants?.length || 0} variants for product ${productId}`);
+        
         if (!variants || variants.length === 0) {
+          console.warn(`     ⚠️ No variants found for product ${productId}`);
           return null;
         }
 
         // OPTIMIZATION: Batch fetch inventory for all variants at once
-        console.log(`📦 Batch fetching inventory for ${variants.length} variants of product ${productId}`);
+        console.log(`     📦 Batch fetching inventory for ${variants.length} variants...`);
         const inventoryItems = variants.map((v: any) => ({
           product_id: productId,
           variation_id: v.id
@@ -500,11 +522,13 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         let inventoryMap: Record<string, any> = {};
         if (batchInventoryResponse.ok) {
           const batchResult = await batchInventoryResponse.json();
+          console.log(`     📊 Batch inventory response: ${batchResult.success ? 'success' : 'failed'}`);
           if (batchResult.success && batchResult.data) {
             inventoryMap = batchResult.data;
+            console.log(`     ✅ Loaded inventory for ${Object.keys(inventoryMap).length} variant keys`);
           }
         } else {
-          console.warn('Batch inventory fetch failed, falling back to empty inventory');
+          console.warn(`     ⚠️ Batch inventory fetch failed: ${batchInventoryResponse.status}`);
         }
 
         // Process variants with batch inventory data
@@ -534,9 +558,10 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           };
         });
         
+        console.log(`     ✅ Returning ${processedVariants.length} processed variants for product ${productId}`);
         return processedVariants;
       } catch (error) {
-        console.error(`Error loading variants for product ${productId}:`, error);
+        console.error(`     ❌ Error loading variants for product ${productId}:`, error);
         return null;
       }
     };

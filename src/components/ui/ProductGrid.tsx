@@ -517,12 +517,31 @@ export const ProductGrid = forwardRef<{
             };
       });
 
-      // OPTIMIZATION: Batch pricing disabled for faster loading
-      // Pricing is calculated on-demand in QuantitySelector
-      // This saves 1-2 seconds on initial load
-      baseProducts.forEach(product => {
-        product.blueprintPricing = null; // Will be calculated when needed
-      });
+      // Load blueprint pricing using BATCH API (same as MenuView)
+      console.log(`🔄 Fetching pricing tiers for ${baseProducts.length} products...`);
+      try {
+        const productsWithCategories = baseProducts.map((product: Product) => ({
+          id: product.id,
+          categoryIds: product.categories?.map(cat => cat.id) || []
+        }));
+        
+        const batchPricingResponse = await BlueprintPricingService.getBlueprintPricingBatch(productsWithCategories);
+        
+        // Apply pricing to products
+        baseProducts.forEach(product => {
+          const pricingData = batchPricingResponse[product.id];
+          product.blueprintPricing = pricingData || null;
+        });
+        
+        const successCount = baseProducts.filter(p => p.blueprintPricing !== null).length;
+        console.log(`✅ Loaded pricing tiers for ${successCount}/${baseProducts.length} products`);
+      } catch (error) {
+        console.error('❌ Error loading batch pricing:', error);
+        // Continue without pricing tiers
+        baseProducts.forEach(product => {
+          product.blueprintPricing = null;
+        });
+      }
 
       // OPTIMIZATION: Skip variant pre-loading for faster initial load
       // Variants will be loaded on-demand when user selects a product
@@ -535,7 +554,7 @@ export const ProductGrid = forwardRef<{
       });
 
       const loadTime = Date.now() - startTime;
-      console.log(`⚡ Products loaded in ${loadTime}ms (bulk endpoint + transform)`);
+      console.log(`⚡ Products loaded in ${loadTime}ms (bulk endpoint + pricing + transform)`);
 
       // Always replace products since we're loading all at once
       setProducts(normalizedProducts);
@@ -704,20 +723,40 @@ export const ProductGrid = forwardRef<{
   }, [user?.location_id]);
 
   // Handle product selection for highlighting
-  const handleProductSelection = useCallback((product: Product) => {
+  const handleProductSelection = useCallback(async (product: Product) => {
     if (selectedProduct === product.id) {
       // Deselect if clicking the same product
       setSelectedProduct(null);
     } else {
-      // Select new product (variants are already pre-loaded)
+      // Select new product
       setSelectedProduct(product.id);
+      
+      // Load variants if this is a variable product and variants aren't loaded yet
+      if (product.has_variants && (!product.variants || product.variants.length === 0)) {
+        console.log(`🔄 Loading variants for product ${product.id}...`);
+        const loadedVariants = await loadVariantsForProduct(product.id);
+        
+        if (loadedVariants && loadedVariants.length > 0) {
+          console.log(`✅ Loaded ${loadedVariants.length} variants for product ${product.id}`);
+          // Update the product in state with loaded variants
+          setProducts(prevProducts => 
+            prevProducts.map(p => 
+              p.id === product.id 
+                ? { ...p, variants: loadedVariants }
+                : p
+            )
+          );
+        } else {
+          console.warn(`⚠️ No variants loaded for product ${product.id}`);
+        }
+      }
     }
-  }, [selectedProduct]);
+  }, [selectedProduct, loadVariantsForProduct]);
 
-  // Enhanced add to cart that handles variants (now pre-loaded)
+  // Enhanced add to cart that handles variants (loaded on-demand)
   const handleAddToCartWithVariant = (product: Product) => {
     if (product.has_variants) {
-      // Variants are already pre-loaded during initial fetch
+      // Variants are loaded when product is selected
       
       const selectedVariantId = selectedVariants[product.id];
       const selectedVariant = product.variants?.find(v => v.id === selectedVariantId);

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiEnvironmentFromRequest, getApiBaseUrl, getApiCredentials, type ApiEnvironment } from '@/lib/server-api-config';
 
-const CACHE_DURATION = 10000; // 10 second cache for faster updates
-const CACHE_VERSION = 'v16_production_categories'; // Increment this to bust all caches - PRODUCTION CATEGORY IDS
+const CACHE_DURATION = 120000; // 2 minute cache (increased from 10 seconds for better performance)
+const CACHE_VERSION = 'v17_type_coercion_fix'; // Increment this to bust all caches - Fixed category ID type matching
 
 // Environment-specific cache for blueprint data to avoid repeated API calls
 let blueprintCache: {
@@ -270,8 +270,12 @@ async function loadBlueprintAssignments(apiEnv: ApiEnvironment) {
   
     console.log(`✅ [${apiEnv.toUpperCase()}] Built ${allAssignments.length} blueprint assignments from V2 field groups`);
   if (allAssignments.length > 0) {
-    console.log(`   Sample:`, allAssignments.slice(0, 3).map((a: any) => `${a.blueprint_name} (ID ${a.blueprint_id}) → Cat ${a.category_id}`));
-    console.log(`   All category 18 assignments:`, allAssignments.filter((a: any) => a.category_id === 18));
+    console.log(`   📋 All assignments created:`);
+    allAssignments.forEach((a: any) => {
+      console.log(`      → ${a.blueprint_name} (Blueprint ID ${a.blueprint_id}) → Category ${a.category_id}`);
+    });
+  } else {
+    console.log(`   ⚠️  NO ASSIGNMENTS CREATED - Check if V2 API is returning fields for categories: ${categoryIds}`);
   }
   
   return allAssignments;
@@ -367,13 +371,14 @@ function findBlueprintAssignmentFromCache(productId: number, categoryIds: number
     
     for (const categoryId of categoryIds) {
       const assignment = categoryAssignments.find((assignment: any) => 
-        assignment.category_id === categoryId
+        parseInt(assignment.category_id.toString()) === parseInt(categoryId.toString())
       );
       if (assignment) {
         console.log(`   ✓ Found category assignment for cat ${categoryId}:`, assignment);
         return assignment;
       } else {
-        console.log(`   ❌ No assignment found for category ${categoryId}`);
+        console.log(`   ❌ No assignment found for category ${categoryId} (type: ${typeof categoryId})`);
+        console.log(`   📋 Available category IDs in assignments:`, categoryAssignments.map((a: any) => `${a.category_id} (type: ${typeof a.category_id})`));
       }
     }
   }
