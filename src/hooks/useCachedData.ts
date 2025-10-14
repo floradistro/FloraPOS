@@ -7,17 +7,14 @@ import { apiFetch } from '../lib/api-fetch';
  * Hook for caching categories data with long stale time
  * Categories rarely change so we can cache them longer
  */
-const isDevelopment = process.env.NODE_ENV === 'development';
-
 export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
     queryFn: () => CategoriesService.getCategories(),
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 120, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
-    retry: isDevelopment ? 0 : 1,
-    refetchInterval: isDevelopment ? false : 1000 * 60 * 10, // No background refetch in dev
+    staleTime: 600000, // 10 minutes
+    gcTime: 1800000, // 30 minutes
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }
 
@@ -34,7 +31,6 @@ export function useUserLocations() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': isDevelopment ? 'no-cache, no-store, must-revalidate' : 'public, max-age=600',
           },
         });
 
@@ -49,11 +45,10 @@ export function useUserLocations() {
         return [];
       }
     },
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 240, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 120, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
-    retry: isDevelopment ? 0 : 1,
-    refetchInterval: isDevelopment ? false : 1000 * 60 * 30, // No background refetch in dev
+    staleTime: 600000, // 10 minutes
+    gcTime: 1800000, // 30 minutes
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }
 
@@ -70,7 +65,6 @@ export function useTaxRates() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': isDevelopment ? 'no-cache, no-store, must-revalidate' : 'public, max-age=3600',
           },
         });
 
@@ -85,11 +79,10 @@ export function useTaxRates() {
         return [];
       }
     },
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 60 * 24, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 60 * 4, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
-    retry: isDevelopment ? 0 : 1,
-    refetchInterval: isDevelopment ? false : 1000 * 60 * 60, // No background refetch in dev
+    staleTime: 3600000, // 1 hour
+    gcTime: 7200000, // 2 hours
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }
 
@@ -106,7 +99,6 @@ export function useBlueprintAssignments() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': isDevelopment ? 'no-cache, no-store, must-revalidate' : 'public, max-age=300',
           },
         });
 
@@ -121,10 +113,9 @@ export function useBlueprintAssignments() {
         return { assignments: [] };
       }
     },
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
-    retry: isDevelopment ? 0 : 1,
-    refetchInterval: isDevelopment ? false : 1000 * 60 * 5, // No background refetch in dev
+    staleTime: 300000, // 5 minutes
+    gcTime: 900000, // 15 minutes
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }

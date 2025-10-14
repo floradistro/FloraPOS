@@ -29,18 +29,18 @@ const DEFAULT_ENV = process.env.NEXT_PUBLIC_API_ENVIRONMENT as ApiEnvironment ||
 const BUILD_ENV = process.env.NEXT_PUBLIC_ENVIRONMENT || 'local';
 const IS_PRODUCTION_BUILD = BUILD_ENV === 'production';
 
-// Log environment info on module load (development only)
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  console.log('╔════════════════════════════════════════════════════════════╗');
-  console.log('║           Flora POS - API Environment Config              ║');
-  console.log('╠════════════════════════════════════════════════════════════╣');
-  console.log(`║ Build Environment: ${BUILD_ENV.toUpperCase().padEnd(40)} ║`);
-  console.log(`║ Default API: ${DEFAULT_ENV.toUpperCase().padEnd(46)} ║`);
-  console.log(`║ Toggle Enabled: ${(!IS_PRODUCTION_BUILD ? 'YES' : 'NO').padEnd(44)} ║`);
-  console.log(`║ Docker URL: ${DOCKER_URL.padEnd(46)} ║`);
-  console.log(`║ Production URL: ${PRODUCTION_URL.padEnd(39)} ║`);
-  console.log('╚════════════════════════════════════════════════════════════╝');
-}
+// Log environment info on module load (development only) - Disabled to reduce console clutter
+// if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+//   console.log('╔════════════════════════════════════════════════════════════╗');
+//   console.log('║           Flora POS - API Environment Config              ║');
+//   console.log('╠════════════════════════════════════════════════════════════╣');
+//   console.log(`║ Build Environment: ${BUILD_ENV.toUpperCase().padEnd(40)} ║`);
+//   console.log(`║ Default API: ${DEFAULT_ENV.toUpperCase().padEnd(46)} ║`);
+//   console.log(`║ Toggle Enabled: ${(!IS_PRODUCTION_BUILD ? 'YES' : 'NO').padEnd(44)} ║`);
+//   console.log(`║ Docker URL: ${DOCKER_URL.padEnd(46)} ║`);
+//   console.log(`║ Production URL: ${PRODUCTION_URL.padEnd(39)} ║`);
+//   console.log('╚════════════════════════════════════════════════════════════╝');
+// }
 
 export class ApiConfig {
   /**

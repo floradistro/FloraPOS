@@ -3,9 +3,13 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ProductAuditTable } from './ProductAuditTable';
+import { RestockHistoryTable } from './RestockHistoryTable';
+import { AuditHistoryTable } from './AuditHistoryTable';
+import { AllHistoryTable } from './AllHistoryTable';
+import { SalesHistoryTable } from './SalesHistoryTable';
+import { ProductDashboard } from './ProductDashboard';
 import { BlueprintPricingService, BlueprintPricingData } from '../../services/blueprint-pricing-service';
 import { PurchaseOrdersService, type RestockProduct } from '../../services/purchase-orders-service';
-import { UnifiedPopout } from './UnifiedPopout';
 
 export interface Product {
   id: number;
@@ -57,6 +61,16 @@ interface AdjustmentsGridProps {
   onShowOnlySelectedChange?: (show: boolean) => void;
   sortAlphabetically?: boolean;
   onSortAlphabeticallyChange?: (sort: boolean) => void;
+  onRestock?: () => void;
+  onAudit?: () => void;
+  onDashboardAction?: (action: {
+    type: 'audit' | 'restock';
+    filter?: {
+      category?: string;
+      search?: string;
+      mode?: 'aging' | 'lowStock' | 'category';
+    };
+  }) => void;
 }
 
 export interface AdjustmentsGridRef {
@@ -75,6 +89,8 @@ export interface AdjustmentsGridRef {
   getIsCreatingPO: () => boolean;
   removeRestockProduct: (key: string) => void;
   updateRestockQuantity: (key: string, quantity: number) => void;
+  // View control
+  showHistoryTab: (tab: 'all' | 'restock' | 'audit' | 'sales') => void;
 }
 
 export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridProps>(
@@ -87,16 +103,19 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
     showOnlySelected = false,
     onShowOnlySelectedChange,
     sortAlphabetically = true,
-    onSortAlphabeticallyChange
+    onSortAlphabeticallyChange,
+    onRestock,
+    onAudit,
+    onDashboardAction
   }, ref) => {
     const { user } = useAuth();
     
-    // Debug mode states
-    console.log(`🔧 AdjustmentsGrid - isAuditMode: ${isAuditMode}, isRestockMode: ${isRestockMode}`);
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'products' | 'restock' | 'audit' | 'all' | 'sales'>('products');
+  const [historyDateFilter, setHistoryDateFilter] = useState<string>('30'); // Default to 30 days
     
     // Stock editing state
     const [editedStockValues, setEditedStockValues] = useState<Record<string, number | string>>({});
@@ -106,14 +125,12 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
     const [isApplying, setIsApplying] = useState(false);
     const [adjustmentStatus, setAdjustmentStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
     
-    // Audit batch states (only shown in audit mode)
-    const [showAuditDialog, setShowAuditDialog] = useState(false);
+    // Audit batch states
     const [auditName, setAuditName] = useState('');
     const [auditDescription, setAuditDescription] = useState('');
     
-    // Purchase order states (only shown in restock mode)
+    // Purchase order states
     const [pendingRestockProducts, setPendingRestockProducts] = useState<Map<string, number>>(new Map());
-    const [showPODialog, setShowPODialog] = useState(false);
     const [supplierName, setSupplierName] = useState('');
     const [poNotes, setPONotes] = useState('');
     const [isCreatingPO, setIsCreatingPO] = useState(false);
@@ -152,11 +169,9 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         if (isAuditMode) {
           // Audit mode: only show products with stock > 0
           matchesStockCriteria = product.total_stock > 0;
-          console.log(`🔍 Audit Mode - Product: ${product.name}, Stock: ${product.total_stock}, Show: ${matchesStockCriteria}`);
         } else if (isRestockMode) {
           // Restock mode: show entire catalog (no stock filtering)
           matchesStockCriteria = true;
-          console.log(`📦 Restock Mode - Product: ${product.name}, Show: ${matchesStockCriteria}`);
         }
         // If neither mode is active, show all products (default behavior)
         
@@ -250,7 +265,9 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
     // Expose methods to parent
     useImperativeHandle(ref, () => ({
       refreshInventory,
-      createAudit: () => setShowAuditDialog(true),
+      createAudit: () => {
+        // Legacy method - audit is now inline in ProductAuditTable
+      },
       createAuditWithDetails: async (name: string, description?: string) => {
         await applyAuditAdjustments(name, description);
       },
@@ -260,7 +277,9 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       removeAdjustment,
       updateAdjustment,
       // Purchase order methods
-      createPurchaseOrder: () => setShowPODialog(true),
+      createPurchaseOrder: () => {
+        // Legacy method - purchase order is now inline in ProductAuditTable
+      },
       createPurchaseOrderWithDetails: async (supplierName: string, notes?: string) => {
         await createPurchaseOrderFromRestock(supplierName, notes);
       },
@@ -283,7 +302,9 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           }
           return newMap;
         });
-      }
+      },
+      // View control
+      showHistoryTab: (tab: 'all' | 'restock' | 'audit' | 'sales') => setActiveTab(tab)
     }));
 
     const fetchProducts = useCallback(async () => {
@@ -317,8 +338,9 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           params.append('search', searchQuery);
         }
 
-        const floraApiUrl = `/api/proxy/flora-im/products?${params}`;
-        console.log('🔄 Fetching from Flora IM API...');
+        // Use optimized bulk endpoint
+        const floraApiUrl = `/api/proxy/flora-im/products/bulk?${params}`;
+        console.log('🔄 Fetching from Flora IM Bulk API...');
         
         const response = await fetch(floraApiUrl, {
           method: 'GET',
@@ -422,6 +444,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
     }, [searchQuery, categoryFilter, user?.location_id]);
 
     // Load products on mount and when filters change
+    // Products are needed for all tabs (dashboard, audit, restock)
     useEffect(() => {
       fetchProducts();
     }, [fetchProducts]);
@@ -563,6 +586,11 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           message: `Failed to adjust restock quantity: ${error instanceof Error ? error.message : 'Unknown error'}`
         });
       }
+    };
+
+    // Wrapper function for inline restock completion
+    const applyRestockAdjustments = async () => {
+      await createPurchaseOrderFromRestock(supplierName, poNotes);
     };
 
     // Create purchase order from restock products
@@ -1153,30 +1181,123 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       );
     }
 
+    // Show product dashboard when in normal mode (neither audit nor restock)
+    if (!isAuditMode && !isRestockMode && activeTab === 'products') {
+      return (
+        <ProductDashboard 
+          onSelectMode={(mode) => {
+            if (mode === 'restock') {
+              onRestock?.();
+            } else if (mode === 'audit') {
+              onAudit?.();
+            }
+          }}
+          onDashboardAction={onDashboardAction}
+        />
+      );
+    }
+
     return (
       <div className="h-full flex flex-col">
+        {/* Tab Selector Row - Only show when NOT on products tab */}
+        {activeTab !== 'products' && (
+          <div className="flex-shrink-0 px-4 pt-3 pb-2">
+            <div className="flex items-center gap-3">
+              {/* Back to Products Button */}
+              <button
+                onClick={() => setActiveTab('products')}
+                className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-neutral-200 border border-white/10 hover:border-white/20 rounded-xl transition-all duration-300"
+                style={{ fontFamily: 'Tiempos, serif' }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Products
+              </button>
+              
+              {/* History View Dropdown */}
+              <div className="flex items-center gap-2 bg-white/[0.02] backdrop-blur-xl rounded-xl border border-white/[0.06]">
+                <select
+                  value={activeTab}
+                  onChange={(e) => setActiveTab(e.target.value as typeof activeTab)}
+                  className="px-4 py-2 text-sm bg-transparent text-neutral-300 focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[160px]"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                >
+                  <option value="all" className="bg-neutral-800">All History</option>
+                  <option value="restock" className="bg-neutral-800">Restocks</option>
+                  <option value="audit" className="bg-neutral-800">Audits</option>
+                  <option value="sales" className="bg-neutral-800">Sales</option>
+                </select>
+              </div>
+              
+              {/* Date Range Filter */}
+              <div className="flex items-center gap-2 bg-white/[0.02] backdrop-blur-xl rounded-xl border border-white/[0.06]">
+                <select
+                  value={historyDateFilter}
+                  onChange={(e) => setHistoryDateFilter(e.target.value)}
+                  className="px-4 py-2 text-sm bg-transparent text-neutral-300 focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[140px]"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                >
+                  <option value="7" className="bg-neutral-800">Last 7 days</option>
+                  <option value="30" className="bg-neutral-800">Last 30 days</option>
+                  <option value="60" className="bg-neutral-800">Last 60 days</option>
+                  <option value="90" className="bg-neutral-800">Last 90 days</option>
+                  <option value="180" className="bg-neutral-800">Last 6 months</option>
+                  <option value="365" className="bg-neutral-800">Last year</option>
+                  <option value="all" className="bg-neutral-800">All time</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content Area */}
         <div className="flex-1 overflow-auto">
-          <ProductAuditTable
-            filteredProducts={filteredProducts}
-            selectedProducts={selectedProducts}
-            editedStockValues={editedStockValues}
-            userLocationId={user?.location_id ? parseInt(user.location_id) : undefined}
-            onProductSelection={handleProductSelection}
-            onInventoryAdjustment={isRestockMode ? handleRestockAdjustment : handleInventoryAdjustment}
-            onStockValueChange={handleStockValueChange}
-            onStockFieldFocus={handleStockFieldFocus}
-            onStockFieldBlur={handleStockFieldBlur}
-            onStockValueApply={handleStockValueApply}
-            setSelectedProducts={setSelectedProducts}
-            pendingAdjustments={isRestockMode ? pendingRestockProducts : pendingAdjustments}
-            onSetAdjustmentValue={setAdjustmentValue}
-            isRestockMode={isRestockMode}
-            isAuditMode={isAuditMode}
-            showOnlySelected={showOnlySelected}
-            onShowOnlySelectedChange={onShowOnlySelectedChange}
-            sortAlphabetically={sortAlphabetically}
-            onSortAlphabeticallyChange={onSortAlphabeticallyChange}
-          />
+          {activeTab === 'products' && (
+            <ProductAuditTable
+              filteredProducts={filteredProducts}
+              selectedProducts={selectedProducts}
+              editedStockValues={editedStockValues}
+              userLocationId={user?.location_id ? parseInt(user.location_id) : undefined}
+              onProductSelection={handleProductSelection}
+              onInventoryAdjustment={isRestockMode ? handleRestockAdjustment : handleInventoryAdjustment}
+              onStockValueChange={handleStockValueChange}
+              onStockFieldFocus={handleStockFieldFocus}
+              onStockFieldBlur={handleStockFieldBlur}
+              onStockValueApply={handleStockValueApply}
+              setSelectedProducts={setSelectedProducts}
+              pendingAdjustments={isRestockMode ? pendingRestockProducts : pendingAdjustments}
+              onSetAdjustmentValue={setAdjustmentValue}
+              isRestockMode={isRestockMode}
+              isAuditMode={isAuditMode}
+              showOnlySelected={showOnlySelected}
+              onShowOnlySelectedChange={onShowOnlySelectedChange}
+              sortAlphabetically={sortAlphabetically}
+              onSortAlphabeticallyChange={onSortAlphabeticallyChange}
+              sessionName={isRestockMode ? supplierName : auditName}
+              sessionDescription={isRestockMode ? poNotes : auditDescription}
+              onSessionNameChange={isRestockMode ? setSupplierName : setAuditName}
+              onSessionDescriptionChange={isRestockMode ? setPONotes : setAuditDescription}
+              onCompleteSession={isRestockMode ? applyRestockAdjustments : applyAuditAdjustments}
+              isApplying={isRestockMode ? isCreatingPO : isApplying}
+            />
+          )}
+          
+          {activeTab === 'all' && (
+            <AllHistoryTable dateFilter={historyDateFilter} isActive={activeTab === 'all'} />
+          )}
+          
+          {activeTab === 'restock' && (
+            <RestockHistoryTable dateFilter={historyDateFilter} isActive={activeTab === 'restock'} />
+          )}
+          
+          {activeTab === 'audit' && (
+            <AuditHistoryTable dateFilter={historyDateFilter} isActive={activeTab === 'audit'} />
+          )}
+          
+          {activeTab === 'sales' && (
+            <SalesHistoryTable dateFilter={historyDateFilter} isActive={activeTab === 'sales'} />
+          )}
         </div>
         
         {/* Status Messages - Animated Notification */}
@@ -1207,105 +1328,6 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
             </div>
           </div>
         )}
-        
-        {/* Audit Dialog */}
-        <UnifiedPopout 
-          isOpen={showAuditDialog} 
-          onClose={() => {
-            setShowAuditDialog(false);
-            setAuditName('');
-            setAuditDescription('');
-          }}
-        >
-          <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-neutral-500/20 flex items-center justify-between">
-              <h3 className="text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
-                Create Audit
-              </h3>
-              <button
-                onClick={() => {
-                  setShowAuditDialog(false);
-                  setAuditName('');
-                  setAuditDescription('');
-                }}
-                className="text-neutral-400 hover:text-neutral-300 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              if (auditName.trim()) {
-                applyAuditAdjustments();
-              }
-            }} className="flex-1 overflow-y-auto px-4 py-4">
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={auditName}
-                    onChange={(e) => setAuditName(e.target.value)}
-                    placeholder="Audit Name *"
-                    className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                    required
-                    autoFocus
-                  />
-                  
-                  <textarea
-                    value={auditDescription}
-                    onChange={(e) => setAuditDescription(e.target.value)}
-                    placeholder="Description (optional)"
-                    className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm resize-none"
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                    rows={3}
-                  />
-                  
-                  <div className="text-xs text-neutral-400/70 text-center">
-                    Creating audit with <span className="text-green-400 font-medium">{pendingAdjustments.size}</span> adjustment{pendingAdjustments.size !== 1 ? 's' : ''}
-                  </div>
-
-                  {/* Form Actions */}
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAuditDialog(false);
-                        setAuditName('');
-                        setAuditDescription('');
-                      }}
-                      disabled={isApplying}
-                      className="flex-1 px-3 py-2 text-xs bg-neutral-600/10 hover:bg-neutral-600/15 text-neutral-400 hover:text-neutral-300 rounded-lg transition-all duration-200 ease-out backdrop-blur-sm disabled:opacity-50"
-                      style={{ fontFamily: 'Tiempos, serif' }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!auditName.trim() || isApplying}
-                      className={`flex-1 px-3 py-2 text-xs rounded-lg transition-all duration-200 ease-out backdrop-blur-sm flex items-center justify-center gap-2 ${
-                        !auditName.trim() || isApplying
-                          ? 'bg-neutral-600/10 text-neutral-500 cursor-not-allowed'
-                          : 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
-                      }`}
-                      style={{ fontFamily: 'Tiempos, serif' }}
-                    >
-                      {isApplying && (
-                        <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                      )}
-                      {isApplying ? 'Creating...' : 'Create Audit'}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </UnifiedPopout>
       </div>
     );
   }

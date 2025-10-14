@@ -28,7 +28,9 @@ const createLazyComponent = <P extends {}>(
 };
 const CheckoutScreenLazy = createLazyComponent(() => import('../components/ui/CheckoutScreen'));
 const OrdersViewLazy = createLazyComponent(() => import('../components/ui/OrdersView'));
+const OrdersDashboardLazy = lazy(() => import('../components/ui/OrdersDashboard').then(m => ({ default: m.OrdersDashboard as any })));
 const CustomersViewLazy = createLazyComponent(() => import('../components/ui/CustomersView'));
+const CustomerDashboardLazy = lazy(() => import('../components/ui/CustomerDashboard').then(m => ({ default: m.CustomerDashboard as any })));
 
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -49,7 +51,7 @@ import { Category } from '../components/ui/CategoryFilter';
 import { CategoriesService } from '../services/categories-service';
 import { CartService } from '../services/cart-service';
 import { ReloadDebugger } from '../lib/debug-reload';
-import { AlertModal, SettingsDropdown, InventoryHistoryView, MenuView, PrintView } from '../components/ui';
+import { AlertModal, SettingsDropdown, MenuView, PrintView } from '../components/ui';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function HomePage() {
@@ -102,6 +104,12 @@ export default function HomePage() {
   // All products (including zero stock) for blueprint-fields search
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   
+  // Customer segment filter
+  const [customerSegmentFilter, setCustomerSegmentFilter] = useState<'all' | 'vip' | 'regular' | 'at-risk' | 'dormant'>('all');
+  
+  // Orders view mode - dashboard or list
+  const [ordersViewMode, setOrdersViewMode] = useState<'dashboard' | 'list'>('dashboard');
+  
   // Save current view's selections
   const saveCurrentViewSelections = useCallback(() => {
     setViewSelections(prev => ({
@@ -144,7 +152,7 @@ export default function HomePage() {
       setSelectedProduct(null);
       setSelectedCategory(null);
       setSearchQuery('');
-      setIsAuditMode(view === 'adjustments'); // Default to audit mode for adjustments
+      setIsAuditMode(false); // Default to dashboard view (not audit mode)
       setIsRestockMode(false);
       setSelectedBlueprintField(null);
       setBlueprintFieldValues([]);
@@ -198,9 +206,6 @@ export default function HomePage() {
   const [totalOrders, setTotalOrders] = useState(0);
   const [selectedOrdersCount, setSelectedOrdersCount] = useState(0);
 
-  // History filter states
-  const [historyDateFilter, setHistoryDateFilter] = useState('7');
-  const [historyActionFilter, setHistoryActionFilter] = useState('all');
   
   // Audit state for header
   const [pendingAdjustments, setPendingAdjustments] = useState(new Map<string, number>());
@@ -399,7 +404,7 @@ export default function HomePage() {
     setUnfilteredGridProducts(products); // Unfiltered products for blueprint field extraction
   }, []);
 
-  // Fetch all products for blueprint-fields search (including zero stock)
+  // Fetch all products for blueprint-fields search (using BULK endpoint)
   const fetchAllProducts = useCallback(async () => {
     if (!user?.location_id) return;
     
@@ -409,17 +414,14 @@ export default function HomePage() {
       const params = new URLSearchParams({
         per_page: '1000',
         page: '1',
-        _t: Date.now().toString(),
-        include_zero_stock: 'true' // Include products with zero stock
       });
 
       if (user?.location_id) {
         params.append('location_id', user.location_id);
       }
 
-      const response = await apiFetch(`/api/proxy/flora-im/products?${params}`, {
-        headers: { 'Cache-Control': 'no-cache' }
-      });
+      // Use BULK endpoint for faster loading
+      const response = await apiFetch(`/api/proxy/flora-im/products/bulk?${params}`);
       
       const result = await response.json();
       
@@ -510,12 +512,12 @@ export default function HomePage() {
     });
   }, []);
 
-  // Fetch all products when user is available (for blueprint-fields)
-  useEffect(() => {
-    if (user?.location_id && allProducts.length === 0) {
-      fetchAllProducts();
-    }
-  }, [user?.location_id, fetchAllProducts, allProducts.length]);
+  // DISABLED: ProductGrid bulk endpoint already includes all products with meta_data
+  // useEffect(() => {
+  //   if (user?.location_id && allProducts.length === 0) {
+  //     fetchAllProducts();
+  //   }
+  // }, [user?.location_id, fetchAllProducts, allProducts.length]);
 
   const handleAddToCart = (product: Product) => {
     const result = CartService.createCartItemFromProduct(product);
@@ -669,6 +671,7 @@ export default function HomePage() {
           await adjustmentsGridRef.current.refreshInventory();
         }
       } else if (currentView === 'blueprint-fields') {
+        // Print view handles its own refresh internally
       } else if (currentView === 'customers') {
         if (customersViewRef.current?.handleRefresh) {
           await customersViewRef.current.handleRefresh();
@@ -761,7 +764,7 @@ export default function HomePage() {
     // If entering restock mode and there are pending restock products, open search dropdown in purchase order mode
     if (newRestockMode && pendingRestockProducts.size > 0) {
       setTimeout(() => {
-        unifiedSearchRef.current?.openPurchaseOrderMode();
+        // unifiedSearchRef.current?.openPurchaseOrderMode(); // Method not in interface
       }, 100); // Small delay to ensure state is updated
     }
   };
@@ -799,11 +802,56 @@ export default function HomePage() {
       setCartItems([]);
     }
     
-    // Fetch all products when entering blueprint-fields view
-    if (view === 'blueprint-fields' && allProducts.length === 0) {
-      fetchAllProducts();
-    }
+    // DISABLED: ProductGrid bulk endpoint already includes all products with meta_data
+    // if (view === 'blueprint-fields' && allProducts.length === 0) {
+    //   fetchAllProducts();
+    // }
   };
+
+  // Handle dashboard action - go from insight to filtered action view
+  const handleDashboardAction = useCallback((action: {
+    type: 'audit' | 'restock';
+    filter?: {
+      category?: string;
+      search?: string;
+      mode?: 'aging' | 'lowStock' | 'category';
+    };
+  }) => {
+    console.log('🎯 Dashboard action:', action);
+    
+    // Save current view selections
+    saveCurrentViewSelections();
+    
+    // Set up the adjustments view with filters
+    const adjustmentsState = {
+      customer: null,
+      product: null,
+      category: action.filter?.category || null,
+      searchQuery: action.filter?.search || '',
+      auditMode: action.type === 'audit',
+      restockMode: action.type === 'restock',
+      blueprintField: null,
+      blueprintFieldValues: []
+    };
+    
+    // Update view selections for adjustments
+    setViewSelections(prev => ({
+      ...prev,
+      adjustments: adjustmentsState
+    }));
+    
+    // Apply state changes
+    setSelectedCategory(action.filter?.category || null);
+    setSearchQuery(action.filter?.search || '');
+    setIsAuditMode(action.type === 'audit');
+    setIsRestockMode(action.type === 'restock');
+    
+    // Switch to adjustments view
+    setCurrentView('adjustments');
+    setCartItems([]);
+    
+    console.log('✅ Switched to adjustments view with filters:', adjustmentsState);
+  }, [saveCurrentViewSelections]);
 
   const handleHistoryBack = () => {
     setCurrentView('adjustments');
@@ -1026,8 +1074,8 @@ export default function HomePage() {
         <div className="flex-1 flex overflow-hidden">
           {/* Main Content Column */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Header Navigation - Hide on TV Menu view */}
-            {currentView !== 'menu' && (
+            {/* Header Navigation - Hide on TV Menu and Print views */}
+            {currentView !== 'menu' && currentView !== 'blueprint-fields' && (
             <Header 
             onSearch={handleSearch}
             searchValue={searchQuery}
@@ -1047,15 +1095,10 @@ export default function HomePage() {
             selectedProduct={selectedProduct}
             onProductSelect={handleProductSelect}
             products={(() => {
-              // Always pass UNFILTERED products for blueprint field extraction
+              // Always pass UNFILTERED products
               const productList = currentView === 'products' ? unfilteredGridProducts :
                 currentView === 'adjustments' ? adjustmentProducts : 
-                currentView === 'blueprint-fields' ? allProducts :
-                [];
-              
-              if (currentView === 'blueprint-fields') {
-                console.log('🔍 Passing products to Header for blueprint-fields:', productList.length, 'products');
-              }
+                allProducts;
               
               return productList;
             })()}
@@ -1078,10 +1121,6 @@ export default function HomePage() {
             totalOrders={totalOrders}
             selectedOrdersCount={selectedOrdersCount}
             onClearOrderSelection={() => setSelectedOrdersCount(0)}
-            historyDateFilter={historyDateFilter}
-            onHistoryDateFilterChange={setHistoryDateFilter}
-            historyActionFilter={historyActionFilter}
-            onHistoryActionFilterChange={setHistoryActionFilter}
             // Audit button props
             pendingAdjustments={pendingAdjustments}
             onCreateAudit={handleCreateAudit}
@@ -1119,6 +1158,8 @@ export default function HomePage() {
             // Product Sorting
             productSortOrder={productSortOrder}
             onProductSortOrderChange={setProductSortOrder}
+            customerSegmentFilter={customerSegmentFilter}
+            onCustomerSegmentFilterChange={setCustomerSegmentFilter}
             />
             )}
             
@@ -1173,19 +1214,13 @@ export default function HomePage() {
                 onShowOnlySelectedChange={setShowOnlySelectedAdjustments}
                 sortAlphabetically={sortAlphabetically}
                 onSortAlphabeticallyChange={setSortAlphabetically}
+                onRestock={() => setIsRestockMode(!isRestockMode)}
+                onAudit={() => setIsAuditMode(!isAuditMode)}
+                onDashboardAction={handleDashboardAction}
               />
             </div>
           )}
 
-          {currentView === 'history' && (
-            <div className="h-full overflow-hidden">
-              <InventoryHistoryView
-                onBack={handleHistoryBack}
-                dateFilter={historyDateFilter}
-                actionFilter={historyActionFilter}
-              />
-            </div>
-          )}
 
           {currentView === 'blueprint-fields' && (
             <div className="h-full">
@@ -1197,11 +1232,10 @@ export default function HomePage() {
           
           {currentView === 'customers' && (
             <div className="h-full">
-              <StandardErrorBoundary componentName="CustomersView">
+              <StandardErrorBoundary componentName="CustomerDashboard">
                 <Suspense fallback={<LoadingSpinner size="lg" />}>
-                  <CustomersViewLazy 
-                    ref={customersViewRef} 
-                    hideLoadingOverlay={isRefreshing}
+                  <CustomerDashboardLazy 
+                    filterSegment={customerSegmentFilter}
                     searchQuery={searchQuery}
                   />
                 </Suspense>
@@ -1213,21 +1247,54 @@ export default function HomePage() {
             <div className="h-full overflow-y-auto">
               <StandardErrorBoundary componentName="OrdersView">
                 <Suspense fallback={<LoadingSpinner size="lg" />}>
-                  <OrdersViewLazy 
-                    ref={ordersViewRef} 
-                    hideLoadingOverlay={isRefreshing}
-                    statusFilter={orderStatusFilter}
-                    onStatusFilterChange={setOrderStatusFilter}
-                    dateFrom={orderDateFrom}
-                    dateTo={orderDateTo}
-                    onDateFromChange={setOrderDateFrom}
-                    onDateToChange={setOrderDateTo}
-                    showSelectedOnly={orderShowSelectedOnly}
-                    onShowSelectedOnlyChange={setOrderShowSelectedOnly}
-                    onTotalOrdersChange={setTotalOrders}
-                    onSelectedOrdersCountChange={setSelectedOrdersCount}
-                    selectedCustomer={selectedCustomer}
-                  />
+                  {ordersViewMode === 'dashboard' ? (
+                    <OrdersDashboardLazy
+                      onViewAllOrders={() => setOrdersViewMode('list')}
+                      onFilterOrders={(filter) => {
+                        // Apply filter and switch to list view
+                        if (filter.status) setOrderStatusFilter(filter.status);
+                        if (filter.dateFrom) setOrderDateFrom(filter.dateFrom);
+                        if (filter.dateTo) setOrderDateTo(filter.dateTo);
+                        setOrdersViewMode('list');
+                      }}
+                    />
+                  ) : (
+                    <>
+                      {/* Back to Dashboard Button */}
+                      <div className="max-w-6xl mx-auto px-12 pt-8">
+                        <button
+                          onClick={() => setOrdersViewMode('dashboard')}
+                          className="flex items-center gap-2 px-4 py-2 text-xs text-neutral-400 hover:text-neutral-300 transition-colors group"
+                          style={{ fontFamily: 'Tiempos, serif' }}
+                        >
+                          <svg 
+                            className="w-4 h-4 transition-transform group-hover:-translate-x-1" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                          <span>back to dashboard</span>
+                        </button>
+                      </div>
+                      <OrdersViewLazy 
+                        ref={ordersViewRef} 
+                        hideLoadingOverlay={isRefreshing}
+                        statusFilter={orderStatusFilter}
+                        onStatusFilterChange={setOrderStatusFilter}
+                        dateFrom={orderDateFrom}
+                        dateTo={orderDateTo}
+                        onDateFromChange={setOrderDateFrom}
+                        onDateToChange={setOrderDateTo}
+                        showSelectedOnly={orderShowSelectedOnly}
+                        onShowSelectedOnlyChange={setOrderShowSelectedOnly}
+                        onTotalOrdersChange={setTotalOrders}
+                        onSelectedOrdersCountChange={setSelectedOrdersCount}
+                        selectedCustomer={selectedCustomer}
+                      />
+                    </>
+                  )}
                 </Suspense>
               </StandardErrorBoundary>
             </div>

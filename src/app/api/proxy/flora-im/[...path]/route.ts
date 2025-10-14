@@ -30,12 +30,21 @@ export async function GET(
     const path = params.path.join('/');
     const searchParams = request.nextUrl.searchParams;
     
-    // Check if this is an inventory-related request that needs fresh data
-    const isInventoryRequest = path.includes('inventory') || path.includes('products');
+    // Smart cache strategy based on data type
+    const isInventoryRequest = path.includes('inventory');
+    const isProductRequest = path.includes('products');
     
-    // ALWAYS ADD CACHE BUSTING - NO CACHING AT ALL
-    searchParams.set('_t', Date.now().toString());
-    searchParams.set('_nocache', 'true');
+    // Only add cache busting for critical real-time data
+    if (isInventoryRequest) {
+      // Inventory needs fresh data (5 second cache)
+      searchParams.set('_t', Math.floor(Date.now() / 5000).toString());
+    } else if (isProductRequest) {
+      // Products can be cached for 30 seconds
+      searchParams.set('_t', Math.floor(Date.now() / 30000).toString());
+    } else {
+      // Other data can be cached for 5 minutes
+      searchParams.set('_t', Math.floor(Date.now() / 300000).toString());
+    }
     
     // Build the API URL
     const apiUrl = new URL(`${FLORA_API_BASE}/flora-im/v1/${path}`);
@@ -53,14 +62,15 @@ export async function GET(
     
     console.log('Proxying Flora-IM request to:', apiUrl.toString());
     
-    // Make the request to the Flora API
+    // Make the request to the Flora API with smart caching
+    const cacheStrategy = isInventoryRequest ? 'no-store' : 'default';
     const response = await fetch(apiUrl.toString(), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      // NO CACHING AT ALL
-      cache: 'no-store'
+      cache: cacheStrategy,
+      next: isInventoryRequest ? { revalidate: 5 } : { revalidate: 30 }
     });
     
     if (!response.ok) {
@@ -83,16 +93,19 @@ export async function GET(
       }
     }
     
-    // Return the data with proper CORS headers and no-cache for development
+    // Return the data with proper CORS and smart cache headers
+    const cacheControl = isInventoryRequest 
+      ? 'public, max-age=5, s-maxage=5, stale-while-revalidate=10'  // 5s cache, revalidate in background
+      : isProductRequest
+      ? 'public, max-age=30, s-maxage=60, stale-while-revalidate=120' // 30s cache, revalidate in background
+      : 'public, max-age=300, s-maxage=600, stale-while-revalidate=1200'; // 5min cache
+    
     return NextResponse.json(data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        // NO CACHING AT ALL
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        'Cache-Control': cacheControl,
       },
     });
   } catch (error) {
@@ -127,14 +140,14 @@ export async function POST(
     
     console.log('Proxying Flora-IM POST request to:', apiUrl.toString());
     
-    // Make the request to the Flora API
+    // Make the request to the Flora API - POST/PUT should not be cached
     const response = await fetch(apiUrl.toString(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-      cache: 'no-store' // NO CACHING
+      cache: 'no-store'
     });
     
     if (!response.ok) {
@@ -147,26 +160,13 @@ export async function POST(
     
     const data = await response.json();
     
-    // DISABLED: Stock filtering - show all products with accurate inventory
-    // This prevents hiding products that have been sold out
-    // Frontend will show "0" stock instead of hiding the product
-    if (path === 'products' && data.success && data.data) {
-      const locationId = searchParams.get('location_id');
-      if (locationId) {
-        console.log(`📍 Returning all ${data.data.length} products for location ${locationId} with real-time inventory`);
-      }
-    }
-    
-    // Return the data with proper CORS headers and no-cache for development
+    // Return with no-cache headers for mutations
     return NextResponse.json(data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        // NO CACHING AT ALL
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        'Cache-Control': 'no-store, must-revalidate',
       },
     });
   } catch (error) {
@@ -199,14 +199,14 @@ export async function PUT(
     
     console.log('Proxying Flora-IM PUT request to:', apiUrl.toString());
     
-    // Make the request to the Flora API
+    // Make the request to the Flora API - PUT should not be cached
     const response = await fetch(apiUrl.toString(), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-      cache: 'no-store' // NO CACHING
+      cache: 'no-store'
     });
     
     if (!response.ok) {
@@ -219,16 +219,13 @@ export async function PUT(
     
     const data = await response.json();
     
-    // Return the data with proper CORS headers and no caching
+    // Return with no-cache headers for mutations
     return NextResponse.json(data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        // NO CACHING AT ALL
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        'Cache-Control': 'no-store, must-revalidate',
       },
     });
   } catch (error) {

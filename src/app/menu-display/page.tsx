@@ -229,12 +229,11 @@ function MenuDisplayContent() {
         })
       
 
-        const response = await apiFetch(`/api/proxy/flora-im/products?${params}`, {
+        // Use optimized bulk endpoint
+        const response = await apiFetch(`/api/proxy/flora-im/products/bulk?${params}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
             'Expires': '0'
           }
         })

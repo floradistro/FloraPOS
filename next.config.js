@@ -30,20 +30,19 @@ const nextConfig = {
   // Enable SWC minification for better performance (production only)
   swcMinify: process.env.NODE_ENV === 'production',
   
-  // Advanced bundle optimization (disabled in development)
+  // Advanced bundle optimization
   experimental: {
+    optimizePackageImports: [
+      'lucide-react', 
+      '@tanstack/react-query',
+      'zustand',
+      'react-dom',
+      'react-window'
+    ],
+    // Enable modern bundling optimizations in production
     ...(process.env.NODE_ENV === 'production' && {
-      optimizePackageImports: [
-        'lucide-react', 
-        '@tanstack/react-query',
-        'zustand',
-        'react-dom'
-      ],
-      // Enable modern bundling optimizations
       optimizeServerReact: true,
-      // Enable webpack build worker for faster builds
       webpackBuildWorker: true,
-      // Optimize CSS handling
       optimizeCss: true,
     }),
   },
@@ -135,19 +134,36 @@ const nextConfig = {
               chunks: (chunk) => !isServer,
               priority: 10,
             },
-            // Separate chunk for Scandit (client-side only)
+            // Separate chunk for Scandit (client-side only, lazy loaded)
             scandit: {
               test: /[\\/]node_modules[\\/]@scandit[\\/]/,
               name: 'scandit',
-              chunks: (chunk) => !isServer,
+              chunks: 'async', // Lazy load on demand
               priority: 15,
+              enforce: true,
             },
-            // Separate chunk for Three.js (client-side only)
+            // Separate chunk for Three.js (client-side only, lazy loaded)
             threejs: {
               test: /[\\/]node_modules[\\/](three|@react-three)[\\/]/,
               name: 'threejs',
-              chunks: (chunk) => !isServer,
+              chunks: 'async', // Lazy load on demand
               priority: 15,
+              enforce: true,
+            },
+            // Separate chunk for PDF libraries (lazy loaded)
+            pdf: {
+              test: /[\\/]node_modules[\\/](html2canvas|jspdf|@react-pdf)[\\/]/,
+              name: 'pdf',
+              chunks: 'async',
+              priority: 15,
+              enforce: true,
+            },
+            // React Window for virtualization
+            reactWindow: {
+              test: /[\\/]node_modules[\\/]react-window[\\/]/,
+              name: 'react-window',
+              chunks: (chunk) => !isServer,
+              priority: 12,
             }
           },
         },

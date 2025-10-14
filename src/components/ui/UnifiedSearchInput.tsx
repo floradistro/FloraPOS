@@ -99,8 +99,6 @@ interface UnifiedSearchInputProps {
 export interface UnifiedSearchInputRef {
   openCustomerMode: () => void;
   openProductMode: () => void;
-  openAuditMode: () => void;
-  openPurchaseOrderMode: () => void;
   openFilterMode: () => void;
   close: () => void;
 }
@@ -176,16 +174,6 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   const [selectedIndex, setSelectedIndex] = useState(-1); // For keyboard navigation
   const [isEditingProduct, setIsEditingProduct] = useState(false);
   const [lastSearchValue, setLastSearchValue] = useState('');
-  const [isAuditDropdownMode, setIsAuditDropdownMode] = useState(false);
-  const [auditName, setAuditName] = useState('');
-  const [auditDescription, setAuditDescription] = useState('');
-  const [editingAdjustment, setEditingAdjustment] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
-  const [isPurchaseOrderMode, setIsPurchaseOrderMode] = useState(false);
-  const [supplierName, setSupplierName] = useState('');
-  const [poNotes, setPONotes] = useState('');
-  const [editingRestockProduct, setEditingRestockProduct] = useState<string | null>(null);
-  const [editRestockValue, setEditRestockValue] = useState<string>('');
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [showIDScanner, setShowIDScanner] = useState(false);
   const [isBlueprintFieldMode, setIsBlueprintFieldMode] = useState(false);
@@ -221,7 +209,6 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsCustomerMode(true);
       setIsProductMode(false);
       setIsEditingProduct(false);
-      setIsAuditDropdownMode(false);
       setIsFilterOpen(false);
       setIsOpen(true);
       setInternalValue('');
@@ -230,34 +217,9 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsProductMode(true);
       setIsCustomerMode(false);
       setIsEditingProduct(false);
-      setIsAuditDropdownMode(false);
       setIsFilterOpen(false);
       setIsOpen(true);
       setInternalValue('');
-    },
-    openAuditMode: () => {
-      setIsAuditDropdownMode(true);
-      setIsCustomerMode(false);
-      setIsProductMode(false);
-      setIsEditingProduct(false);
-      setIsPurchaseOrderMode(false);
-      setIsFilterOpen(false);
-      setIsOpen(true);
-      setInternalValue('');
-      setAuditName('');
-      setAuditDescription('');
-    },
-    openPurchaseOrderMode: () => {
-      setIsPurchaseOrderMode(true);
-      setIsAuditDropdownMode(false);
-      setIsCustomerMode(false);
-      setIsProductMode(false);
-      setIsEditingProduct(false);
-      setIsFilterOpen(false);
-      setIsOpen(true);
-      setInternalValue('');
-      setSupplierName('');
-      setPONotes('');
     },
     openFilterMode: () => {
       setIsFilterOpen(true);
@@ -265,8 +227,6 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsCustomerMode(false);
       setIsProductMode(false);
       setIsEditingProduct(false);
-      setIsAuditDropdownMode(false);
-      setIsPurchaseOrderMode(false);
     },
     close: () => {
       setIsOpen(false);
@@ -274,13 +234,9 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       setIsCustomerMode(false);
       setIsProductMode(false);
       setIsEditingProduct(false);
-      setIsAuditDropdownMode(false);
-      setIsPurchaseOrderMode(false);
       setIsBlueprintFieldMode(false);
       setSelectedFieldForValues(null);
       setInternalValue('');
-      setAuditName('');
-      setAuditDescription('');
       setBlueprintFieldSearchValue('');
     }
   }));
@@ -542,20 +498,6 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
 
   const handleInputFocus = () => {
     // Apple iOS Standard: Only open dropdown for explicit actions, never on focus
-    
-    // If in restock mode with pending products, open purchase order mode
-    if (isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0 && !isPurchaseOrderMode) {
-      setIsPurchaseOrderMode(true);
-      setIsOpen(true);
-      return;
-    }
-    
-    // If in audit mode with pending adjustments, open audit mode
-    if (isAuditMode && pendingAdjustments && pendingAdjustments.size > 0 && !isAuditDropdownMode) {
-      setIsAuditDropdownMode(true);
-      setIsOpen(true);
-      return;
-    }
     
     // For product-only mode (blueprint-fields), open if explicitly needed
     if (productOnlyMode && !isProductMode) {
@@ -1001,7 +943,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
   
   // Debug logging for filter button visibility
   useEffect(() => {
-    const shouldShowFilter = !isCustomerMode && !isProductMode && !productOnlyMode && !isAuditDropdownMode && !isPurchaseOrderMode && categories !== undefined && onCategoryChange !== undefined;
+    const shouldShowFilter = !isCustomerMode && !isProductMode && !productOnlyMode && categories !== undefined && onCategoryChange !== undefined;
     console.log('🔍 Filter button check:', {
       shouldShow: shouldShowFilter,
       categories: categories?.length,
@@ -1010,13 +952,13 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       selectedBlueprintField,
       blueprintFieldValues: blueprintFieldValues?.length
     });
-  }, [categories, onCategoryChange, selectedCategory, selectedBlueprintField, blueprintFieldValues, isCustomerMode, isProductMode, productOnlyMode, isAuditDropdownMode, isPurchaseOrderMode]);
+  }, [categories, onCategoryChange, selectedCategory, selectedBlueprintField, blueprintFieldValues, isCustomerMode, isProductMode, productOnlyMode]);
 
   return (
     <>
       <div className={`relative flex items-center gap-2 ${className}`}>
         {/* Filter Button - Show when we have category functionality (products view) */}
-        {!isCustomerMode && !isProductMode && !productOnlyMode && !isAuditDropdownMode && !isPurchaseOrderMode && categories !== undefined && onCategoryChange !== undefined && (
+        {!isCustomerMode && !isProductMode && !productOnlyMode && categories !== undefined && onCategoryChange !== undefined && (
           <button
             ref={filterButtonRef}
             onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -1046,54 +988,12 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           ref={inputRef}
           type="text"
           placeholder=""
-          style={{ 
-            fontFamily: 'Tiempos, serif',
-            ...(showProductSelection) ? { textShadow: '0 1px 2px rgba(0, 0, 0, 0.6), 0 0 4px rgba(0, 0, 0, 0.2)' } : {},
-            ...(isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0) ? { 
-              boxShadow: '0 0 0 1px rgba(34, 197, 94, 0.3), 0 0 20px rgba(34, 197, 94, 0.2), 0 0 40px rgba(34, 197, 94, 0.1)' 
-            } : {},
-            ...(isAuditMode && pendingAdjustments && pendingAdjustments.size > 0) ? { 
-              boxShadow: '0 0 0 1px rgba(168, 85, 247, 0.3), 0 0 20px rgba(168, 85, 247, 0.2), 0 0 40px rgba(168, 85, 247, 0.1)' 
-            } : {},
-            ...(hasSelections && !(isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0) && !(isAuditMode && pendingAdjustments && pendingAdjustments.size > 0)) ? { 
-              boxShadow: '0 0 0 1px rgba(236, 72, 153, 0.3), 0 0 20px rgba(236, 72, 153, 0.2), 0 0 40px rgba(236, 72, 153, 0.1)' 
-            } : {}
-          }}
+          style={{ fontFamily: 'Tiempos, serif' }}
           value={showProductSelection ? selectedProduct.name : internalValue}
           readOnly={showProductSelection || false}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
-          onClick={(e) => {
-            // If in restock mode with pending products, open purchase order mode on click
-            if (isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0 && !isPurchaseOrderMode) {
-              e.preventDefault();
-              setIsPurchaseOrderMode(true);
-              setIsOpen(true);
-            }
-          }}
-          className={`w-full h-[42px] bg-white/5 hover:bg-white/10 rounded-xl focus:bg-white/10 focus:outline-none text-sm text-center transition-all duration-300 ease-out min-w-0 pr-10 ${
-            showProductSelection
-              ? 'text-white font-medium'
-              : isAuditDropdownMode
-                ? 'text-white font-medium'
-                : isPurchaseOrderMode
-                  ? 'text-white font-medium'
-                  : 'text-neutral-300'
-          } ${
-            isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0
-              ? 'bg-green-500/15 cursor-pointer shadow-lg shadow-green-500/20'
-              : isAuditMode && pendingAdjustments && pendingAdjustments.size > 0
-                ? 'bg-purple-500/15 cursor-pointer shadow-lg shadow-purple-500/20'
-              : hasSelections 
-                ? 'bg-pink-500/15 shadow-lg shadow-pink-500/20' 
-                : ''
-          } ${
-            isAuditMode && pendingAdjustments && pendingAdjustments.size > 0
-              ? 'px-3 pr-28'
-              : isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0
-                ? 'px-3 pr-24'
-                : 'px-3'
-          }`}
+          className="w-full h-[42px] bg-white/5 hover:bg-white/10 rounded-xl focus:outline-none text-sm text-center transition-all duration-200 ease-out min-w-0 px-3 pr-10 text-neutral-300"
         />
         
         {/* Search Icon - Always visible on the right */}
@@ -1174,75 +1074,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           </button>
         )}
 
-        {/* Clear audit mode button */}
-        {isAuditDropdownMode && (
-          <button
-            onClick={() => {
-              setIsAuditDropdownMode(false);
-              setIsOpen(false);
-              setAuditName('');
-              setAuditDescription('');
-            }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors p-1 rounded-full hover:bg-neutral-600/20"
-            title="Exit audit mode"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
 
-        {/* Clear purchase order mode button */}
-        {isPurchaseOrderMode && (
-          <button
-            onClick={() => {
-              setIsPurchaseOrderMode(false);
-              setIsOpen(false);
-              setSupplierName('');
-              setPONotes('');
-            }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors p-1 rounded-full hover:bg-neutral-600/20"
-            title="Exit purchase order mode"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
-
-        {/* Audit mode indicator as part of the search bar */}
-        {isAuditMode && pendingAdjustments && pendingAdjustments.size > 0 && !isCustomerMode && !isProductMode && !showProductSelection && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
-            <button
-              onClick={() => {
-                setIsAuditDropdownMode(true);
-                setIsOpen(true);
-              }}
-              className="text-purple-300 text-xs font-medium pointer-events-auto transition-all duration-200 hover:text-purple-200"
-              style={{ fontFamily: 'Tiempo, serif' }}
-              title={`Create audit with ${pendingAdjustments.size} pending adjustments`}
-            >
-              {pendingAdjustments.size} Adjustments
-            </button>
-          </div>
-        )}
-
-        {/* Restock mode indicator as part of the search bar */}
-        {isRestockMode && pendingRestockProducts && pendingRestockProducts.size > 0 && !isCustomerMode && !isProductMode && !showProductSelection && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
-            <button
-              onClick={() => {
-                setIsPurchaseOrderMode(true);
-                setIsOpen(true);
-              }}
-              className="text-green-300 text-xs font-medium pointer-events-auto transition-all duration-200 hover:text-green-200"
-              style={{ fontFamily: 'Tiempo, serif' }}
-              title={`Create purchase order with ${pendingRestockProducts.size} products`}
-            >
-              {pendingRestockProducts.size} Products
-            </button>
-          </div>
-        )}
         </div>
       </div>
 
@@ -1305,7 +1137,7 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       )}
 
       {/* Modal Popout - Only for Customer/Audit/Restock Modes */}
-      {isOpen && !productOnlyMode && (isCustomerMode || isAuditDropdownMode || isPurchaseOrderMode) && typeof document !== 'undefined' && ReactDOM.createPortal(
+      {isOpen && !productOnlyMode && isCustomerMode && typeof document !== 'undefined' && ReactDOM.createPortal(
         (() => {
           return (
             <>
@@ -1739,378 +1571,6 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
             </>
           )}
 
-          {/* Purchase Order Section - Only show in restock mode */}
-          {isRestockMode && isPurchaseOrderMode && pendingRestockProducts && pendingRestockProducts.size > 0 && (
-            <>
-              {(filteredCustomers.length > 0 || filteredProducts.length > 0) && (
-                <div className="h-px bg-neutral-500/20 mx-2" />
-              )}
-              
-              <div className="px-4 py-2.5 border-b border-neutral-700 bg-transparent">
-                <h3 className="text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
-                  Create Purchase Order ({pendingRestockProducts.size} products)
-                </h3>
-              </div>
-              
-              {/* Purchase Order Details Form - Glassmorphic Style */}
-              <div className="px-4 py-4 space-y-3">
-                <input
-                  type="text"
-                  value={supplierName}
-                  onChange={(e) => setSupplierName(e.target.value)}
-                  placeholder="Supplier Name *"
-                  className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
-                  style={{ fontFamily: 'Tiempos, serif' }}
-                  required
-                />
-                
-                <textarea
-                  value={poNotes}
-                  onChange={(e) => setPONotes(e.target.value)}
-                  placeholder="Purchase order notes (optional)"
-                  className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm resize-none"
-                  style={{ fontFamily: 'Tiempos, serif' }}
-                  rows={2}
-                />
-
-                {/* Pending restock products list */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
-                    Products to Restock:
-                  </h4>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {Array.from(pendingRestockProducts.entries()).map(([key, quantity]) => {
-                      const [productId, variantId] = key.split('-').map(Number);
-                      const product = products?.find(p => p.id === productId);
-                      const variant = (product as any)?.variants?.find((v: any) => v.id === variantId);
-                      const displayName = variant ? `${product?.name} - ${variant.name}` : product?.name || 'Unknown Product';
-                      
-                      return (
-                        <div key={key} className="flex items-center justify-between py-1 px-2 bg-neutral-700/30 rounded text-xs">
-                          <span className="text-neutral-200 truncate flex-1" style={{ fontFamily: 'Tiempos, serif' }}>
-                            {displayName}
-                          </span>
-                          <div className="flex items-center gap-2 ml-2">
-                            <span className="text-green-400 font-medium">
-                              {quantity} units
-                            </span>
-                            {editingRestockProduct === key ? (
-                              <input
-                                type="number"
-                                min="0"
-                                step="1"
-                                value={editRestockValue}
-                                onChange={(e) => setEditRestockValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    const newValue = parseInt(editRestockValue) || 0;
-                                    onUpdateRestockQuantity?.(key, newValue);
-                                    setEditingRestockProduct(null);
-                                    setEditRestockValue('');
-                                  } else if (e.key === 'Escape') {
-                                    setEditingRestockProduct(null);
-                                    setEditRestockValue('');
-                                  }
-                                }}
-                                onBlur={() => {
-                                  const newValue = parseInt(editRestockValue) || 0;
-                                  onUpdateRestockQuantity?.(key, newValue);
-                                  setEditingRestockProduct(null);
-                                  setEditRestockValue('');
-                                }}
-                                className="w-16 px-1 py-0.5 text-xs bg-neutral-600 border border-neutral-500 rounded text-white text-center focus:outline-none focus:border-green-500"
-                                autoFocus
-                              />
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => {
-                                    setEditingRestockProduct(key);
-                                    setEditRestockValue(quantity.toString());
-                                  }}
-                                  className="text-neutral-400 hover:text-neutral-200 transition-colors"
-                                  title="Edit quantity"
-                                >
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={() => onRemoveRestockProduct?.(key)}
-                                  className="text-neutral-400 hover:text-neutral-300 transition-colors"
-                                  title="Remove from purchase order"
-                                >
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsPurchaseOrderMode(false);
-                      setIsOpen(false);
-                      setSupplierName('');
-                      setPONotes('');
-                    }}
-                    disabled={isCreatingPO}
-                    className="flex-1 px-3 py-2 text-xs bg-neutral-600/10 hover:bg-neutral-600/15 text-neutral-400 hover:text-neutral-300 rounded-lg transition-all duration-200 ease-out backdrop-blur-sm disabled:opacity-50"
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (supplierName.trim()) {
-                        onCreatePurchaseOrderWithDetails?.(supplierName.trim(), poNotes.trim() || undefined);
-                        setIsPurchaseOrderMode(false);
-                        setIsOpen(false);
-                        setSupplierName('');
-                        setPONotes('');
-                      }
-                    }}
-                    disabled={!supplierName.trim() || isCreatingPO}
-                    className={`flex-1 px-3 py-2 text-xs rounded-lg transition-all duration-200 ease-out backdrop-blur-sm flex items-center justify-center gap-2 ${
-                      !supplierName.trim() || isCreatingPO
-                        ? 'bg-neutral-600/10 text-neutral-500 cursor-not-allowed'
-                        : 'bg-neutral-600/20 hover:bg-neutral-600/30 text-neutral-400'
-                    }`}
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  >
-                    {isCreatingPO && (
-                      <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    )}
-                    {isCreatingPO ? 'Creating...' : 'Create Purchase Order'}
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Audit Section - Only show in audit mode */}
-          {isAuditMode && isAuditDropdownMode && pendingAdjustments && pendingAdjustments.size > 0 && (
-            <>
-              {(filteredCustomers.length > 0 || filteredProducts.length > 0) && (
-                <div className="h-px bg-neutral-500/20 mx-2" />
-              )}
-              
-              <div className="px-4 py-2.5 border-b border-neutral-700 bg-transparent">
-                <h3 className="text-sm font-medium text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>
-                  Create Audit ({pendingAdjustments.size} adjustments)
-                </h3>
-              </div>
-              
-              {/* Adjustments List */}
-              <div className="max-h-48 overflow-y-auto">
-                {Array.from(pendingAdjustments.entries()).map(([key, adjustment]) => {
-                  const [productId, variantId] = key.split('-').map(Number);
-                  const product = products.find(p => p.id === productId);
-                  const variant = (product as any)?.variants?.find((v: any) => v.id === variantId);
-                  
-                  let displayName = `Product #${productId}`;
-                  if (product) {
-                    displayName = product.name;
-                    if (variant) {
-                      displayName += ` - ${variant.name}`;
-                    }
-                  } else if (variantId) {
-                    displayName = `Product #${productId} - Variant #${variantId}`;
-                  }
-                  
-                  const isEditing = editingAdjustment === key;
-                  
-                  return (
-                    <div key={key} className="px-4 py-2 border-b border-neutral-500/10 text-sm hover:bg-neutral-600/20 transition-colors group">
-                      <div className="flex items-center justify-between">
-                        <span className="text-neutral-300 truncate flex-1 mr-3" style={{ fontFamily: 'Tiempos, serif' }}>
-                          {displayName}
-                        </span>
-                        
-                        <div className="flex items-center gap-2">
-                          {isEditing ? (
-                            <>
-                              <input
-                                type="number"
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                className="w-16 px-2 py-1 bg-neutral-900/80 border-0 rounded text-white text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    const newValue = parseFloat(editValue);
-                                    if (!isNaN(newValue) && onUpdateAdjustment) {
-                                      onUpdateAdjustment(key, newValue);
-                                    }
-                                    setEditingAdjustment(null);
-                                    setEditValue('');
-                                  } else if (e.key === 'Escape') {
-                                    setEditingAdjustment(null);
-                                    setEditValue('');
-                                  }
-                                }}
-                              />
-                              <button
-                                onClick={() => {
-                                  console.log('🔧 Save button clicked:', { key, editValue, onUpdateAdjustment: !!onUpdateAdjustment });
-                                  const newValue = parseFloat(editValue);
-                                  console.log('🔧 Parsed value:', newValue);
-                                  if (!isNaN(newValue) && onUpdateAdjustment) {
-                                    console.log('🔧 Calling onUpdateAdjustment');
-                                    onUpdateAdjustment(key, newValue);
-                                  }
-                                  setEditingAdjustment(null);
-                                  setEditValue('');
-                                }}
-                                className="text-green-400 hover:text-green-300 transition-colors"
-                                title="Save"
-                              >
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setEditingAdjustment(null);
-                                  setEditValue('');
-                                }}
-                                className="text-neutral-400 hover:text-neutral-300 transition-colors"
-                                title="Cancel"
-                              >
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <span className={`font-medium min-w-[3rem] text-right ${adjustment > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {adjustment > 0 ? '+' : ''}{adjustment}
-                              </span>
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => {
-                                    setEditingAdjustment(key);
-                                    setEditValue(adjustment.toString());
-                                  }}
-                                  className="text-neutral-400 hover:text-neutral-200 transition-colors"
-                                  title="Edit adjustment"
-                                >
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    console.log('🗑️ Remove button clicked:', { key, onRemoveAdjustment: !!onRemoveAdjustment });
-                                    if (onRemoveAdjustment) {
-                                      onRemoveAdjustment(key);
-                                    }
-                                  }}
-                                  className="text-neutral-400 hover:text-red-400 transition-colors"
-                                  title="Remove adjustment"
-                                >
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Audit Details Form - Glassmorphic Style */}
-              <div className="px-4 py-4 space-y-3">
-                <input
-                  type="text"
-                  value={auditName}
-                  onChange={(e) => setAuditName(e.target.value)}
-                  placeholder="Audit Name *"
-                  className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm"
-                  style={{ fontFamily: 'Tiempos, serif' }}
-                  required
-                />
-                
-                <textarea
-                  value={auditDescription}
-                  onChange={(e) => setAuditDescription(e.target.value)}
-                  placeholder="Description (optional)"
-                  className="w-full px-3 py-2 bg-neutral-600/10 hover:bg-neutral-600/15 rounded-lg text-neutral-400 placeholder-neutral-400 focus:bg-neutral-600/15 focus:outline-none text-xs transition-all duration-200 ease-out backdrop-blur-sm resize-none"
-                  style={{ fontFamily: 'Tiempos, serif' }}
-                  rows={2}
-                />
-                
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAuditDropdownMode(false);
-                      setIsOpen(false);
-                      setAuditName('');
-                      setAuditDescription('');
-                    }}
-                    disabled={isApplying}
-                    className="flex-1 px-3 py-2 text-xs bg-neutral-600/10 hover:bg-neutral-600/15 text-neutral-400 hover:text-neutral-300 rounded-lg transition-all duration-200 ease-out backdrop-blur-sm disabled:opacity-50"
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (auditName.trim()) {
-                        try {
-                          if (onCreateAuditWithDetails) {
-                            await onCreateAuditWithDetails(auditName, auditDescription);
-                          } else if (onCreateAudit) {
-                            onCreateAudit();
-                          }
-                          setIsAuditDropdownMode(false);
-                          setIsOpen(false);
-                          setAuditName('');
-                          setAuditDescription('');
-                        } catch (error) {
-                          console.error('Failed to create audit:', error);
-                        }
-                      }
-                    }}
-                    disabled={!auditName.trim() || isApplying}
-                    className={`flex-1 px-3 py-2 text-xs rounded-lg transition-all duration-200 ease-out backdrop-blur-sm flex items-center justify-center gap-2 ${
-                      !auditName.trim() || isApplying
-                        ? 'bg-neutral-600/10 text-neutral-500 cursor-not-allowed'
-                        : 'bg-green-600/20 hover:bg-green-600/30 text-green-400'
-                    }`}
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  >
-                    {isApplying && (
-                      <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    )}
-                    {isApplying ? 'Creating...' : 'Create Audit'}
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
 
 
 

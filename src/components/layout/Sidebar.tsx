@@ -2,12 +2,13 @@
 
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { ViewType } from '../../types';
 
 interface SidebarProps {
   onRefresh?: () => void;
   onSettings?: () => void;
-  onViewChange?: (view: 'products' | 'customers' | 'orders' | 'blueprint-fields' | 'adjustments' | 'history' | 'menu' | 'ai-view') => void;
-  currentView?: 'products' | 'customers' | 'orders' | 'blueprint-fields' | 'adjustments' | 'history' | 'menu' | 'ai-view';
+  onViewChange?: (view: ViewType) => void;
+  currentView?: ViewType;
   onAuditModeToggle?: () => void;
 }
 

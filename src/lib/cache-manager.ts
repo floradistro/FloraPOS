@@ -2,16 +2,16 @@
 
 /**
  * Cache Management Utilities
- * Handles cache busting and cleanup for development
+ * OPTIMIZED - No aggressive clearing, respects React Query cache
  */
 
 export class CacheManager {
-  private static readonly CACHE_VERSION = Date.now().toString();
+  private static readonly CACHE_VERSION = '1.0.0'; // Static version
   private static readonly DEV_CACHE_PREFIX = 'flora-pos-dev-';
   private static clearingInterval: ReturnType<typeof setInterval> | null = null;
   
   /**
-   * Clear all application caches
+   * Clear all application caches (manual only)
    */
   static async clearAllCaches(): Promise<void> {
     if (typeof window === 'undefined') return;
@@ -38,7 +38,7 @@ export class CacheManager {
         }
       });
       
-      // Save important data - pattern-based (store configs, menu configs, TV registrations, Magic Backgrounds)
+      // Save important data - pattern-based
       const preservePatterns = ['flora-store-config-', 'flora-menu-config-', 'tv-id-', 'magic-bg-'];
       Object.keys(localStorage).forEach(key => {
         if (preservePatterns.some(pattern => key.includes(pattern))) {
@@ -63,25 +63,17 @@ export class CacheManager {
       sessionStorage.clear();
       console.log('🧹 Cleared sessionStorage');
       
-      // Clear IndexedDB if needed
-      if ('indexedDB' in window) {
-        // Note: This is a more aggressive approach for development
-        // In production, you'd want to be more selective
-      }
-      
     } catch (error) {
       console.error('❌ Error clearing caches:', error);
     }
   }
   
   /**
-   * Add cache busting to URLs in development
+   * Add cache busting to URLs (disabled for better performance)
    */
   static addCacheBuster(url: string): string {
-    if (process.env.NODE_ENV !== 'development') return url;
-    
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}_cb=${this.CACHE_VERSION}`;
+    // DISABLED: Let React Query and HTTP caching handle this
+    return url;
   }
   
   /**
@@ -98,27 +90,19 @@ export class CacheManager {
   }
   
   /**
-   * Setup development cache management
+   * Setup development cache management - DISABLED FOR PERFORMANCE
    */
   static setupDevCacheManagement(): void {
     if (typeof window === 'undefined') return;
     
-    // ALWAYS clear caches on load in development
-    console.log('🧹 Clearing ALL caches on load...');
-    this.clearAllCaches();
+    // DISABLED: No auto-clearing, respect React Query cache
+    console.log('✅ Cache management: Manual mode only');
+    console.log('   - React Query caching enabled');
+    console.log('   - HTTP caching enabled');
+    console.log('   - Use Ctrl+Shift+R to force reload if needed');
+    console.log('   - Use __floraCacheManager.clearAll() to manually clear');
     
-    // Clear caches periodically in development (every 30 seconds)
-    if (process.env.NODE_ENV === 'development') {
-      if (this.clearingInterval) {
-        clearInterval(this.clearingInterval);
-      }
-      this.clearingInterval = setInterval(() => {
-        console.log('🧹 Auto-clearing caches...');
-        this.clearAllCaches();
-      }, 30000); // Every 30 seconds
-    }
-    
-    // Add keyboard shortcut for cache clearing (Ctrl+Shift+R or Cmd+Shift+R)
+    // Add keyboard shortcut for cache clearing
     window.addEventListener('keydown', (event) => {
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'R') {
         event.preventDefault();
@@ -133,31 +117,17 @@ export class CacheManager {
       forceReload: () => this.forceReload(),
       version: this.CACHE_VERSION,
       stopAutoClear: () => {
-        if (this.clearingInterval) {
-          clearInterval(this.clearingInterval);
-          this.clearingInterval = null;
-          console.log('⏹️ Stopped auto-clearing caches');
-        }
+        console.log('✅ Auto-clear already disabled');
       }
     };
-    
-    console.log('🛠️ Development cache management enabled');
-    console.log('   - Caches are cleared on every load');
-    console.log('   - Caches are auto-cleared every 30 seconds');
-    console.log('   - Use Ctrl+Shift+R (Cmd+Shift+R) to force reload');
-    console.log('   - Use __floraCacheManager.clearAll() in console');
-    console.log('   - Use __floraCacheManager.stopAutoClear() to stop auto-clearing');
   }
   
   /**
-   * Check if we need to bust cache based on version
+   * Check if we need to bust cache
    */
   static shouldBustCache(): boolean {
-    // ALWAYS bust cache in development
-    if (process.env.NODE_ENV === 'development') return true;
-    
-    const storedVersion = localStorage.getItem('flora-cache-version');
-    return storedVersion !== this.CACHE_VERSION;
+    // DISABLED: Let caching work properly
+    return false;
   }
   
   /**

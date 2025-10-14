@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { PrintToolbar } from './PrintToolbar';
 
 interface LabelTemplate {
   template_name: string;
@@ -93,102 +94,211 @@ interface PrintViewProps {
   selectedProduct?: Product | null;
 }
 
-const DEFAULT_AVERY_5160: LabelTemplate = {
-  "template_name": "Avery_5160_30up",
-  "description": "30-up address labels on US Letter; 1.000 x 2.625 in each (Avery 5160-compatible).",
-  "units": "in",
-  "page": {
-    "size": "letter",
-    "width": 8.5,
-    "height": 11.0,
-    "margin_top": 0.5,
-    "margin_bottom": 0.5,
-    "margin_left": 0.1875,
-    "margin_right": 0.1875
-  },
-  "grid": {
-    "rows": 10,
-    "columns": 3,
-    "label_width": 2.625,
-    "label_height": 1.0,
-    "horizontal_pitch": 2.75,
-    "vertical_pitch": 1.0,
-    "origin": "top-left"
-  },
-  "label_style": {
-    "safe_padding": { "top": 0.0625, "right": 0.0625, "bottom": 0.0625, "left": 0.0625 },
-    "corner_radius": 0.0625,
-    "background": "none",
-    "border": { "enabled": false }
-  },
-  "text_style": {
-    "font_family": "Helvetica",
-    "font_size_pt": 9,
-    "line_height_em": 1.1,
-    "color": "#000000",
-    "align": "left",
-    "vertical_align": "top",
-    "overflow": "shrink-to-fit"
-  },
-  "fields": [
-    {
-      "name": "line1",
-      "type": "text",
-      "required": true,
-      "max_length": 48
+// Template Definitions
+const TEMPLATES = {
+  avery_5160: {
+    template_name: "Avery_5160_30up",
+    description: "30-up address labels on US Letter; 1.000 x 2.625 in each (Avery 5160-compatible).",
+    units: "in",
+    page: {
+      size: "letter",
+      width: 8.5,
+      height: 11.0,
+      margin_top: 0.5,
+      margin_bottom: 0.5,
+      margin_left: 0.1875,
+      margin_right: 0.1875
     },
-    {
-      "name": "line2",
-      "type": "text",
-      "required": false,
-      "max_length": 48
+    grid: {
+      rows: 10,
+      columns: 3,
+      label_width: 2.625,
+      label_height: 1.0,
+      horizontal_pitch: 2.75,
+      vertical_pitch: 1.0,
+      origin: "top-left"
     },
-    {
-      "name": "line3",
-      "type": "text",
-      "required": false,
-      "max_length": 48
-    }
-  ],
-  "layout": [
-    {
-      "type": "text_block",
-      "binding": ["line1", "line2", "line3"],
-      "join_with": "\n",
-      "box": {
-        "x": 0.0625,
-        "y": 0.0625,
-        "width": 2.625 - 0.125,
-        "height": 1.0 - 0.125
-      },
-      "style_overrides": {
-        "line_break": "auto",
-        "max_lines": 3
+    label_style: {
+      safe_padding: { top: 0.0625, right: 0.0625, bottom: 0.0625, left: 0.0625 },
+      corner_radius: 0.0625,
+      background: "none",
+      border: { enabled: false }
+    },
+    text_style: {
+      font_family: "Helvetica",
+      font_size_pt: 9,
+      line_height_em: 1.1,
+      color: "#000000",
+      align: "left",
+      vertical_align: "top",
+      overflow: "shrink-to-fit"
+    },
+    fields: [
+      { name: "line1", type: "text", required: true, max_length: 48 },
+      { name: "line2", type: "text", required: false, max_length: 48 },
+      { name: "line3", type: "text", required: false, max_length: 48 }
+    ],
+    layout: [
+      {
+        type: "text_block",
+        binding: ["line1", "line2", "line3"],
+        join_with: "\n",
+        box: { x: 0.0625, y: 0.0625, width: 2.5, height: 0.875 },
+        style_overrides: { line_break: "auto", max_lines: 3 }
       }
-    }
-  ],
-  "data_mapping": {
-    "records_per_page": 30,
-    "fill_order": "row-major"
+    ],
+    data_mapping: {
+      records_per_page: 30,
+      fill_order: "row-major"
+    },
+    sample_data: [
+      { line1: "Flora Distro", line2: "1234 Market St", line3: "Charlotte, NC 28202" }
+    ]
   },
-  "sample_data": [
-    { "line1": "Flora Distro", "line2": "1234 Market St", "line3": "Charlotte, NC 28202" },
-    { "line1": "Attn: Fulfillment", "line2": "555 Warehouse Rd", "line3": "Salisbury, NC 28144" }
-  ]
+  avery_5161: {
+    template_name: "Avery_5161_20up",
+    description: "20-up address labels on US Letter; 1.000 x 4.000 in each (Avery 5161-compatible).",
+    units: "in",
+    page: {
+      size: "letter",
+      width: 8.5,
+      height: 11.0,
+      margin_top: 0.5,
+      margin_bottom: 0.5,
+      margin_left: 0.16,
+      margin_right: 0.16
+    },
+    grid: {
+      rows: 10,
+      columns: 2,
+      label_width: 4.0,
+      label_height: 1.0,
+      horizontal_pitch: 4.18,
+      vertical_pitch: 1.0,
+      origin: "top-left"
+    },
+    label_style: {
+      safe_padding: { top: 0.0625, right: 0.0625, bottom: 0.0625, left: 0.0625 },
+      corner_radius: 0.0625,
+      background: "none",
+      border: { enabled: false }
+    },
+    text_style: {
+      font_family: "Helvetica",
+      font_size_pt: 9,
+      line_height_em: 1.1,
+      color: "#000000",
+      align: "left",
+      vertical_align: "top",
+      overflow: "shrink-to-fit"
+    },
+    fields: [
+      { name: "line1", type: "text", required: true, max_length: 60 },
+      { name: "line2", type: "text", required: false, max_length: 60 },
+      { name: "line3", type: "text", required: false, max_length: 60 }
+    ],
+    layout: [
+      {
+        type: "text_block",
+        binding: ["line1", "line2", "line3"],
+        join_with: "\n",
+        box: { x: 0.0625, y: 0.0625, width: 3.875, height: 0.875 },
+        style_overrides: { line_break: "auto", max_lines: 3 }
+      }
+    ],
+    data_mapping: {
+      records_per_page: 20,
+      fill_order: "row-major"
+    },
+    sample_data: [
+      { line1: "Flora Distro", line2: "1234 Market St", line3: "Charlotte, NC 28202" }
+    ]
+  },
+  avery_5162: {
+    template_name: "Avery_5162_14up",
+    description: "14-up address labels on US Letter; 1.33 x 4.00 in each (Avery 5162-compatible).",
+    units: "in",
+    page: {
+      size: "letter",
+      width: 8.5,
+      height: 11.0,
+      margin_top: 0.83,
+      margin_bottom: 0.83,
+      margin_left: 0.16,
+      margin_right: 0.16
+    },
+    grid: {
+      rows: 7,
+      columns: 2,
+      label_width: 4.0,
+      label_height: 1.33,
+      horizontal_pitch: 4.18,
+      vertical_pitch: 1.33,
+      origin: "top-left"
+    },
+    label_style: {
+      safe_padding: { top: 0.08, right: 0.08, bottom: 0.08, left: 0.08 },
+      corner_radius: 0.0625,
+      background: "none",
+      border: { enabled: false }
+    },
+    text_style: {
+      font_family: "Helvetica",
+      font_size_pt: 10,
+      line_height_em: 1.2,
+      color: "#000000",
+      align: "left",
+      vertical_align: "top",
+      overflow: "shrink-to-fit"
+    },
+    fields: [
+      { name: "line1", type: "text", required: true, max_length: 60 },
+      { name: "line2", type: "text", required: false, max_length: 60 },
+      { name: "line3", type: "text", required: false, max_length: 60 }
+    ],
+    layout: [
+      {
+        type: "text_block",
+        binding: ["line1", "line2", "line3"],
+        join_with: "\n",
+        box: { x: 0.08, y: 0.08, width: 3.84, height: 1.17 },
+        style_overrides: { line_break: "auto", max_lines: 4 }
+      }
+    ],
+    data_mapping: {
+      records_per_page: 14,
+      fill_order: "row-major"
+    },
+    sample_data: [
+      { line1: "Flora Distro", line2: "1234 Market St", line3: "Charlotte, NC 28202" }
+    ]
+  }
 };
 
-export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct }: PrintViewProps) {
+const TEMPLATE_LIST = [
+  { id: 'avery_5160', name: 'Avery 5160', description: '30 labels (1.0" × 2.625")' },
+  { id: 'avery_5161', name: 'Avery 5161', description: '20 labels (1.0" × 4.0")' },
+  { id: 'avery_5162', name: 'Avery 5162', description: '14 labels (1.33" × 4.0")' }
+];
+
+export function PrintView({ template: propTemplate, data: propData, selectedProduct: propSelectedProduct }: PrintViewProps) {
+  // State Management
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(propSelectedProduct || null);
+  const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof TEMPLATES>('avery_5160');
   const [showBorders, setShowBorders] = useState(true);
   const [showLogo, setShowLogo] = useState(true);
-  const [selectedTemplate, setSelectedTemplate] = useState('avery_5160');
+  const [sheetScale, setSheetScale] = useState(1.0);
+  const [labelPreviewFocused, setLabelPreviewFocused] = useState(false);
+  const [sheetPreviewFocused, setSheetPreviewFocused] = useState(false);
   
-  // Extra field options
+  // Field toggles
   const [showDate, setShowDate] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
   const [showPrice, setShowPrice] = useState(false);
   const [showSKU, setShowSKU] = useState(false);
+  const [showMargin, setShowMargin] = useState(false);
   
-  // Blueprint field options
+  // Blueprint field toggles
   const [showEffect, setShowEffect] = useState(false);
   const [showLineage, setShowLineage] = useState(false);
   const [showNose, setShowNose] = useState(false);
@@ -196,32 +306,60 @@ export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct
   const [showStrainType, setShowStrainType] = useState(false);
   const [showTHCA, setShowTHCA] = useState(false);
   const [showSupplier, setShowSupplier] = useState(false);
-  const [showMargin, setShowMargin] = useState(false);
   
-  // Blueprint pricing tier options
+  // Pricing tier options
   const [selectedTier, setSelectedTier] = useState<string>('');
   const [showTierPrice, setShowTierPrice] = useState(false);
   const [showTierLabel, setShowTierLabel] = useState(false);
   
-  // Generate product label data or fallback to sample data
+  const [showFieldsPanel, setShowFieldsPanel] = useState(false);
+  
+  const printRef = useRef<HTMLDivElement>(null);
+  const sheetContainerRef = useRef<HTMLDivElement>(null);
+
+  // Get active template
+  const template = propTemplate || TEMPLATES[selectedTemplate];
+
+  // Update selected product when prop changes
+  useEffect(() => {
+    if (propSelectedProduct) {
+      setSelectedProduct(propSelectedProduct);
+    }
+  }, [propSelectedProduct]);
+
+  // Auto-scale sheet to fit
+  useEffect(() => {
+    const updateScale = () => {
+      if (!sheetContainerRef.current || !printRef.current) return;
+      
+      const container = sheetContainerRef.current;
+      const pageWidth = template.page.width * 96; // inches to pixels
+      const pageHeight = template.page.height * 96;
+      
+      const containerWidth = container.clientWidth - 40; // padding
+      const containerHeight = container.clientHeight - 40;
+      
+      const scaleX = containerWidth / pageWidth;
+      const scaleY = containerHeight / pageHeight;
+      const newScale = Math.min(scaleX, scaleY, 0.9); // max 90%
+      
+      setSheetScale(newScale);
+    };
+    
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, [template]);
+
+  // Generate product label data
   const generateProductLabelData = (product: Product | null) => {
     if (!product) {
-      // Fallback sample data when no product is selected
       return [
         { line1: "Flora Distro", line2: "1234 Market St", line3: "Charlotte, NC 28202" },
-        { line1: "Attn: Fulfillment", line2: "555 Warehouse Rd", line3: "Salisbury, NC 28144" },
-        { line1: "Customer Name", line2: "123 Main Street", line3: "City, State 12345" },
-        { line1: "Business Name", line2: "456 Oak Avenue", line3: "Town, ST 67890" },
-        { line1: "John Doe", line2: "789 Pine Road", line3: "Village, NC 13579" },
-        { line1: "Jane Smith", line2: "321 Elm Drive", line3: "Hamlet, SC 24680" },
-        { line1: "ABC Company", line2: "654 Maple Lane", line3: "Borough, GA 97531" },
-        { line1: "XYZ Corp", line2: "987 Cedar Court", line3: "Township, FL 86420" },
-        { line1: "Sample Address", line2: "111 First Street", line3: "Anytown, VA 11111" },
-        { line1: "Test Customer", line2: "222 Second Ave", line3: "Somewhere, TN 22222" }
+        { line1: "Sample Product", line2: "Price: $12.99", line3: "SKU: ABC123" }
       ];
     }
 
-    // Format product information for labels
     const productName = product.name || 'Unknown Product';
     const productPrice = product.blueprintPricing?.price || parseFloat(product.sale_price || product.regular_price || '0');
     const formattedPrice = `$${productPrice.toFixed(2)}`;
@@ -229,7 +367,6 @@ export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct
     const category = product.categories?.[0]?.name || 'General';
     const currentDate = new Date().toLocaleDateString();
     
-    // Build additional fields based on settings
     const additionalFields = [];
     
     if (showDate) additionalFields.push(`Date: ${currentDate}`);
@@ -237,12 +374,10 @@ export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct
     if (showSKU) additionalFields.push(`SKU: ${productSKU}`);
     if (showCategory) additionalFields.push(`Cat: ${category}`);
     
-    // Add blueprint pricing margin if available
     if (showMargin && product.blueprintPricing?.margin) {
       additionalFields.push(`Margin: ${(product.blueprintPricing.margin * 100).toFixed(1)}%`);
     }
     
-    // Add blueprint pricing tier information
     if (product.blueprintPricing?.ruleGroups && selectedTier) {
       const allTiers = product.blueprintPricing.ruleGroups.flatMap((group: any) => 
         group.tiers.map((tier: any) => ({
@@ -264,110 +399,70 @@ export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct
       }
     }
     
-    // Add blueprint fields from meta_data if available
     const metaData = product.meta_data || [];
-    console.log('🔍 Product meta_data for blueprint fields:', product.name, metaData);
-    
     const getMetaValue = (key: string) => {
       const meta = metaData.find(m => m.key === key || m.key === `_${key}`);
-      console.log(`🔍 Looking for field '${key}':`, meta?.value);
       return meta?.value;
     };
     
     if (showEffect) {
       const effect = getMetaValue('effect');
-      console.log('🔍 Effect field:', effect);
       if (effect) additionalFields.push(`Effect: ${effect}`);
     }
     
     if (showLineage) {
       const lineage = getMetaValue('lineage');
-      console.log('🔍 Lineage field:', lineage);
       if (lineage) additionalFields.push(`Lineage: ${lineage}`);
     }
     
     if (showNose) {
       const nose = getMetaValue('nose');
-      console.log('🔍 Nose field:', nose);
       if (nose) additionalFields.push(`Nose: ${nose}`);
     }
     
     if (showTerpene) {
       const terpene = getMetaValue('terpene');
-      console.log('🔍 Terpene field:', terpene);
       if (terpene) additionalFields.push(`Terpene: ${terpene}`);
     }
     
     if (showStrainType) {
       const strainType = getMetaValue('strain_type');
-      console.log('🔍 Strain Type field:', strainType);
       if (strainType) additionalFields.push(`Type: ${strainType}`);
     }
     
     if (showTHCA) {
       const thca = getMetaValue('thca_percentage');
-      console.log('🔍 THCA field:', thca);
       if (thca) additionalFields.push(`THCA: ${thca}%`);
     }
     
     if (showSupplier) {
       const supplier = getMetaValue('supplier');
-      console.log('🔍 Supplier field:', supplier);
       if (supplier) additionalFields.push(`Supplier: ${supplier}`);
     }
-    
-    // Add test blueprint fields if no real data is found (for testing)
-    if (additionalFields.length === 0 && (showEffect || showLineage || showNose || showTerpene || showStrainType || showTHCA || showSupplier)) {
-      console.log('🔍 No real blueprint data found, adding test data for demonstration');
-      if (showEffect) additionalFields.push('Effect: Relaxing');
-      if (showLineage) additionalFields.push('Lineage: OG Kush x Bubba');
-      if (showNose) additionalFields.push('Nose: Earthy, Pine');
-      if (showTerpene) additionalFields.push('Terpene: Myrcene');
-      if (showStrainType) additionalFields.push('Type: Indica');
-      if (showTHCA) additionalFields.push('THCA: 22.5%');
-      if (showSupplier) additionalFields.push('Supplier: ABC Farm');
-    }
-    
-    console.log('🔍 Final additional fields:', additionalFields);
 
-    // Create product label data with optional fields
     const line2 = additionalFields.slice(0, 2).join(' • ');
     const line3 = additionalFields.slice(2, 4).join(' • ');
     
-    return Array(10).fill(null).map(() => ({
+    return Array(template.data_mapping.records_per_page).fill(null).map(() => ({
       line1: productName,
       line2: line2,
       line3: line3
     }));
   };
 
-  // Initialize print data with selected product or sample data
-  const [printData, setPrintData] = useState(() => {
-    if (data) return data;
-    return generateProductLabelData(selectedProduct || null);
-  });
+  const printData = propData || generateProductLabelData(selectedProduct);
 
-  // Update print data when selected product or field options change
-  React.useEffect(() => {
-    if (!data) { // Only update if not using custom data
-      setPrintData(generateProductLabelData(selectedProduct || null));
-    }
-  }, [selectedProduct, data, showDate, showCategory, showPrice, showSKU, showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier, showMargin, selectedTier, showTierPrice, showTierLabel]);
-  const printRef = useRef<HTMLDivElement>(null);
-
-  // Convert inches to pixels for display (96 DPI)
+  // Convert inches to pixels (96 DPI)
   const inchesToPx = (inches: number) => Math.round(inches * 96);
-  
-  // Convert points to pixels for font size
   const ptToPx = (points: number) => Math.round(points * 1.333);
 
+  // Print Handler
   const handlePrint = () => {
     if (printRef.current) {
       const printWindow = window.open('', '_blank');
       if (printWindow) {
-        const printContent = printRef.current.innerHTML;
-        // Create a modified version of the content for printing with proper structure
         let printableContent = printRef.current.innerHTML;
+        
         if (showLogo) {
           printableContent = printableContent
             .replace(/<img[^>]*src="\/logoprint\.png"[^>]*>/g, '<img class="label-logo" src="/logoprint.png" alt="Logo">');
@@ -459,6 +554,7 @@ export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct
     }
   };
 
+  // Generate Label Grid
   const generateLabelGrid = () => {
     const labels = [];
     const totalLabels = template.grid.rows * template.grid.columns;
@@ -467,11 +563,9 @@ export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct
       const row = Math.floor(i / template.grid.columns);
       const col = i % template.grid.columns;
       
-      // Calculate position - start from the page margins, not from 0
       const left = template.page.margin_left + (col * template.grid.horizontal_pitch);
       const top = template.page.margin_top + (row * template.grid.vertical_pitch);
       
-      // Get data for this label - cycle through available data
       const dataIndex = i % printData.length;
       const labelData = printData[dataIndex];
       const labelText = [labelData.line1, labelData.line2, labelData.line3]
@@ -508,7 +602,6 @@ export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct
               overflow: 'hidden',
             }}
           >
-            {/* Logo */}
             {showLogo && (
               <img
                 src="/logoprint.png"
@@ -521,7 +614,6 @@ export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct
                 }}
               />
             )}
-            {/* Text Content */}
             <div
               style={{
                 flex: 1,
@@ -545,460 +637,488 @@ export function PrintView({ template = DEFAULT_AVERY_5160, data, selectedProduct
     return labels;
   };
 
-  return (
-    <div className="h-full flex bg-neutral-800">
-      {/* Left Panel - Print Preview */}
-      <div className="flex-1 flex flex-col">
-        {/* Print Preview */}
-        <div className="flex-1 flex items-center justify-center p-4" style={{ backgroundColor: '#1a1a1a' }}>
-          {/* Page Preview */}
-          <div 
-            ref={printRef}
-            className="print-page bg-white shadow-lg relative"
+  // Generate single label for editor
+  const generateSingleLabel = () => {
+    const labelData = printData[0];
+    const labelText = [labelData.line1, labelData.line2, labelData.line3]
+      .filter(line => line && line.trim())
+      .join('\n');
+
+    // Calculate responsive scale - fit to container width
+    const baseWidth = inchesToPx(template.grid.label_width) * 2.2;
+    const maxWidth = 440; // Max width to fit in 480px column with padding
+    const scale = Math.min(1, maxWidth / baseWidth);
+
+    return (
+      <div
+        className="relative bg-white rounded-xl overflow-hidden"
+        style={{
+          width: `${baseWidth * scale}px`,
+          height: `${inchesToPx(template.grid.label_height) * 2.2 * scale}px`,
+          border: showBorders ? '2px solid #3b82f6' : '2px solid transparent',
+          boxShadow: '0 20px 60px -12px rgba(59, 130, 246, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: `${inchesToPx(template.label_style.safe_padding.top) * 2.2 * scale}px`,
+            left: `${inchesToPx(template.label_style.safe_padding.left) * 2.2 * scale}px`,
+            right: `${inchesToPx(template.label_style.safe_padding.right) * 2.2 * scale}px`,
+            bottom: `${inchesToPx(template.label_style.safe_padding.bottom) * 2.2 * scale}px`,
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: `${8 * scale}px`,
+            overflow: 'hidden',
+          }}
+        >
+          {showLogo && (
+            <img
+              src="/logoprint.png"
+              alt="Logo"
+              style={{
+                width: `${28 * scale}px`,
+                height: `${28 * scale}px`,
+                flexShrink: 0,
+                objectFit: 'contain',
+              }}
+            />
+          )}
+          <div
             style={{
-              width: `${inchesToPx(template.page.width)}px`,
-              height: `${inchesToPx(template.page.height)}px`,
-              transform: 'scale(1.0)',
-              transformOrigin: 'center',
-              maxHeight: 'none',
-              maxWidth: 'none',
+              flex: 1,
+              fontSize: `${ptToPx(template.text_style.font_size_pt) * 2.2 * scale}px`,
+              lineHeight: template.text_style.line_height_em,
+              color: template.text_style.color,
+              textAlign: template.text_style.align as any,
+              fontFamily: template.text_style.font_family,
+              whiteSpace: 'pre-line',
+              wordWrap: 'break-word',
+              overflow: 'hidden',
             }}
           >
-            {/* Label Grid */}
-            <div
-              className="label-grid"
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: `${inchesToPx(template.page.width)}px`,
-                height: `${inchesToPx(template.page.height)}px`,
-              }}
-            >
-              {generateLabelGrid()}
-            </div>
+            {labelText}
           </div>
         </div>
       </div>
+    );
+  };
 
-      {/* Right Panel - Print Controls */}
-      <div className="w-80 flex-shrink-0 flex flex-col bg-neutral-900">
-        {/* Toolbar Header */}
-        <div className="px-4 py-4 bg-black">
-          <h3 className="text-sm font-medium text-white uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Print Controls</h3>
-        </div>
+  return (
+    <div className="h-full flex flex-col bg-neutral-950">
+      {/* Custom Toolbar */}
+      <PrintToolbar
+        selectedProduct={selectedProduct}
+        onProductSelect={setSelectedProduct}
+        selectedTemplate={selectedTemplate}
+        onTemplateChange={(t) => setSelectedTemplate(t as keyof typeof TEMPLATES)}
+        showBorders={showBorders}
+        onShowBordersChange={setShowBorders}
+        showLogo={showLogo}
+        onShowLogoChange={setShowLogo}
+        onPrint={handlePrint}
+        templates={TEMPLATE_LIST}
+        showDate={showDate}
+        onShowDateChange={setShowDate}
+        showPrice={showPrice}
+        onShowPriceChange={setShowPrice}
+        showSKU={showSKU}
+        onShowSKUChange={setShowSKU}
+        showCategory={showCategory}
+        onShowCategoryChange={setShowCategory}
+        showMargin={showMargin}
+        onShowMarginChange={setShowMargin}
+        showEffect={showEffect}
+        onShowEffectChange={setShowEffect}
+        showLineage={showLineage}
+        onShowLineageChange={setShowLineage}
+        showNose={showNose}
+        onShowNoseChange={setShowNose}
+        showTerpene={showTerpene}
+        onShowTerpeneChange={setShowTerpene}
+        showStrainType={showStrainType}
+        onShowStrainTypeChange={setShowStrainType}
+        showTHCA={showTHCA}
+        onShowTHCAChange={setShowTHCA}
+        showSupplier={showSupplier}
+        onShowSupplierChange={setShowSupplier}
+        selectedTier={selectedTier}
+        onSelectedTierChange={setSelectedTier}
+        showTierPrice={showTierPrice}
+        onShowTierPriceChange={setShowTierPrice}
+        showTierLabel={showTierLabel}
+        onShowTierLabelChange={setShowTierLabel}
+        template={template}
+      />
 
-        {/* Toolbar Content */}
-        <div className="flex-1 p-4 space-y-6 overflow-y-auto">
-          {/* Print Actions */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Actions</h4>
-            <div className="space-y-2">
-              <button
-                onClick={handlePrint}
-                className="w-full px-4 py-3 bg-white text-black text-sm font-medium hover:bg-neutral-200 transition-colors"
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                Print Labels
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="w-full px-4 py-2 bg-neutral-800 text-white text-sm font-medium hover:bg-neutral-700 transition-colors"
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                Quick Print
-              </button>
-            </div>
+      {/* Main Content Area - Three Column Layout */}
+      <div className="flex-1 flex relative overflow-hidden">
+        {/* Left: Single Label Editor (Primary Focus) */}
+        <div className="w-[480px] flex-shrink-0 flex flex-col border-r border-white/[0.06]">
+          {/* Editor Header */}
+          <div className="px-8 py-6 border-b border-white/[0.06]">
+            <h2 className="text-xl font-light text-white mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
+              Label Editor
+            </h2>
+            <p className="text-sm text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
+              {template.grid.label_width}" × {template.grid.label_height}" • {template.template_name}
+            </p>
           </div>
 
-          {/* Display Options */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Display</h4>
-            <div className="space-y-2">
-              <button
-                onClick={() => setShowBorders(!showBorders)}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  showBorders 
-                    ? 'bg-white text-black' 
-                    : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Show Borders</span>
-                <span className="text-xs">{showBorders ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={() => setShowLogo(!showLogo)}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  showLogo 
-                    ? 'bg-white text-black' 
-                    : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Show Logo</span>
-                <span className="text-xs">{showLogo ? 'ON' : 'OFF'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Template Selection */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Template</h4>
-            <select
-              value={selectedTemplate}
-              onChange={(e) => setSelectedTemplate(e.target.value)}
-              className="w-full px-3 py-2 bg-neutral-800 text-white text-sm focus:outline-none focus:bg-neutral-700"
-              style={{ fontFamily: 'Tiempos, serif' }}
+          {/* Single Label Preview (Enlarged) */}
+          <div className="flex-1 flex items-center justify-center p-6 bg-transparent relative group">
+            <div 
+              className={`relative cursor-pointer transition-all duration-500 ease-out ${
+                labelPreviewFocused ? 'opacity-100 scale-105' : 'opacity-60 scale-100 hover:opacity-80'
+              }`}
+              style={{ maxWidth: '100%' }}
+              onClick={() => setLabelPreviewFocused(!labelPreviewFocused)}
             >
-              <option value="avery_5160">Avery 5160 (30-up)</option>
-              <option value="avery_5161">Avery 5161 (20-up)</option>
-              <option value="avery_5162">Avery 5162 (14-up)</option>
-            </select>
-          </div>
-
-          {/* Product Selection Status */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Product Selection</h4>
-            {selectedProduct ? (
-              <div className="bg-neutral-800 p-3 space-y-2">
-                <div className="text-sm font-medium text-white truncate" style={{ fontFamily: 'Tiempos, serif' }}>
-                  {selectedProduct.name}
-                </div>
-                <div className="text-xs text-neutral-400 grid grid-cols-2 gap-2">
-                  <div>${(selectedProduct.blueprintPricing?.price || parseFloat(selectedProduct.sale_price || selectedProduct.regular_price || '0')).toFixed(2)}</div>
-                  <div>{selectedProduct.sku || `#${selectedProduct.id}`}</div>
-                </div>
-                <button 
-                  onClick={() => {
-                    setPrintData(generateProductLabelData(null));
-                  }}
-                  className="w-full px-3 py-2 bg-neutral-700 hover:bg-neutral-600 text-white text-sm transition-colors"
-                  style={{ fontFamily: 'Tiempos, serif' }}
-                >
-                  Clear Selection
-                </button>
-              </div>
-            ) : (
-              <div className="bg-neutral-800 p-3 space-y-1">
-                <div className="text-sm text-neutral-300" style={{ fontFamily: 'Tiempos, serif' }}>No Product Selected</div>
-                <div className="text-xs text-neutral-500">Search above to select a product</div>
-              </div>
-            )}
-          </div>
-
-          {/* Extra Fields */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Extra Fields</h4>
-            {!selectedProduct && (
-              <div className="text-xs text-neutral-600 mb-2">Select a product above to enable field options</div>
-            )}
-            <div className="space-y-1">
-              <button
-                onClick={() => setShowDate(!showDate)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showDate 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Date</span>
-                <span className="text-xs">{showDate ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={() => setShowPrice(!showPrice)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showPrice 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Price</span>
-                <span className="text-xs">{showPrice ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={() => setShowSKU(!showSKU)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showSKU 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>SKU</span>
-                <span className="text-xs">{showSKU ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={() => setShowCategory(!showCategory)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showCategory 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Category</span>
-                <span className="text-xs">{showCategory ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={() => setShowMargin(!showMargin)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showMargin 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Margin</span>
-                <span className="text-xs">{showMargin ? 'ON' : 'OFF'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Blueprint Fields */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Blueprint Fields</h4>
-            {!selectedProduct && (
-              <div className="text-xs text-neutral-600 mb-2">Select a product above to enable blueprint fields</div>
-            )}
-            <div className="space-y-1">
-              <button
-                onClick={() => setShowEffect(!showEffect)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showEffect 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Effect</span>
-                <span className="text-xs">{showEffect ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={() => setShowLineage(!showLineage)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showLineage 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Lineage</span>
-                <span className="text-xs">{showLineage ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={() => setShowNose(!showNose)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showNose 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Nose</span>
-                <span className="text-xs">{showNose ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={() => setShowTerpene(!showTerpene)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showTerpene 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Terpene</span>
-                <span className="text-xs">{showTerpene ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={() => setShowStrainType(!showStrainType)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showStrainType 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Strain Type</span>
-                <span className="text-xs">{showStrainType ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={() => setShowTHCA(!showTHCA)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showTHCA 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>THCA</span>
-                <span className="text-xs">{showTHCA ? 'ON' : 'OFF'}</span>
-              </button>
-              <button
-                onClick={() => setShowSupplier(!showSupplier)}
-                disabled={!selectedProduct}
-                className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                  !selectedProduct 
-                    ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
-                    : showSupplier 
-                      ? 'bg-white text-black' 
-                      : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                <span>Supplier</span>
-                <span className="text-xs">{showSupplier ? 'ON' : 'OFF'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Blueprint Pricing Tiers */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Pricing Tiers</h4>
-            {!selectedProduct ? (
-              <div className="text-xs text-neutral-600">Select a product with blueprint pricing to see tiers</div>
-            ) : !selectedProduct.blueprintPricing?.ruleGroups ? (
-              <div className="text-xs text-neutral-600">Selected product has no pricing tiers</div>
-            ) : (
-              <>
-                {(() => {
-                  console.log('🔍 Rendering pricing tiers section for:', selectedProduct.name);
-                  console.log('🔍 Rule groups:', selectedProduct.blueprintPricing.ruleGroups);
-                  return null;
-                })()}
+              {generateSingleLabel()}
               
-              {/* Tier Selection */}
-              <div className="space-y-2">
-                <select
-                  value={selectedTier}
-                  onChange={(e) => setSelectedTier(e.target.value)}
-                  className="w-full px-3 py-2 bg-neutral-800 text-white text-sm focus:outline-none focus:bg-neutral-700"
-                  style={{ fontFamily: 'Tiempos, serif' }}
-                >
-                  <option value="">Select Tier</option>
-                  {selectedProduct.blueprintPricing.ruleGroups.flatMap((group: any) => 
-                    group.tiers.map((tier: any) => (
-                      <option 
-                        key={`${group.ruleName}-${tier.label}`} 
-                        value={`${group.ruleName}-${tier.label}`}
-                      >
-                        {group.ruleName} - {tier.label} (${tier.price.toFixed(2)})
-                      </option>
-                    ))
-                  )}
-                </select>
+              {/* Label Dimensions Overlay */}
+              <div className="absolute -bottom-8 left-0 right-0 text-center">
+                <span className="text-xs text-neutral-600" style={{ fontFamily: 'Tiempos, serif' }}>
+                  2.2× scale preview
+                </span>
               </div>
 
-              {/* Tier Display Options */}
-              {selectedTier && (
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setShowTierPrice(!showTierPrice)}
-                    className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                      showTierPrice 
-                        ? 'bg-white text-black' 
-                        : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                    }`}
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  >
-                    <span>Show Tier Price</span>
-                    <span className="text-xs">{showTierPrice ? 'ON' : 'OFF'}</span>
-                  </button>
-                  <button
-                    onClick={() => setShowTierLabel(!showTierLabel)}
-                    className={`w-full px-3 py-2 text-sm font-medium transition-colors flex items-center justify-between ${
-                      showTierLabel 
-                        ? 'bg-white text-black' 
-                        : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                    }`}
-                    style={{ fontFamily: 'Tiempos, serif' }}
-                  >
-                    <span>Show Tier Label</span>
-                    <span className="text-xs">{showTierLabel ? 'ON' : 'OFF'}</span>
-                  </button>
+              {/* Focus Indicator */}
+              {labelPreviewFocused && (
+                <div className="absolute -top-3 -right-3 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-blue-500/50">
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
                 </div>
               )}
-              </>
+            </div>
+
+            {/* Hover Hint */}
+            {!labelPreviewFocused && (
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                <div className="bg-neutral-900/90 backdrop-blur-xl border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
+                  Click to focus
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Data Management */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Data</h4>
-            <div className="space-y-2">
-              <button className="w-full px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white text-sm transition-colors" style={{ fontFamily: 'Tiempos, serif' }}>
-                Import CSV
-              </button>
-              <button className="w-full px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white text-sm transition-colors" style={{ fontFamily: 'Tiempos, serif' }}>
-                Add Manual
-              </button>
+          {/* Quick Stats */}
+          <div className="px-8 py-6 border-t border-white/[0.06] grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-light text-white mb-1" style={{ fontFamily: 'Tiempos, serif' }}>
+                {template.data_mapping.records_per_page}
+              </div>
+              <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
+                labels/sheet
+              </div>
             </div>
-          </div>
-
-          {/* Template Info */}
-          <div className="bg-neutral-800 p-3 space-y-2">
-            <h4 className="text-xs font-medium text-white uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Specifications</h4>
-            <div className="space-y-1 text-xs text-neutral-400">
-              <div className="flex justify-between">
-                <span>Page:</span>
-                <span>{template.page.size}</span>
+            <div className="text-center">
+              <div className="text-2xl font-light text-white mb-1" style={{ fontFamily: 'Tiempos, serif' }}>
+                {template.grid.rows}×{template.grid.columns}
               </div>
-              <div className="flex justify-between">
-                <span>Grid:</span>
-                <span>{template.grid.rows}×{template.grid.columns}</span>
+              <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
+                grid layout
               </div>
-              <div className="flex justify-between">
-                <span>Size:</span>
-                <span>{template.grid.label_width}"×{template.grid.label_height}"</span>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-light text-white mb-1" style={{ fontFamily: 'Tiempos, serif' }}>
+                {printData.length}
               </div>
-              <div className="flex justify-between">
-                <span>Labels:</span>
-                <span>{template.data_mapping.records_per_page}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Records:</span>
-                <span>{printData.length}</span>
+              <div className="text-xs text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
+                data records
               </div>
             </div>
           </div>
         </div>
+
+        {/* Center: Full Sheet Preview */}
+        <div className="flex-1 flex flex-col">
+          {/* Sheet Header */}
+          <div className="px-8 py-6 border-b border-white/[0.06] flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-light text-white mb-2" style={{ fontFamily: 'Tiempos, serif' }}>
+                Full Sheet Preview
+              </h2>
+              <p className="text-sm text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
+                {template.page.size.toUpperCase()} • {template.page.width}" × {template.page.height}"
+              </p>
+            </div>
+
+            {/* Zoom Controls */}
+            <div className="flex items-center gap-2 bg-neutral-900/60 backdrop-blur-xl border border-white/[0.08] rounded-2xl px-3 py-2">
+              <button
+                onClick={() => setSheetScale(Math.max(0.2, sheetScale - 0.1))}
+                className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                </svg>
+              </button>
+              <div className="text-xs text-neutral-400 font-medium w-12 text-center" style={{ fontFamily: 'Tiempos, serif' }}>
+                {Math.round(sheetScale * 100)}%
+              </div>
+              <button
+                onClick={() => setSheetScale(Math.min(1.5, sheetScale + 0.1))}
+                className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+              <div className="w-px h-5 bg-white/[0.08] mx-1" />
+              <button
+                onClick={() => setSheetScale(0.7)}
+                className="px-3 h-8 text-xs font-medium text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                style={{ fontFamily: 'Tiempos, serif' }}
+              >
+                Fit
+              </button>
+            </div>
+          </div>
+
+          {/* Sheet Preview Area */}
+          <div 
+            ref={sheetContainerRef}
+            className="flex-1 flex items-center justify-center p-4 overflow-auto bg-transparent relative group"
+          >
+            <div
+              className={`cursor-pointer transition-all duration-500 ease-out ${
+                sheetPreviewFocused ? 'opacity-100' : 'opacity-60 hover:opacity-80'
+              }`}
+              style={{
+                transform: `scale(${sheetPreviewFocused ? sheetScale * 1.05 : sheetScale})`,
+                transformOrigin: 'center',
+                transition: 'transform 0.5s ease-out, opacity 0.5s ease-out'
+              }}
+              onClick={() => setSheetPreviewFocused(!sheetPreviewFocused)}
+            >
+              <div 
+                ref={printRef}
+                className="print-page bg-white shadow-2xl relative"
+                style={{
+                  width: `${inchesToPx(template.page.width)}px`,
+                  height: `${inchesToPx(template.page.height)}px`,
+                  boxShadow: sheetPreviewFocused 
+                    ? '0 30px 70px -12px rgba(59, 130, 246, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.2)'
+                    : '0 25px 50px -12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.1)',
+                  transition: 'box-shadow 0.5s ease-out'
+                }}
+              >
+                <div
+                  className="label-grid"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: `${inchesToPx(template.page.width)}px`,
+                    height: `${inchesToPx(template.page.height)}px`,
+                  }}
+                >
+                  {generateLabelGrid()}
+                </div>
+
+                {/* Focus Indicator */}
+                {sheetPreviewFocused && (
+                  <div className="absolute -top-4 -right-4 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-blue-500/50">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Hover Hint */}
+            {!sheetPreviewFocused && (
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+                <div className="bg-neutral-900/90 backdrop-blur-xl border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
+                  Click to focus
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Sliding Fields Panel */}
+        <div
+          className={`absolute top-0 right-0 h-full w-80 bg-neutral-900/95 backdrop-blur-xl border-l border-white/[0.06] transform transition-transform duration-300 ease-in-out ${
+            showFieldsPanel ? 'translate-x-0' : 'translate-x-full'
+          }`}
+          style={{ zIndex: 40 }}
+        >
+          <div className="h-full flex flex-col">
+            {/* Panel Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+              <h3 className="text-sm font-medium text-white uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
+                Label Fields
+              </h3>
+              <button
+                onClick={() => setShowFieldsPanel(false)}
+                className="w-8 h-8 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {!selectedProduct && (
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 text-xs text-yellow-200" style={{ fontFamily: 'Tiempos, serif' }}>
+                  Select a product to enable field options
+                </div>
+              )}
+
+              {/* Extra Fields */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
+                  Extra Fields
+                </h4>
+                <div className="space-y-2">
+                  {[
+                    { label: 'Date', value: showDate, onChange: setShowDate },
+                    { label: 'Price', value: showPrice, onChange: setShowPrice },
+                    { label: 'SKU', value: showSKU, onChange: setShowSKU },
+                    { label: 'Category', value: showCategory, onChange: setShowCategory },
+                    { label: 'Margin', value: showMargin, onChange: setShowMargin }
+                  ].map((field) => (
+                    <button
+                      key={field.label}
+                      onClick={() => selectedProduct && field.onChange(!field.value)}
+                      disabled={!selectedProduct}
+                      className={`w-full px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-xl flex items-center justify-between ${
+                        !selectedProduct 
+                          ? 'bg-neutral-800/40 text-neutral-600 cursor-not-allowed' 
+                          : field.value 
+                            ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30' 
+                            : 'bg-neutral-800/60 text-neutral-400 hover:text-white hover:bg-neutral-800'
+                      }`}
+                      style={{ fontFamily: 'Tiempos, serif' }}
+                    >
+                      <span>{field.label}</span>
+                      <span className={`text-xs ${field.value && selectedProduct ? 'text-blue-400' : 'text-neutral-600'}`}>
+                        {field.value ? 'ON' : 'OFF'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Blueprint Fields */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
+                  Blueprint Fields
+                </h4>
+                <div className="space-y-2">
+                  {[
+                    { label: 'Effect', value: showEffect, onChange: setShowEffect },
+                    { label: 'Lineage', value: showLineage, onChange: setShowLineage },
+                    { label: 'Nose', value: showNose, onChange: setShowNose },
+                    { label: 'Terpene', value: showTerpene, onChange: setShowTerpene },
+                    { label: 'Strain Type', value: showStrainType, onChange: setShowStrainType },
+                    { label: 'THCA', value: showTHCA, onChange: setShowTHCA },
+                    { label: 'Supplier', value: showSupplier, onChange: setShowSupplier }
+                  ].map((field) => (
+                    <button
+                      key={field.label}
+                      onClick={() => selectedProduct && field.onChange(!field.value)}
+                      disabled={!selectedProduct}
+                      className={`w-full px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-xl flex items-center justify-between ${
+                        !selectedProduct 
+                          ? 'bg-neutral-800/40 text-neutral-600 cursor-not-allowed' 
+                          : field.value 
+                            ? 'bg-purple-500/20 text-purple-300 border border-purple-400/30' 
+                            : 'bg-neutral-800/60 text-neutral-400 hover:text-white hover:bg-neutral-800'
+                      }`}
+                      style={{ fontFamily: 'Tiempos, serif' }}
+                    >
+                      <span>{field.label}</span>
+                      <span className={`text-xs ${field.value && selectedProduct ? 'text-purple-400' : 'text-neutral-600'}`}>
+                        {field.value ? 'ON' : 'OFF'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pricing Tiers */}
+              {selectedProduct?.blueprintPricing?.ruleGroups && (
+                <div className="space-y-3">
+                  <h4 className="text-xs font-medium text-neutral-500 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
+                    Pricing Tiers
+                  </h4>
+                  <select
+                    value={selectedTier}
+                    onChange={(e) => setSelectedTier(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-neutral-800/60 text-white text-sm rounded-xl border border-white/[0.08] focus:outline-none focus:border-blue-400/50"
+                    style={{ fontFamily: 'Tiempos, serif' }}
+                  >
+                    <option value="">Select Tier</option>
+                    {selectedProduct.blueprintPricing.ruleGroups.flatMap((group: any) => 
+                      group.tiers.map((tier: any) => (
+                        <option 
+                          key={`${group.ruleName}-${tier.label}`} 
+                          value={`${group.ruleName}-${tier.label}`}
+                        >
+                          {group.ruleName} - {tier.label} (${tier.price.toFixed(2)})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  
+                  {selectedTier && (
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => setShowTierPrice(!showTierPrice)}
+                        className={`w-full px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-xl flex items-center justify-between ${
+                          showTierPrice 
+                            ? 'bg-green-500/20 text-green-300 border border-green-400/30' 
+                            : 'bg-neutral-800/60 text-neutral-400 hover:text-white hover:bg-neutral-800'
+                        }`}
+                        style={{ fontFamily: 'Tiempos, serif' }}
+                      >
+                        <span>Show Tier Price</span>
+                        <span className={`text-xs ${showTierPrice ? 'text-green-400' : 'text-neutral-600'}`}>
+                          {showTierPrice ? 'ON' : 'OFF'}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => setShowTierLabel(!showTierLabel)}
+                        className={`w-full px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-xl flex items-center justify-between ${
+                          showTierLabel 
+                            ? 'bg-green-500/20 text-green-300 border border-green-400/30' 
+                            : 'bg-neutral-800/60 text-neutral-400 hover:text-white hover:bg-neutral-800'
+                        }`}
+                        style={{ fontFamily: 'Tiempos, serif' }}
+                      >
+                        <span>Show Tier Label</span>
+                        <span className={`text-xs ${showTierLabel ? 'text-green-400' : 'text-neutral-600'}`}>
+                          {showTierLabel ? 'ON' : 'OFF'}
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Fields Panel Toggle Button (Bottom Left) */}
+        <button
+          onClick={() => setShowFieldsPanel(!showFieldsPanel)}
+          className="absolute bottom-6 left-[500px] flex items-center gap-2 px-4 py-2.5 bg-neutral-900/60 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-lg hover:bg-neutral-900/80 transition-colors text-white z-30"
+          style={{ fontFamily: 'Tiempos, serif' }}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+          <span className="text-xs font-medium">Customize Fields</span>
+        </button>
       </div>
     </div>
   );
 }
-

@@ -60,11 +60,6 @@ interface HeaderProps {
   totalOrders?: number;
   selectedOrdersCount?: number;
   onClearOrderSelection?: () => void;
-  // History filter props
-  historyDateFilter?: string;
-  onHistoryDateFilterChange?: (days: string) => void;
-  historyActionFilter?: string;
-  onHistoryActionFilterChange?: (action: string) => void;
   // Audit button props
   pendingAdjustments?: Map<string, number>;
   onCreateAudit?: () => void;
@@ -144,10 +139,6 @@ export function Header({
   totalOrders = 0,
   selectedOrdersCount = 0,
   onClearOrderSelection,
-  historyDateFilter = '7',
-  onHistoryDateFilterChange,
-  historyActionFilter = 'all',
-  onHistoryActionFilterChange,
   pendingAdjustments = new Map(),
   onCreateAudit,
   onCreateAuditWithDetails,
@@ -182,7 +173,10 @@ export function Header({
   onShowProductImagesChange,
   // Product Sorting
   productSortOrder = 'default',
-  onProductSortOrderChange
+  onProductSortOrderChange,
+  // Customer Segment Filter
+  customerSegmentFilter = 'all',
+  onCustomerSegmentFilterChange
 }: HeaderProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAiToolsDropdown, setShowAiToolsDropdown] = useState(false);
@@ -274,71 +268,39 @@ export function Header({
       {/* Apple 2035 Style Header */}
       <div className="my-3">
         <div className="flex items-center h-full py-3 px-6 relative gap-3">
-          {/* Back Button for History View */}
-          {currentView === 'history' && (
-            <button
-              onClick={() => onViewChange?.('adjustments')}
-              className="flex items-center gap-2 px-4 py-2 text-sm bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white rounded-xl transition-all duration-300 border border-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-black/20"
-              style={{ fontFamily: 'Tiempo, serif' }}
-            >
-              <svg 
-                className="w-4 h-4" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M15 19l-7-7 7-7" 
-                />
-              </svg>
-              Back to Audit
-            </button>
-          )}
-
           {/* Left Controls - Adjustments Controls */}
           {currentView === 'adjustments' && (
             <div className="flex items-center gap-2 flex-shrink-0">
-              {/* A-Z Sort Toggle */}
-              <button
-                onClick={() => onSortAlphabeticallyChange?.(!sortAlphabetically)}
-                className={`px-4 py-2 rounded-xl transition-all duration-300 text-sm flex items-center gap-2 whitespace-nowrap border flex-shrink-0 ${
-                  sortAlphabetically 
-                    ? 'bg-white/10 text-white border-white/20 shadow-lg shadow-black/20' 
-                    : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-neutral-200'
-                }`}
-                title={sortAlphabetically ? 'Disable alphabetical sorting' : 'Enable alphabetical sorting'}
-                style={{ fontFamily: 'Tiempo, serif' }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                </svg>
-                A-Z
-              </button>
+              {/* Sort Dropdown */}
+              <div className="flex items-center gap-2 bg-white/[0.02] backdrop-blur-xl rounded-xl border border-white/[0.06]">
+                <select
+                  value={sortAlphabetically ? 'az' : 'default'}
+                  onChange={(e) => onSortAlphabeticallyChange?.(e.target.value === 'az')}
+                  className="px-4 py-2 text-xs bg-transparent text-neutral-300 focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[120px]"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                >
+                  <option value="default" className="bg-neutral-800">Default</option>
+                  <option value="az" className="bg-neutral-800">A-Z Sort</option>
+                </select>
+              </div>
 
-              {/* Show Selected Toggle */}
-              <button
-                onClick={() => onShowOnlySelectedAdjustmentsChange?.(!showOnlySelectedAdjustments)}
-                className={`px-4 py-2 rounded-xl transition-all duration-300 text-sm flex items-center gap-2 whitespace-nowrap border flex-shrink-0 ${
-                  showOnlySelectedAdjustments 
-                    ? 'bg-white/10 text-white border-white/20 shadow-lg shadow-black/20' 
-                    : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-neutral-200'
-                }`}
-                title={showOnlySelectedAdjustments ? 'Show all products' : 'Show only selected products'}
-                style={{ fontFamily: 'Tiempo, serif' }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
-                </svg>
-                {showOnlySelectedAdjustments ? `Selected (${selectedCount})` : 'Selected'}
-              </button>
+              {/* Filter Dropdown */}
+              <div className="flex items-center gap-2 bg-white/[0.02] backdrop-blur-xl rounded-xl border border-white/[0.06]">
+                <select
+                  value={showOnlySelectedAdjustments ? 'selected' : 'all'}
+                  onChange={(e) => onShowOnlySelectedAdjustmentsChange?.(e.target.value === 'selected')}
+                  className="px-4 py-2 text-xs bg-transparent text-neutral-300 focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[120px]"
+                  style={{ fontFamily: 'Tiempos, serif' }}
+                >
+                  <option value="all" className="bg-neutral-800">All Products</option>
+                  <option value="selected" className="bg-neutral-800">Selected ({selectedCount})</option>
+                </select>
+              </div>
             </div>
           )}
 
           {/* Fixed Search Bar Container - Same position as adjustments view */}
-          <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0" style={{ marginLeft: (currentView === 'adjustments' || currentView === 'history' || currentView === 'menu') ? '0px' : '30px' }}>
+          <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 mx-1 sm:mx-2 md:mx-4 min-w-0" style={{ marginLeft: (currentView === 'adjustments' || currentView === 'menu') ? '0px' : '30px' }}>
           <UnifiedSearchInput
             key={`unified-search-${currentView}`}
             ref={unifiedSearchRef}
@@ -553,14 +515,34 @@ export function Header({
 
           {/* Right group - All Navigation Buttons and Filters */}
           <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
-            {/* Artifacts Library Dropdown - Hide on products view */}
-            {currentView !== 'products' && (
+            {/* Artifacts Library Dropdown - Hide on products, adjustments, and customers view */}
+            {currentView !== 'products' && currentView !== 'adjustments' && currentView !== 'customers' && (
               <ArtifactsDropdown 
                 canvasRef={aiCanvasRef}
                 onViewChange={onViewChange}
               />
             )}
 
+            {/* Customers View Filter - Segment Dropdown */}
+            {currentView === 'customers' && (
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <select
+                  value={customerSegmentFilter}
+                  onChange={(e) => onCustomerSegmentFilterChange?.(e.target.value as typeof customerSegmentFilter)}
+                  className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none transition-all duration-200 backdrop-blur-sm cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[140px]"
+                  style={{ fontFamily: 'Tiempo, serif' }}
+                >
+                  <option value="all">All Customers</option>
+                  <option value="vip">VIP</option>
+                  <option value="regular">Regular</option>
+                  <option value="at-risk">At-Risk</option>
+                  <option value="dormant">Dormant</option>
+                </select>
+              </div>
+            )}
 
             {/* Orders View Filters */}
             {currentView === 'orders' && (
@@ -573,7 +555,7 @@ export function Header({
                   <select
                     value={statusFilter}
                     onChange={(e) => onStatusFilterChange?.(e.target.value)}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-black/20 cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[120px]"
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none transition-all duration-200 backdrop-blur-sm cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[120px]"
                     style={{ fontFamily: 'Tiempo, serif' }}
                   >
                     <option value="any">All Status</option>
@@ -596,7 +578,7 @@ export function Header({
                     type="date"
                     value={dateFrom}
                     onChange={(e) => onDateFromChange?.(e.target.value)}
-                    className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-black/20 w-32 sm:w-36"
+                    className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none transition-all duration-200 backdrop-blur-sm w-32 sm:w-36"
                     style={{ fontFamily: 'Tiempo, serif' }}
                     title="From Date"
                   />
@@ -605,7 +587,7 @@ export function Header({
                     type="date"
                     value={dateTo}
                     onChange={(e) => onDateToChange?.(e.target.value)}
-                    className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-black/20 w-32 sm:w-36"
+                    className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none transition-all duration-200 backdrop-blur-sm w-32 sm:w-36"
                     style={{ fontFamily: 'Tiempo, serif' }}
                     title="To Date"
                   />
@@ -645,91 +627,31 @@ export function Header({
               </>
             )}
 
-            {/* Adjustments view navigation buttons */}
-            {(currentView === 'adjustments' || currentView === 'history') && (
-              <>
-                {/* History Button - Icon Only */}
-                <button
-                  onClick={() => onViewChange?.('history')}
-                  className={`flex items-center justify-center w-9 h-9 text-sm transition-all duration-300 rounded-xl border ${
-                    currentView === 'history'
-                      ? 'bg-white/10 text-white border-white/20 shadow-lg shadow-black/20' 
-                      : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-neutral-200'
-                  }`}
-                  title="View Adjustment History"
+            {/* Adjustments view - Mode Selector Dropdown */}
+            {currentView === 'adjustments' && (
+              <div className="flex items-center gap-2 bg-white/[0.02] backdrop-blur-xl rounded-xl border border-white/[0.06]">
+                <select
+                  value={isRestockMode ? 'restock' : isAuditMode ? 'audit' : 'normal'}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === 'restock') {
+                      if (!isRestockMode) onRestock?.();
+                    } else if (value === 'audit') {
+                      if (!isAuditMode) onAudit?.();
+                    } else {
+                      // Exit both modes
+                      if (isRestockMode) onRestock?.();
+                      if (isAuditMode) onAudit?.();
+                    }
+                  }}
+                  className="px-4 py-2 text-xs bg-transparent text-neutral-300 focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[140px]"
+                  style={{ fontFamily: 'Tiempos, serif' }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </button>
-
-                {/* History Filters - Only show in history view */}
-                {currentView === 'history' && (
-                  <>
-                    {/* Date Filter */}
-                    <select
-                      value={historyDateFilter}
-                      onChange={(e) => onHistoryDateFilterChange?.(e.target.value)}
-                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-black/20 cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10"
-                      style={{ fontFamily: 'Tiempo, serif' }}
-                    >
-                      <option value="1">Last 24 hours</option>
-                      <option value="7">Last 7 days</option>
-                      <option value="30">Last 30 days</option>
-                      <option value="90">Last 90 days</option>
-                      <option value="all">All time</option>
-                    </select>
-
-                    {/* Action Filter */}
-                    <select
-                      value={historyActionFilter}
-                      onChange={(e) => onHistoryActionFilterChange?.(e.target.value)}
-                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all duration-300 backdrop-blur-sm hover:shadow-lg hover:shadow-black/20 cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10"
-                      style={{ fontFamily: 'Tiempo, serif' }}
-                    >
-                      <option value="all">All Actions</option>
-                      <option value="inventory_update">Inventory Updates</option>
-                      <option value="stock_transfer">Stock Transfers</option>
-                      <option value="stock_conversion">Stock Conversions</option>
-                      <option value="manual_adjustment">Manual Adjustments</option>
-                      <option value="order_deduction">Order Deductions</option>
-                      <option value="restock">Restocks</option>
-                    </select>
-                  </>
-                )}
-                
-                {/* Restock Button - Show in adjustments view */}
-                {currentView === 'adjustments' && (
-                  <button
-                    onClick={onRestock}
-                    className={`flex items-center gap-2 px-4 py-2 text-xs transition-all duration-300 rounded-xl border whitespace-nowrap ${
-                      isRestockMode
-                        ? 'bg-white/10 text-white border-white/20 shadow-lg shadow-black/20' 
-                        : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-neutral-200'
-                    }`}
-                    style={{ fontFamily: 'Tiempo, serif' }}
-                    title={isRestockMode ? "Exit Restock Mode" : "Enter Restock Mode - Show entire catalog"}
-                  >
-                    <span>Restock</span>
-                  </button>
-                )}
-                
-                {/* Audit Button - Show in adjustments view */}
-                {currentView === 'adjustments' && (
-                  <button
-                    onClick={onAudit}
-                    className={`flex items-center gap-2 px-4 py-2 text-xs transition-all duration-300 rounded-xl border whitespace-nowrap ${
-                      isAuditMode
-                        ? 'bg-white/10 text-white border-white/20 shadow-lg shadow-black/20' 
-                        : 'bg-white/5 text-neutral-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-neutral-200'
-                    }`}
-                    style={{ fontFamily: 'Tiempo, serif' }}
-                    title={isAuditMode ? "Exit Audit Mode" : "Enter Audit Mode - Show only products in stock"}
-                  >
-                    <span>Audit</span>
-                  </button>
-                )}
-              </>
+                  <option value="normal" className="bg-neutral-800">Select Mode</option>
+                  <option value="restock" className="bg-neutral-800">Restock Mode</option>
+                  <option value="audit" className="bg-neutral-800">Audit Mode</option>
+                </select>
+              </div>
             )}
 
             {/* AI Canvas Tools */}

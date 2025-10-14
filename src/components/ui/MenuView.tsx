@@ -610,9 +610,8 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
         params.append('location_id', user.location_id?.toString() ?? '')
       }
 
-      const response = await apiFetch(`/api/proxy/flora-im/products?${params}`, {
-        headers: { 'Cache-Control': 'no-cache' }
-      })
+      // Use optimized bulk endpoint
+      const response = await apiFetch(`/api/proxy/flora-im/products/bulk?${params}`)
       const result = await response.json()
       
       if (result.success && result.data) {

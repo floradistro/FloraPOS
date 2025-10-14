@@ -10,13 +10,11 @@ export class CategoriesService {
    */
   static async getCategories(): Promise<Category[]> {
     try {
-      // Fetch products first to extract categories with optimized caching
-      const response = await apiFetch('/api/proxy/flora-im/products?per_page=1000&page=1', {
+      // Fetch products via bulk endpoint to extract categories
+      const response = await apiFetch('/api/proxy/flora-im/products/bulk?per_page=1000&page=1', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          // Allow caching for categories as they change infrequently
-          'Cache-Control': 'public, max-age=300', // 5 minutes cache
         },
       });
 

@@ -5,10 +5,8 @@ import { usersService, WordPressUser } from '../services/users-service';
 
 /**
  * Optimized React Query hooks for server state management
- * These replace manual fetch calls with proper caching and error handling
+ * Smart caching strategies for production-ready performance
  */
-
-const isDevelopment = process.env.NODE_ENV === 'development';
 
 // Products with inventory (main product grid data)
 export function useProducts(searchQuery?: string, categoryFilter?: string) {
@@ -21,13 +19,11 @@ export function useProducts(searchQuery?: string, categoryFilter?: string) {
       if (categoryFilter) params.append('category', categoryFilter);
       params.append('per_page', '100');
       params.append('page', '1');
-      params.append('_t', Date.now().toString());
 
       const response = await apiFetch(`/api/proxy/flora-im/products?${params}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
         },
       });
 
@@ -38,11 +34,10 @@ export function useProducts(searchQuery?: string, categoryFilter?: string) {
       const data = await response.json();
       return data.success ? data.data : [];
     },
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 5, // No cache in dev, 5 min in prod
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
-    retry: isDevelopment ? 0 : 1,
-    refetchInterval: isDevelopment ? false : 1000 * 60 * 2, // No background refetch in dev
+    staleTime: 30000, // 30 seconds
+    gcTime: 300000, // 5 minutes
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }
 
@@ -51,11 +46,10 @@ export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
     queryFn: () => CategoriesService.getCategories(),
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 10, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
-    refetchOnWindowFocus: isDevelopment ? true : false, // Always refetch in dev
-    retry: isDevelopment ? 0 : 1,
-    refetchInterval: isDevelopment ? false : 1000 * 60 * 5, // No background refetch in dev
+    staleTime: 600000, // 10 minutes - categories rarely change
+    gcTime: 1800000, // 30 minutes
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }
 
@@ -63,12 +57,11 @@ export function useCategories() {
 export function useCustomers(searchQuery?: string) {
   return useQuery({
     queryKey: ['customers', searchQuery],
-    queryFn: () => usersService.getUsers(isDevelopment),
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 30, // No cache in dev
-    refetchOnWindowFocus: isDevelopment, // Always refetch in dev
-    retry: isDevelopment ? 0 : 1,
-    refetchInterval: isDevelopment ? undefined : 1000 * 60 * 5, // No background refetch in dev
+    queryFn: () => usersService.getUsers(false),
+    staleTime: 300000, // 5 minutes
+    gcTime: 900000, // 15 minutes
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }
 
@@ -105,11 +98,10 @@ export function useOrders(filters?: {
       const data = await response.json();
       return data;
     },
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 2, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 15, // No cache in dev
-    refetchOnWindowFocus: isDevelopment, // Always refetch in dev
-    retry: isDevelopment ? 0 : 2,
-    refetchInterval: isDevelopment ? undefined : 1000 * 60, // No background refetch in dev
+    staleTime: 60000, // 1 minute
+    gcTime: 300000, // 5 minutes
+    refetchOnWindowFocus: false,
+    retry: 2,
   });
 }
 
@@ -135,14 +127,14 @@ export function useInventory(productId?: number, locationId?: number) {
       return data;
     },
     enabled: !!productId && !!locationId,
-    staleTime: isDevelopment ? 0 : 1000 * 60 * 1, // No cache in dev
-    gcTime: isDevelopment ? 0 : 1000 * 60 * 5, // No cache in dev
-    refetchOnWindowFocus: isDevelopment, // Always refetch in dev
-    retry: isDevelopment ? 0 : 1,
+    staleTime: 5000, // 5 seconds - inventory is critical
+    gcTime: 30000, // 30 seconds
+    refetchOnWindowFocus: true, // Always refetch inventory on focus
+    retry: 1,
   });
 }
 
-// Mutation for updating inventory
+// Mutation for updating inventory with optimistic updates
 export function useInventoryUpdate() {
   const queryClient = useQueryClient();
   
@@ -168,8 +160,33 @@ export function useInventoryUpdate() {
 
       return response.json();
     },
-    onSuccess: () => {
-      // Invalidate relevant queries
+    onMutate: async (newData) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['inventory', newData.productId, newData.locationId] });
+      
+      // Snapshot the previous value
+      const previousInventory = queryClient.getQueryData(['inventory', newData.productId, newData.locationId]);
+      
+      // Optimistically update to the new value
+      queryClient.setQueryData(['inventory', newData.productId, newData.locationId], (old: any) => ({
+        ...old,
+        quantity: newData.newStock
+      }));
+      
+      // Return context with the previous value
+      return { previousInventory };
+    },
+    onError: (err, newData, context) => {
+      // Rollback to previous value on error
+      if (context?.previousInventory) {
+        queryClient.setQueryData(
+          ['inventory', newData.productId, newData.locationId],
+          context.previousInventory
+        );
+      }
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate and refetch inventory queries
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
     }

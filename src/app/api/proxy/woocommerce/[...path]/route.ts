@@ -63,12 +63,24 @@ export async function GET(
     
     const data = await response.json();
     
-    // Return the data with proper CORS headers
+    // Smart cache headers based on endpoint type
+    const isProductEndpoint = path.includes('products');
+    const isVariationEndpoint = path.includes('variations');
+    const isCategoryEndpoint = path.includes('categories');
+    
+    const cacheControl = isCategoryEndpoint
+      ? 'public, max-age=300, s-maxage=600, stale-while-revalidate=1200' // 5min cache for categories
+      : (isProductEndpoint || isVariationEndpoint)
+      ? 'public, max-age=60, s-maxage=120, stale-while-revalidate=240' // 1min cache for products/variations
+      : 'public, max-age=180, s-maxage=360, stale-while-revalidate=720'; // 3min cache for other data
+    
+    // Return the data with proper CORS headers and smart caching
     return NextResponse.json(data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Cache-Control': cacheControl,
       },
     });
   } catch (error) {
@@ -144,12 +156,13 @@ export async function POST(
     
     const data = await response.json();
     
-    // Return the data with proper CORS headers
+    // POST/mutations should not be cached
     return NextResponse.json(data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Cache-Control': 'no-store, must-revalidate',
       },
     });
   } catch (error) {
@@ -219,12 +232,13 @@ export async function PUT(
     const data = await response.json();
     console.log(`✅ Stock update successful for ${path}`);
     
-    // Return the data with proper CORS headers
+    // PUT/mutations should not be cached
     return NextResponse.json(data, {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Cache-Control': 'no-store, must-revalidate',
       },
     });
   } catch (error) {

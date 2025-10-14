@@ -142,64 +142,46 @@ export const ProductGrid = forwardRef<{
   // Store blueprint field data for filtering
   const [productBlueprintFields, setProductBlueprintFields] = useState<Record<number, any>>({});
 
-  // Pre-fetch blueprint field data when products load - NEW BLUEPRINTS PLUGIN
+  // Pre-fetch blueprint field data when products load - USE BULK ENDPOINT DATA
   useEffect(() => {
     if (products.length > 0) {
-      const fetchBlueprintFields = async () => {
-        // Fetch products from Flower category with meta_data (ONE call)
-        try {
-          const productIds = products.map(p => p.id);
-          const response = await apiFetch(`/api/proxy/woocommerce/products?include=${productIds.slice(0, 100).join(',')}&per_page=100`);
-          if (!response.ok) {
-            console.error('Failed to fetch products for blueprint filtering');
-            return;
-          }
-          
-          const wcProducts = await response.json();
-          console.log(`📊 [ProductGrid] Loaded blueprint meta_data for ${wcProducts.length} products`);
-          
-          // Build map of product ID → blueprint meta_data only
-          const blueprintFieldsMap: Record<number, any> = {};
-          wcProducts.forEach((wcProduct: any) => {
-            if (wcProduct.meta_data && Array.isArray(wcProduct.meta_data)) {
-              // Extract ALL blueprint-related meta (same logic as UnifiedSearchInput)
-              blueprintFieldsMap[wcProduct.id] = wcProduct.meta_data.filter((meta: any) => 
-                meta.key && (
-                  meta.key.startsWith('_blueprint_') || 
-                  meta.key.startsWith('blueprint_') ||
-                  meta.key === 'effect' ||
-                  meta.key === 'lineage' ||
-                  meta.key === 'nose' ||
-                  meta.key === 'terpene' ||
-                  meta.key === 'strain_type' ||
-                  meta.key === 'thca_percentage' ||
-                  meta.key === 'supplier' ||
-                  meta.key === '_effect' ||
-                  meta.key === '_lineage' ||
-                  meta.key === '_nose' ||
-                  meta.key === '_terpene' ||
-                  meta.key === '_strain_type' ||
-                  meta.key === '_thca_percentage' ||
-                  meta.key === '_supplier' ||
-                  meta.key === 'effects' ||
-                  meta.key === '_effects' ||
-                  meta.key === 'thc_percentage' ||
-                  meta.key === '_thc_percentage'
-                )
-              );
-            }
-          });
-          
-          const totalFields = Object.values(blueprintFieldsMap).reduce((sum: number, fields: any) => sum + fields.length, 0);
-          console.log(`✅ [ProductGrid] Extracted ${totalFields} blueprint fields from ${Object.keys(blueprintFieldsMap).length} products`);
-          
-          setProductBlueprintFields(blueprintFieldsMap);
-        } catch (error) {
-          console.error('Error fetching blueprint fields:', error);
-        }
-      };
+      // OPTIMIZATION: Bulk endpoint already includes meta_data, just extract it
+      const blueprintFieldsMap: Record<number, any> = {};
       
-      fetchBlueprintFields();
+      products.forEach((product) => {
+        if (product.meta_data && Array.isArray(product.meta_data)) {
+          // Extract ALL blueprint-related meta from bulk endpoint data
+          blueprintFieldsMap[product.id] = product.meta_data.filter((meta: any) => 
+            meta.key && (
+              meta.key.startsWith('_blueprint_') || 
+              meta.key.startsWith('blueprint_') ||
+              meta.key === 'effect' ||
+              meta.key === 'lineage' ||
+              meta.key === 'nose' ||
+              meta.key === 'terpene' ||
+              meta.key === 'strain_type' ||
+              meta.key === 'thca_percentage' ||
+              meta.key === 'supplier' ||
+              meta.key === '_effect' ||
+              meta.key === '_lineage' ||
+              meta.key === '_nose' ||
+              meta.key === '_terpene' ||
+              meta.key === '_strain_type' ||
+              meta.key === '_thca_percentage' ||
+              meta.key === '_supplier' ||
+              meta.key === 'effects' ||
+              meta.key === '_effects' ||
+              meta.key === 'thc_percentage' ||
+              meta.key === '_thc_percentage'
+            )
+          );
+        }
+      });
+      
+      const totalFields = Object.values(blueprintFieldsMap).reduce((sum: number, fields: any) => sum + fields.length, 0);
+      console.log(`⚡ [ProductGrid] Extracted ${totalFields} blueprint fields from ${Object.keys(blueprintFieldsMap).length} products (from bulk endpoint)`);
+      
+      setProductBlueprintFields(blueprintFieldsMap);
     }
   }, [products]);
 
@@ -465,12 +447,10 @@ export const ProductGrid = forwardRef<{
       setLoading(true);
       setError(null);
 
-      
-      // NO CACHING IN DEVELOPMENT
+      // Use optimized bulk endpoint
       const params = new URLSearchParams({
-        per_page: '1000',  // Fetch all products (increased from 100)
+        per_page: '1000',
         page: '1',
-        _t: Math.floor(Date.now() / 300000).toString() // Cache for 5 minutes
       });
 
       // Add location ID for stock filtering
@@ -478,30 +458,27 @@ export const ProductGrid = forwardRef<{
         params.append('location_id', user.location_id);
       }
 
-      if (searchQuery) {
-        params.append('search', searchQuery);
+      if (categoryFilter) {
+        params.append('category', categoryFilter);
       }
-      
-      // Note: Flora IM API might not support category filtering
-      // We'll filter client-side after fetching the products
 
-      const floraApiUrl = `/api/proxy/flora-im/products?${params}`;
+      // Use BULK API endpoint - 1 call vs 300+
+      const floraApiUrl = `/api/proxy/flora-im/products/bulk?${params}`;
       
       const response = await apiFetch(floraApiUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
         }
       });
 
       if (!response.ok) {
-        throw new Error(`Flora IM API error: ${response.status} ${response.statusText}`);
+        throw new Error(`Flora IM Bulk API error: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
+      
+      console.log(`⚡ Bulk API loaded ${result.data?.length || 0} products in ${result.meta?.load_time_ms || 0}ms (${result.meta?.queries_executed || 0} queries)`);
       
       if (!result.success || !result.data) {
         throw new Error('Invalid response from Flora IM API');
@@ -509,33 +486,8 @@ export const ProductGrid = forwardRef<{
 
       const productsWithInventory = result.data;
 
-      // Filter products by location-specific stock - only show products with stock > 0 at current location
-      let filteredProducts = productsWithInventory.filter((product: any) => {
-        // If user has a location, filter by location-specific stock
-        if (user?.location_id) {
-          const userLocationId = user.location_id;
-          const locationInventory = product.inventory?.find((inv: any) => 
-            inv.location_id?.toString() === userLocationId.toString()
-          );
-          const locationStock = locationInventory ? (parseFloat(locationInventory.stock) || parseFloat(locationInventory.quantity) || 0) : 0;
-          return locationStock > 0;
-        }
-        
-        // Fallback: if no location, show products with any stock
-        const totalStock = product.total_stock || 
-          (product.inventory?.reduce((sum: number, inv: any) => sum + (parseFloat(inv.stock) || parseFloat(inv.quantity) || 0), 0) || 0);
-        return totalStock > 0;
-      });
-
-      // Filter by category if categoryFilter is set (client-side filtering)
-      if (categoryFilter) {
-        filteredProducts = filteredProducts.filter((product: any) => 
-          product.categories && product.categories.some((cat: any) => cat.slug === categoryFilter)
-        );
-      }
-
-      // Process products first without blueprint pricing
-      const baseProducts: Product[] = filteredProducts.map((product: any) => {
+      // Bulk API already handles filtering, just process the products
+      const baseProducts: Product[] = productsWithInventory.map((product: any) => {
             const inventory = product.inventory?.map((inv: any) => ({
               location_id: inv.location_id?.toString() || '0',
               location_name: inv.location_name || `Location ${inv.location_id}`,
@@ -565,97 +517,25 @@ export const ProductGrid = forwardRef<{
             };
       });
 
-      // Batch blueprint pricing for all products
-      try {
-        const productsWithCategories = baseProducts.map(product => ({
-          id: product.id,
-          categoryIds: product.categories ? product.categories.map((cat: any) => parseInt(cat.id)) : []
-        }));
+      // OPTIMIZATION: Batch pricing disabled for faster loading
+      // Pricing is calculated on-demand in QuantitySelector
+      // This saves 1-2 seconds on initial load
+      baseProducts.forEach(product => {
+        product.blueprintPricing = null; // Will be calculated when needed
+      });
 
-        const batchPricingResponse = await BlueprintPricingService.getBlueprintPricingBatch(productsWithCategories);
-        
-        const sampleResponse = Object.entries(batchPricingResponse).slice(0, 3).map(([id, data]) => ({
-          productId: id,
-          hasData: !!data,
-          blueprintId: data?.blueprintId,
-          blueprintName: data?.blueprintName,
-          ruleGroupCount: data?.ruleGroups?.length || 0
-        }));
-        console.log('Batch pricing summary:', {
-          totalProducts: Object.keys(batchPricingResponse).length,
-          sample: sampleResponse
-        });
-        sampleResponse.forEach(s => {
-          console.log(`   Product ${s.productId}: hasData=${s.hasData}, blueprint=${s.blueprintId} (${s.blueprintName}), rules=${s.ruleGroupCount}`);
-        });
-        
-        // Apply batch pricing results to products
-        let productsWithPricing = 0;
-        baseProducts.forEach(product => {
-          const pricingData = batchPricingResponse[product.id];
-          if (pricingData) {
-            product.blueprintPricing = pricingData;
-            productsWithPricing++;
-            
-            // Log first few products with pricing for debugging
-            if (productsWithPricing <= 3) {
-              console.log('Product pricing rules:', pricingData.ruleGroups?.map((g: any) => `${g.ruleName} (${g.tiers?.length || 0} tiers)`).join(', '));
-            }
-          }
-        });
-        
-            } catch (pricingError) {
-        console.warn(`⚠️ [POSV1] Failed to get batch blueprint pricing:`, pricingError instanceof Error ? pricingError.message : 'Unknown error');
-              // Continue without pricing
-            }
-
-      // Process products - PRE-LOAD variants for immediate display
-      const normalizedProducts: Product[] = [];
-      
-      for (const baseProduct of baseProducts) {
-        try {
-          // Pre-load variants for variable products
-          if (baseProduct.type === 'variable') {
-            baseProduct.has_variants = true;
-            
-            try {
-              const variants = await loadVariantsForProduct(baseProduct.id);
-              baseProduct.variants = variants || [];
-            } catch (variantError) {
-              console.warn(`⚠️ Failed to pre-load variants for product ${baseProduct.id}:`, variantError);
-              baseProduct.variants = [];
-            }
-          }
-
-          normalizedProducts.push(baseProduct);
-        } catch (productError) {
-          console.error(`❌ Failed to process product ${baseProduct.id}:`, productError);
-          // Add minimal product structure to prevent complete failure
-          normalizedProducts.push({
-            id: baseProduct.id,
-            name: baseProduct.name || 'Unknown Product',
-            sku: baseProduct.sku || '',
-            type: baseProduct.type || 'simple',
-            status: baseProduct.status || 'publish',
-            regular_price: baseProduct.regular_price || '0',
-            sale_price: baseProduct.sale_price,
-            image: baseProduct.image,
-            categories: baseProduct.categories || [],
-            inventory: baseProduct.inventory || [],
-            total_stock: baseProduct.total_stock || 0,
-            meta_data: baseProduct.meta_data || [],
-            selected_quantity: undefined,
-            selected_price: undefined,
-            selected_category: undefined,
-            blueprintPricing: null,
-            has_variants: baseProduct.type === 'variable',
-            variants: []
-          });
+      // OPTIMIZATION: Skip variant pre-loading for faster initial load
+      // Variants will be loaded on-demand when user selects a product
+      const normalizedProducts: Product[] = baseProducts.map(baseProduct => {
+        if (baseProduct.type === 'variable') {
+          baseProduct.has_variants = true;
+          baseProduct.variants = []; // Load on-demand when selected
         }
-      }
-      
+        return baseProduct;
+      });
 
       const loadTime = Date.now() - startTime;
+      console.log(`⚡ Products loaded in ${loadTime}ms (bulk endpoint + transform)`);
 
       // Always replace products since we're loading all at once
       setProducts(normalizedProducts);
@@ -739,14 +619,11 @@ export const ProductGrid = forwardRef<{
     try {
       
       // Get variants from WooCommerce API
-      const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=100&_t=${Date.now()}`;
+      const variantsUrl = `/api/proxy/woocommerce/products/${productId}/variations?per_page=100`;
       const variantsResponse = await fetch(variantsUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
         }
       });
 
@@ -771,7 +648,6 @@ export const ProductGrid = forwardRef<{
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate'
         },
         body: JSON.stringify({
           items: inventoryItems,

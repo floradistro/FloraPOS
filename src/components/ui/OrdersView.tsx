@@ -5,6 +5,7 @@ import { ConfirmModal, LoadingSpinner } from './';
 import { useAuth } from '../../contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { WordPressUser } from '../../services/users-service';
+import { UnifiedLoadingScreen } from './UnifiedLoadingScreen';
 
 export interface WooCommerceOrder {
   id: number;
@@ -183,6 +184,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
         params.append('customer', selectedCustomer.id.toString());
       }
 
+      // Use /api/orders (now uses fast bulk endpoint internally)
       const response = await fetch(`/api/orders?${params}`);
       if (!response.ok) {
         throw new Error('Failed to fetch orders');
@@ -538,302 +540,300 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
       <div className="flex-1 overflow-y-auto bg-transparent relative">
         {/* Loading Overlay */}
         {loading && !hideLoadingOverlay && (
-          <LoadingSpinner 
-            overlay 
-            size="lg"
-          />
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-24 h-24 mx-auto mb-6 relative">
+                <img 
+                  src="/logo123.png" 
+                  alt="Flora" 
+                  className="w-full h-full object-contain opacity-40 animate-pulse"
+                />
+              </div>
+            </div>
+          </div>
         )}
         
         {/* Error Display */}
         {error && (
-          <div className="bg-red-500/10 border-b border-red-500/20 p-4">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-              <span className="text-red-300">{error}</span>
+          <div className="max-w-5xl mx-auto px-12 pt-12">
+            <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <span className="text-red-300 text-sm" style={{ fontFamily: 'Tiempos, serif' }}>{error}</span>
+              </div>
             </div>
           </div>
         )}
 
-
-
-        {/* Table View */}
-        <div className="w-full">
-          {/* Table Header */}
-          <div className="sticky top-0 bg-transparent backdrop-blur p-4 z-10">
-            <div className="flex items-center gap-3 text-xs md:text-base font-medium text-neutral-400 relative" style={{ fontFamily: 'Tiempo, serif' }}>
-              <div className="w-6"></div> {/* Space for expand icon */}
-              {columns.find(c => c.id === 'order')?.visible && (
-                <div className="w-32">Order</div>
-              )}
-              {columns.find(c => c.id === 'customer')?.visible && (
-                <div className="flex-1">Customer</div>
-              )}
-              {columns.find(c => c.id === 'location')?.visible && (
-                <div className="w-32">Location</div>
-              )}
-              {columns.find(c => c.id === 'source')?.visible && (
-                <div className="w-24">Source</div>
-              )}
-              {columns.find(c => c.id === 'date')?.visible && (
-                <div className="w-40">Date</div>
-              )}
-              {columns.find(c => c.id === 'status')?.visible && (
-                <div className="w-32">Status</div>
-              )}
-              {columns.find(c => c.id === 'total')?.visible && (
-                <div className="w-32">Total</div>
-              )}
-              {columns.find(c => c.id === 'payment')?.visible && (
-                <div className="w-40">Payment</div>
-              )}
-              {columns.find(c => c.id === 'shipping')?.visible && (
-                <div className="w-40">Shipping</div>
-              )}
-              {columns.find(c => c.id === 'items')?.visible && (
-                <div className="w-24">Items</div>
-              )}
-
-              {/* Column Selector Icon - Far Right */}
-              <div className="absolute right-0 top-1/2 transform -translate-y-1/2" ref={columnSelectorRef}>
-                <button
-                  onClick={() => setIsColumnSelectorOpen(!isColumnSelectorOpen)}
-                  className="flex items-center gap-2 px-2 py-1.5 bg-white/[0.05] text-neutral-300 rounded-lg hover:bg-white/[0.08] transition text-xs relative"
-                  title="Configure table columns"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                  </svg>
-                </button>
-
-                {/* Column Selector Dropdown */}
-                {isColumnSelectorOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-64 bg-neutral-800 border border-white/[0.08] rounded-lg shadow-lg" style={{ zIndex: 99999 }}>
-                    <div className="p-3">
-                      <div className="text-xs font-medium text-neutral-300 mb-3">Configure Table Columns</div>
-                      
-                      <div className="space-y-2">
-                        {columns.map(column => (
-                          <label key={column.id} className="flex items-center gap-2 text-xs text-neutral-300 cursor-pointer hover:text-neutral-200">
-                            <input
-                              type="checkbox"
-                              checked={column.visible}
-                              onChange={() => toggleColumn(column.id)}
-                              disabled={column.required}
-                              className="rounded text-blue-600 bg-neutral-700 border-neutral-600 focus:ring-blue-500 focus:ring-1 disabled:opacity-50"
-                            />
-                            <span className={column.required ? 'text-neutral-500' : ''}>
-                              {column.label}
-                            </span>
-                            {column.required && (
-                              <span className="text-neutral-600 text-[10px]">(required)</span>
-                            )}
-                          </label>
-                        ))}
-                      </div>
-
-                      <div className="mt-3 pt-3 border-t border-white/[0.08] flex gap-2">
-                        <button
-                          onClick={() => {
-                            setColumns(prev => prev.map(col => ({ ...col, visible: true })));
-                          }}
-                          className="flex-1 text-xs text-neutral-400 hover:text-neutral-300 px-2 py-1 rounded hover:bg-white/[0.05]"
-                        >
-                          Show All
-                        </button>
-                        <button
-                          onClick={() => {
-                            setColumns(prev => prev.map(col => ({ ...col, visible: col.required || false })));
-                          }}
-                          className="flex-1 text-xs text-neutral-400 hover:text-neutral-300 px-2 py-1 rounded hover:bg-white/[0.05]"
-                        >
-                          Hide All
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Table Rows */}
-          <div className="p-4">
-            {orders.map((order) => (
-              <div
-                key={order.id}
-                className={`group transition-all duration-200 ease-out mb-2 rounded-lg overflow-visible p-2 cursor-pointer ${
-                  selectedOrders.has(order.id)
-                    ? 'border-2 border-white/20 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 shadow-md shadow-white/5'
-                    : 'border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10'
-                }`}
-              >
-                {/* Order Row - Single Line */}
-                <div 
-                  className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
-                  onClick={(e) => {
-                    const target = e.target as HTMLElement;
-                    const isButton = target.closest('button');
-                    if (!isButton) {
-                      toggleOrderSelection(order.id);
-                    }
-                  }}
-                  onDoubleClick={(e) => {
-                    const target = e.target as HTMLElement;
-                    const isButton = target.closest('button');
-                    if (!isButton) {
-                      e.stopPropagation();
-                      toggleExpand(order.id);
-                    }
-                  }}
-                >
-                  {/* Expand/Collapse Icon */}
+        {!loading && orders.length > 0 && (
+          <>
+            {/* Modern Card Grid View */}
+            <div className="max-w-6xl mx-auto px-12 pt-12 pb-24">
+              {/* View Controls */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="text-sm text-neutral-500 font-light lowercase" style={{ fontFamily: 'Tiempos, serif' }}>
+                  {totalOrders} orders found
+                </div>
+                
+                {/* Column Selector */}
+                <div className="relative" ref={columnSelectorRef}>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleExpand(order.id);
-                    }}
-                    className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-neutral-600 hover:text-neutral-400 transition-colors"
+                    onClick={() => setIsColumnSelectorOpen(!isColumnSelectorOpen)}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] text-neutral-400 rounded-xl hover:bg-white/[0.06] transition text-xs"
+                    style={{ fontFamily: 'Tiempos, serif' }}
                   >
-                    <svg
-                      className={`w-3 h-3 transition-transform duration-300 ease-out ${expandedCards.has(order.id) ? 'rotate-90' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                     </svg>
+                    <span>customize view</span>
                   </button>
-                  
-                  {/* Order Number */}
-                  {columns.find(c => c.id === 'order')?.visible && (
-                    <div className="w-32">
-                      <div className="text-neutral-200 text-base font-normal" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
-                        #{order.id}
+
+                  {/* Column Selector Dropdown */}
+                  {isColumnSelectorOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl" style={{ zIndex: 99999 }}>
+                      <div className="p-4">
+                        <div className="text-xs font-medium text-neutral-400 mb-4 lowercase" style={{ fontFamily: 'Tiempos, serif' }}>
+                          configure columns
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {columns.map(column => (
+                            <label key={column.id} className="flex items-center gap-3 text-xs text-neutral-400 cursor-pointer hover:text-neutral-300 transition">
+                              <input
+                                type="checkbox"
+                                checked={column.visible}
+                                onChange={() => toggleColumn(column.id)}
+                                disabled={column.required}
+                                className="rounded text-blue-500 bg-neutral-800 border-neutral-700 focus:ring-blue-500 focus:ring-1 disabled:opacity-30"
+                              />
+                              <span className={column.required ? 'text-neutral-600' : ''} style={{ fontFamily: 'Tiempos, serif' }}>
+                                {column.label.toLowerCase()}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+
+                        <div className="mt-4 pt-4 border-t border-white/[0.08] flex gap-2">
+                          <button
+                            onClick={() => {
+                              setColumns(prev => prev.map(col => ({ ...col, visible: true })));
+                            }}
+                            className="flex-1 text-xs text-neutral-500 hover:text-neutral-300 px-3 py-2 rounded-xl hover:bg-white/[0.05] transition"
+                            style={{ fontFamily: 'Tiempos, serif' }}
+                          >
+                            show all
+                          </button>
+                          <button
+                            onClick={() => {
+                              setColumns(prev => prev.map(col => ({ ...col, visible: col.required || false })));
+                            }}
+                            className="flex-1 text-xs text-neutral-500 hover:text-neutral-300 px-3 py-2 rounded-xl hover:bg-white/[0.05] transition"
+                            style={{ fontFamily: 'Tiempos, serif' }}
+                          >
+                            hide all
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Customer */}
-                  {columns.find(c => c.id === 'customer')?.visible && (
-                    <div className="flex-1 min-w-0">
-                      <div className="text-neutral-200 text-base font-normal" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
-                        {order.billing.first_name} {order.billing.last_name}
-                      </div>
-                      <div className="text-xs text-neutral-500">
-                        {order.billing.email}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Location */}
-                  {columns.find(c => c.id === 'location')?.visible && (
-                    <div className="w-32 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
-                      {getOrderLocation(order)}
-                    </div>
-                  )}
-
-                  {/* Source */}
-                  {columns.find(c => c.id === 'source')?.visible && (
-                    <div className="w-24 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
-                      {getOrderSource(order)}
-                    </div>
-                  )}
-
-                  {/* Date */}
-                  {columns.find(c => c.id === 'date')?.visible && (
-                    <div className="w-40 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
-                      {formatDate(order.date_created)}
-                    </div>
-                  )}
-
-                  {/* Status */}
-                  {columns.find(c => c.id === 'status')?.visible && (
-                    <div className="w-32 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
-                      {formatStatus(order.status)}
-                    </div>
-                  )}
-
-                  {/* Total */}
-                  {columns.find(c => c.id === 'total')?.visible && (
-                    <div className="w-32 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
-                      {order.currency} {order.total}
-                    </div>
-                  )}
-
-                  {/* Payment Method */}
-                  {columns.find(c => c.id === 'payment')?.visible && (
-                    <div className="w-40 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
-                      {order.payment_method_title || 'N/A'}
-                    </div>
-                  )}
-
-                  {/* Shipping Method */}
-                  {columns.find(c => c.id === 'shipping')?.visible && (
-                    <div className="w-40 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
-                      {order.shipping_lines?.[0]?.method_title || 'N/A'}
-                    </div>
-                  )}
-
-                  {/* Items Count */}
-                  {columns.find(c => c.id === 'items')?.visible && (
-                    <div className="w-24 text-xs text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
-                      {order.line_items?.length || 0} items
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Orders Grid */}
+              <div className="space-y-3">
+                {orders.map((order) => (
+                  <div
+                    key={order.id}
+                    className={`group transition-all duration-300 rounded-2xl overflow-hidden ${
+                      selectedOrders.has(order.id)
+                        ? 'bg-white/[0.06] border-2 border-white/20 shadow-lg'
+                        : 'bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.04] hover:shadow-lg'
+                    }`}
+                  >
+                    {/* Modern Order Card */}
+                    <div 
+                      className="p-6 cursor-pointer select-none"
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        const isButton = target.closest('button');
+                        if (!isButton) {
+                          toggleOrderSelection(order.id);
+                        }
+                      }}
+                      onDoubleClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        const isButton = target.closest('button');
+                        if (!isButton) {
+                          e.stopPropagation();
+                          toggleExpand(order.id);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        {/* Left Side - Main Info */}
+                        <div className="flex items-center gap-6 flex-1">
+                          {/* Expand Icon */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpand(order.id);
+                            }}
+                            className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-neutral-600 hover:text-neutral-400 transition-all rounded-lg hover:bg-white/[0.05]"
+                          >
+                            <svg
+                              className={`w-4 h-4 transition-transform duration-300 ${expandedCards.has(order.id) ? 'rotate-90' : ''}`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+
+                          {/* Order Number */}
+                          {columns.find(c => c.id === 'order')?.visible && (
+                            <div>
+                              <div className="text-2xl font-extralight text-white tracking-tight" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                #{order.id}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Customer */}
+                          {columns.find(c => c.id === 'customer')?.visible && (
+                            <div className="flex-1 min-w-0">
+                              <div className="text-base font-light text-white mb-1" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                {order.billing.first_name} {order.billing.last_name}
+                              </div>
+                              <div className="text-xs text-neutral-600" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                {order.billing.email}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Status Badge */}
+                          {columns.find(c => c.id === 'status')?.visible && (
+                            <div className={`px-3 py-1.5 rounded-full text-xs font-light ${
+                              order.status === 'completed' ? 'bg-green-500/10 text-green-400' :
+                              order.status === 'processing' ? 'bg-blue-500/10 text-blue-400' :
+                              order.status === 'pending' ? 'bg-orange-500/10 text-orange-400' :
+                              order.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
+                              'bg-neutral-500/10 text-neutral-400'
+                            }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                              {formatStatus(order.status)}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Right Side - Metadata */}
+                        <div className="flex items-center gap-8">
+                          {/* Date */}
+                          {columns.find(c => c.id === 'date')?.visible && (
+                            <div className="text-right">
+                              <div className="text-xs text-neutral-600 lowercase mb-1" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                date
+                              </div>
+                              <div className="text-sm text-neutral-400" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                {new Date(order.date_created).toLocaleDateString('en-US', { 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Location */}
+                          {columns.find(c => c.id === 'location')?.visible && (
+                            <div className="text-right">
+                              <div className="text-xs text-neutral-600 lowercase mb-1" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                location
+                              </div>
+                              <div className="text-sm text-neutral-400" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                {getOrderLocation(order)}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Source */}
+                          {columns.find(c => c.id === 'source')?.visible && (
+                            <div className="text-right">
+                              <div className="text-xs text-neutral-600 lowercase mb-1" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                source
+                              </div>
+                              <div className="text-sm text-neutral-400" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                {getOrderSource(order)}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Items Count */}
+                          {columns.find(c => c.id === 'items')?.visible && (
+                            <div className="text-right">
+                              <div className="text-xs text-neutral-600 lowercase mb-1" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                items
+                              </div>
+                              <div className="text-sm text-neutral-400" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                {order.line_items?.length || 0}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Total - Always visible and prominent */}
+                          {columns.find(c => c.id === 'total')?.visible && (
+                            <div className="text-right">
+                              <div className="text-xs text-neutral-600 lowercase mb-1" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                total
+                              </div>
+                              <div className="text-2xl font-extralight text-green-400 tracking-tight" 
+                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                                ${parseFloat(order.total).toFixed(2)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
                 {/* Expanded View */}
                 {expandedCards.has(order.id) && (
-                  <div className="mx-6 mb-2 rounded p-4 bg-transparent border-t border-white/[0.06]">
-                    {/* Tab Controls */}
-                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/[0.08]">
-                      <Button
-                        onClick={() => setOrderTab(order.id, 'items')}
-                        size="sm"
-                        variant={activeOrderTab[order.id] === 'items' || !activeOrderTab[order.id] ? 'primary' : 'ghost'}
-                        className="text-xs"
-                        style={{ fontFamily: 'Tiempo, serif' }}
-                      >
-                        Items
-                      </Button>
-                      <Button
-                        onClick={() => setOrderTab(order.id, 'customer')}
-                        size="sm"
-                        variant={activeOrderTab[order.id] === 'customer' ? 'primary' : 'ghost'}
-                        className="text-xs"
-                        style={{ fontFamily: 'Tiempo, serif' }}
-                      >
-                        Customer
-                      </Button>
-                      <Button
-                        onClick={() => setOrderTab(order.id, 'shipping')}
-                        size="sm"
-                        variant={activeOrderTab[order.id] === 'shipping' ? 'primary' : 'ghost'}
-                        className="text-xs"
-                        style={{ fontFamily: 'Tiempo, serif' }}
-                      >
-                        Shipping
-                      </Button>
-                      <Button
-                        onClick={() => setOrderTab(order.id, 'payment')}
-                        size="sm"
-                        variant={activeOrderTab[order.id] === 'payment' ? 'primary' : 'ghost'}
-                        className="text-xs"
-                        style={{ fontFamily: 'Tiempo, serif' }}
-                      >
-                        Payment
-                      </Button>
-                      <Button
-                        onClick={() => setOrderTab(order.id, 'notes')}
-                        size="sm"
-                        variant={activeOrderTab[order.id] === 'notes' ? 'primary' : 'ghost'}
-                        className="text-xs"
-                        style={{ fontFamily: 'Tiempo, serif' }}
-                      >
-                        Notes
-                      </Button>
+                  <div className="px-6 pb-6 pt-4 bg-white/[0.01] border-t border-white/[0.06]">
+                    {/* Modern Tab Controls */}
+                    <div className="flex items-center gap-2 mb-6">
+                      {[
+                        { id: 'items', label: 'items' },
+                        { id: 'customer', label: 'customer' },
+                        { id: 'shipping', label: 'shipping' },
+                        { id: 'payment', label: 'payment' },
+                        { id: 'notes', label: 'notes' }
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => setOrderTab(order.id, tab.id as OrderTab)}
+                          className={`px-4 py-2 text-xs rounded-xl transition-all duration-200 ${
+                            (activeOrderTab[order.id] === tab.id || (!activeOrderTab[order.id] && tab.id === 'items'))
+                              ? 'bg-white/[0.08] text-neutral-300 border border-white/10'
+                              : 'text-neutral-500 hover:text-neutral-400 hover:bg-white/[0.03]'
+                          }`}
+                          style={{ fontFamily: 'Tiempos, serif' }}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
                     </div>
 
                     {/* Tab Content */}
@@ -889,24 +889,22 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                                         )
                                       )}
                                       
-                                      {/* Debug: Show if we have any metadata */}
-                                      {!tierLabel && item.meta_data && item.meta_data.length > 0 && (
-                                        <div className="text-xs text-red-400 mt-1">
-                                          📊 Has metadata but no tier info
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="text-right">
-                                      <div className="text-neutral-500 text-xs">Qty: {item.quantity}</div>
-                                      <div className="text-neutral-400 text-sm">{order.currency} {item.total}</div>
-                                      {tierPrice && parseFloat(tierPrice) !== item.price && (
-                                        <div className="text-neutral-600 text-xs">
-                                          Tier price: ${parseFloat(tierPrice).toFixed(2)}/unit
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-neutral-600 text-xs mb-1" style={{ fontFamily: 'Tiempos, serif' }}>
+                                qty: {item.quantity}
+                              </div>
+                              <div className="text-neutral-300 text-base font-light" style={{ fontFamily: 'Tiempos, serif' }}>
+                                ${parseFloat(item.total).toFixed(2)}
+                              </div>
+                              {tierPrice && parseFloat(tierPrice) !== item.price && (
+                                <div className="text-neutral-600 text-xs mt-1" style={{ fontFamily: 'Tiempos, serif' }}>
+                                  ${parseFloat(tierPrice).toFixed(2)}/unit
                                 </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                               );
                             })}
                           </div>
@@ -1148,50 +1146,56 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                     </div>
                   </div>
                 )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="sticky bottom-0 bg-neutral-900 border-t border-white/[0.08] p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-neutral-400">
-                Page {currentPage} of {totalPages} ({totalOrders} orders)
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1.5 text-xs bg-neutral-700 hover:bg-neutral-600 disabled:bg-neutral-800 disabled:text-neutral-500 text-neutral-300 rounded transition-colors"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1.5 text-xs bg-neutral-700 hover:bg-neutral-600 disabled:bg-neutral-800 disabled:text-neutral-500 text-neutral-300 rounded transition-colors"
-                >
-                  Next
-                </button>
-              </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-12 pt-8 border-t border-white/[0.06]">
+                  <div className="text-xs text-neutral-500 font-light lowercase" style={{ fontFamily: 'Tiempos, serif' }}>
+                    page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-6 py-3 text-xs bg-white/[0.03] hover:bg-white/[0.06] disabled:bg-transparent disabled:text-neutral-700 text-neutral-400 rounded-xl transition-all duration-200 border border-white/[0.05] disabled:border-transparent"
+                      style={{ fontFamily: 'Tiempos, serif' }}
+                    >
+                      previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-6 py-3 text-xs bg-white/[0.03] hover:bg-white/[0.06] disabled:bg-transparent disabled:text-neutral-700 text-neutral-400 rounded-xl transition-all duration-200 border border-white/[0.05] disabled:border-transparent"
+                      style={{ fontFamily: 'Tiempos, serif' }}
+                    >
+                      next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          </>
         )}
 
         {/* Empty State */}
         {!loading && orders.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 px-4">
-            <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center max-w-md">
+              <div className="w-24 h-24 mx-auto mb-6 relative">
+                <svg className="w-full h-full text-neutral-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-extralight text-neutral-400 mb-3 tracking-tight" style={{ fontFamily: 'Tiempos, serif' }}>
+                no orders found
+              </h3>
+              <p className="text-sm text-neutral-600 font-light lowercase" style={{ fontFamily: 'Tiempos, serif' }}>
+                {user?.location_id ? `no orders for this location` : 'adjust filters to see orders'}
+              </p>
             </div>
-            <h3 className="text-lg font-medium text-neutral-300 mb-2" style={{ fontFamily: 'Tiempo, serif' }}>No orders found</h3>
-            <p className="text-sm text-neutral-500 text-center mb-6 max-w-sm" style={{ fontFamily: 'Tiempo, serif' }}>
-              {user?.location_id ? `No orders found for location: ${user.location}` : 'No orders found'}
-            </p>
           </div>
         )}
       </div>
