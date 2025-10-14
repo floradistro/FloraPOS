@@ -342,37 +342,22 @@ export function AdvancedProductSearch({
                       onClick={() => handleSelectProduct(product)}
                       className="group relative p-3 bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/10 rounded transition-all duration-200 text-left"
                     >
-                      <div className="flex flex-col gap-2">
-                        {product.image && (
-                          <div className="w-full aspect-square rounded overflow-hidden bg-neutral-800/50">
-                            <img 
-                              src={product.image} 
-                              alt={product.name} 
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
+                      <div>
+                        <div className="text-xs text-white/90 font-medium mb-1.5 line-clamp-2" style={{ fontFamily: 'Tiempos, serif' }}>
+                          {product.name}
+                        </div>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-sm font-medium text-white" style={{ fontFamily: 'Tiempos, serif' }}>
+                            ${price.toFixed(2)}
                           </div>
-                        )}
-                        <div>
-                          <div className="text-xs text-white/90 font-medium mb-1 line-clamp-2" style={{ fontFamily: 'Tiempos, serif' }}>
-                            {product.name}
-                          </div>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="text-sm font-medium text-white" style={{ fontFamily: 'Tiempos, serif' }}>
-                              ${price.toFixed(2)}
-                            </div>
-                            {stock > 0 && (
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                                isLowStock 
-                                  ? 'bg-yellow-500/20 text-yellow-400'
-                                  : 'bg-green-500/20 text-green-400'
-                              }`}>
-                                {stock}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[10px] text-white/40">
-                            {product.sku || `#${product.id}`}
-                          </div>
+                          {stock > 0 && (
+                            <span className="text-[10px] text-white/40">
+                              {stock}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-white/40">
+                          {product.sku || `#${product.id}`}
                         </div>
                       </div>
                       
