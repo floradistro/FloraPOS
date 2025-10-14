@@ -177,8 +177,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   
   const [showDate, setShowDate] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
-  const [showPrice, setShowPrice] = useState(false);
-  const [showSKU, setShowSKU] = useState(false);
+  const [showPrice, setShowPrice] = useState(true);
+  const [showSKU, setShowSKU] = useState(true);
   const [showMargin, setShowMargin] = useState(false);
   
   const [showEffect, setShowEffect] = useState(false);
@@ -742,6 +742,15 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   const renderLabelContent = (labelData: any, scale: number = 1) => {
     const ptToPx = (pt: number) => pt * 1.333;
     
+    const productNameLength = labelData.line1?.length || 0;
+    let adaptiveNameSize = productNameSize;
+    
+    if (productNameLength > 25) {
+      adaptiveNameSize = Math.max(6, productNameSize * 0.7);
+    } else if (productNameLength > 18) {
+      adaptiveNameSize = Math.max(6, productNameSize * 0.85);
+    }
+    
     return (
       <>
         {showLogo && (
@@ -759,7 +768,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
         <div className="flex-1 flex flex-col" style={{ gap: `${1 * scale}px`, overflow: 'hidden' }}>
           <div
             style={{
-              fontSize: `${ptToPx(productNameSize) * scale}px`,
+              fontSize: `${ptToPx(adaptiveNameSize) * scale}px`,
               lineHeight: labelLineHeight,
               color: productNameColor,
               fontFamily: productNameFont,
