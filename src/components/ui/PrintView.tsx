@@ -612,14 +612,14 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 }
                 .label-content {
                   position: absolute;
-                  top: ${template.label_style.safe_padding.top / 2}in;
-                  left: ${template.label_style.safe_padding.left / 2}in;
-                  right: ${template.label_style.safe_padding.right / 2}in;
-                  bottom: ${template.label_style.safe_padding.bottom / 2}in;
+                  top: ${template.label_style.safe_padding.top / 4}in;
+                  left: ${template.label_style.safe_padding.left / 4}in;
+                  right: ${template.label_style.safe_padding.right / 4}in;
+                  bottom: ${template.label_style.safe_padding.bottom / 4}in;
                   display: flex;
                   flex-direction: row;
                   align-items: flex-start;
-                  gap: 3px;
+                  gap: 2px;
                   overflow: hidden;
                 }
                 .label-logo {
@@ -678,8 +678,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   const generateLabelGrid = () => {
     const labels = [];
     const totalLabels = template.grid.rows * template.grid.columns;
-    const basePadding = inchesToPx(template.label_style.safe_padding.top / 2);
-    const baseGap = 3;
+    const basePadding = inchesToPx(template.label_style.safe_padding.top / 4);
+    const baseGap = 2;
     
     for (let i = 0; i < totalLabels; i++) {
       const row = Math.floor(i / template.grid.columns);
@@ -781,8 +781,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
 
   const generateSingleLabel = () => {
     const labelData = printData[0];
-    const basePadding = inchesToPx(template.label_style.safe_padding.top / 2);
-    const baseGap = 3;
+    const basePadding = inchesToPx(template.label_style.safe_padding.top / 4);
+    const baseGap = 2;
 
     return (
       <div
