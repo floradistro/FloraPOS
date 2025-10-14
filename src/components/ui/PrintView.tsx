@@ -171,6 +171,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   const { user } = useAuth();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(propSelectedProduct || null);
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
+  const [bulkProductsData, setBulkProductsData] = useState<Product[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof TEMPLATES>('avery_5160');
   const [showBorders, setShowBorders] = useState(true);
   const [showLogo, setShowLogo] = useState(true);
@@ -545,6 +546,28 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   const inchesToPx = (inches: number) => Math.round(inches * 96);
   const ptToPx = (points: number) => Math.round(points * 1.333);
   
+  useEffect(() => {
+    if (bulkPrintMode && selectedProducts.size > 0) {
+      const loadBulkProducts = async () => {
+        console.log('📦 Loading full data for', selectedProducts.size, 'products');
+        try {
+          const productIds = Array.from(selectedProducts).join(',');
+          const response = await fetch(`/api/proxy/woocommerce/products?include=${productIds}&per_page=${selectedProducts.size}`);
+          if (response.ok) {
+            const products = await response.json();
+            console.log('✅ Loaded', products.length, 'products with full data');
+            setBulkProductsData(products);
+          }
+        } catch (error) {
+          console.error('❌ Failed to load bulk products:', error);
+        }
+      };
+      loadBulkProducts();
+    } else {
+      setBulkProductsData([]);
+    }
+  }, [selectedProducts, bulkPrintMode]);
+
   const printData = React.useMemo(() => {
     console.log('🔄 printData useMemo recalculating...');
     if (propData) {
@@ -552,13 +575,9 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       return propData;
     }
     
-    if (bulkPrintMode && selectedProducts.size > 0) {
-      console.log('🏭 Generating bulk label data for', selectedProducts.size, 'products');
-      const bulkData: any[] = [];
-      selectedProducts.forEach(() => {
-        bulkData.push({ line1: "Bulk Print Coming Soon", additionalLines: [] });
-      });
-      return bulkData;
+    if (bulkPrintMode && bulkProductsData.length > 0) {
+      console.log('🏭 Generating bulk label data for', bulkProductsData.length, 'products');
+      return bulkProductsData.flatMap(product => generateProductLabelData(product));
     }
     
     console.log('🏭 Generating new label data from product');
@@ -568,7 +587,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   }, [
     propData, 
     selectedProduct,
-    selectedProducts,
+    bulkProductsData,
     bulkPrintMode,
     showDate, showPrice, showSKU, showCategory, showMargin,
     showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier,
@@ -714,11 +733,12 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     }
   };
 
-  const generateLabelGrid = () => {
+  const generateLabelGrid = (pageIndex: number = 0) => {
     const labels = [];
     const totalLabels = template.grid.rows * template.grid.columns;
     const basePadding = inchesToPx(template.label_style.safe_padding.top / 4);
     const baseGap = 2;
+    const startIndex = pageIndex * totalLabels;
     
     for (let i = 0; i < totalLabels; i++) {
       const row = Math.floor(i / template.grid.columns);
@@ -727,7 +747,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       const left = template.page.margin_left + (col * template.grid.horizontal_pitch);
       const top = template.page.margin_top + (row * template.grid.vertical_pitch);
       
-      const dataIndex = i % printData.length;
+      const dataIndex = (startIndex + i) % printData.length;
       const labelData = printData[dataIndex];
 
       labels.push(
@@ -1030,43 +1050,76 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
           </div>
           <div 
             ref={sheetContainerRef}
-            className="flex-1 flex items-center justify-center p-4 overflow-hidden cursor-pointer transition-all duration-700 ease-out"
+            className="flex-1 flex items-center justify-center p-4 overflow-auto cursor-pointer transition-all duration-700 ease-out"
             onClick={() => setFocusedPreview(focusedPreview === 'sheet' ? null : 'sheet')}
             style={{
               opacity: focusedPreview === null ? 0.6 : focusedPreview === 'sheet' ? 0.85 : 0.4,
             }}
           >
             <div
-              className="transition-transform duration-700 ease-out"
+              className="transition-transform duration-700 ease-out flex flex-col gap-4"
               style={{
                 transform: `scale(${sheetScale * (focusedPreview === 'sheet' ? 1.03 : 1)})`,
-                transformOrigin: 'center',
+                transformOrigin: 'top center',
               }}
             >
-              <div 
-                ref={printRef}
-                className="bg-white transition-shadow duration-700"
-                style={{
-                  width: `${inchesToPx(template.page.width)}px`,
-                  height: `${inchesToPx(template.page.height)}px`,
-                  position: 'relative',
-                  boxShadow: focusedPreview === 'sheet'
-                    ? '0 40px 100px -30px rgba(255, 255, 255, 0.15), 0 0 50px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
-                    : '0 25px 80px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06)',
-                }}
-              >
-                <div
+              {bulkPrintMode && bulkProductsData.length > 0 ? (
+                bulkProductsData.map((product, pageIdx) => (
+                  <div 
+                    key={pageIdx}
+                    ref={pageIdx === 0 ? printRef : undefined}
+                    className="bg-white transition-shadow duration-700"
+                    style={{
+                      width: `${inchesToPx(template.page.width)}px`,
+                      height: `${inchesToPx(template.page.height)}px`,
+                      position: 'relative',
+                      boxShadow: focusedPreview === 'sheet'
+                        ? '0 40px 100px -30px rgba(255, 255, 255, 0.15), 0 0 50px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
+                        : '0 25px 80px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: `${inchesToPx(template.page.width)}px`,
+                        height: `${inchesToPx(template.page.height)}px`,
+                      }}
+                    >
+                      {generateLabelGrid(pageIdx)}
+                    </div>
+                    <div className="absolute bottom-2 right-2 text-[8px] text-black/40" style={{ fontFamily: 'Tiempos, serif' }}>
+                      Page {pageIdx + 1} of {bulkProductsData.length}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div 
+                  ref={printRef}
+                  className="bg-white transition-shadow duration-700"
                   style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
                     width: `${inchesToPx(template.page.width)}px`,
                     height: `${inchesToPx(template.page.height)}px`,
+                    position: 'relative',
+                    boxShadow: focusedPreview === 'sheet'
+                      ? '0 40px 100px -30px rgba(255, 255, 255, 0.15), 0 0 50px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
+                      : '0 25px 80px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06)',
                   }}
                 >
-                  {generateLabelGrid()}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: `${inchesToPx(template.page.width)}px`,
+                      height: `${inchesToPx(template.page.height)}px`,
+                    }}
+                  >
+                    {generateLabelGrid(0)}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
