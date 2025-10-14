@@ -854,7 +854,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
 
       setIsApplying(true);
       setAdjustmentStatus({ type: null, message: '' });
-      setShowAuditDialog(false);
+      // Dialog closed
 
       try {
         console.log(`Applying audit "${finalAuditName}" with ${pendingAdjustments.size} adjustments...`);
