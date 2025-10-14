@@ -392,7 +392,13 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
 
     console.log('🔍 Generating label data for:', product.name);
     console.log('🔍 Product has meta_data?', !!product.meta_data, product.meta_data?.length || 0);
-    console.log('🔍 Active fields:', { showPrice, showSKU, showDate, showCategory, showMargin, showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier });
+    console.log('🔍 BASIC FIELDS:', {
+      'showPrice (should add price)': showPrice,
+      'showSKU (should add SKU)': showSKU,
+      'showDate (should add date)': showDate,
+      'showCategory (should add category)': showCategory
+    });
+    console.log('🔍 BLUEPRINT FIELDS:', { showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier });
 
     const productName = product.name || 'Unknown Product';
     const productPrice = product.blueprintPricing?.price || parseFloat(product.sale_price || product.regular_price || '0');
