@@ -466,20 +466,38 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       if (supplier) additionalFields.push(`Supplier: ${supplier}`);
     }
 
-    const line2 = additionalFields.slice(0, 2).join(' • ');
-    const line3 = additionalFields.slice(2, 4).join(' • ');
+    const line2 = additionalFields.slice(0, 3).join(' • ');
+    const line3 = additionalFields.slice(3, 6).join(' • ');
+    
+    console.log('🏷️ Label data generated:', {
+      productName,
+      line2,
+      line3,
+      additionalFieldsCount: additionalFields.length,
+      showPrice,
+      showSKU
+    });
     
     return Array(template.data_mapping.records_per_page).fill(null).map(() => ({
       line1: productName,
-      line2: line2,
-      line3: line3
+      line2: line2 || '',
+      line3: line3 || ''
     }));
   };
 
-  const printData = propData || generateProductLabelData(selectedProduct);
-
   const inchesToPx = (inches: number) => Math.round(inches * 96);
   const ptToPx = (points: number) => Math.round(points * 1.333);
+  
+  const printData = React.useMemo(() => {
+    if (propData) return propData;
+    return generateProductLabelData(selectedProduct);
+  }, [
+    propData, 
+    selectedProduct,
+    showDate, showPrice, showSKU, showCategory, showMargin,
+    showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier,
+    selectedTier, showTierPrice, showTierLabel
+  ]);
 
   const handlePrint = () => {
     if (printRef.current) {
@@ -690,7 +708,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
           >
             {labelData.line1}
           </div>
-          {labelData.line2 && (
+          {labelData.line2 && labelData.line2.trim() && (
             <div
               style={{
                 fontSize: `${ptToPx(detailsSize) * scale}px`,
@@ -705,7 +723,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
               {labelData.line2}
             </div>
           )}
-          {labelData.line3 && (
+          {labelData.line3 && labelData.line3.trim() && (
             <div
               style={{
                 fontSize: `${ptToPx(detailsSize) * scale}px`,
