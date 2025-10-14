@@ -649,8 +649,10 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                   font-family: ${productNameFont};
                   font-weight: ${productNameWeight};
                   overflow: hidden;
-                  text-overflow: ellipsis;
-                  white-space: nowrap;
+                  word-wrap: break-word;
+                  display: -webkit-box;
+                  -webkit-line-clamp: 2;
+                  -webkit-box-orient: vertical;
                 }
                 .label-text > div:not(:first-child) {
                   font-size: ${detailsSize}pt;
@@ -658,8 +660,10 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                   color: ${detailsColor};
                   font-family: ${detailsFont};
                   overflow: hidden;
-                  text-overflow: ellipsis;
-                  white-space: nowrap;
+                  word-wrap: break-word;
+                  display: -webkit-box;
+                  -webkit-line-clamp: 2;
+                  -webkit-box-orient: vertical;
                 }
               </style>
             </head>
@@ -756,9 +760,11 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
               color: productNameColor,
               fontFamily: productNameFont,
               fontWeight: productNameWeight,
-              whiteSpace: 'nowrap',
-              textOverflow: 'ellipsis',
+              wordWrap: 'break-word',
               overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
             }}
           >
             {labelData.line1}
@@ -770,9 +776,11 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 lineHeight: labelLineHeight,
                 color: detailsColor,
                 fontFamily: detailsFont,
-                whiteSpace: 'nowrap',
-                textOverflow: 'ellipsis',
+                wordWrap: 'break-word',
                 overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
               }}
             >
               {labelData.line2}
@@ -785,9 +793,11 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 lineHeight: labelLineHeight,
                 color: detailsColor,
                 fontFamily: detailsFont,
-                whiteSpace: 'nowrap',
-                textOverflow: 'ellipsis',
+                wordWrap: 'break-word',
                 overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
               }}
             >
               {labelData.line3}
