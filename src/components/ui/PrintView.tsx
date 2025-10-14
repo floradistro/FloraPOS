@@ -421,7 +421,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     const category = product.categories?.[0]?.name || 'General';
     const currentDate = new Date().toLocaleDateString();
     
-    const additionalFields = [];
+    const additionalFields: string[] = [];
     
     if (showDate) {
       console.log('✅ Adding Date:', currentDate);
