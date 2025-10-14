@@ -200,16 +200,16 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   const [focusedPreview, setFocusedPreview] = useState<'label' | 'sheet' | null>(null);
   
   const [productNameFont, setProductNameFont] = useState('Helvetica, sans-serif');
-  const [productNameSize, setProductNameSize] = useState(10);
+  const [productNameSize, setProductNameSize] = useState(8);
   const [productNameColor, setProductNameColor] = useState('#000000');
   const [productNameWeight, setProductNameWeight] = useState<'normal' | 'bold'>('bold');
   
   const [detailsFont, setDetailsFont] = useState('Helvetica, sans-serif');
-  const [detailsSize, setDetailsSize] = useState(8);
+  const [detailsSize, setDetailsSize] = useState(6);
   const [detailsColor, setDetailsColor] = useState('#666666');
   
-  const [labelLineHeight, setLabelLineHeight] = useState(1.1);
-  const [logoSize, setLogoSize] = useState(16);
+  const [labelLineHeight, setLabelLineHeight] = useState(1.0);
+  const [logoSize, setLogoSize] = useState(12);
   
   const printRef = useRef<HTMLDivElement>(null);
   const sheetContainerRef = useRef<HTMLDivElement>(null);
@@ -356,14 +356,14 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     setShowTierPrice(config.showTierPrice ?? false);
     setShowTierLabel(config.showTierLabel ?? false);
     setProductNameFont(config.productNameFont || 'Helvetica, sans-serif');
-    setProductNameSize(config.productNameSize || 10);
+    setProductNameSize(config.productNameSize || 8);
     setProductNameColor(config.productNameColor || '#000000');
     setProductNameWeight(config.productNameWeight || 'bold');
     setDetailsFont(config.detailsFont || 'Helvetica, sans-serif');
-    setDetailsSize(config.detailsSize || 8);
+    setDetailsSize(config.detailsSize || 6);
     setDetailsColor(config.detailsColor || '#666666');
-    setLabelLineHeight(config.labelLineHeight || 1.1);
-    setLogoSize(config.logoSize || 16);
+    setLabelLineHeight(config.labelLineHeight || 1.0);
+    setLogoSize(config.logoSize || 12);
     setShowLibrary(false);
   };
 
@@ -748,7 +748,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
             }}
           />
         )}
-        <div className="flex-1 flex flex-col" style={{ gap: `${2 * scale}px`, overflow: 'hidden' }}>
+        <div className="flex-1 flex flex-col" style={{ gap: `${1 * scale}px`, overflow: 'hidden' }}>
           <div
             style={{
               fontSize: `${ptToPx(productNameSize) * scale}px`,
