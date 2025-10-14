@@ -390,6 +390,10 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       return [{ line1: "Flora Distro", line2: "Select a product", line3: "to begin" }];
     }
 
+    console.log('🔍 Generating label data for:', product.name);
+    console.log('🔍 Product has meta_data?', !!product.meta_data, product.meta_data?.length || 0);
+    console.log('🔍 Active fields:', { showPrice, showSKU, showDate, showCategory, showMargin, showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier });
+
     const productName = product.name || 'Unknown Product';
     const productPrice = product.blueprintPricing?.price || parseFloat(product.sale_price || product.regular_price || '0');
     const formattedPrice = `$${productPrice.toFixed(2)}`;
@@ -399,10 +403,22 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     
     const additionalFields = [];
     
-    if (showDate) additionalFields.push(`Date: ${currentDate}`);
-    if (showPrice) additionalFields.push(formattedPrice);
-    if (showSKU) additionalFields.push(`SKU: ${productSKU}`);
-    if (showCategory) additionalFields.push(`Cat: ${category}`);
+    if (showDate) {
+      console.log('✅ Adding Date:', currentDate);
+      additionalFields.push(`Date: ${currentDate}`);
+    }
+    if (showPrice) {
+      console.log('✅ Adding Price:', formattedPrice);
+      additionalFields.push(formattedPrice);
+    }
+    if (showSKU) {
+      console.log('✅ Adding SKU:', productSKU);
+      additionalFields.push(`SKU: ${productSKU}`);
+    }
+    if (showCategory) {
+      console.log('✅ Adding Category:', category);
+      additionalFields.push(`Cat: ${category}`);
+    }
     
     if (showMargin && product.blueprintPricing?.margin) {
       additionalFields.push(`Margin: ${(product.blueprintPricing.margin * 100).toFixed(1)}%`);
@@ -426,46 +442,72 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     }
     
     const metaData = product.meta_data || [];
+    console.log('📦 Product meta_data:', metaData.map(m => m.key));
+    
     const getMetaValue = (key: string) => {
       const meta = metaData.find(m => m.key === key || m.key === `_${key}`);
+      console.log(`🔎 Looking for meta "${key}":`, meta?.value || 'NOT FOUND');
       return meta?.value;
     };
     
     if (showEffect) {
       const effect = getMetaValue('effect');
-      if (effect) additionalFields.push(`Effect: ${effect}`);
+      if (effect) {
+        console.log('✅ Adding Effect:', effect);
+        additionalFields.push(`Effect: ${effect}`);
+      }
     }
     
     if (showLineage) {
       const lineage = getMetaValue('lineage');
-      if (lineage) additionalFields.push(`Lineage: ${lineage}`);
+      if (lineage) {
+        console.log('✅ Adding Lineage:', lineage);
+        additionalFields.push(`Lineage: ${lineage}`);
+      }
     }
     
     if (showNose) {
       const nose = getMetaValue('nose');
-      if (nose) additionalFields.push(`Nose: ${nose}`);
+      if (nose) {
+        console.log('✅ Adding Nose:', nose);
+        additionalFields.push(`Nose: ${nose}`);
+      }
     }
     
     if (showTerpene) {
       const terpene = getMetaValue('terpene');
-      if (terpene) additionalFields.push(`Terpene: ${terpene}`);
+      if (terpene) {
+        console.log('✅ Adding Terpene:', terpene);
+        additionalFields.push(`Terpene: ${terpene}`);
+      }
     }
     
     if (showStrainType) {
       const strainType = getMetaValue('strain_type');
-      if (strainType) additionalFields.push(`Type: ${strainType}`);
+      if (strainType) {
+        console.log('✅ Adding Strain Type:', strainType);
+        additionalFields.push(`Type: ${strainType}`);
+      }
     }
     
     if (showTHCA) {
       const thca = getMetaValue('thca_percentage');
-      if (thca) additionalFields.push(`THCA: ${thca}%`);
+      if (thca) {
+        console.log('✅ Adding THCA:', thca);
+        additionalFields.push(`THCA: ${thca}%`);
+      }
     }
     
     if (showSupplier) {
       const supplier = getMetaValue('supplier');
-      if (supplier) additionalFields.push(`Supplier: ${supplier}`);
+      if (supplier) {
+        console.log('✅ Adding Supplier:', supplier);
+        additionalFields.push(`Supplier: ${supplier}`);
+      }
     }
 
+    console.log('📋 Total additionalFields:', additionalFields.length, additionalFields);
+    
     const line2 = additionalFields.slice(0, 3).join(' • ');
     const line3 = additionalFields.slice(3, 6).join(' • ');
     
@@ -473,9 +515,9 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       productName,
       line2,
       line3,
-      additionalFieldsCount: additionalFields.length,
-      showPrice,
-      showSKU
+      line2Length: line2.length,
+      line3Length: line3.length,
+      additionalFields
     });
     
     return Array(template.data_mapping.records_per_page).fill(null).map(() => ({

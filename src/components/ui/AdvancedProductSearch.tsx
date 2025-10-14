@@ -128,8 +128,19 @@ export function AdvancedProductSearch({
     ? filteredProducts 
     : recentProducts;
 
-  const handleSelectProduct = (product: Product) => {
-    onProductSelect(product);
+  const handleSelectProduct = async (product: Product) => {
+    try {
+      const response = await apiFetch(`/api/products/${product.id}`);
+      if (response.ok) {
+        const fullProduct = await response.json();
+        onProductSelect(fullProduct);
+      } else {
+        onProductSelect(product);
+      }
+    } catch (error) {
+      console.error('Failed to load full product:', error);
+      onProductSelect(product);
+    }
     
     const recent = [product, ...recentProducts.filter(p => p.id !== product.id)].slice(0, 12);
     setRecentProducts(recent);
