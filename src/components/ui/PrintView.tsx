@@ -759,10 +759,12 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     const productNameLength = labelData.line1?.length || 0;
     let adaptiveNameSize = productNameSize;
     
-    if (productNameLength > 25) {
-      adaptiveNameSize = Math.max(6, productNameSize * 0.7);
-    } else if (productNameLength > 18) {
-      adaptiveNameSize = Math.max(6, productNameSize * 0.85);
+    if (productNameLength > 30) {
+      adaptiveNameSize = Math.max(5, productNameSize * 0.6);
+    } else if (productNameLength > 22) {
+      adaptiveNameSize = Math.max(5, productNameSize * 0.75);
+    } else if (productNameLength > 15) {
+      adaptiveNameSize = Math.max(6, productNameSize * 0.9);
     }
     
     return (
