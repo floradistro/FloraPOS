@@ -635,7 +635,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
         
         // Load pricing in background (non-blocking)
         BlueprintPricingService.getBlueprintPricingBatch(
-          inStockProducts.map(p => ({
+          inStockProducts.map((p: Product) => ({
             id: p.id,
             categoryIds: p.categories?.map(cat => cat.id) || []
           }))
