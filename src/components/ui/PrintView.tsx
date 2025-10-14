@@ -563,9 +563,12 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
         tempDiv.querySelectorAll('.flex-1.flex.flex-col').forEach(container => {
           const newContainer = document.createElement('div');
           newContainer.className = 'label-text';
-          Array.from(container.children).forEach(child => {
+          Array.from(container.children).forEach((child, index) => {
             const newDiv = document.createElement('div');
             newDiv.textContent = child.textContent;
+            if (index === 0) {
+              newDiv.className = 'product-name';
+            }
             newContainer.appendChild(newDiv);
           });
           container.parentNode?.replaceChild(newContainer, container);
@@ -632,9 +635,10 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                   flex: 1;
                   display: flex;
                   flex-direction: column;
-                  gap: 2px;
+                  gap: 1px;
                   overflow: hidden;
                 }
+                .label-text .product-name,
                 .label-text > div:first-child {
                   font-size: ${productNameSize}pt;
                   line-height: ${labelLineHeight};
@@ -643,20 +647,15 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                   font-weight: ${productNameWeight};
                   overflow: hidden;
                   word-wrap: break-word;
-                  display: -webkit-box;
-                  -webkit-line-clamp: 2;
-                  -webkit-box-orient: vertical;
                 }
-                .label-text > div:not(:first-child) {
+                .label-text > div:not(:first-child),
+                .label-text > div:not(.product-name) {
                   font-size: ${detailsSize}pt;
                   line-height: ${labelLineHeight};
                   color: ${detailsColor};
                   font-family: ${detailsFont};
                   overflow: hidden;
                   word-wrap: break-word;
-                  display: -webkit-box;
-                  -webkit-line-clamp: 2;
-                  -webkit-box-orient: vertical;
                 }
               </style>
             </head>
