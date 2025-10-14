@@ -554,7 +554,11 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     
     if (bulkPrintMode && selectedProducts.size > 0) {
       console.log('🏭 Generating bulk label data for', selectedProducts.size, 'products');
-      return [];
+      const bulkData: any[] = [];
+      selectedProducts.forEach(() => {
+        bulkData.push({ line1: "Bulk Print Coming Soon", additionalLines: [] });
+      });
+      return bulkData;
     }
     
     console.log('🏭 Generating new label data from product');
