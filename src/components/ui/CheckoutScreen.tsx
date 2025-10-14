@@ -531,13 +531,33 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
       if (!response.ok) {
         let errorMessage = `Failed to create order (${response.status})`;
+        let errorDetails = null;
+        
         try {
           const errorData = await response.json();
-          errorMessage = errorData.error || errorData.details || errorMessage;
+          errorDetails = errorData;
+          errorMessage = errorData.error || errorData.details || errorData.message || errorMessage;
+          
+          // EXTENSIVE ERROR LOGGING: Log full context when order fails
+          console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.error('❌ WOOCOMMERCE ORDER CREATION FAILED');
+          console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.error('Status:', response.status, response.statusText);
+          console.error('Error Data:', errorData);
+          console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          console.error('Order Data Sent:');
+          console.error('  Customer ID:', orderData.customer_id || 'none');
+          console.error('  Payment:', orderData.payment_method);
+          console.error('  Line Items Count:', orderData.line_items.length);
+          console.error('  First Line Item:', orderData.line_items[0]);
+          console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+          
         } catch (jsonError) {
           const errorText = await response.text().catch(() => 'Unknown error');
           errorMessage = `Server error: ${errorText.substring(0, 200)}`;
+          console.error('❌ Could not parse error response:', errorText);
         }
+        
         throw new Error(errorMessage);
       }
 
