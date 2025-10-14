@@ -629,7 +629,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
         })
         
         // Show products immediately without pricing (INSTANT RENDER)
-        const productsWithoutPricing = inStockProducts.map(p => ({ ...p, blueprintPricing: null }))
+        const productsWithoutPricing = inStockProducts.map((p: Product) => ({ ...p, blueprintPricing: null }))
         setProducts(productsWithoutPricing)
         console.log(`⚡ MenuView: Showing ${inStockProducts.length} products instantly (pricing loading in background...)`)
         
