@@ -207,7 +207,7 @@ export function AdvancedProductSearch({
 
         {/* Search & Filters - Single Row */}
         <div className="px-4 py-3 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2">
             <input
               ref={searchInputRef}
               type="text"
@@ -217,6 +217,33 @@ export function AdvancedProductSearch({
               className="flex-1 px-3 py-1.5 bg-white/5 text-white text-xs rounded border border-white/10 focus:outline-none focus:border-white/30 placeholder:text-white/30"
               style={{ fontFamily: 'Tiempos, serif' }}
             />
+            <select
+              value={selectedCategory || ''}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '__bulk__' && bulkMode && selectedCategory) {
+                  const categoryProducts = filteredProducts.filter(p => 
+                    p.categories?.some(c => c.slug === selectedCategory)
+                  );
+                  const newSelection = new Set(selectedProducts);
+                  categoryProducts.forEach(p => newSelection.add(p.id));
+                  onSelectedProductsChange(newSelection);
+                  setSelectedCategory(null);
+                } else {
+                  setSelectedCategory(value || null);
+                }
+              }}
+              className="px-3 py-1.5 bg-white/5 text-white/90 text-[10px] rounded border border-white/10 focus:outline-none focus:border-white/20"
+              style={{ fontFamily: 'Tiempos, serif' }}
+            >
+              <option value="">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat.slug} value={cat.slug}>{cat.name}</option>
+              ))}
+              {bulkMode && selectedCategory && (
+                <option value="__bulk__">✓ Select all in {categories.find(c => c.slug === selectedCategory)?.name}</option>
+              )}
+            </select>
             <select
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value as typeof stockFilter)}
@@ -251,45 +278,6 @@ export function AdvancedProductSearch({
                 Clear
               </button>
             )}
-          </div>
-
-          <div className="flex items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className={`px-2.5 py-1 text-[10px] rounded whitespace-nowrap transition-all ${
-                !selectedCategory
-                  ? 'bg-white/10 text-white/90'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/90'
-              }`}
-              style={{ fontFamily: 'Tiempos, serif' }}
-            >
-              All
-            </button>
-            {categories.map(cat => (
-              <button
-                key={cat.slug}
-                onClick={() => setSelectedCategory(cat.slug)}
-                onDoubleClick={() => {
-                  if (bulkMode) {
-                    const categoryProducts = filteredProducts.filter(p => 
-                      p.categories?.some(c => c.slug === cat.slug)
-                    );
-                    const newSelection = new Set(selectedProducts);
-                    categoryProducts.forEach(p => newSelection.add(p.id));
-                    onSelectedProductsChange(newSelection);
-                  }
-                }}
-                className={`px-2.5 py-1 text-[10px] rounded whitespace-nowrap transition-all ${
-                  selectedCategory === cat.slug
-                    ? 'bg-white/10 text-white/90'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/90'
-                }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
-                title={bulkMode ? 'Double-click to select all in category' : ''}
-              >
-                {cat.name}
-              </button>
-            ))}
           </div>
         </div>
 
