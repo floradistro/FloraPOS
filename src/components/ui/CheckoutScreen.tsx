@@ -160,33 +160,47 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         const wooCommerceProductId = await ProductMappingService.findWooCommerceProductId(item.name);
         const productId = wooCommerceProductId || item.product_id || parseInt(item.id);
         
+        // CRITICAL VALIDATION: Ensure product_id is valid
+        if (!productId || isNaN(productId) || productId <= 0) {
+          console.error(`❌ Invalid product_id for item: ${item.name}`, {
+            wooCommerceProductId,
+            item_product_id: item.product_id,
+            item_id: item.id,
+            final_productId: productId
+          });
+          throw new Error(`Invalid product ID for "${item.name}". Product must have a valid WooCommerce ID.`);
+        }
+        
         // Calculate final price after overrides and discounts
         let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
         if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
           finalPrice = finalPrice * (1 - item.discount_percentage / 100);
         }
         
+        // Ensure positive quantity
+        const quantity = Math.max(0.01, item.quantity || 1);
+        
         const lineItem: any = {
           product_id: productId,
           name: item.name,
-          quantity: item.quantity,
-          subtotal: (finalPrice * item.quantity).toFixed(2),
-          total: (finalPrice * item.quantity).toFixed(2),
-          sku: item.sku || item.id,
+          quantity: quantity,
+          subtotal: (finalPrice * quantity).toFixed(2),
+          total: (finalPrice * quantity).toFixed(2),
+          sku: item.sku || '',
           meta_data: [
             {
               key: '_actual_quantity',
-              value: item.quantity.toString() // Store the actual quantity (e.g., 3.5g)
+              value: quantity.toString()
             },
             {
               key: '_actual_price',
-              value: finalPrice.toString() // Store the final price per unit after overrides/discounts
+              value: finalPrice.toString()
             },
             {
               key: '_original_price',
-              value: item.price.toString() // Store the original price before overrides
+              value: item.price.toString()
             }
-          ], // Initialize meta_data array for line item
+          ]
         };
           
           // Add variation_id for variants to enable proper inventory tracking
@@ -266,6 +280,18 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
           
           return lineItem;
         }));
+      
+      // CRITICAL VALIDATION: Ensure line_items array is valid
+      console.log(`📦 Line items validation:`, {
+        count: mappedLineItems.length,
+        sample: mappedLineItems[0],
+        allHaveProductId: mappedLineItems.every(li => li.product_id && !isNaN(li.product_id) && li.product_id > 0),
+        allHaveQuantity: mappedLineItems.every(li => li.quantity && li.quantity > 0)
+      });
+      
+      if (mappedLineItems.length === 0) {
+        throw new Error('Order must contain at least one item');
+      }
       
       // Prepare order data
       const isSplitPayment = splitPayments.length > 0;
