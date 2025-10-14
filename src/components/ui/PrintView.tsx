@@ -531,8 +531,15 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   const ptToPx = (points: number) => Math.round(points * 1.333);
   
   const printData = React.useMemo(() => {
-    if (propData) return propData;
-    return generateProductLabelData(selectedProduct);
+    console.log('🔄 printData useMemo recalculating...');
+    if (propData) {
+      console.log('📦 Using propData');
+      return propData;
+    }
+    console.log('🏭 Generating new label data from product');
+    const result = generateProductLabelData(selectedProduct);
+    console.log('✅ printData result:', result[0]);
+    return result;
   }, [
     propData, 
     selectedProduct,
