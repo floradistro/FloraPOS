@@ -183,46 +183,53 @@ export function AdvancedProductSearch({
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)' }}>
+      <div className="bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)' }}>
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
-          <h2 className="text-base font-medium text-white" style={{ fontFamily: 'Tiempos, serif' }}>Select Product</h2>
+        <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-sm font-medium text-white/90" style={{ fontFamily: 'Tiempos, serif' }}>Select Products</h2>
+            {bulkMode && selectedProducts.size > 0 && (
+              <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">
+                {selectedProducts.size} selected
+              </span>
+            )}
+          </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/5 rounded transition-colors"
+            className="w-7 h-7 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/5 rounded transition-colors"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Search & Filters */}
-        <div className="px-6 py-4 border-b border-white/[0.06] space-y-3">
+        <div className="px-4 py-3 border-b border-white/[0.06] space-y-3">
           <input
             ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, SKU, or category..."
-            className="w-full px-4 py-3 bg-neutral-800 text-white text-sm rounded-lg border border-white/10 focus:outline-none focus:border-white/30 placeholder:text-white/30"
+            className="w-full px-3 py-2 bg-white/5 text-white text-sm rounded border border-white/10 focus:outline-none focus:border-white/30 placeholder:text-white/30"
             style={{ fontFamily: 'Tiempos, serif' }}
           />
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
             <button
               onClick={() => setSelectedCategory(null)}
-              className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-all ${
+              className={`px-3 py-1.5 text-[10px] rounded whitespace-nowrap transition-all ${
                 !selectedCategory
-                  ? 'bg-white/10 text-white border border-white/20'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10'
+                  ? 'bg-white/10 text-white/90'
+                  : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/90'
               }`}
               style={{ fontFamily: 'Tiempos, serif' }}
             >
               All
             </button>
-            {categories.slice(0, 8).map(cat => (
+            {categories.map(cat => (
               <button
                 key={cat.slug}
                 onClick={() => setSelectedCategory(cat.slug)}
@@ -236,15 +243,15 @@ export function AdvancedProductSearch({
                     onSelectedProductsChange(newSelection);
                   }
                 }}
-                className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 text-[10px] rounded whitespace-nowrap transition-all ${
                   selectedCategory === cat.slug
-                    ? 'bg-white/10 text-white border border-white/20'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10'
+                    ? 'bg-white/10 text-white/90'
+                    : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/90'
                 }`}
                 style={{ fontFamily: 'Tiempos, serif' }}
                 title={bulkMode ? 'Double-click to select all in category' : ''}
               >
-                {cat.name} ({cat.count})
+                {cat.name}
               </button>
             ))}
           </div>
@@ -253,7 +260,7 @@ export function AdvancedProductSearch({
             <select
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value as typeof stockFilter)}
-              className="px-3 py-2 bg-neutral-800 text-white text-xs rounded border border-white/10 focus:outline-none focus:border-white/30"
+              className="px-3 py-1.5 bg-white/5 text-white/90 text-[10px] rounded border border-white/10 focus:outline-none focus:border-white/20"
               style={{ fontFamily: 'Tiempos, serif' }}
             >
               <option value="all">All Stock</option>
@@ -264,12 +271,12 @@ export function AdvancedProductSearch({
             <select
               value={priceSort}
               onChange={(e) => setPriceSort(e.target.value as typeof priceSort)}
-              className="px-3 py-2 bg-neutral-800 text-white text-xs rounded border border-white/10 focus:outline-none focus:border-white/30"
+              className="px-3 py-1.5 bg-white/5 text-white/90 text-[10px] rounded border border-white/10 focus:outline-none focus:border-white/20"
               style={{ fontFamily: 'Tiempos, serif' }}
             >
-              <option value="default">Default Sort</option>
-              <option value="low-high">Price: Low to High</option>
-              <option value="high-low">Price: High to Low</option>
+              <option value="default">Default</option>
+              <option value="low-high">Price: Low→High</option>
+              <option value="high-low">Price: High→Low</option>
             </select>
 
             {(searchQuery || selectedCategory || stockFilter !== 'all' || priceSort !== 'default') && (
@@ -280,17 +287,17 @@ export function AdvancedProductSearch({
                   setStockFilter('all');
                   setPriceSort('default');
                 }}
-                className="px-3 py-2 text-xs bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded border border-white/10 transition-colors"
+                className="px-3 py-1.5 text-[10px] bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 rounded transition-colors"
                 style={{ fontFamily: 'Tiempos, serif' }}
               >
-                Clear Filters
+                Clear
               </button>
             )}
           </div>
         </div>
 
         {/* Results */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4">
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-white/40 text-sm" style={{ fontFamily: 'Tiempos, serif' }}>Loading products...</div>
@@ -323,7 +330,7 @@ export function AdvancedProductSearch({
                 </div>
               )}
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {displayProducts.map((product) => {
                   const stock = product.total_stock || product.stock_quantity || 0;
                   const isLowStock = stock > 0 && stock <= 10;
@@ -333,45 +340,38 @@ export function AdvancedProductSearch({
                     <button
                       key={product.id}
                       onClick={() => handleSelectProduct(product)}
-                      className="group relative p-4 bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/10 rounded-lg transition-all duration-200 text-left"
+                      className="group relative p-3 bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/10 rounded transition-all duration-200 text-left"
                     >
-                      <div className="flex gap-3">
+                      <div className="flex flex-col gap-2">
                         {product.image && (
-                          <div className="w-16 h-16 rounded overflow-hidden bg-neutral-800 flex-shrink-0">
+                          <div className="w-full aspect-square rounded overflow-hidden bg-neutral-800/50">
                             <img 
                               src={product.image} 
                               alt={product.name} 
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm text-white font-medium mb-1 line-clamp-2" style={{ fontFamily: 'Tiempos, serif' }}>
+                        <div>
+                          <div className="text-xs text-white/90 font-medium mb-1 line-clamp-2" style={{ fontFamily: 'Tiempos, serif' }}>
                             {product.name}
                           </div>
-                          <div className="flex items-center gap-2 flex-wrap mb-2">
-                            <span className="text-xs text-white/40">
-                              SKU: {product.sku || `#${product.id}`}
-                            </span>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="text-sm font-medium text-white" style={{ fontFamily: 'Tiempos, serif' }}>
+                              ${price.toFixed(2)}
+                            </div>
                             {stock > 0 && (
-                              <span className={`text-xs px-2 py-0.5 rounded ${
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${
                                 isLowStock 
-                                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                                  : 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                  ? 'bg-yellow-500/20 text-yellow-400'
+                                  : 'bg-green-500/20 text-green-400'
                               }`}>
-                                {stock} in stock
+                                {stock}
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-base font-medium text-white" style={{ fontFamily: 'Tiempos, serif' }}>
-                              ${price.toFixed(2)}
-                            </div>
-                            {product.categories && product.categories.length > 0 && (
-                              <div className="text-xs text-white/30">
-                                {product.categories[0].name}
-                              </div>
-                            )}
+                          <div className="text-[10px] text-white/40">
+                            {product.sku || `#${product.id}`}
                           </div>
                         </div>
                       </div>

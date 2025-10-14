@@ -296,7 +296,7 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => onBulkPrintModeChange(!bulkPrintMode)}
-            className={`px-3 py-2 text-xs rounded-xl transition-all duration-200 backdrop-blur-sm border ${
+            className={`px-2.5 py-1.5 text-[10px] rounded transition-all backdrop-blur-sm border ${
               bulkPrintMode
                 ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
                 : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20'
@@ -308,13 +308,13 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
 
           <button
             onClick={() => setShowProductSearch(!showProductSearch)}
-            className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded text-neutral-300 hover:text-white transition-all backdrop-blur-sm"
             style={{ fontFamily: 'Tiempos, serif' }}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <span className="max-w-[180px] truncate">
+            <span className="max-w-[140px] truncate">
               {selectedProduct ? selectedProduct.name : bulkPrintMode ? 'Add Products' : 'Select Product'}
             </span>
           </button>
@@ -326,7 +326,7 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
                 onSelectedProductsChange(new Set());
                 setSearchQuery('');
               }}
-              className="px-3 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
+              className="px-2.5 py-1.5 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded text-neutral-300 hover:text-white transition-all backdrop-blur-sm"
               style={{ fontFamily: 'Tiempos, serif' }}
             >
               Clear
@@ -334,11 +334,12 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1 justify-center">
+          <span className="text-[10px] text-white/30" style={{ fontFamily: 'Tiempos, serif' }}>Template:</span>
           <select
             value={selectedTemplate}
             onChange={(e) => onTemplateChange(e.target.value)}
-            className="px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white focus:bg-white/10 focus:border-white/20 focus:outline-none transition-all duration-200 backdrop-blur-sm cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[140px]"
+            className="px-3 py-1.5 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded text-neutral-300 hover:text-white focus:bg-white/10 focus:border-white/20 focus:outline-none transition-all backdrop-blur-sm cursor-pointer"
             style={{ fontFamily: 'Tiempos, serif' }}
           >
             {templates.map((t) => (
@@ -348,9 +349,9 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
 
           <button
             onClick={() => onShowBordersChange(!showBorders)}
-            className={`px-4 py-2 text-xs rounded-xl transition-all duration-200 backdrop-blur-sm border ${
+            className={`px-2.5 py-1.5 text-[10px] rounded transition-all backdrop-blur-sm border ${
               showBorders
-                ? 'bg-white/10 text-white border-white/20 shadow-sm'
+                ? 'bg-white/10 text-white border-white/20'
                 : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20'
             }`}
             style={{ fontFamily: 'Tiempos, serif' }}
@@ -360,9 +361,9 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
 
           <button
             onClick={() => onShowLogoChange(!showLogo)}
-            className={`px-4 py-2 text-xs rounded-xl transition-all duration-200 backdrop-blur-sm border ${
+            className={`px-2.5 py-1.5 text-[10px] rounded transition-all backdrop-blur-sm border ${
               showLogo
-                ? 'bg-white/10 text-white border-white/20 shadow-sm'
+                ? 'bg-white/10 text-white border-white/20'
                 : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20'
             }`}
             style={{ fontFamily: 'Tiempos, serif' }}
@@ -373,12 +374,12 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
           <div className="relative" ref={fieldsMenuRef}>
             <button
               onClick={() => setShowFieldsMenu(!showFieldsMenu)}
-              className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded text-neutral-300 hover:text-white transition-all backdrop-blur-sm"
               style={{ fontFamily: 'Tiempos, serif' }}
             >
               <span>Fields</span>
               {activeFieldsCount > 0 && (
-                <span className="px-1.5 py-0.5 text-[10px] bg-white/20 text-white rounded">{activeFieldsCount}</span>
+                <span className="px-1 py-0.5 text-[9px] bg-white/20 text-white rounded">{activeFieldsCount}</span>
               )}
             </button>
 
@@ -529,13 +530,13 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
           <div className="relative" ref={typographyMenuRef}>
             <button
               onClick={() => setShowTypographyMenu(!showTypographyMenu)}
-              className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded text-neutral-300 hover:text-white transition-all backdrop-blur-sm"
               style={{ fontFamily: 'Tiempos, serif' }}
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
               </svg>
-              <span>Typography</span>
+              <span>Type</span>
             </button>
 
             {showTypographyMenu && (
@@ -786,10 +787,10 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
 
           <button
             onClick={onLibraryClick}
-            className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white transition-all duration-200 backdrop-blur-sm"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded text-neutral-300 hover:text-white transition-all backdrop-blur-sm"
             style={{ fontFamily: 'Tiempos, serif' }}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
             </svg>
             <span>Library</span>
@@ -797,10 +798,10 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
 
           <button
             onClick={onPrint}
-            className="flex items-center gap-2 px-5 py-2 text-xs bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white transition-all duration-300 shadow-lg hover:shadow-xl backdrop-blur-sm hover:scale-105 active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-1.5 text-[10px] bg-white/10 hover:bg-white/20 border border-white/20 rounded text-white transition-all shadow-lg hover:shadow-xl backdrop-blur-sm hover:scale-105 active:scale-95"
             style={{ fontFamily: 'Tiempos, serif' }}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
             <span>Print</span>
