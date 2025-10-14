@@ -532,33 +532,47 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         }
 
         // Process variants with batch inventory data
-        const processedVariants = variants.map((variant: any) => {
-          const inventoryKey = `${productId}_${variant.id}`;
-          const inventoryData = inventoryMap[inventoryKey];
-          
-          let inventory: Array<{location_id: number; quantity: number}> = [];
-          
-          if (inventoryData && inventoryData.success && inventoryData.inventory) {
-            inventory = inventoryData.inventory.map((record: any) => ({
-              location_id: parseInt(record.location_id),
-              quantity: parseFloat(record.quantity) || parseFloat(record.available_quantity) || 0
-            }));
-          }
+        const processedVariants = variants
+          .filter((variant: any) => {
+            // CRITICAL: Filter out variants with invalid IDs
+            if (!variant.id || isNaN(variant.id) || variant.id <= 0) {
+              console.error(`     ❌ Skipping variant with invalid ID:`, variant);
+              return false;
+            }
+            return true;
+          })
+          .map((variant: any) => {
+            const inventoryKey = `${productId}_${variant.id}`;
+            const inventoryData = inventoryMap[inventoryKey];
+            
+            let inventory: Array<{location_id: number; quantity: number}> = [];
+            
+            if (inventoryData && inventoryData.success && inventoryData.inventory) {
+              inventory = inventoryData.inventory.map((record: any) => ({
+                location_id: parseInt(record.location_id),
+                quantity: parseFloat(record.quantity) || parseFloat(record.available_quantity) || 0
+              }));
+            }
 
-          const total_stock = inventory.reduce((sum, inv) => sum + inv.quantity, 0);
+            const total_stock = inventory.reduce((sum, inv) => sum + inv.quantity, 0);
 
-          return {
-            id: variant.id,
-            name: variant.attributes?.map((attr: any) => attr.option).filter(Boolean).join(', ') || `Variant #${variant.id}`,
-            sku: variant.sku || '',
-            regular_price: variant.regular_price || '0',
-            sale_price: variant.sale_price,
-            inventory,
-            total_stock
-          };
-        });
+            return {
+              id: variant.id,
+              name: variant.attributes?.map((attr: any) => attr.option).filter(Boolean).join(', ') || `Variant #${variant.id}`,
+              sku: variant.sku || '',
+              regular_price: variant.regular_price || '0',
+              sale_price: variant.sale_price,
+              inventory,
+              total_stock
+            };
+          });
         
-        console.log(`     ✅ Returning ${processedVariants.length} processed variants for product ${productId}`);
+        if (processedVariants.length === 0) {
+          console.warn(`     ⚠️ No valid variants after filtering for product ${productId}`);
+          return null;
+        }
+        
+        console.log(`     ✅ Returning ${processedVariants.length} valid variants for product ${productId}`);
         return processedVariants;
       } catch (error) {
         console.error(`     ❌ Error loading variants for product ${productId}:`, error);
