@@ -582,6 +582,18 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
             <head>
               <title>Print Labels - ${template.template_name}</title>
               <style>
+                @font-face {
+                  font-family: 'DonGraffiti';
+                  src: url('/DonGraffiti.otf') format('opentype');
+                  font-weight: normal;
+                  font-style: normal;
+                }
+                @font-face {
+                  font-family: 'Tiempos';
+                  src: url('/Tiempos Text Regular.otf') format('opentype');
+                  font-weight: normal;
+                  font-style: normal;
+                }
                 @page {
                   size: ${template.page.size};
                   margin: 0;
