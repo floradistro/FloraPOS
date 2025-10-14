@@ -610,7 +610,6 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
 
       setIsCreatingPO(true);
       setAdjustmentStatus({ type: null, message: '' });
-      setShowPODialog(false);
 
       try {
         console.log(`Creating PO "${supplierName}" with ${pendingRestockProducts.size} products...`);

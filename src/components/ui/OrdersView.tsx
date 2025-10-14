@@ -21,6 +21,8 @@ export interface WooCommerceOrder {
   date_completed: string | null;
   customer_id: number;
   customer_note: string;
+  customer_name?: string;
+  customer_email?: string;
   created_via: string;
   billing: {
     first_name: string;

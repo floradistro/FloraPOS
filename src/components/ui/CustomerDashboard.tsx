@@ -417,7 +417,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
               </div>
               </div>
               <button
-                onClick={() => setFilterSegment('at-risk')}
+                onClick={() => console.log('Filter customers by at-risk segment')}
                 className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-light transition-all duration-200"
                 style={{ fontFamily: 'Tiempos, serif' }}
               >
