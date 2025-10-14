@@ -205,22 +205,58 @@ export function AdvancedProductSearch({
           </button>
         </div>
 
-        {/* Search & Filters */}
-        <div className="px-4 py-3 border-b border-white/[0.06] space-y-3">
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, SKU, or category..."
-            className="w-full px-3 py-2 bg-white/5 text-white text-sm rounded border border-white/10 focus:outline-none focus:border-white/30 placeholder:text-white/30"
-            style={{ fontFamily: 'Tiempos, serif' }}
-          />
+        {/* Search & Filters - Single Row */}
+        <div className="px-4 py-3 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2 mb-2">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, SKU, or category..."
+              className="flex-1 px-3 py-1.5 bg-white/5 text-white text-xs rounded border border-white/10 focus:outline-none focus:border-white/30 placeholder:text-white/30"
+              style={{ fontFamily: 'Tiempos, serif' }}
+            />
+            <select
+              value={stockFilter}
+              onChange={(e) => setStockFilter(e.target.value as typeof stockFilter)}
+              className="px-3 py-1.5 bg-white/5 text-white/90 text-[10px] rounded border border-white/10 focus:outline-none focus:border-white/20"
+              style={{ fontFamily: 'Tiempos, serif' }}
+            >
+              <option value="all">All Stock</option>
+              <option value="in-stock">In Stock</option>
+              <option value="low-stock">Low Stock</option>
+            </select>
+            <select
+              value={priceSort}
+              onChange={(e) => setPriceSort(e.target.value as typeof priceSort)}
+              className="px-3 py-1.5 bg-white/5 text-white/90 text-[10px] rounded border border-white/10 focus:outline-none focus:border-white/20"
+              style={{ fontFamily: 'Tiempos, serif' }}
+            >
+              <option value="default">Default</option>
+              <option value="low-high">Price ↑</option>
+              <option value="high-low">Price ↓</option>
+            </select>
+            {(searchQuery || selectedCategory || stockFilter !== 'all' || priceSort !== 'default') && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory(null);
+                  setStockFilter('all');
+                  setPriceSort('default');
+                }}
+                className="px-2.5 py-1.5 text-[10px] bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 rounded transition-colors"
+                style={{ fontFamily: 'Tiempos, serif' }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             <button
               onClick={() => setSelectedCategory(null)}
-              className={`px-3 py-1.5 text-[10px] rounded whitespace-nowrap transition-all ${
+              className={`px-2.5 py-1 text-[10px] rounded whitespace-nowrap transition-all ${
                 !selectedCategory
                   ? 'bg-white/10 text-white/90'
                   : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/90'
@@ -243,7 +279,7 @@ export function AdvancedProductSearch({
                     onSelectedProductsChange(newSelection);
                   }
                 }}
-                className={`px-3 py-1.5 text-[10px] rounded whitespace-nowrap transition-all ${
+                className={`px-2.5 py-1 text-[10px] rounded whitespace-nowrap transition-all ${
                   selectedCategory === cat.slug
                     ? 'bg-white/10 text-white/90'
                     : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/90'
@@ -254,45 +290,6 @@ export function AdvancedProductSearch({
                 {cat.name}
               </button>
             ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <select
-              value={stockFilter}
-              onChange={(e) => setStockFilter(e.target.value as typeof stockFilter)}
-              className="px-3 py-1.5 bg-white/5 text-white/90 text-[10px] rounded border border-white/10 focus:outline-none focus:border-white/20"
-              style={{ fontFamily: 'Tiempos, serif' }}
-            >
-              <option value="all">All Stock</option>
-              <option value="in-stock">In Stock</option>
-              <option value="low-stock">Low Stock</option>
-            </select>
-
-            <select
-              value={priceSort}
-              onChange={(e) => setPriceSort(e.target.value as typeof priceSort)}
-              className="px-3 py-1.5 bg-white/5 text-white/90 text-[10px] rounded border border-white/10 focus:outline-none focus:border-white/20"
-              style={{ fontFamily: 'Tiempos, serif' }}
-            >
-              <option value="default">Default</option>
-              <option value="low-high">Price: Low→High</option>
-              <option value="high-low">Price: High→Low</option>
-            </select>
-
-            {(searchQuery || selectedCategory || stockFilter !== 'all' || priceSort !== 'default') && (
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedCategory(null);
-                  setStockFilter('all');
-                  setPriceSort('default');
-                }}
-                className="px-3 py-1.5 text-[10px] bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 rounded transition-colors"
-                style={{ fontFamily: 'Tiempos, serif' }}
-              >
-                Clear
-              </button>
-            )}
           </div>
         </div>
 
