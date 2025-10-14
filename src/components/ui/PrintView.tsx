@@ -172,6 +172,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(propSelectedProduct || null);
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
   const [bulkProductsData, setBulkProductsData] = useState<Product[]>([]);
+  const [bulkPreviewIndex, setBulkPreviewIndex] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof TEMPLATES>('avery_5160');
   const [showBorders, setShowBorders] = useState(true);
   const [showLogo, setShowLogo] = useState(true);
@@ -568,6 +569,10 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     }
   }, [selectedProducts, bulkPrintMode]);
 
+  const currentPreviewProduct = bulkPrintMode && bulkProductsData.length > 0 
+    ? bulkProductsData[bulkPreviewIndex] 
+    : selectedProduct;
+
   const printData = React.useMemo(() => {
     console.log('🔄 printData useMemo recalculating...');
     if (propData) {
@@ -593,6 +598,13 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier,
     selectedTier, showTierPrice, showTierLabel
   ]);
+
+  const currentPreviewData = React.useMemo(() => {
+    if (bulkPrintMode && bulkProductsData.length > 0) {
+      return generateProductLabelData(currentPreviewProduct);
+    }
+    return generateProductLabelData(selectedProduct);
+  }, [currentPreviewProduct, selectedProduct, bulkPrintMode, bulkProductsData, showDate, showPrice, showSKU, showCategory, showMargin, showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier, selectedTier, showTierPrice, showTierLabel]);
 
   const handlePrint = () => {
     if (printRef.current) {
@@ -850,7 +862,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   };
 
   const generateSingleLabel = () => {
-    const labelData = printData[0];
+    const labelData = currentPreviewData[0];
     const basePadding = inchesToPx(template.label_style.safe_padding.top / 4);
     const baseGap = 2;
 
@@ -957,43 +969,60 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 flex flex-col bg-transparent">
           <div 
-            className="px-6 py-4 border-b border-white/[0.06] transition-all duration-700"
+            className="px-6 py-4 border-b border-white/[0.06] transition-all duration-700 flex items-center justify-between"
             style={{
               opacity: focusedPreview === null ? 0.6 : focusedPreview === 'label' ? 0.85 : 0.4,
             }}
           >
-            <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
-              {bulkPrintMode && bulkProductsData.length > 0 ? `Bulk Preview (${bulkProductsData.length} products)` : 'Full Label'}
+            <div>
+              <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Full Label</div>
+              <div className="text-xs text-white/30 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>
+                {template.grid.label_width}" × {template.grid.label_height}"
+                {bulkPrintMode && bulkProductsData.length > 0 && (
+                  <span className="ml-2">• {currentPreviewProduct?.name || 'Loading...'}</span>
+                )}
+              </div>
             </div>
-            <div className="text-xs text-white/30 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>
-              {template.grid.label_width}" × {template.grid.label_height}"
-            </div>
+            {bulkPrintMode && bulkProductsData.length > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setBulkPreviewIndex(Math.max(0, bulkPreviewIndex - 1))}
+                  disabled={bulkPreviewIndex === 0}
+                  className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/5 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="text-[10px] text-white/40" style={{ fontFamily: 'Tiempos, serif' }}>
+                  {bulkPreviewIndex + 1} / {bulkProductsData.length}
+                </span>
+                <button
+                  onClick={() => setBulkPreviewIndex(Math.min(bulkProductsData.length - 1, bulkPreviewIndex + 1))}
+                  disabled={bulkPreviewIndex === bulkProductsData.length - 1}
+                  className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/5 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
           <div 
-            className="flex-1 flex items-center justify-center p-4 md:p-6 lg:p-8 cursor-pointer transition-all duration-700 ease-out overflow-auto"
+            className="flex-1 flex items-center justify-center p-4 md:p-6 lg:p-8 cursor-pointer transition-all duration-700 ease-out overflow-hidden"
             onClick={() => setFocusedPreview(focusedPreview === 'label' ? null : 'label')}
             style={{
               opacity: focusedPreview === null ? 0.6 : focusedPreview === 'label' ? 0.85 : 0.4,
             }}
           >
             <div
-              className="transition-transform duration-700 ease-out flex flex-col gap-6"
+              className="transition-transform duration-700 ease-out w-full h-full flex items-center justify-center"
               style={{
                 transform: focusedPreview === 'label' ? 'scale(1.02)' : 'scale(1)',
               }}
             >
-              {bulkPrintMode && bulkProductsData.length > 0 ? (
-                bulkProductsData.slice(0, 5).map((product, idx) => (
-                  <div key={idx} className="flex flex-col gap-1">
-                    {generateSingleLabel()}
-                    <div className="text-[8px] text-white/30 text-center" style={{ fontFamily: 'Tiempos, serif' }}>
-                      {product.name}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                generateSingleLabel()
-              )}
+              {generateSingleLabel()}
             </div>
           </div>
           <div 
