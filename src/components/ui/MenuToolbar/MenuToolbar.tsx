@@ -16,6 +16,7 @@ import { ColumnSelector } from '../ColumnSelector';
 import { TypographyDropdown } from './TypographyDropdown';
 import { ElementsDropdown } from './ElementsDropdown';
 import { LayoutDropdownV2 } from './LayoutDropdownV2';
+import { PricingDropdown } from './PricingDropdown';
 
 export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   orientation,
@@ -45,6 +46,14 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   blurIntensity,
   glowIntensity,
   onTransparencyChange,
+  pricingTiersShape,
+  onPricingShapeChange,
+  pricingContainerOpacity,
+  setPricingContainerOpacity,
+  pricingBorderWidth,
+  setPricingBorderWidth,
+  pricingBorderOpacity,
+  setPricingBorderOpacity,
   headerTitleSize,
   cardTitleSize,
   priceSize,
@@ -114,7 +123,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
       // Update only the selected quadrant
       if (selectedQuadrant) {
         const currentQuadConfig = selectedQuadrant === 'leftBottom' || selectedQuadrant === 'rightBottom'
-          ? dualMenu[selectedQuadrant] || { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' }
+          ? dualMenu[selectedQuadrant] || { category: null, viewMode: 'table', showImages: false, priceLocation: 'header' }
           : dualMenu[selectedQuadrant];
           
         const updatedDualMenu = {
@@ -174,6 +183,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
               viewMode={getCurrentConfig()?.viewMode || 'auto'}
               showImages={getCurrentConfig()?.showImages || false}
               priceLocation={getCurrentConfig()?.priceLocation || 'none'}
+              pricingTiersShape={pricingTiersShape}
               onDisplayChange={(settings) => {
                 const currentConfig = getCurrentConfig()
                 if (settings.viewMode !== undefined && currentConfig) {
@@ -184,6 +194,9 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
                 }
                 if (settings.priceLocation !== undefined && currentConfig) {
                   handleConfigChange({ ...currentConfig, priceLocation: settings.priceLocation })
+                }
+                if (settings.pricingTiersShape !== undefined) {
+                  onPricingShapeChange(settings.pricingTiersShape)
                 }
               }}
             />
@@ -254,6 +267,38 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
               onEffectsChange={onTransparencyChange}
               customBackground={customBackground}
               onCustomBackgroundChange={onCustomBackgroundChange}
+            />
+            
+            <div className="w-px h-5 bg-white/[0.06]" />
+            
+            <PricingDropdown
+              pricingTiersShape={pricingTiersShape}
+              onPricingShapeChange={onPricingShapeChange}
+              priceSize={priceSize}
+              onPriceSizeChange={(size) => onFontSizesChange({ headerTitleSize, cardTitleSize, priceSize: size, categorySize })}
+              pricingFont={pricingFont}
+              onPricingFontChange={(font) => onFontsChange({ titleFont, pricingFont: font, cardFont })}
+              fontColor={fontColor}
+              containerColor={containerColor}
+              pricingContainerOpacity={pricingContainerOpacity}
+              pricingBorderWidth={pricingBorderWidth}
+              pricingBorderOpacity={pricingBorderOpacity}
+              onColorsChange={(colors) => {
+                if (colors.fontColor !== undefined || colors.containerColor !== undefined) {
+                  onColorsChange({
+                    backgroundColor,
+                    fontColor: colors.fontColor !== undefined ? colors.fontColor : fontColor,
+                    containerColor: colors.containerColor !== undefined ? colors.containerColor : containerColor,
+                    cardFontColor,
+                    imageBackgroundColor
+                  })
+                }
+              }}
+              onPricingTransparencyChange={(values) => {
+                if (values.pricingContainerOpacity !== undefined) setPricingContainerOpacity(values.pricingContainerOpacity);
+                if (values.pricingBorderWidth !== undefined) setPricingBorderWidth(values.pricingBorderWidth);
+                if (values.pricingBorderOpacity !== undefined) setPricingBorderOpacity(values.pricingBorderOpacity);
+              }}
             />
             
           </div>

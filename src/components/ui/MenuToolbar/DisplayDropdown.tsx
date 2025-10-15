@@ -10,13 +10,17 @@ interface DisplayDropdownProps {
   onConfigChange: (updates: Partial<MenuConfig>) => void;
   pandaMode?: boolean;
   onPandaModeToggle?: () => void;
+  pricingTiersShape?: 'circle' | 'rectangle';
+  onPricingShapeChange?: (shape: 'circle' | 'rectangle') => void;
 }
 
 export const DisplayDropdown: React.FC<DisplayDropdownProps> = ({
   currentConfig,
   onConfigChange,
   pandaMode = false,
-  onPandaModeToggle
+  onPandaModeToggle,
+  pricingTiersShape = 'circle',
+  onPricingShapeChange
 }) => {
   return (
     <ToolbarDropdown
@@ -130,6 +134,36 @@ export const DisplayDropdown: React.FC<DisplayDropdownProps> = ({
         isActive={currentConfig.priceLocation === 'inline'}
         onClick={() => onConfigChange({ priceLocation: 'inline' })}
       />
+      
+      {onPricingShapeChange && (
+        <>
+          <DropdownSeparator />
+          <div className="px-3 py-1 text-xs text-neutral-400 font-medium">PRICING STYLE</div>
+          
+          <DropdownItem
+            icon={
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" strokeWidth={2} />
+              </svg>
+            }
+            label="Circle Tiers"
+            description="Modern circular badges"
+            isActive={pricingTiersShape === 'circle'}
+            onClick={() => onPricingShapeChange('circle')}
+          />
+          <DropdownItem
+            icon={
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="6" width="18" height="12" rx="2" strokeWidth={2} />
+              </svg>
+            }
+            label="Rectangle Tiers"
+            description="Traditional pill style"
+            isActive={pricingTiersShape === 'rectangle'}
+            onClick={() => onPricingShapeChange('rectangle')}
+          />
+        </>
+      )}
       
       {onPandaModeToggle && (
         <>

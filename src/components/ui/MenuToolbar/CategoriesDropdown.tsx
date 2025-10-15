@@ -34,8 +34,8 @@ export const CategoriesDropdown: React.FC<CategoriesDropdownProps> = ({
         ...dualMenu,
         left: { ...dualMenu.left, category: null },
         right: { ...dualMenu.right, category: null },
-        leftBottom: { ...(dualMenu.leftBottom || { viewMode: 'auto', showImages: false, priceLocation: 'inline' }), category: null },
-        rightBottom: { ...(dualMenu.rightBottom || { viewMode: 'auto', showImages: false, priceLocation: 'inline' }), category: null },
+        leftBottom: { ...(dualMenu.leftBottom || { viewMode: 'table', showImages: false, priceLocation: 'header' }), category: null },
+        rightBottom: { ...(dualMenu.rightBottom || { viewMode: 'table', showImages: false, priceLocation: 'header' }), category: null },
         enableLeftStacking: false,
         enableRightStacking: false
       });
@@ -56,10 +56,10 @@ export const CategoriesDropdown: React.FC<CategoriesDropdownProps> = ({
     const updates: Partial<DualMenuConfig> = {};
     
     if (position === 'leftBottom') {
-      updates.leftBottom = { ...(dualMenu.leftBottom || { viewMode: 'auto', showImages: false, priceLocation: 'inline' }), category: categorySlug };
+      updates.leftBottom = { ...(dualMenu.leftBottom || { viewMode: 'table', showImages: false, priceLocation: 'header' }), category: categorySlug };
       updates.enableLeftStacking = !!categorySlug;
     } else if (position === 'rightBottom') {
-      updates.rightBottom = { ...(dualMenu.rightBottom || { viewMode: 'auto', showImages: false, priceLocation: 'inline' }), category: categorySlug };
+      updates.rightBottom = { ...(dualMenu.rightBottom || { viewMode: 'table', showImages: false, priceLocation: 'header' }), category: categorySlug };
       updates.enableRightStacking = !!categorySlug;
     } else {
       updates[position] = { ...dualMenu[position], category: categorySlug };

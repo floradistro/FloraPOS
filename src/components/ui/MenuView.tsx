@@ -410,7 +410,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
         category: data.singleMenu.category,
         viewMode: data.singleMenu.viewMode,
         showImages: data.singleMenu.showImages,
-        priceLocation: data.singleMenu.priceLocation || data.singlePriceLocation || 'none'
+        priceLocation: data.singleMenu.priceLocation || data.singlePriceLocation || 'header'
       })
     }
     
@@ -420,16 +420,16 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
           category: data.dualMenu.left.category,
           viewMode: data.dualMenu.left.viewMode,
           showImages: data.dualMenu.left.showImages,
-          priceLocation: data.dualMenu.left.priceLocation || data.leftPriceLocation || 'none'
+          priceLocation: data.dualMenu.left.priceLocation || data.leftPriceLocation || 'header'
         },
         right: {
           category: data.dualMenu.right.category,
           viewMode: data.dualMenu.right.viewMode,
           showImages: data.dualMenu.right.showImages,
-          priceLocation: data.dualMenu.right.priceLocation || data.rightPriceLocation || 'none'
+          priceLocation: data.dualMenu.right.priceLocation || data.rightPriceLocation || 'header'
         },
-        leftBottom: data.dualMenu.leftBottom || { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
-        rightBottom: data.dualMenu.rightBottom || { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
+        leftBottom: data.dualMenu.leftBottom || { category: null, viewMode: 'table', showImages: false, priceLocation: 'header' },
+        rightBottom: data.dualMenu.rightBottom || { category: null, viewMode: 'table', showImages: false, priceLocation: 'header' },
         enableLeftStacking: data.dualMenu.enableLeftStacking || false,
         enableRightStacking: data.dualMenu.enableRightStacking || false
       })
@@ -507,10 +507,10 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     const configData = {
       orientation: 'horizontal' as 'horizontal' | 'vertical', // Not used for themes
       isDualMenu: false, // Not used for themes
-      singleMenu: { category: null, viewMode: 'auto' as 'auto' | 'table' | 'card', showImages: false, priceLocation: 'none' as 'none' | 'inline' | 'header' },
+      singleMenu: { category: null, viewMode: 'table' as 'auto' | 'table' | 'card', showImages: false, priceLocation: 'header' as 'none' | 'inline' | 'header' },
       dualMenu: {
-        left: { category: null, viewMode: 'auto' as 'auto' | 'table' | 'card', showImages: false, priceLocation: 'none' as 'none' | 'inline' | 'header' },
-        right: { category: null, viewMode: 'auto' as 'auto' | 'table' | 'card', showImages: false, priceLocation: 'none' as 'none' | 'inline' | 'header' },
+        left: { category: null, viewMode: 'table' as 'auto' | 'table' | 'card', showImages: false, priceLocation: 'header' as 'none' | 'inline' | 'header' },
+        right: { category: null, viewMode: 'table' as 'auto' | 'table' | 'card', showImages: false, priceLocation: 'header' as 'none' | 'inline' | 'header' },
         leftBottom: null,
         rightBottom: null,
         enableLeftStacking: false,
@@ -760,6 +760,10 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
     params.append('imageOpacity', menuConfig.imageOpacity.toString())
     params.append('blurIntensity', menuConfig.blurIntensity.toString())
     params.append('glowIntensity', menuConfig.glowIntensity.toString())
+    params.append('pricingTiersShape', menuConfig.pricingTiersShape)
+    params.append('pricingContainerOpacity', menuConfig.pricingContainerOpacity.toString())
+    params.append('pricingBorderWidth', menuConfig.pricingBorderWidth.toString())
+    params.append('pricingBorderOpacity', menuConfig.pricingBorderOpacity.toString())
     params.append('headerTitleSize', menuConfig.headerTitleSize.toString())
     params.append('cardTitleSize', menuConfig.cardTitleSize.toString())
     params.append('priceSize', menuConfig.priceSize.toString())
@@ -1617,6 +1621,14 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
           menuConfig.setBlurIntensity(values.blurIntensity)
           if (values.glowIntensity !== undefined) menuConfig.setGlowIntensity(values.glowIntensity)
         }}
+        pricingTiersShape={menuConfig.pricingTiersShape}
+        onPricingShapeChange={menuConfig.setPricingTiersShape}
+        pricingContainerOpacity={menuConfig.pricingContainerOpacity}
+        setPricingContainerOpacity={menuConfig.setPricingContainerOpacity}
+        pricingBorderWidth={menuConfig.pricingBorderWidth}
+        setPricingBorderWidth={menuConfig.setPricingBorderWidth}
+        pricingBorderOpacity={menuConfig.pricingBorderOpacity}
+        setPricingBorderOpacity={menuConfig.setPricingBorderOpacity}
         headerTitleSize={menuConfig.headerTitleSize}
         cardTitleSize={menuConfig.cardTitleSize}
         priceSize={menuConfig.priceSize}
@@ -2058,6 +2070,11 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                                       borderOpacity: menuConfig.borderOpacity,
                                       imageOpacity: menuConfig.imageOpacity,
                                       blurIntensity: menuConfig.blurIntensity,
+                                      glowIntensity: menuConfig.glowIntensity,
+                                      pricingTiersShape: menuConfig.pricingTiersShape,
+                                      pricingContainerOpacity: menuConfig.pricingContainerOpacity,
+                                      pricingBorderWidth: menuConfig.pricingBorderWidth,
+                                      pricingBorderOpacity: menuConfig.pricingBorderOpacity,
                                       headerTitleSize: menuConfig.headerTitleSize,
                                       cardTitleSize: menuConfig.cardTitleSize,
                                       priceSize: menuConfig.priceSize,
@@ -2368,6 +2385,10 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 console.log(`🖱️ Quadrant clicked: ${side}`);
               }}
               selectedMenuSection={null}
+              pricingTiersShape={menuConfig.pricingTiersShape}
+              pricingContainerOpacity={menuConfig.pricingContainerOpacity}
+              pricingBorderWidth={menuConfig.pricingBorderWidth}
+              pricingBorderOpacity={menuConfig.pricingBorderOpacity}
               isPreview={true}
             />
             </div>

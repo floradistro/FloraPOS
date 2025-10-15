@@ -63,6 +63,16 @@ export interface MenuToolbarProps {
   glowIntensity: number;
   onTransparencyChange: (values: { containerOpacity: number; borderWidth: number; borderOpacity: number; imageOpacity: number; blurIntensity: number; glowIntensity: number }) => void;
   
+  // Pricing tiers shape and styling
+  pricingTiersShape: 'circle' | 'rectangle';
+  onPricingShapeChange: (shape: 'circle' | 'rectangle') => void;
+  pricingContainerOpacity: number;
+  setPricingContainerOpacity: (opacity: number) => void;
+  pricingBorderWidth: number;
+  setPricingBorderWidth: (width: number) => void;
+  pricingBorderOpacity: number;
+  setPricingBorderOpacity: (opacity: number) => void;
+  
   // Font sizes
   headerTitleSize: number;
   cardTitleSize: number;

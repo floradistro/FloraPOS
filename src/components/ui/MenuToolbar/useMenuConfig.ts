@@ -9,17 +9,17 @@ export const useMenuConfig = () => {
   // Single menu configuration
   const [singleMenu, setSingleMenu] = useState<MenuConfig>({
     category: null,
-    viewMode: 'auto',
-    showImages: true,
-    priceLocation: 'inline'
+    viewMode: 'table',
+    showImages: false,
+    priceLocation: 'header' // Default to header for pricing display
   });
 
   // Dual menu configuration
   const [dualMenu, setDualMenu] = useState<DualMenuConfig>({
-    left: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
-    right: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
-    leftBottom: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
-    rightBottom: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
+    left: { category: null, viewMode: 'table', showImages: false, priceLocation: 'header' },
+    right: { category: null, viewMode: 'table', showImages: false, priceLocation: 'header' },
+    leftBottom: { category: null, viewMode: 'table', showImages: false, priceLocation: 'header' },
+    rightBottom: { category: null, viewMode: 'table', showImages: false, priceLocation: 'header' },
     enableLeftStacking: false,
     enableRightStacking: false
   });
@@ -42,7 +42,13 @@ export const useMenuConfig = () => {
   const [borderOpacity, setBorderOpacity] = useState(100);
   const [imageOpacity, setImageOpacity] = useState(100);
   const [blurIntensity, setBlurIntensity] = useState(8);
-  const [glowIntensity, setGlowIntensity] = useState(40);
+  const [glowIntensity, setGlowIntensity] = useState(0);
+  
+  // Pricing tiers shape and styling
+  const [pricingTiersShape, setPricingTiersShape] = useState<'circle' | 'rectangle'>('circle');
+  const [pricingContainerOpacity, setPricingContainerOpacity] = useState(80);
+  const [pricingBorderWidth, setPricingBorderWidth] = useState(2);
+  const [pricingBorderOpacity, setPricingBorderOpacity] = useState(15);
   
   // Font sizes
   const [headerTitleSize, setHeaderTitleSize] = useState(60);
@@ -113,10 +119,10 @@ export const useMenuConfig = () => {
     setIsDualMode(false);
     setSelectedQuadrant('');
     setDualMenu({
-      left: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
-      right: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
-      leftBottom: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
-      rightBottom: { category: null, viewMode: 'auto', showImages: true, priceLocation: 'inline' },
+      left: { category: null, viewMode: 'table', showImages: false, priceLocation: 'header' },
+      right: { category: null, viewMode: 'table', showImages: false, priceLocation: 'header' },
+      leftBottom: { category: null, viewMode: 'table', showImages: false, priceLocation: 'header' },
+      rightBottom: { category: null, viewMode: 'table', showImages: false, priceLocation: 'header' },
       enableLeftStacking: false,
       enableRightStacking: false
     });
@@ -127,8 +133,8 @@ export const useMenuConfig = () => {
     if (categories.length >= 2) {
       setDualMenu(prev => ({
         ...prev,
-        left: { ...prev.left, category: categories[0].slug, priceLocation: prev.left.priceLocation || 'inline' },
-        right: { ...prev.right, category: categories[1].slug, priceLocation: prev.right.priceLocation || 'inline' }
+        left: { ...prev.left, category: categories[0].slug, priceLocation: prev.left.priceLocation || 'header' },
+        right: { ...prev.right, category: categories[1].slug, priceLocation: prev.right.priceLocation || 'header' }
       }));
       setSelectedQuadrant('left');
     }
@@ -160,6 +166,10 @@ export const useMenuConfig = () => {
     imageOpacity,
     blurIntensity,
     glowIntensity,
+    pricingTiersShape,
+    pricingContainerOpacity,
+    pricingBorderWidth,
+    pricingBorderOpacity,
     headerTitleSize,
     cardTitleSize,
     priceSize,
@@ -171,7 +181,7 @@ export const useMenuConfig = () => {
     showImages: currentConfig.showImages,
     viewMode: currentConfig.viewMode,
     category: currentConfig.category,
-    priceLocation: (currentConfig as any).priceLocation || 'inline',
+    priceLocation: (currentConfig as any).priceLocation || 'header',
     
     // Actions
     setOrientation,
@@ -192,6 +202,10 @@ export const useMenuConfig = () => {
     setImageOpacity,
     setBlurIntensity,
     setGlowIntensity,
+    setPricingTiersShape,
+    setPricingContainerOpacity,
+    setPricingBorderWidth,
+    setPricingBorderOpacity,
     setHeaderTitleSize,
     setCardTitleSize,
     setPriceSize,

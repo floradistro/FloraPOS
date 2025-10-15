@@ -76,7 +76,7 @@ export const TransparencyDropdown: React.FC<TransparencyDropdownProps> = ({
   borderOpacity,
   imageOpacity,
   blurIntensity,
-  glowIntensity = 40,
+  glowIntensity = 0,
   onTransparencyChange
 }) => {
   return (

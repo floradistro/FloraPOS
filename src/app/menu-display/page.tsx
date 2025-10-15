@@ -42,7 +42,7 @@ function MenuDisplayContent() {
   const pricingFont = searchParams.get('pricingFont') || 'Tiempos, serif'
   const cardFont = searchParams.get('cardFont') || 'Tiempos, serif'
   const showImages = searchParams.get('showImages') === 'true'
-  const priceLocation = (searchParams.get('priceLocation') as 'none' | 'header' | 'inline') || 'none'
+  const priceLocation = (searchParams.get('priceLocation') as 'none' | 'header' | 'inline') || 'header'
   
   // Transparency and border controls
   const containerOpacity = parseInt(searchParams.get('containerOpacity') || '100')
@@ -50,7 +50,13 @@ function MenuDisplayContent() {
   const borderOpacity = parseInt(searchParams.get('borderOpacity') || '100')
   const imageOpacity = parseInt(searchParams.get('imageOpacity') || '100')
   const blurIntensity = parseInt(searchParams.get('blurIntensity') || '8')
-  const glowIntensity = parseInt(searchParams.get('glowIntensity') || '40')
+  const glowIntensity = parseInt(searchParams.get('glowIntensity') || '0')
+  
+  // Pricing tiers shape and styling
+  const pricingTiersShape = (searchParams.get('pricingTiersShape') as 'circle' | 'rectangle') || 'circle'
+  const pricingContainerOpacity = parseInt(searchParams.get('pricingContainerOpacity') || '80')
+  const pricingBorderWidth = parseInt(searchParams.get('pricingBorderWidth') || '2')
+  const pricingBorderOpacity = parseInt(searchParams.get('pricingBorderOpacity') || '15')
   
   // Font sizes
   const headerTitleSize = parseInt(searchParams.get('headerTitleSize') || '60')
@@ -147,6 +153,10 @@ function MenuDisplayContent() {
       if (payload.imageOpacity !== undefined) currentUrl.searchParams.set('imageOpacity', payload.imageOpacity.toString())
       if (payload.blurIntensity !== undefined) currentUrl.searchParams.set('blurIntensity', payload.blurIntensity.toString())
       if (payload.glowIntensity !== undefined) currentUrl.searchParams.set('glowIntensity', payload.glowIntensity.toString())
+      if (payload.pricingTiersShape) currentUrl.searchParams.set('pricingTiersShape', payload.pricingTiersShape)
+      if (payload.pricingContainerOpacity !== undefined) currentUrl.searchParams.set('pricingContainerOpacity', payload.pricingContainerOpacity.toString())
+      if (payload.pricingBorderWidth !== undefined) currentUrl.searchParams.set('pricingBorderWidth', payload.pricingBorderWidth.toString())
+      if (payload.pricingBorderOpacity !== undefined) currentUrl.searchParams.set('pricingBorderOpacity', payload.pricingBorderOpacity.toString())
       
       // Handle font sizes
       if (payload.headerTitleSize !== undefined) currentUrl.searchParams.set('headerTitleSize', payload.headerTitleSize.toString())
@@ -214,7 +224,7 @@ function MenuDisplayContent() {
     loadGoogleFont(cardFont)
   }, [titleFont, pricingFont, cardFont])
 
-  // Fetch products - EXACT SAME as MenuView
+  // Fetch products - REAL-TIME FOR TV DISPLAYS
   useEffect(() => {
     const loadProducts = async () => {
       try {
@@ -225,15 +235,17 @@ function MenuDisplayContent() {
         per_page: '1000',
         page: '1',
         location_id: locationId,
-        _t: Math.floor(Date.now() / 300000).toString() // Cache for 5 minutes (same as ProductGrid)
+        _t: Date.now().toString() // NO CACHE - Always fetch fresh data for TV menus
         })
       
 
-        // Use optimized bulk endpoint
+        // Use optimized bulk endpoint with real-time data
         const response = await apiFetch(`/api/proxy/flora-im/products/bulk?${params}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
             'Expires': '0'
           }
         })
@@ -243,7 +255,7 @@ function MenuDisplayContent() {
           throw new Error(result.error || 'Failed to load products')
         }
         
-        console.log(`📦 [TV DISPLAY] Loaded ${result.data.length} products for location ${locationId}`)
+        console.log(`📦 [TV DISPLAY] Loaded ${result.data.length} total products from API for location ${locationId}`)
 
         // Apply blueprint pricing - BATCH (same as MenuView)
         try {
@@ -259,52 +271,69 @@ function MenuDisplayContent() {
             blueprintPricing: batchPricing[p.id] || null
           }))
           
+          // COMPREHENSIVE LOGGING - Show what we're filtering and why
+          console.log(`🔍 [TV DISPLAY] Filtering products by stock for location ${locationId}...`)
+          let filteredOutCount = 0
+          let keptCount = 0
+          
           // Filter to show only products with stock > 0 at current location
           const inStockProducts = enrichedProducts.filter((product: Product) => {
+            // Find inventory for this specific location
             const locationInventory = product.inventory?.find((inv: any) => 
               inv.location_id?.toString() === locationId
             )
-            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || 0) : 0
             
-            // Debug logging for products with 0 stock
-            if (locationStock === 0 && product.name?.toLowerCase().includes('animal')) {
-              console.log(`🚫 [TV DISPLAY] Filtering out "${product.name}" - Stock: ${locationStock} at location ${locationId}`, {
-                locationInventory,
-                allInventory: product.inventory
+            // Get the stock quantity
+            const locationStock = locationInventory 
+              ? (parseFloat(locationInventory.stock?.toString() || '0') || 0) 
+              : 0
+            
+            const hasStock = locationStock > 0
+            
+            // COMPREHENSIVE DEBUG LOGGING - Log ALL filtered products
+            if (!hasStock) {
+              filteredOutCount++
+              console.log(`🚫 [TV DISPLAY] Filtered out "${product.name}" (ID: ${product.id})`, {
+                reason: 'No stock at location',
+                locationId: locationId,
+                locationStock: locationStock,
+                inventoryData: product.inventory,
+                categories: product.categories?.map(c => c.name).join(', ')
               })
+            } else {
+              keptCount++
             }
             
-            return locationStock > 0
+            return hasStock
           })
           
-          console.log(`✅ [TV DISPLAY] Filtered to ${inStockProducts.length} in-stock products at location ${locationId}`)
-          
-          // Only update if products actually changed
-          setProducts(prev => {
-            if (JSON.stringify(prev) === JSON.stringify(inStockProducts)) {
-              return prev
-            }
-            return inStockProducts
+          console.log(`✅ [TV DISPLAY] Stock filtering complete:`, {
+            totalProducts: enrichedProducts.length,
+            inStockProducts: inStockProducts.length,
+            filteredOut: filteredOutCount,
+            kept: keptCount,
+            locationId: locationId
           })
+          
+          // Always update products - don't compare with JSON.stringify (too expensive)
+          setProducts(inStockProducts)
         } catch (err) {
+          console.error('❌ [TV DISPLAY] Pricing error, showing products without pricing:', err)
           // Even on pricing error, filter by location-specific stock
           const inStockProducts = result.data.filter((product: Product) => {
             const locationInventory = product.inventory?.find((inv: any) => 
               inv.location_id?.toString() === locationId
             )
-            const locationStock = locationInventory ? (parseFloat(locationInventory.stock?.toString() || '0') || 0) : 0
+            const locationStock = locationInventory 
+              ? (parseFloat(locationInventory.stock?.toString() || '0') || 0) 
+              : 0
             return locationStock > 0
           })
           
-          setProducts(prev => {
-            if (JSON.stringify(prev) === JSON.stringify(inStockProducts)) {
-              return prev
-            }
-            return inStockProducts
-          })
+          setProducts(inStockProducts)
         }
         
-        // Extract categories
+        // Extract categories from ALL products (not just in-stock ones)
         const catMap = new Map()
         result.data.forEach((p: Product) => {
           p.categories?.forEach(cat => {
@@ -314,16 +343,10 @@ function MenuDisplayContent() {
           })
         })
         const extractedCategories = Array.from(catMap.values())
-        
-        // Only update categories if changed
-        setCategories(prev => {
-          if (JSON.stringify(prev) === JSON.stringify(extractedCategories)) {
-            return prev
-          }
-          return extractedCategories
-        })
+        setCategories(extractedCategories)
         
       } catch (err: any) {
+        console.error('❌ [TV DISPLAY] Failed to load products:', err)
         setError(err.message || 'Failed to load products')
       } finally {
         setLoading(false)
@@ -332,10 +355,11 @@ function MenuDisplayContent() {
 
     loadProducts()
     
-    // Refresh products every 5 minutes (same as ProductGrid cache)
+    // Refresh products every 30 seconds for real-time TV displays
     const refreshInterval = setInterval(() => {
+      console.log('🔄 [TV DISPLAY] Auto-refreshing products...')
       loadProducts()
-    }, 300000)
+    }, 30000) // 30 seconds instead of 5 minutes
     
     return () => {
       clearInterval(refreshInterval)
@@ -659,15 +683,12 @@ function MenuDisplayContent() {
         {customBackground && <MagicBackground key={customBackground} htmlCode={customBackground} />}
         
         {/* Header */}
-        <div className="flex-shrink-0 relative z-10" style={{
+        <div className="flex-shrink-0 relative z-10 border-b" style={{
           paddingLeft: `${Math.max(32, headerTitleSize * 0.4)}px`,
           paddingRight: `${Math.max(32, headerTitleSize * 0.4)}px`,
           paddingTop: `${Math.max(16, headerTitleSize * 0.25)}px`,
           paddingBottom: `${Math.max(16, headerTitleSize * 0.25)}px`, 
-          background: `linear-gradient(180deg, ${containerColor}80 0%, ${containerColor}40 100%)`,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
-          backdropFilter: `blur(${blurIntensity}px)`
+          borderBottomColor: `${containerColor}40`
         }}>
           <div className="flex items-center justify-between gap-6">
             <div className="flex items-center min-w-0" style={{ gap: `${Math.max(12, headerTitleSize * 0.2)}px` }}>
@@ -700,7 +721,32 @@ function MenuDisplayContent() {
               return tierStructure.length > 0 ? (
                 <div className="text-right flex-shrink-0">
                   <div className="flex items-center gap-4">
-                    {tierStructure.map((tier: any, idx: number) => (
+                    {tierStructure.map((tier: any, idx: number) => pricingTiersShape === 'circle' ? (
+                      <div 
+                        key={idx} 
+                        className="flex flex-col items-center justify-center backdrop-blur-xl px-3"
+                        style={{
+                          width: `${priceSize * 3.8}px`,
+                          height: `${priceSize * 3.8}px`,
+                          minWidth: `${priceSize * 3.8}px`,
+                          minHeight: `${priceSize * 3.8}px`,
+                          borderRadius: '50%',
+                          background: `radial-gradient(circle, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 255).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 180).toString(16).padStart(2, '0')} 100%)`,
+                          border: `${pricingBorderWidth}px solid rgba(255, 255, 255, ${pricingBorderOpacity / 100})`,
+                          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 rgba(0, 0, 0, 0.2)'
+                        }}
+                      >
+                        <div className="uppercase tracking-wider font-semibold mb-1 text-center" style={{ fontSize: `${priceSize * 0.32}px`, color: `${fontColor}CC`, fontFamily: pricingFont }}>
+                          {tier.label}
+                        </div>
+                        <div className="font-black text-center" style={{ fontSize: `${priceSize * 0.75}px`, color: fontColor, fontFamily: pricingFont, letterSpacing: '-0.02em' }}>
+                          ${parseFloat(tier.price).toFixed(2)}
+                        </div>
+                        <div className="uppercase tracking-wider font-medium text-center" style={{ fontSize: `${priceSize * 0.24}px`, color: `${fontColor}80`, fontFamily: pricingFont }}>
+                          {tier.unit}
+                        </div>
+                      </div>
+                    ) : (
                       <div 
                         key={idx} 
                         className="text-center rounded-2xl backdrop-blur-xl"
@@ -899,7 +945,32 @@ function MenuDisplayContent() {
             {/* Left Pricing Tiers in Header */}
             {leftPriceLocation === 'header' && leftHeaderTiers.length > 0 && (
               <div className="flex items-center gap-3 flex-shrink-0">
-                {leftHeaderTiers.map((tier: any, idx: number) => (
+                {leftHeaderTiers.map((tier: any, idx: number) => pricingTiersShape === 'circle' ? (
+                  <div 
+                    key={idx} 
+                    className="flex flex-col items-center justify-center backdrop-blur-xl px-2"
+                    style={{
+                      width: `${priceSize * 2.8}px`,
+                      height: `${priceSize * 2.8}px`,
+                      minWidth: `${priceSize * 2.8}px`,
+                      minHeight: `${priceSize * 2.8}px`,
+                      borderRadius: '50%',
+                      background: `radial-gradient(circle, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 255).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 180).toString(16).padStart(2, '0')} 100%)`,
+                      border: `${pricingBorderWidth}px solid rgba(255, 255, 255, ${pricingBorderOpacity / 100})`,
+                      boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                    }}
+                  >
+                    <div className="uppercase tracking-wide font-semibold text-center" style={{ fontSize: `${priceSize * 0.28}px`, color: `${fontColor}CC`, fontFamily: pricingFont }}>
+                      {tier.label}
+                    </div>
+                    <div className="font-black text-center" style={{ fontSize: `${priceSize * 0.62}px`, color: fontColor, fontFamily: pricingFont, letterSpacing: '-0.02em' }}>
+                      ${parseFloat(tier.price).toFixed(2)}
+                    </div>
+                    <div className="uppercase tracking-wide font-medium text-center" style={{ fontSize: `${priceSize * 0.22}px`, color: `${fontColor}80`, fontFamily: pricingFont }}>
+                      {tier.unit}
+                    </div>
+                  </div>
+                ) : (
                   <div 
                     key={idx} 
                     className="text-center rounded-xl backdrop-blur-xl"
@@ -1093,7 +1164,32 @@ function MenuDisplayContent() {
             {/* Right Pricing Tiers in Header */}
             {rightPriceLocation === 'header' && rightHeaderTiers.length > 0 && (
               <div className="flex items-center gap-3 flex-shrink-0">
-                {rightHeaderTiers.map((tier: any, idx: number) => (
+                {rightHeaderTiers.map((tier: any, idx: number) => pricingTiersShape === 'circle' ? (
+                  <div 
+                    key={idx} 
+                    className="flex flex-col items-center justify-center backdrop-blur-xl px-2"
+                    style={{
+                      width: `${priceSize * 2.8}px`,
+                      height: `${priceSize * 2.8}px`,
+                      minWidth: `${priceSize * 2.8}px`,
+                      minHeight: `${priceSize * 2.8}px`,
+                      borderRadius: '50%',
+                      background: `radial-gradient(circle, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 255).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 180).toString(16).padStart(2, '0')} 100%)`,
+                      border: `${pricingBorderWidth}px solid rgba(255, 255, 255, ${pricingBorderOpacity / 100})`,
+                      boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                    }}
+                  >
+                    <div className="uppercase tracking-wide font-semibold text-center" style={{ fontSize: `${priceSize * 0.28}px`, color: `${fontColor}CC`, fontFamily: pricingFont }}>
+                      {tier.label}
+                    </div>
+                    <div className="font-black text-center" style={{ fontSize: `${priceSize * 0.62}px`, color: fontColor, fontFamily: pricingFont, letterSpacing: '-0.02em' }}>
+                      ${parseFloat(tier.price).toFixed(2)}
+                    </div>
+                    <div className="uppercase tracking-wide font-medium text-center" style={{ fontSize: `${priceSize * 0.22}px`, color: `${fontColor}80`, fontFamily: pricingFont }}>
+                      {tier.unit}
+                    </div>
+                  </div>
+                ) : (
                   <div 
                     key={idx} 
                     className="text-center rounded-xl backdrop-blur-xl"

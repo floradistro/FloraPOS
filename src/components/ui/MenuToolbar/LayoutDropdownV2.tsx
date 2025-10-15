@@ -21,10 +21,12 @@ interface LayoutDropdownV2Props {
   viewMode: 'table' | 'card' | 'auto'
   showImages: boolean
   priceLocation: 'none' | 'header' | 'inline'
+  pricingTiersShape?: 'circle' | 'rectangle'
   onDisplayChange: (settings: {
     viewMode?: 'table' | 'card' | 'auto'
     showImages?: boolean
     priceLocation?: 'none' | 'header' | 'inline'
+    pricingTiersShape?: 'circle' | 'rectangle'
   }) => void
 }
 
@@ -36,6 +38,7 @@ export function LayoutDropdownV2({
   viewMode,
   showImages,
   priceLocation,
+  pricingTiersShape = 'circle',
   onDisplayChange
 }: LayoutDropdownV2Props) {
   const [activeTab, setActiveTab] = useState<'structure' | 'display'>('structure')
@@ -268,6 +271,39 @@ export function LayoutDropdownV2({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                   <span className="text-[10px] font-medium">Inline</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Pricing Tiers Shape */}
+            <div className="mb-6">
+              <div className="text-xs text-white/60 font-medium mb-3 px-1 tracking-wide uppercase">Pricing Style</div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => onDisplayChange({ pricingTiersShape: 'circle' })}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                    pricingTiersShape === 'circle'
+                      ? 'bg-white/10 text-white shadow-sm'
+                      : 'bg-white/[0.02] text-white/60 hover:bg-white/[0.06] hover:text-white/80'
+                  }`}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" strokeWidth={2} />
+                  </svg>
+                  <span className="text-[10px] font-medium">Circle</span>
+                </button>
+                <button
+                  onClick={() => onDisplayChange({ pricingTiersShape: 'rectangle' })}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+                    pricingTiersShape === 'rectangle'
+                      ? 'bg-white/10 text-white shadow-sm'
+                      : 'bg-white/[0.02] text-white/60 hover:bg-white/[0.06] hover:text-white/80'
+                  }`}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="6" width="18" height="12" rx="2" strokeWidth={2} />
+                  </svg>
+                  <span className="text-[10px] font-medium">Rectangle</span>
                 </button>
               </div>
             </div>

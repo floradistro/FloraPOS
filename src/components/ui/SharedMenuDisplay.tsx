@@ -103,20 +103,24 @@ export function SharedMenuDisplay({
   borderOpacity = 100,
   imageOpacity = 100,
   blurIntensity = 8,
-  glowIntensity = 40,
+  glowIntensity = 0,
   headerTitleSize = 60,
   cardTitleSize = 18,
   priceSize = 32,
   categorySize = 40,
   customBackground = '',
-  priceLocation = 'none',
-  leftPriceLocation = 'none',
-  rightPriceLocation = 'none',
+  priceLocation = 'header',
+  leftPriceLocation = 'header',
+  rightPriceLocation = 'header',
   categoryColumnConfigs = new Map(),
   categoryBlueprintFields = new Map(),
   selectedSide = '',
   onSideClick,
   isPreview = false,
+  pricingTiersShape = 'circle',
+  pricingContainerOpacity = 80,
+  pricingBorderWidth = 2,
+  pricingBorderOpacity = 15,
 }: SharedMenuDisplayProps) {
   
   console.log('🖼️ SharedMenuDisplay received:', {
@@ -130,31 +134,62 @@ export function SharedMenuDisplay({
     leftMenuViewMode,
     rightMenuViewMode,
     categoryFilter,
-    totalProducts: products.length
+    totalProducts: products.length,
+    totalCategories: categories.length,
+    categoryNames: categories.map(c => ({ id: c.id, name: c.name, slug: c.slug }))
   });
   
-  // Get Flora Field value - checks multiple formats
+  // Get Flora Field value - checks ALL possible formats
   const getFieldValue = (product: Product, fieldName: string): string => {
+    // Normalize field name
+    let normalizedFieldName = fieldName;
+    if (fieldName === 'effects') normalizedFieldName = 'effect';
+    if (fieldName === 'thc_percentage') normalizedFieldName = 'thca_percentage';
+    
     // Check V2 Flora Fields format: product.fields array
     if (product.fields && Array.isArray(product.fields)) {
-      const field = product.fields.find(f => f.name === fieldName);
+      const field = product.fields.find(f => f.name === normalizedFieldName || f.name === fieldName);
       if (field && field.has_value) {
         return field.value?.toString() || '';
       }
     }
     
-    // Fallback: Check meta_data for Flora Fields (_fd_field_*)
+    // Check meta_data for ALL possible formats (same as ColumnSelector)
     if (product.meta_data && Array.isArray(product.meta_data)) {
-      let meta = product.meta_data.find(m => m.key === `_fd_field_${fieldName}`);
-      if (meta && meta.value) {
-        return meta.value?.toString() || '';
-      }
+      // Try all possible key formats - PRIORITIZE non-underscore keys first
+      const possibleKeys = [
+        // First try keys WITHOUT underscore (these have actual values)
+        normalizedFieldName,
+        fieldName,
+        `_fd_field_${normalizedFieldName}`,
+        `_fd_field_${fieldName}`,
+        `_blueprint_${normalizedFieldName}`,
+        `_blueprint_${fieldName}`,
+        `blueprint_${normalizedFieldName}`,
+        `blueprint_${fieldName}`,
+        // Last resort: underscore-prefixed (but skip ACF field IDs)
+        `_${normalizedFieldName}`,
+        `_${fieldName}`
+      ];
       
-      // Also check old blueprint format (_blueprint_*)
-      meta = product.meta_data.find(m => m.key === `_blueprint_${fieldName}`);
-      if (meta && meta.value) {
-        return meta.value?.toString() || '';
+      for (const key of possibleKeys) {
+        const meta = product.meta_data.find(m => m.key === key);
+        if (meta && meta.value) {
+          const value = String(meta.value).trim();
+          // Skip ACF field ID references (format: "field_XXXXXXXXXXXXX")
+          if (value && !value.startsWith('field_')) {
+            return value;
+          }
+        }
       }
+    }
+    
+    // Check direct product properties
+    if ((product as any)[normalizedFieldName]) {
+      return String((product as any)[normalizedFieldName]);
+    }
+    if ((product as any)[fieldName]) {
+      return String((product as any)[fieldName]);
     }
     
     return '';
@@ -288,37 +323,47 @@ export function SharedMenuDisplay({
     )
   }
 
-  // Render table header row
+  // Render table header row - APPLE 2035 AESTHETIC
   const renderTableHeader = (categorySlug?: string, panelShowImages: boolean = showImages) => {
     const columns = categorySlug ? (categoryColumnConfigs.get(categorySlug) || ['name']) : ['name']
     const category = categories.find(c => c.slug === categorySlug)
     const categoryName = category?.name || 'Product'
     
+    console.log(`📋 Rendering table header for ${categorySlug}:`, { 
+      columns, 
+      categoryName,
+      hasConfig: categoryColumnConfigs.has(categorySlug || ''),
+      allConfigs: Array.from(categoryColumnConfigs.entries())
+    });
+    
     return (
-      <div className="flex items-center gap-3 py-2 px-3 border-b-2 sticky top-0 z-10" style={{ 
-        backgroundColor: `${containerColor}80`,
-        borderBottomColor: `${fontColor}40`,
-        backdropFilter: 'blur(10px)'
+      <div className="flex items-center gap-6 py-4 px-6 sticky top-0 z-10 backdrop-blur-2xl" style={{ 
+        background: `linear-gradient(180deg, ${containerColor}${Math.round((containerOpacity / 100) * 240).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((containerOpacity / 100) * 200).toString(16).padStart(2, '0')} 100%)`,
+        borderBottom: `1px solid rgba(255, 255, 255, ${borderOpacity / 100 * 0.08})`,
+        boxShadow: '0 1px 0 rgba(255, 255, 255, 0.04), 0 4px 16px rgba(0, 0, 0, 0.12)'
       }}>
-        {/* Image Header */}
+        {/* Image Header - Minimal */}
         {panelShowImages && (
-          <div className="w-12 flex-shrink-0">
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: `${fontColor}70`, fontFamily: cardFont }}>
-              Image
-            </span>
-          </div>
+          <div className="w-16 flex-shrink-0" />
         )}
         
-        {/* Column Headers */}
-        <div className="flex-1 min-w-0 grid gap-3" style={{ 
+        {/* Column Headers - Clean & Modern */}
+        <div className="flex-1 min-w-0 grid gap-6" style={{ 
           gridTemplateColumns: columns.length === 1 ? '1fr' : 
                               columns.length === 2 ? '2fr 1fr' :
                               columns.length === 3 ? '2fr 1fr 1fr' :
+                              columns.length === 4 ? '2fr 1fr 1fr 1fr' :
                               `2fr ${Array(columns.length - 1).fill('1fr').join(' ')}`
         }}>
-          {columns.map((columnName) => (
-            <div key={columnName} className="min-w-0">
-              <span className="text-xs font-semibold uppercase tracking-wider truncate block" style={{ color: `${fontColor}70`, fontFamily: cardFont, textAlign: 'left' }}>
+          {columns.map((columnName, idx) => (
+            <div key={columnName} className="min-w-0 flex items-center gap-2">
+              <span className="text-xs font-medium uppercase tracking-[0.08em] truncate block" style={{ 
+                color: `${fontColor}${idx === 0 ? 'DD' : '99'}`, 
+                fontFamily: cardFont, 
+                textAlign: 'left',
+                letterSpacing: '0.08em',
+                fontWeight: idx === 0 ? '600' : '500'
+              }}>
                 {columnName === 'name' ? categoryName : columnName.replace(/_/g, ' ')}
               </span>
             </div>
@@ -349,12 +394,12 @@ export function SharedMenuDisplay({
     return (
       <div
         key={product.id}
-        className="group relative flex items-center gap-4 py-3 px-5 flex-shrink-0"
+        className="group relative flex items-center gap-6 py-5 px-6 flex-shrink-0 transition-all duration-200 hover:bg-white/[0.03]"
         style={{
           background: index % 2 === 0 
-            ? `linear-gradient(90deg, ${containerColor}${rowAlpha1} 0%, ${containerColor}${rowAlpha2} 100%)` 
-            : `rgba(255, 255, 255, ${(containerOpacity / 100) * 0.02})`,
-          borderBottom: `${borderWidth}px solid rgba(255, 255, 255, ${borderAlpha})`,
+            ? `rgba(255, 255, 255, ${(containerOpacity / 100) * 0.015})` 
+            : 'transparent',
+          borderBottom: `1px solid rgba(255, 255, 255, ${borderOpacity / 100 * 0.05})`,
           color: fontColor,
           backdropFilter: `blur(${blurIntensity}px)`
         }}
@@ -362,11 +407,10 @@ export function SharedMenuDisplay({
         {/* Image */}
         {panelShowImages && (
           <div 
-            className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0" 
+            className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 ring-1 ring-white/[0.06]" 
             style={{ 
               background: `${imageBackgroundColor}${Math.round((imageOpacity / 100) * 255).toString(16).padStart(2, '0')}`,
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.1)'
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
             }}
           >
             {hasImage ? (
@@ -385,29 +429,41 @@ export function SharedMenuDisplay({
           </div>
         )}
 
-        {/* Columns Content - Responsive Table Layout */}
-        <div className="flex-1 min-w-0 grid gap-3" style={{ 
+        {/* Columns Content - Modern Apple 2035 Table Layout */}
+        <div className="flex-1 min-w-0 grid gap-6" style={{ 
           gridTemplateColumns: columns.length === 1 ? '1fr' : 
                               columns.length === 2 ? '2fr 1fr' :
                               columns.length === 3 ? '2fr 1fr 1fr' :
+                              columns.length === 4 ? '2fr 1fr 1fr 1fr' :
                               `2fr ${Array(columns.length - 1).fill('1fr').join(' ')}`
         }}>
           {columns.map((columnName, idx) => {
             const value = columnName === 'name' ? product.name : getFieldValue(product, columnName)
-            if (!value) return null
             
+            // Debug logging for first product
+            if (index === 0 && idx > 0) {
+              console.log(`🔍 [Column Debug] Product: "${product.name}", Column: "${columnName}", Value: "${value}"`, {
+                hasFields: !!product.fields,
+                fieldsArray: product.fields,
+                hasMetaData: !!product.meta_data,
+                metaDataKeys: product.meta_data?.map(m => m.key),
+                metaDataSample: product.meta_data?.slice(0, 5)
+              });
+            }
+            
+            // Always render the cell to maintain grid layout
             return (
-              <div key={columnName} className="min-w-0">
-                <h3 className={`${idx === 0 ? 'font-bold' : ''} truncate`} style={{ 
-                  fontSize: idx === 0 ? `${cardTitleSize}px` : '14px',
-                  color: fontColor, 
+              <div key={columnName} className="min-w-0 flex items-center">
+                <span className={`${idx === 0 ? 'font-semibold' : 'font-normal'} truncate block`} style={{ 
+                  fontSize: idx === 0 ? `${cardTitleSize}px` : `${cardTitleSize * 0.85}px`,
+                  color: value ? fontColor : `${fontColor}30`,
                   fontFamily: cardFont, 
                   textAlign: 'left',
-                  textShadow: idx === 0 ? '0 2px 4px rgba(0, 0, 0, 0.2)' : 'none',
-                  letterSpacing: idx === 0 ? '-0.01em' : '0'
+                  letterSpacing: idx === 0 ? '-0.015em' : '0',
+                  lineHeight: '1.4'
                 }}>
-                  {value}
-                </h3>
+                  {value || (idx === 0 ? 'Untitled' : '—')}
+                </span>
               </div>
             )
           })}
@@ -477,8 +533,10 @@ export function SharedMenuDisplay({
           </div>
         )}
 
-        {/* Hover Line */}
-        <div className="absolute left-0 top-0 bottom-0 w-1 transform scale-y-0 group-hover:scale-y-100 transition-transform duration-200 origin-top" style={{ backgroundColor: `${fontColor}30` }} />
+        {/* Subtle accent line on hover */}
+        <div className="absolute left-0 top-0 bottom-0 w-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ 
+          background: `linear-gradient(180deg, transparent 0%, ${fontColor}40 50%, transparent 100%)` 
+        }} />
       </div>
     )
   }
@@ -615,7 +673,32 @@ export function SharedMenuDisplay({
             {priceLocation === 'header' && headerTiers.length > 0 && (
               <div className="text-right flex-shrink-0">
                 <div className="flex items-center gap-4">
-                  {headerTiers.map((tier: any, idx: number) => (
+                  {headerTiers.map((tier: any, idx: number) => pricingTiersShape === 'circle' ? (
+                    <div 
+                      key={idx} 
+                      className="flex flex-col items-center justify-center backdrop-blur-xl px-2"
+                      style={{
+                        width: `${priceSize * 3.8}px`,
+                        height: `${priceSize * 3.8}px`,
+                        minWidth: `${priceSize * 3.8}px`,
+                        minHeight: `${priceSize * 3.8}px`,
+                        borderRadius: '50%',
+                        background: `radial-gradient(circle, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 255).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 180).toString(16).padStart(2, '0')} 100%)`,
+                        border: `${pricingBorderWidth}px solid rgba(255, 255, 255, ${pricingBorderOpacity / 100})`,
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 rgba(0, 0, 0, 0.2)'
+                      }}
+                    >
+                      <div className="uppercase tracking-wider font-semibold mb-1 text-center" style={{ fontSize: `${priceSize * 0.32}px`, color: `${fontColor}CC`, fontFamily: pricingFont }}>
+                        {tier.label}
+                      </div>
+                      <div className="font-black text-center" style={{ fontSize: `${priceSize * 0.75}px`, color: fontColor, fontFamily: pricingFont, letterSpacing: '-0.02em' }}>
+                        ${parseFloat(tier.price).toFixed(2)}
+                      </div>
+                      <div className="uppercase tracking-wider font-medium text-center" style={{ fontSize: `${priceSize * 0.24}px`, color: `${fontColor}80`, fontFamily: pricingFont }}>
+                        {tier.unit}
+                      </div>
+                    </div>
+                  ) : (
                     <div 
                       key={idx} 
                       className="text-center px-6 py-4 rounded-2xl backdrop-blur-xl"
@@ -858,12 +941,13 @@ export function SharedMenuDisplay({
                     ? 'grid-cols-4' 
                     : 'grid-cols-3'
                 }`}>
-                  {singleCategory.products.slice(0, orientation === 'horizontal' ? 8 : 9).map(product => renderProductCard(product, showImages, priceLocation, singleCategory.category.slug))}
+                  {/* Show ALL products - no limits */}
+                  {singleCategory.products.map(product => renderProductCard(product, showImages, priceLocation, singleCategory.category.slug))}
                 </div>
               ) : (() => {
-                const maxItemsPerColumn = 12;
+                const maxItemsPerColumn = 50; // Increased from 12 to handle larger menus
                 const useDoubleColumn = singleCategory.products.length > maxItemsPerColumn;
-                const visibleProducts = singleCategory.products.slice(0, useDoubleColumn ? maxItemsPerColumn * 2 : maxItemsPerColumn);
+                const visibleProducts = singleCategory.products; // Show ALL products, no slicing
                 
                 if (useDoubleColumn) {
                   const midPoint = Math.ceil(visibleProducts.length / 2);
@@ -981,7 +1065,16 @@ export function SharedMenuDisplay({
                   fontFamily: titleFont,
                   textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
                 }}>
-                  {categories.find(c => c.slug === leftMenuCategory)?.name || 'Select Category'}
+                  {(() => {
+                    const cat = categories.find(c => c.slug === leftMenuCategory);
+                    if (!cat && leftMenuCategory) {
+                      console.warn('⚠️ Left category not found:', { 
+                        leftMenuCategory, 
+                        availableCategories: categories.map(c => c.slug) 
+                      });
+                    }
+                    return cat?.name || (leftMenuCategory ? leftMenuCategory.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Select Category');
+                  })()}
                 </h2>
               </div>
             </div>
@@ -989,7 +1082,32 @@ export function SharedMenuDisplay({
             {/* Left Pricing Tiers in Header */}
             {leftPriceLocation === 'header' && leftHeaderTiers.length > 0 && (
               <div className="flex items-center gap-3 flex-shrink-0">
-                {leftHeaderTiers.map((tier: any, idx: number) => (
+                {leftHeaderTiers.map((tier: any, idx: number) => pricingTiersShape === 'circle' ? (
+                  <div 
+                    key={idx} 
+                    className="flex flex-col items-center justify-center backdrop-blur-xl px-2"
+                    style={{
+                      width: `${priceSize * 2.8}px`,
+                      height: `${priceSize * 2.8}px`,
+                      minWidth: `${priceSize * 2.8}px`,
+                      minHeight: `${priceSize * 2.8}px`,
+                      borderRadius: '50%',
+                      background: `radial-gradient(circle, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 255).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 180).toString(16).padStart(2, '0')} 100%)`,
+                      border: `${pricingBorderWidth}px solid rgba(255, 255, 255, ${pricingBorderOpacity / 100})`,
+                      boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                    }}
+                  >
+                    <div className="uppercase tracking-wide font-semibold text-center" style={{ fontSize: `${priceSize * 0.28}px`, color: `${fontColor}CC`, fontFamily: pricingFont }}>
+                      {tier.label}
+                    </div>
+                    <div className="font-black text-center" style={{ fontSize: `${priceSize * 0.62}px`, color: fontColor, fontFamily: pricingFont, letterSpacing: '-0.02em' }}>
+                      ${parseFloat(tier.price).toFixed(2)}
+                    </div>
+                    <div className="uppercase tracking-wide font-medium text-center" style={{ fontSize: `${priceSize * 0.22}px`, color: `${fontColor}80`, fontFamily: pricingFont }}>
+                      {tier.unit}
+                    </div>
+                  </div>
+                ) : (
                   <div 
                     key={idx} 
                     className="text-center px-4 py-2 rounded-xl backdrop-blur-xl"
@@ -1042,12 +1160,13 @@ export function SharedMenuDisplay({
             </div>
           ) : leftMenuViewMode === 'card' ? (
             <div className="grid grid-cols-4 gap-2 w-full overflow-hidden auto-rows-min">
-              {leftProducts.slice(0, 12).map((product) => renderProductCard(product, leftMenuImages, leftPriceLocation, leftMenuCategory || undefined))}
+              {/* Show ALL left products - no limits */}
+              {leftProducts.map((product) => renderProductCard(product, leftMenuImages, leftPriceLocation, leftMenuCategory || undefined))}
             </div>
           ) : (() => {
-            const maxItemsPerColumn = 12;
+            const maxItemsPerColumn = 50; // Increased from 12 to handle larger menus
             const useDoubleColumn = leftProducts.length > maxItemsPerColumn;
-            const visibleProducts = leftProducts.slice(0, useDoubleColumn ? maxItemsPerColumn * 2 : maxItemsPerColumn);
+            const visibleProducts = leftProducts; // Show ALL products, no slicing
             
             if (useDoubleColumn) {
               const midPoint = Math.ceil(visibleProducts.length / 2);
@@ -1113,7 +1232,16 @@ export function SharedMenuDisplay({
                     fontFamily: titleFont,
                     textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
                   }}>
-                    {categories.find(c => c.slug === leftMenuCategory2)?.name}
+                    {(() => {
+                      const cat = categories.find(c => c.slug === leftMenuCategory2);
+                      if (!cat && leftMenuCategory2) {
+                        console.warn('⚠️ Left bottom category not found:', { 
+                          leftMenuCategory2, 
+                          availableCategories: categories.map(c => c.slug) 
+                        });
+                      }
+                      return cat?.name || (leftMenuCategory2 ? leftMenuCategory2.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Select Category');
+                    })()}
                   </h2>
                 </div>
               </div>
@@ -1127,10 +1255,11 @@ export function SharedMenuDisplay({
                 
                 return actualMode === 'card' ? (
                   <div className="grid grid-cols-4 gap-3 auto-rows-min w-full">
+                    {/* Show ALL left bottom products - no limits */}
                     {leftProducts2.map((p) => renderProductCard(p, leftMenuImages2, leftPriceLocation))}
                   </div>
                 ) : (() => {
-                  const maxItemsPerColumn = 8;
+                  const maxItemsPerColumn = 50; // Increased from 8 to handle larger menus
                   const useDoubleColumn = leftProducts2.length > maxItemsPerColumn;
                   
                   if (useDoubleColumn) {
@@ -1205,7 +1334,16 @@ export function SharedMenuDisplay({
                   fontFamily: titleFont,
                   textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
                 }}>
-                  {categories.find(c => c.slug === rightMenuCategory)?.name || 'Select Category'}
+                  {(() => {
+                    const cat = categories.find(c => c.slug === rightMenuCategory);
+                    if (!cat && rightMenuCategory) {
+                      console.warn('⚠️ Right category not found:', { 
+                        rightMenuCategory, 
+                        availableCategories: categories.map(c => c.slug) 
+                      });
+                    }
+                    return cat?.name || (rightMenuCategory ? rightMenuCategory.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Select Category');
+                  })()}
                 </h2>
               </div>
             </div>
@@ -1213,7 +1351,32 @@ export function SharedMenuDisplay({
             {/* Right Pricing Tiers in Header */}
             {rightPriceLocation === 'header' && rightHeaderTiers.length > 0 && (
               <div className="flex items-center gap-3 flex-shrink-0">
-                {rightHeaderTiers.map((tier: any, idx: number) => (
+                {rightHeaderTiers.map((tier: any, idx: number) => pricingTiersShape === 'circle' ? (
+                  <div 
+                    key={idx} 
+                    className="flex flex-col items-center justify-center backdrop-blur-xl px-2"
+                    style={{
+                      width: `${priceSize * 2.8}px`,
+                      height: `${priceSize * 2.8}px`,
+                      minWidth: `${priceSize * 2.8}px`,
+                      minHeight: `${priceSize * 2.8}px`,
+                      borderRadius: '50%',
+                      background: `radial-gradient(circle, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 255).toString(16).padStart(2, '0')} 0%, ${containerColor}${Math.round((pricingContainerOpacity / 100) * 180).toString(16).padStart(2, '0')} 100%)`,
+                      border: `${pricingBorderWidth}px solid rgba(255, 255, 255, ${pricingBorderOpacity / 100})`,
+                      boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                    }}
+                  >
+                    <div className="uppercase tracking-wide font-semibold text-center" style={{ fontSize: `${priceSize * 0.28}px`, color: `${fontColor}CC`, fontFamily: pricingFont }}>
+                      {tier.label}
+                    </div>
+                    <div className="font-black text-center" style={{ fontSize: `${priceSize * 0.62}px`, color: fontColor, fontFamily: pricingFont, letterSpacing: '-0.02em' }}>
+                      ${parseFloat(tier.price).toFixed(2)}
+                    </div>
+                    <div className="uppercase tracking-wide font-medium text-center" style={{ fontSize: `${priceSize * 0.22}px`, color: `${fontColor}80`, fontFamily: pricingFont }}>
+                      {tier.unit}
+                    </div>
+                  </div>
+                ) : (
                   <div 
                     key={idx} 
                     className="text-center px-4 py-2 rounded-xl backdrop-blur-xl"
@@ -1266,12 +1429,13 @@ export function SharedMenuDisplay({
             </div>
           ) : rightMenuViewMode === 'card' ? (
             <div className="grid grid-cols-4 gap-2 w-full overflow-hidden auto-rows-min">
-              {rightProducts.slice(0, 12).map((product) => renderProductCard(product, rightMenuImages, rightPriceLocation, rightMenuCategory || undefined))}
+              {/* Show ALL right products - no limits */}
+              {rightProducts.map((product) => renderProductCard(product, rightMenuImages, rightPriceLocation, rightMenuCategory || undefined))}
             </div>
           ) : (() => {
-            const maxItemsPerColumn = 12;
+            const maxItemsPerColumn = 50; // Increased from 12 to handle larger menus
             const useDoubleColumn = rightProducts.length > maxItemsPerColumn;
-            const visibleProducts = rightProducts.slice(0, useDoubleColumn ? maxItemsPerColumn * 2 : maxItemsPerColumn);
+            const visibleProducts = rightProducts; // Show ALL products, no slicing
             
             if (useDoubleColumn) {
               const midPoint = Math.ceil(visibleProducts.length / 2);
@@ -1337,7 +1501,16 @@ export function SharedMenuDisplay({
                     fontFamily: titleFont,
                     textShadow: `0 2px 8px rgba(0, 0, 0, 0.4), 0 0 ${glowIntensity * 0.5}px ${hexToRgba(fontColor, 0.5)}, 0 0 ${glowIntensity}px ${hexToRgba(fontColor, 0.2)}`
                   }}>
-                    {categories.find(c => c.slug === rightMenuCategory2)?.name}
+                    {(() => {
+                      const cat = categories.find(c => c.slug === rightMenuCategory2);
+                      if (!cat && rightMenuCategory2) {
+                        console.warn('⚠️ Right bottom category not found:', { 
+                          rightMenuCategory2, 
+                          availableCategories: categories.map(c => c.slug) 
+                        });
+                      }
+                      return cat?.name || (rightMenuCategory2 ? rightMenuCategory2.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Select Category');
+                    })()}
                   </h2>
                 </div>
               </div>
@@ -1351,10 +1524,11 @@ export function SharedMenuDisplay({
                 
                 return actualMode === 'card' ? (
                   <div className="grid grid-cols-4 gap-3 auto-rows-min w-full">
+                    {/* Show ALL right bottom products - no limits */}
                     {rightProducts2.map((p) => renderProductCard(p, rightMenuImages2, rightPriceLocation))}
                   </div>
                 ) : (() => {
-                  const maxItemsPerColumn = 8;
+                  const maxItemsPerColumn = 50; // Increased from 8 to handle larger menus
                   const useDoubleColumn = rightProducts2.length > maxItemsPerColumn;
                   
                   if (useDoubleColumn) {
