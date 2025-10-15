@@ -605,10 +605,19 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
 
   const generatePrintableSheet = (labelData: any[]) => {
     const totalLabels = template.grid.rows * template.grid.columns;
-    const paddingTop = template.label_style.safe_padding.top;
-    const paddingRight = template.label_style.safe_padding.right;
-    const paddingBottom = template.label_style.safe_padding.bottom;
-    const paddingLeft = template.label_style.safe_padding.left;
+    
+    // Convert all measurements to pixels for iOS compatibility (96 DPI)
+    const paddingTopPx = Math.round(template.label_style.safe_padding.top * 96);
+    const paddingRightPx = Math.round(template.label_style.safe_padding.right * 96);
+    const paddingBottomPx = Math.round(template.label_style.safe_padding.bottom * 96);
+    const paddingLeftPx = Math.round(template.label_style.safe_padding.left * 96);
+    const labelWidthPx = Math.round(template.grid.label_width * 96);
+    const labelHeightPx = Math.round(template.grid.label_height * 96);
+    const cornerRadiusPx = Math.round(template.label_style.corner_radius * 96);
+    const marginLeftPx = Math.round(template.page.margin_left * 96);
+    const marginTopPx = Math.round(template.page.margin_top * 96);
+    const hPitchPx = Math.round(template.grid.horizontal_pitch * 96);
+    const vPitchPx = Math.round(template.grid.vertical_pitch * 96);
     
     let labelsHtml = '';
     
@@ -616,8 +625,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       const row = Math.floor(i / template.grid.columns);
       const col = i % template.grid.columns;
       
-      const left = template.page.margin_left + (col * template.grid.horizontal_pitch);
-      const top = template.page.margin_top + (row * template.grid.vertical_pitch);
+      const leftPx = marginLeftPx + (col * hPitchPx);
+      const topPx = marginTopPx + (row * vPitchPx);
       
       const dataIndex = i % labelData.length;
       const label = labelData[dataIndex];
@@ -640,8 +649,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       `).join('') || '';
       
       labelsHtml += `
-        <div class="label" style="position: absolute; left: ${left}in; top: ${top}in; width: ${template.grid.label_width}in; height: ${template.grid.label_height}in; border-radius: ${template.label_style.corner_radius}in; overflow: hidden; page-break-inside: avoid; break-inside: avoid; -webkit-break-inside: avoid;">
-          <div class="label-content" style="position: absolute; top: ${paddingTop}in; left: ${paddingLeft}in; right: ${paddingRight}in; bottom: ${paddingBottom}in; display: flex; flex-direction: row; align-items: flex-start; gap: 2px; overflow: hidden;">
+        <div class="label" style="position: absolute; left: ${leftPx}px; top: ${topPx}px; width: ${labelWidthPx}px; height: ${labelHeightPx}px; border-radius: ${cornerRadiusPx}px; overflow: hidden; page-break-inside: avoid; break-inside: avoid; -webkit-break-inside: avoid;">
+          <div class="label-content" style="position: absolute; top: ${paddingTopPx}px; left: ${paddingLeftPx}px; right: ${paddingRightPx}px; bottom: ${paddingBottomPx}px; display: flex; flex-direction: row; align-items: flex-start; gap: 2px; overflow: hidden;">
             ${showLogo ? `<img src="/logoprint.png" class="label-logo" style="width: ${logoSize}px; height: ${logoSize}px; flex-shrink: 0; object-fit: contain;" />` : ''}
             <div class="label-text" style="flex: 1; display: flex; flex-direction: column; gap: 1px; overflow: hidden;">
               <div class="product-name" style="font-size: ${adaptiveNameSize}pt; line-height: ${labelLineHeight}; color: ${productNameColor}; font-family: ${productNameFont}; font-weight: ${productNameWeight}; word-wrap: break-word; overflow: hidden;">
@@ -829,9 +838,9 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
               }
               .label {
                 position: absolute;
-                width: ${template.grid.label_width}in;
-                height: ${template.grid.label_height}in;
-                border-radius: ${template.label_style.corner_radius}in;
+                width: ${Math.round(template.grid.label_width * 96)}px;
+                height: ${Math.round(template.grid.label_height * 96)}px;
+                border-radius: ${Math.round(template.label_style.corner_radius * 96)}px;
                 overflow: hidden;
                 page-break-inside: avoid;
                 break-inside: avoid;
@@ -839,10 +848,10 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
               }
               .label-content {
                 position: absolute;
-                top: ${template.label_style.safe_padding.top}in;
-                left: ${template.label_style.safe_padding.left}in;
-                right: ${template.label_style.safe_padding.right}in;
-                bottom: ${template.label_style.safe_padding.bottom}in;
+                top: ${Math.round(template.label_style.safe_padding.top * 96)}px;
+                left: ${Math.round(template.label_style.safe_padding.left * 96)}px;
+                right: ${Math.round(template.label_style.safe_padding.right * 96)}px;
+                bottom: ${Math.round(template.label_style.safe_padding.bottom * 96)}px;
                 display: flex;
                 flex-direction: row;
                 align-items: flex-start;
