@@ -14,6 +14,7 @@ interface OrderSummaryProps {
   manualPreTaxAmount?: string;
   onManualPreTaxAmountChange?: (value: string) => void;
   manualDiscountPercentage?: number;
+  locationTaxRates?: any[];
 }
 
 const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
@@ -49,7 +50,8 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   selectedCustomer,
   manualPreTaxAmount = '',
   onManualPreTaxAmountChange,
-  manualDiscountPercentage = 0
+  manualDiscountPercentage = 0,
+  locationTaxRates = []
 }) => {
   return (
     <div className="px-4 pt-2 pb-3 flex flex-col flex-1">
@@ -202,10 +204,30 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
             ${subtotal.toFixed(2)}
           </span>
         </div>
-        <div className="flex justify-between text-xs font-mono text-neutral-400">
-          <span className="lowercase">tax ({(taxRate.rate * 100).toFixed(2)}%)</span>
-          <span>${taxAmount.toFixed(2)}</span>
-        </div>
+        
+        {/* Show individual tax rates if multiple, otherwise show combined */}
+        {locationTaxRates.length > 1 ? (
+          <>
+            {locationTaxRates.map((tax, index) => {
+              const individualTaxAmount = Math.round(subtotal * (parseFloat(tax.tax_rate) / 100) * 100) / 100;
+              return (
+                <div key={index} className="flex justify-between text-xs font-mono text-neutral-500">
+                  <span className="lowercase pl-2">→ {tax.tax_rate_name} ({tax.tax_rate}%)</span>
+                  <span>${individualTaxAmount.toFixed(2)}</span>
+                </div>
+              );
+            })}
+            <div className="flex justify-between text-xs font-mono text-neutral-400 pt-1 border-t border-white/5">
+              <span className="lowercase">total tax ({(taxRate.rate * 100).toFixed(2)}%)</span>
+              <span className="font-bold">${taxAmount.toFixed(2)}</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex justify-between text-xs font-mono text-neutral-400">
+            <span className="lowercase">tax ({(taxRate.rate * 100).toFixed(2)}%)</span>
+            <span>${taxAmount.toFixed(2)}</span>
+          </div>
+        )}
         <div className="flex justify-between items-center py-2.5 px-3 bg-white/[0.02] rounded-xl mt-2">
           <span className="text-xs font-mono text-neutral-400 lowercase">total</span>
           <span className="text-xl font-mono font-bold text-white">${total.toFixed(2)}</span>

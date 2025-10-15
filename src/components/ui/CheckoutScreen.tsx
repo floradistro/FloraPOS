@@ -57,6 +57,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
   const [cashReceived, setCashReceived] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [taxRate, setTaxRate] = useState<TaxRate>({ rate: 0.08, name: 'Sales Tax', location: user?.location || 'Default' });
+  const [locationTaxRates, setLocationTaxRates] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<WordPressUser | null>(initialSelectedCustomer || null);
   const [splitPayments, setSplitPayments] = useState<SplitPayment[]>([]);
   const [manualPreTaxAmount, setManualPreTaxAmount] = useState<string>('');
@@ -112,18 +113,54 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
           const taxRates = await response.json();
           
           if (Array.isArray(taxRates) && taxRates.length > 0) {
-            // Use the default tax rate, or the first one if no default
-            const defaultTax = taxRates.find(t => t.is_default === '1' || t.is_default === 1) || taxRates[0];
-            const taxRateValue = parseFloat(defaultTax.tax_rate) / 100; // Convert from 8.0000 to 0.08
+            // Filter to only standard tax rates (exclude hemp/other special classes)
+            const standardTaxRates = taxRates.filter(t => !t.tax_rate_class || t.tax_rate_class === 'standard');
             
-            console.log(`✅ Loaded tax rate for location ${user.location_id}: ${defaultTax.tax_rate_name} (${(taxRateValue * 100).toFixed(2)}%)`);
-            
-            setTaxRate({ 
-              rate: taxRateValue, 
-              name: defaultTax.tax_rate_name, 
-              location: user?.location || 'Default' 
-            });
-            return;
+            if (standardTaxRates.length > 0) {
+              // Calculate COMBINED tax rate (add all standard taxes together)
+              const combinedRate = standardTaxRates.reduce((sum, tax) => {
+                return sum + (parseFloat(tax.tax_rate) / 100);
+              }, 0);
+              
+              // Sort by priority
+              const sortedTaxRates = standardTaxRates.sort((a, b) => 
+                parseInt(a.tax_rate_priority || 0) - parseInt(b.tax_rate_priority || 0)
+              );
+              
+              // Create combined name from all tax rates
+              const taxNames = sortedTaxRates.map(t => t.tax_rate_name).join(' + ');
+              
+              console.log(`✅ Loaded ${standardTaxRates.length} tax rate(s) for location ${user.location_id}:`);
+              sortedTaxRates.forEach(t => {
+                console.log(`   - ${t.tax_rate_name}: ${t.tax_rate}% (Priority: ${t.tax_rate_priority})`);
+              });
+              console.log(`   COMBINED RATE: ${(combinedRate * 100).toFixed(4)}%`);
+              
+              // Store individual tax rates for order creation
+              setLocationTaxRates(sortedTaxRates);
+              
+              setTaxRate({ 
+                rate: combinedRate, 
+                name: taxNames, 
+                location: user?.location || 'Default' 
+              });
+              return;
+            } else {
+              console.warn(`⚠️ No standard tax rates found for location ${user.location_id}, checking all rates...`);
+              // If no standard rates, use all rates
+              const combinedRate = taxRates.reduce((sum, tax) => {
+                return sum + (parseFloat(tax.tax_rate) / 100);
+              }, 0);
+              
+              const taxNames = taxRates.map(t => t.tax_rate_name).join(' + ');
+              
+              setTaxRate({ 
+                rate: combinedRate, 
+                name: taxNames, 
+                location: user?.location || 'Default' 
+              });
+              return;
+            }
           } else {
             console.warn(`⚠️ No tax rates found for location ${user.location_id}, using fallback`);
           }
@@ -418,7 +455,20 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         status: 'processing', // Use 'processing' to prevent automatic stock deduction
         currency: 'USD',
         line_items: mappedLineItems,
-        tax_lines: [
+        tax_lines: locationTaxRates.length > 0 ? locationTaxRates.map(tax => {
+          // Calculate individual tax amount for this tax rate
+          const individualTaxAmount = Math.round(subtotal * (parseFloat(tax.tax_rate) / 100) * 100) / 100;
+          
+          return {
+            rate_code: `${tax.tax_rate_state || user?.location || 'NC'}-${tax.tax_rate_id}`,
+            rate_id: parseInt(tax.tax_rate_id),
+            label: tax.tax_rate_name,
+            compound: tax.tax_rate_compound === '1' || tax.tax_rate_compound === 1,
+            tax_total: individualTaxAmount.toFixed(2),
+            shipping_tax_total: (tax.tax_rate_shipping === '1' || tax.tax_rate_shipping === 1) ? individualTaxAmount.toFixed(2) : '0.00',
+            rate_percent: parseFloat(tax.tax_rate)
+          };
+        }) : [
           {
             rate_code: `${user?.location || 'NC'}-TAX`,
             rate_id: parseInt(locationId.toString()),
@@ -777,6 +827,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
           manualPreTaxAmount={manualPreTaxAmount}
           onManualPreTaxAmountChange={setManualPreTaxAmount}
           manualDiscountPercentage={manualDiscountPercentage}
+          locationTaxRates={locationTaxRates}
         />
       </div>
 
