@@ -751,159 +751,33 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     
     printableContent = tempDiv.innerHTML;
     
-    // Write the document
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Print Labels</title>
-          <style>
-              @font-face {
-                font-family: 'DonGraffiti';
-                src: url('/DonGraffiti.otf') format('opentype');
-                font-weight: normal;
-                font-style: normal;
-              }
-              @font-face {
-                font-family: 'Tiempos';
-                src: url('/Tiempos Text Regular.otf') format('opentype');
-                font-weight: normal;
-                font-style: normal;
-              }
-              @page {
-                size: 8.5in 11in;
-                margin: 0;
-                padding: 0;
-              }
-              * {
-                box-sizing: border-box;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-              }
-              html {
-                width: 816px;
-                height: 1056px;
-                margin: 0;
-                padding: 0;
-              }
-              body {
-                width: 816px;
-                height: 1056px;
-                margin: 0;
-                padding: 0;
-                font-family: ${template.text_style.font_family}, sans-serif;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-                -webkit-text-size-adjust: 100%;
-                text-size-adjust: 100%;
-              }
-              @media print {
-                @page {
-                  size: 8.5in 11in;
-                  margin: 0;
-                  padding: 0;
-                }
-                html {
-                  width: 816px !important;
-                  height: 1056px !important;
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  -webkit-text-size-adjust: none !important;
-                  text-size-adjust: none !important;
-                }
-                body {
-                  width: 816px !important;
-                  height: 1056px !important;
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  -webkit-text-size-adjust: none !important;
-                  text-size-adjust: none !important;
-                }
-                * {
-                  -webkit-print-color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-                }
-              }
-              .print-page {
-                width: 816px;
-                height: 1056px;
-                position: relative;
-                page-break-after: always;
-                break-after: always;
-                -webkit-break-after: always;
-              }
-              .label-grid {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 816px;
-                height: 1056px;
-                overflow: hidden;
-              }
-              .label {
-                position: absolute;
-                width: ${Math.round(template.grid.label_width * 96)}px;
-                height: ${Math.round(template.grid.label_height * 96)}px;
-                border-radius: ${Math.round(template.label_style.corner_radius * 96)}px;
-                overflow: hidden;
-                page-break-inside: avoid;
-                break-inside: avoid;
-                -webkit-break-inside: avoid;
-              }
-              .label-content {
-                position: absolute;
-                top: ${Math.round(template.label_style.safe_padding.top * 96)}px;
-                left: ${Math.round(template.label_style.safe_padding.left * 96)}px;
-                right: ${Math.round(template.label_style.safe_padding.right * 96)}px;
-                bottom: ${Math.round(template.label_style.safe_padding.bottom * 96)}px;
-                display: flex;
-                flex-direction: row;
-                align-items: flex-start;
-                gap: 2px;
-                overflow: hidden;
-              }
-              .label-logo {
-                width: ${logoSize}px;
-                height: ${logoSize}px;
-                flex-shrink: 0;
-                object-fit: contain;
-              }
-              .label-text {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 1px;
-                overflow: hidden;
-              }
-              .label-text .product-name,
-              .label-text > div:first-child {
-                font-size: ${productNameSize}pt;
-                line-height: ${labelLineHeight};
-                color: ${productNameColor};
-                font-family: ${productNameFont};
-                font-weight: ${productNameWeight};
-                overflow: hidden;
-                word-wrap: break-word;
-              }
-              .label-text > div:not(:first-child),
-              .label-text > div:not(.product-name) {
-                font-size: ${detailsSize}pt;
-                line-height: ${labelLineHeight};
-                color: ${detailsColor};
-                font-family: ${detailsFont};
-                overflow: hidden;
-                word-wrap: break-word;
-              }
-            </style>
-          </head>
-          <body>
-            ${printableContent}
-          </body>
-        </html>
-    `);
+    // Write clean HTML optimized for iOS
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=816, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Print Labels</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @page { size: letter; margin: 0; }
+    html, body { width: 816px; height: 1056px; overflow: hidden; }
+    body { font-family: Helvetica, sans-serif; position: relative; background: white; }
+    .print-page { width: 816px; height: 1056px; position: relative; page-break-after: always; }
+    .label-grid { position: absolute; top: 0; left: 0; width: 816px; height: 1056px; }
+    .label { position: absolute; overflow: hidden; }
+    .label-content { position: absolute; display: flex; align-items: flex-start; gap: 2px; }
+    .label-logo { flex-shrink: 0; object-fit: contain; }
+    .label-text { flex: 1; display: flex; flex-direction: column; gap: 1px; overflow: hidden; }
+    .product-name { font-weight: bold; word-wrap: break-word; overflow: hidden; }
+    @media print {
+      html, body { width: 100%; height: 100%; }
+      .print-page { page-break-after: always; }
+    }
+  </style>
+</head>
+<body>${printableContent}</body>
+</html>`);
     printWindow.document.close();
     
     // iOS specific handling

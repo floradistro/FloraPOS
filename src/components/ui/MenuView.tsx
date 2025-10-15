@@ -55,6 +55,21 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
   const { devices: tvDevices, isOnline, onlineCount, offlineCount, refresh: refreshTVs } = useTVDevices({
     locationId: user?.location_id ? parseInt(user.location_id?.toString() ?? '') : undefined,
   })
+
+  // Debug: Log TV devices
+  useEffect(() => {
+    console.log('📺 MenuView: TV Devices loaded', {
+      count: tvDevices.length,
+      locationId: user?.location_id,
+      devices: tvDevices.map(tv => ({ 
+        id: tv.id, 
+        tv_number: tv.tv_number, 
+        device_name: tv.device_name,
+        location_id: tv.location_id,
+        last_seen: tv.last_seen
+      }))
+    })
+  }, [tvDevices, user?.location_id])
   
   // Category column configurations
   const [categoryColumnConfigs, setCategoryColumnConfigs] = useState<Map<string, string[]>>(new Map())

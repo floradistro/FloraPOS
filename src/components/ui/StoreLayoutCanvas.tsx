@@ -94,22 +94,40 @@ export function StoreLayoutCanvas({ tvDevices, isOnline, locationId }: StoreLayo
 
   // Initialize TV positions (default layout)
   useEffect(() => {
-    const newPositions = new Map<string, TVPosition>()
-    tvDevices.forEach((tv, index) => {
-      if (!positions.has(tv.id)) {
-        newPositions.set(tv.id, {
-          tvId: tv.id,
-          x: 100 + (index % 3) * 420, // 3 columns
-          y: 100 + Math.floor(index / 3) * 280,
-          width: 400,
-          height: 225, // 16:9 aspect ratio
-          orientation: 'horizontal'
-        })
-      } else {
-        newPositions.set(tv.id, positions.get(tv.id)!)
-      }
+    console.log('🖥️ StoreLayoutCanvas: tvDevices updated', { 
+      count: tvDevices.length, 
+      devices: tvDevices.map(tv => ({ id: tv.id, tv_number: tv.tv_number, device_name: tv.device_name }))
     })
-    setPositions(newPositions)
+
+    if (tvDevices.length === 0) {
+      console.log('🖥️ No TVs found, clearing positions')
+      setPositions(new Map())
+      return
+    }
+
+    setPositions(prev => {
+      const newPositions = new Map<string, TVPosition>()
+      tvDevices.forEach((tv, index) => {
+        // Keep existing position if TV already exists
+        if (prev.has(tv.id)) {
+          newPositions.set(tv.id, prev.get(tv.id)!)
+        } else {
+          // Create new position for new TV
+          const newPos = {
+            tvId: tv.id,
+            x: 100 + (index % 3) * 420, // 3 columns
+            y: 100 + Math.floor(index / 3) * 280,
+            width: 400,
+            height: 225, // 16:9 aspect ratio
+            orientation: 'horizontal' as const
+          }
+          console.log(`🖥️ Creating position for TV ${tv.tv_number}:`, newPos)
+          newPositions.set(tv.id, newPos)
+        }
+      })
+      console.log('🖥️ Total positions:', newPositions.size)
+      return newPositions
+    })
   }, [tvDevices])
 
   const handleMouseDown = (tvId: string, e: React.MouseEvent) => {
@@ -263,20 +281,48 @@ export function StoreLayoutCanvas({ tvDevices, isOnline, locationId }: StoreLayo
           backgroundColor: 'transparent'
         }}
       >
-        <div 
-          className="relative w-full h-full"
-          style={{
-            transform: `scale(${scale})`,
-            transformOrigin: 'top left',
-            minWidth: '1600px',
-            minHeight: '1200px'
-          }}
-        >
-          {/* TV Elements */}
-          {Array.from(positions.entries()).map(([tvId, pos]) => {
-            const tv = tvDevices.find(t => t.id === tvId)
-            if (!tv) return null
-            const online = isOnline(tv)
+        {/* Empty State */}
+        {tvDevices.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="mb-6 relative">
+                <div className="w-32 h-32 mx-auto rounded-2xl bg-white/[0.02] backdrop-blur-sm border border-white/[0.08] flex items-center justify-center relative overflow-hidden group transition-all duration-500" style={{
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03)'
+                }}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
+                  <svg className="w-16 h-16 text-white/20 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-sm font-medium text-white/70 mb-2" style={{ fontFamily: 'Tiempos, serif' }}>No TV Devices Found</p>
+              <p className="text-xs text-white/40 mb-4" style={{ fontFamily: 'Tiempos, serif' }}>TVs will appear here when they connect</p>
+              <button
+                onClick={handleAddTV}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.16] text-white/70 hover:text-white rounded-lg text-xs font-medium transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Test Menu
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div 
+            className="relative w-full h-full"
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              minWidth: '1600px',
+              minHeight: '1200px'
+            }}
+          >
+            {/* TV Elements */}
+            {Array.from(positions.entries()).map(([tvId, pos]) => {
+              const tv = tvDevices.find(t => t.id === tvId)
+              if (!tv) return null
+              const online = isOnline(tv)
 
             return (
               <div
@@ -339,9 +385,10 @@ export function StoreLayoutCanvas({ tvDevices, isOnline, locationId }: StoreLayo
                   <div className="absolute bottom-1 right-1 w-4 h-4 border-r-2 border-b-2 border-white/20 opacity-0 group-hover:opacity-60 transition-opacity rounded-br" />
                 </div>
               </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Instructions */}
