@@ -4,14 +4,13 @@ import { Category } from '../components/ui/CategoryFilter';
 export class CategoriesService {
   
   /**
-   * Fetch all available product categories from the Flora IM API
-   * Since Flora IM might not have a categories endpoint, let's extract categories from products
-   * Optimized with caching headers for better performance
+   * Fetch all available product categories from WooCommerce API
+   * Uses dedicated categories endpoint for better performance
    */
   static async getCategories(): Promise<Category[]> {
     try {
-      // Fetch products via bulk endpoint to extract categories
-      const response = await apiFetch('/api/proxy/flora-im/products/bulk?per_page=1000&page=1', {
+      // Fetch categories from dedicated API endpoint
+      const response = await apiFetch('/api/products/categories', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -19,40 +18,17 @@ export class CategoriesService {
       });
 
       if (!response.ok) {
-        throw new Error(`Products API error: ${response.status} ${response.statusText}`);
+        throw new Error(`Categories API error: ${response.status} ${response.statusText}`);
       }
 
-      const result = await response.json();
+      const categories: Category[] = await response.json();
       
-      if (!result.success || !result.data) {
-        throw new Error('Invalid response from Products API');
-      }
-
-      // Extract unique categories from products
-      const categoryMap = new Map<string, Category>();
+      console.log('✅ CategoriesService: Loaded', categories.length, 'categories');
       
-      result.data.forEach((product: any) => {
-        if (product.categories && Array.isArray(product.categories)) {
-          product.categories.forEach((cat: any) => {
-            if (cat.id && cat.name && cat.slug) {
-              const existing = categoryMap.get(cat.slug);
-              categoryMap.set(cat.slug, {
-                id: cat.id,
-                name: cat.name,
-                slug: cat.slug,
-                count: (existing?.count || 0) + 1
-              });
-            }
-          });
-        }
-      });
-
-      const categories: Category[] = Array.from(categoryMap.values())
-        .sort((a, b) => b.count! - a.count!); // Sort by count descending
-
       return categories;
 
     } catch (error) {
+      console.error('❌ CategoriesService error:', error);
       // Return empty array instead of throwing to prevent app crashes
       return [];
     }
