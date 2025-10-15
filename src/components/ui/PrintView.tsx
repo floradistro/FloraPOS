@@ -759,6 +759,16 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   <meta name="viewport" content="width=816, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Print Labels</title>
   <style>
+    @font-face {
+      font-family: 'DonGraffiti';
+      src: url('/DonGraffiti.otf') format('opentype');
+      font-display: block;
+    }
+    @font-face {
+      font-family: 'Tiempos';
+      src: url('/Tiempos Text Regular.otf') format('opentype');
+      font-display: block;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     @page { size: letter; margin: 0; }
     html, body { width: 816px; height: 1056px; overflow: hidden; }
@@ -780,23 +790,50 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
 </html>`);
     printWindow.document.close();
     
-    // iOS specific handling
+    // Wait for fonts and images to load, then auto-print
     if (isIOS) {
-      // On iOS: Let the page fully load, then user manually triggers print
-      console.log('📱 iOS detected - page ready, use iOS print dialog');
+      // iOS/PWA: Wait for fonts, then auto-trigger print
+      console.log('📱 iOS detected - waiting for fonts to load');
       
-      // Add instruction banner for iOS users
-      setTimeout(() => {
-        const banner = printWindow.document.createElement('div');
-        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#007AFF;color:white;padding:20px;text-align:center;font:600 18px -apple-system,sans-serif;z-index:999999;';
-        banner.innerHTML = '📄 Ready to Print - Use the browser menu to print';
-        printWindow.document.body.insertBefore(banner, printWindow.document.body.firstChild);
-        
-        // Focus the window
-        printWindow.focus();
-      }, 100);
+      const checkAndPrint = () => {
+        // Check if fonts are loaded
+        if (printWindow.document.fonts && printWindow.document.fonts.status === 'loaded') {
+          console.log('✅ Fonts loaded, triggering print');
+          printWindow.focus();
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        } else {
+          // Wait for fonts
+          if (printWindow.document.fonts) {
+            printWindow.document.fonts.ready.then(() => {
+              console.log('✅ Fonts ready, triggering print');
+              printWindow.focus();
+              setTimeout(() => {
+                printWindow.print();
+              }, 500);
+            }).catch(() => {
+              // Fonts failed, print anyway
+              console.log('⚠️ Font load timeout, printing anyway');
+              setTimeout(() => {
+                printWindow.focus();
+                printWindow.print();
+              }, 500);
+            });
+          } else {
+            // No font API, just wait and print
+            setTimeout(() => {
+              printWindow.focus();
+              printWindow.print();
+            }, 1500);
+          }
+        }
+      };
+      
+      // Give a moment for DOM to be ready
+      setTimeout(checkAndPrint, 300);
     } else {
-      // Desktop: Auto print after content loads
+      // Desktop: Quick print
       setTimeout(() => {
         printWindow.focus();
         printWindow.print();
