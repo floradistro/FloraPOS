@@ -164,7 +164,7 @@ export function ColumnSelector({
 
   const handleSelectNone = () => {
     if (!selectedCategory) return;
-    onColumnsChange(selectedCategory, ['name']); // Keep at least product name
+    onColumnsChange(selectedCategory, []); // Clear all columns - menu will show products without extra fields
   };
 
   if (!selectedCategory) {
@@ -271,12 +271,9 @@ export function ColumnSelector({
                     return (
                       <button
                         key={field.field_name}
-                        onClick={() => !isProductName && handleColumnToggle(field.field_name)}
-                        disabled={isProductName}
+                        onClick={() => handleColumnToggle(field.field_name)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-                          isProductName
-                            ? 'bg-white/5 text-white/40 cursor-not-allowed'
-                            : isSelected
+                          isSelected
                             ? 'bg-white/10 text-white hover:bg-white/15'
                             : 'text-white/70 hover:bg-white/5 hover:text-white'
                         }`}
@@ -298,7 +295,7 @@ export function ColumnSelector({
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-medium truncate">
                             {field.field_label}
-                            {isProductName && <span className="text-white/30 ml-2">(Required)</span>}
+                            {isProductName && <span className="text-blue-300/60 ml-2">(Always visible)</span>}
                           </div>
                           <div className="text-[10px] text-white/40">
                             {field.count} product{field.count !== 1 ? 's' : ''}
