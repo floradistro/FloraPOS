@@ -110,8 +110,19 @@ export function ColumnSelector({
         });
 
         // Extract fields from WooCommerce meta_data
-        wcProducts.forEach((product: any) => {
+        let totalFieldsFound = 0;
+        wcProducts.forEach((product: any, idx: number) => {
           if (product.meta_data && Array.isArray(product.meta_data)) {
+            // Debug first product
+            if (idx === 0) {
+              console.log('🔬 First product meta_data:', {
+                productId: product.id,
+                productName: product.name,
+                metaCount: product.meta_data.length,
+                allKeys: product.meta_data.map((m: any) => m.key).slice(0, 20)
+              });
+            }
+            
             product.meta_data.forEach((meta: any) => {
               // Look for Flora Fields (_fd_field_*) or old blueprint fields (_blueprint_*)
               let fieldName = '';
@@ -124,6 +135,7 @@ export function ColumnSelector({
               }
               
               if (meta.value) {
+                totalFieldsFound++;
                 if (fieldMap.has(fieldName)) {
                   fieldMap.get(fieldName)!.count++;
                 } else {
@@ -138,6 +150,8 @@ export function ColumnSelector({
             });
           }
         });
+        
+        console.log(`📊 Total field instances found: ${totalFieldsFound}`);
 
         const fields = Array.from(fieldMap.values()).sort((a, b) => {
           // Product name always first
