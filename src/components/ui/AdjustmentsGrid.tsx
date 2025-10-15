@@ -698,7 +698,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         // If product not in state, fetch it from API
         const restockProducts: RestockProduct[] = [];
         
-        for (const [key, quantity] of pendingRestockProducts.entries()) {
+        for (const [key, quantity] of Array.from(pendingRestockProducts.entries())) {
           const [productId, variantId] = key.split('-').map(Number);
           let product = products.find(p => Number(p.id) === productId);
           
