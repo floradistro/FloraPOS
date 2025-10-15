@@ -133,15 +133,25 @@ export function SharedMenuDisplay({
     totalProducts: products.length
   });
   
-  // Get blueprint field value from new Blueprints plugin format
-  const getBlueprintValue = (product: Product, fieldName: string): string => {
-    if (!product.meta_data || !Array.isArray(product.meta_data)) return ''
+  // Get Flora Field value from V2 format
+  const getFieldValue = (product: Product, fieldName: string): string => {
+    // V2 Flora Fields format: product.fields array
+    if (product.fields && Array.isArray(product.fields)) {
+      const field = product.fields.find(f => f.name === fieldName);
+      if (field && field.has_value) {
+        return field.value?.toString() || '';
+      }
+    }
     
-    // New format: _blueprint_FIELDNAME
-    const blueprintKey = `_blueprint_${fieldName}`
-    const meta = product.meta_data.find(m => m.key === blueprintKey)
+    // Fallback: Check meta_data for old format
+    if (product.meta_data && Array.isArray(product.meta_data)) {
+      const meta = product.meta_data.find(m => m.key === `_fd_field_${fieldName}`);
+      if (meta) {
+        return meta.value?.toString() || '';
+      }
+    }
     
-    return meta?.value?.toString() || ''
+    return '';
   }
 
   // Filter products by category
@@ -211,11 +221,11 @@ export function SharedMenuDisplay({
           {product.name}
         </h3>
         
-        {/* Blueprint Fields */}
+        {/* Flora Fields */}
         {blueprintColumns.length > 0 && (
           <div className="space-y-0.5 mb-2 text-left">
             {blueprintColumns.slice(0, 3).map((columnName) => {
-              const value = getBlueprintValue(product, columnName)
+              const value = getFieldValue(product, columnName)
               if (!value) return null
               
               return (
@@ -377,7 +387,7 @@ export function SharedMenuDisplay({
                               `2fr ${Array(columns.length - 1).fill('1fr').join(' ')}`
         }}>
           {columns.map((columnName, idx) => {
-            const value = columnName === 'name' ? product.name : getBlueprintValue(product, columnName)
+            const value = columnName === 'name' ? product.name : getFieldValue(product, columnName)
             if (!value) return null
             
             return (

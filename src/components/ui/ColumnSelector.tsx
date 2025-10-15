@@ -201,14 +201,18 @@ export function ColumnSelector({
           
           {/* Dropdown Menu */}
           <div
-            className="fixed bg-neutral-900/98 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl"
+            className="fixed rounded-2xl shadow-2xl"
             style={{
               zIndex: 999999,
-              top: buttonRef.getBoundingClientRect().bottom + 8,
-              left: buttonRef.getBoundingClientRect().left,
+              top: Math.min(buttonRef.getBoundingClientRect().bottom + 8, window.innerHeight - 520),
+              left: Math.max(16, Math.min(buttonRef.getBoundingClientRect().left, window.innerWidth - 336)),
               minWidth: '320px',
               maxWidth: '400px',
               maxHeight: '500px',
+              background: 'rgba(23, 23, 23, 0.98)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
               fontFamily: 'Tiempos, serif'
             }}

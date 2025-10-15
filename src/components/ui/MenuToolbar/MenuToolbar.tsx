@@ -74,7 +74,8 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   showTVPanel,
   onlineCount,
   totalTVs,
-  hasLocation
+  hasLocation,
+  products = []
 }) => {
   // Determine current configuration based on mode and selected quadrant
   const getCurrentConfig = () => {
