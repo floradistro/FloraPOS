@@ -65,6 +65,10 @@ interface SharedMenuDisplayProps {
   onSideClick?: (side: string) => void
   selectedMenuSection?: string | null
   onSectionClick?: (section: string) => void
+  pricingTiersShape?: string
+  pricingContainerOpacity?: number
+  pricingBorderWidth?: number
+  pricingBorderOpacity?: number
 }
 
 export function SharedMenuDisplay({
