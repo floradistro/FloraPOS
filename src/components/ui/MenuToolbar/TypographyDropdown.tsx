@@ -124,23 +124,90 @@ export function TypographyDropdown({
 
         {/* Font Family Tab */}
         {activeTab === 'family' && (
-          <div className="space-y-2 max-h-[440px] overflow-y-auto px-1 pb-2" style={{ 
+          <div className="space-y-4 max-h-[440px] overflow-y-auto px-1 pb-2" style={{ 
             scrollbarWidth: 'thin',
             scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
           }}>
-            {PRESET_FONTS.map(font => (
-              <button
-                key={font.value}
-                onClick={() => onFontsChange({ titleFont: font.value, pricingFont: font.value, cardFont: font.value })}
-                className={`w-full flex items-center px-4 py-3.5 rounded-xl transition-all ${
-                  titleFont === font.value
-                    ? 'bg-white/10 text-white shadow-sm'
-                    : 'bg-white/[0.02] text-white/70 hover:bg-white/[0.06] hover:text-white/90'
-                }`}
-              >
-                <span className="text-base" style={{ fontFamily: font.value }}>{font.name}</span>
-              </button>
-            ))}
+            {/* Header/Title Font */}
+            <div>
+              <div className="text-[10px] text-white/40 mb-2 px-2 uppercase tracking-wider font-medium">Header/Title Font</div>
+              <div className="space-y-1">
+                {PRESET_FONTS.map(font => (
+                  <button
+                    key={`title-${font.value}`}
+                    onClick={() => onFontsChange({ titleFont: font.value, pricingFont, cardFont })}
+                    className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all ${
+                      titleFont === font.value
+                        ? 'bg-white/10 text-white shadow-sm'
+                        : 'bg-white/[0.02] text-white/60 hover:bg-white/[0.06] hover:text-white/90'
+                    }`}
+                  >
+                    <span className="text-sm" style={{ fontFamily: font.value }}>{font.name}</span>
+                    {titleFont === font.value && (
+                      <svg className="ml-auto w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-white/10 my-3" />
+
+            {/* Pricing Font */}
+            <div>
+              <div className="text-[10px] text-white/40 mb-2 px-2 uppercase tracking-wider font-medium">Pricing Font</div>
+              <div className="space-y-1">
+                {PRESET_FONTS.map(font => (
+                  <button
+                    key={`pricing-${font.value}`}
+                    onClick={() => onFontsChange({ titleFont, pricingFont: font.value, cardFont })}
+                    className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all ${
+                      pricingFont === font.value
+                        ? 'bg-white/10 text-white shadow-sm'
+                        : 'bg-white/[0.02] text-white/60 hover:bg-white/[0.06] hover:text-white/90'
+                    }`}
+                  >
+                    <span className="text-sm" style={{ fontFamily: font.value }}>{font.name}</span>
+                    {pricingFont === font.value && (
+                      <svg className="ml-auto w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-white/10 my-3" />
+
+            {/* Card/Product Name Font */}
+            <div>
+              <div className="text-[10px] text-white/40 mb-2 px-2 uppercase tracking-wider font-medium">Card/Product Name Font</div>
+              <div className="space-y-1">
+                {PRESET_FONTS.map(font => (
+                  <button
+                    key={`card-${font.value}`}
+                    onClick={() => onFontsChange({ titleFont, pricingFont, cardFont: font.value })}
+                    className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all ${
+                      cardFont === font.value
+                        ? 'bg-white/10 text-white shadow-sm'
+                        : 'bg-white/[0.02] text-white/60 hover:bg-white/[0.06] hover:text-white/90'
+                    }`}
+                  >
+                    <span className="text-sm" style={{ fontFamily: font.value }}>{font.name}</span>
+                    {cardFont === font.value && (
+                      <svg className="ml-auto w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

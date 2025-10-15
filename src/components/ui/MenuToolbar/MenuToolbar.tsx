@@ -143,7 +143,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
   };
 
   return (
-    <div className="mb-3 relative z-50 pt-3 px-4 flex-shrink-0 w-full">
+    <div className="mb-3 relative pt-3 px-4 flex-shrink-0 w-full" style={{ zIndex: 999999 }}>
       <div className="flex items-center justify-between bg-transparent px-0 py-0 w-full">
         {/* Left Side - Primary Actions (Canva-style: Templates/Load) */}
         <div className="flex items-center gap-2 flex-shrink-0">

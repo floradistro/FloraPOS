@@ -1,6 +1,6 @@
 /**
  * Menu Configuration Service
- * Handles all API interactions for TV menu configurations
+ * Handles all Supabase interactions for TV menu configurations
  */
 
 export interface MenuConfig {
@@ -8,10 +8,10 @@ export interface MenuConfig {
   name: string;
   location_id?: number | null;
   config_data: MenuConfigData;
-  config_type?: 'layout' | 'theme'; // NEW: separate layouts from themes
+  config_type?: 'layout' | 'theme';
   is_active: boolean;
   display_order: number;
-  created_by?: number;
+  created_by?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -66,12 +66,11 @@ export interface MenuConfigData {
   borderOpacity?: number;
   imageOpacity?: number;
   blurIntensity?: number;
-  customBackground?: string; // Custom HTML/React/CSS background code
+  customBackground?: string;
   singlePriceLocation?: 'none' | 'header' | 'inline';
   leftPriceLocation?: 'none' | 'header' | 'inline';
   rightPriceLocation?: 'none' | 'header' | 'inline';
   categoryColumnConfigs: Record<string, string[]>;
-  // Font size controls
   headerTitleSize?: number;
   cardTitleSize?: number;
   priceSize?: number;
@@ -92,79 +91,35 @@ export interface AnalyticsQuery {
 }
 
 class MenuConfigService {
-  private baseUrl = '/api/proxy/flora-im';
-
   /**
-   * Get API environment from localStorage
-   */
-  private getApiEnvironment(): string {
-    const DEFAULT_ENV = process.env.NEXT_PUBLIC_API_ENVIRONMENT || 'staging';
-    if (typeof window === 'undefined') return DEFAULT_ENV;
-    return localStorage.getItem('flora_pos_api_environment') || DEFAULT_ENV;
-  }
-
-  /**
-   * Get common headers including API environment
-   */
-  private getHeaders(): HeadersInit {
-    return {
-      'Content-Type': 'application/json',
-      'x-api-environment': this.getApiEnvironment(),
-      'Cache-Control': 'no-cache'
-    };
-  }
-
-  /**
-   * Build API URL with credentials
-   */
-  private buildUrl(endpoint: string, params?: Record<string, string>): string {
-    const url = new URL(`${this.baseUrl}${endpoint}`, window.location.origin);
-    
-    // Add timestamp to prevent caching
-    url.searchParams.append('_t', Date.now().toString());
-    
-    // Add any additional params
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        url.searchParams.append(key, value);
-      });
-    }
-    
-    return url.toString();
-  }
-
-  /**
-   * Get all menu configs
+   * Get all menu configs via API route
    */
   async getAllConfigs(locationId?: number, isActive?: boolean): Promise<MenuConfig[]> {
     try {
-      const params: Record<string, string> = {};
+      const params = new URLSearchParams();
+      params.append('_t', Date.now().toString());
       
       if (locationId !== undefined) {
-        params.location_id = locationId.toString();
+        params.append('location_id', locationId.toString());
       }
       
       if (isActive !== undefined) {
-        params.is_active = isActive.toString();
+        params.append('is_active', isActive.toString());
       }
-      
-      const url = this.buildUrl('/menus/configs', params);
-      
-      const response = await fetch(url, {
-        headers: this.getHeaders()
-      });
+
+      const response = await fetch(`/api/menu-configs?${params.toString()}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch menu configs: ${response.statusText}`);
       }
-      
+
       const result = await response.json();
       
-      if (result.success) {
-        return result.data;
-      } else {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to fetch menu configs');
       }
+
+      return result.data;
     } catch (error) {
       console.error('Error fetching menu configs:', error);
       throw error;
@@ -172,27 +127,23 @@ class MenuConfigService {
   }
 
   /**
-   * Get single menu config by ID
+   * Get single menu config by ID via API route
    */
   async getConfig(configId: number): Promise<MenuConfig> {
     try {
-      const url = this.buildUrl(`/menus/configs/${configId}`);
-      
-      const response = await fetch(url, {
-        headers: this.getHeaders()
-      });
+      const response = await fetch(`/api/menu-configs/${configId}?_t=${Date.now()}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch menu config: ${response.statusText}`);
       }
-      
+
       const result = await response.json();
       
-      if (result.success) {
-        return result.data;
-      } else {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to fetch menu config');
       }
+
+      return result.data;
     } catch (error) {
       console.error('Error fetching menu config:', error);
       throw error;
@@ -200,33 +151,31 @@ class MenuConfigService {
   }
 
   /**
-   * Get active config for a location
+   * Get active config for a location via API route
    */
   async getActiveConfig(locationId?: number): Promise<MenuConfig> {
     try {
-      const params: Record<string, string> = {};
+      const params = new URLSearchParams();
+      params.append('is_active', 'true');
+      params.append('_t', Date.now().toString());
       
       if (locationId !== undefined) {
-        params.location_id = locationId.toString();
+        params.append('location_id', locationId.toString());
       }
-      
-      const url = this.buildUrl('/menus/active', params);
-      
-      const response = await fetch(url, {
-        headers: this.getHeaders()
-      });
+
+      const response = await fetch(`/api/menu-configs?${params.toString()}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch active config: ${response.statusText}`);
       }
-      
+
       const result = await response.json();
       
-      if (result.success) {
-        return result.data;
-      } else {
-        throw new Error(result.error || 'No active menu config found');
+      if (!result.success || !result.data || result.data.length === 0) {
+        throw new Error('No active menu config found');
       }
+
+      return result.data[0];
     } catch (error) {
       console.error('Error fetching active menu config:', error);
       throw error;
@@ -234,29 +183,38 @@ class MenuConfigService {
   }
 
   /**
-   * Create new menu config
+   * Create new menu config via API route
    */
   async createConfig(config: Omit<MenuConfig, 'id' | 'created_at' | 'updated_at'>): Promise<MenuConfig> {
     try {
-      const url = this.buildUrl('/menus/configs');
-      
-      const response = await fetch(url, {
+      console.log('📝 Creating menu config:', {
+        name: config.name,
+        config_type: config.config_type,
+        location_id: config.location_id
+      });
+
+      const response = await fetch('/api/menu-configs', {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(config)
       });
-      
+
       if (!response.ok) {
-        throw new Error(`Failed to create menu config: ${response.statusText}`);
+        const errorData = await response.json();
+        console.error('API error creating menu config:', errorData);
+        throw new Error(errorData.error || `Failed to create menu config: ${response.statusText}`);
       }
-      
+
       const result = await response.json();
       
-      if (result.success) {
-        return result.data;
-      } else {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to create menu config');
       }
+
+      console.log('✅ Menu config created successfully:', result.data.id);
+      return result.data;
     } catch (error) {
       console.error('Error creating menu config:', error);
       throw error;
@@ -264,29 +222,30 @@ class MenuConfigService {
   }
 
   /**
-   * Update menu config
+   * Update menu config via API route
    */
   async updateConfig(configId: number, updates: Partial<Omit<MenuConfig, 'id' | 'created_at' | 'updated_at'>>): Promise<MenuConfig> {
     try {
-      const url = this.buildUrl(`/menus/configs/${configId}`);
-      
-      const response = await fetch(url, {
+      const response = await fetch(`/api/menu-configs/${configId}`, {
         method: 'PUT',
-        headers: this.getHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(updates)
       });
-      
+
       if (!response.ok) {
-        throw new Error(`Failed to update menu config: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to update menu config: ${response.statusText}`);
       }
-      
+
       const result = await response.json();
       
-      if (result.success) {
-        return result.data;
-      } else {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to update menu config');
       }
+
+      return result.data;
     } catch (error) {
       console.error('Error updating menu config:', error);
       throw error;
@@ -294,21 +253,19 @@ class MenuConfigService {
   }
 
   /**
-   * Delete menu config
+   * Delete menu config via API route
    */
   async deleteConfig(configId: number): Promise<void> {
     try {
-      const url = this.buildUrl(`/menus/configs/${configId}`);
-      
-      const response = await fetch(url, {
+      const response = await fetch(`/api/menu-configs/${configId}`, {
         method: 'DELETE',
-        headers: this.getHeaders()
       });
-      
+
       if (!response.ok) {
-        throw new Error(`Failed to delete menu config: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to delete menu config: ${response.statusText}`);
       }
-      
+
       const result = await response.json();
       
       if (!result.success) {
@@ -325,24 +282,20 @@ class MenuConfigService {
    */
   async duplicateConfig(configId: number): Promise<MenuConfig> {
     try {
-      const url = this.buildUrl(`/menus/configs/${configId}/duplicate`);
+      // Get existing config
+      const existing = await this.getConfig(configId);
       
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: this.getHeaders()
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to duplicate menu config: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        return result.data;
-      } else {
-        throw new Error(result.error || 'Failed to duplicate menu config');
-      }
+      // Create duplicate with modified name
+      const duplicate: Omit<MenuConfig, 'id' | 'created_at' | 'updated_at'> = {
+        name: `${existing.name} (Copy)`,
+        location_id: existing.location_id,
+        config_data: existing.config_data,
+        config_type: existing.config_type,
+        is_active: false, // Duplicates are inactive by default
+        display_order: existing.display_order,
+      };
+
+      return await this.createConfig(duplicate);
     } catch (error) {
       console.error('Error duplicating menu config:', error);
       throw error;
@@ -350,28 +303,13 @@ class MenuConfigService {
   }
 
   /**
-   * Log menu display
+   * Log menu display (non-critical, failures won't throw)
    */
   async logDisplay(log: DisplayLog): Promise<void> {
     try {
-      const url = this.buildUrl('/menus/log-display');
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify(log)
-      });
-      
-      if (!response.ok) {
-        console.warn('Failed to log display:', response.statusText);
-        return; // Don't throw - logging is not critical
-      }
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        console.warn('Failed to log display:', result.error);
-      }
+      // Non-critical operation - just log to console for now
+      console.log('📊 Menu display logged:', log);
+      // Could implement API endpoint later if needed
     } catch (error) {
       console.warn('Error logging display:', error);
       // Don't throw - logging failures should not break the app
@@ -379,27 +317,14 @@ class MenuConfigService {
   }
 
   /**
-   * Get templates only
+   * Get templates only via API route
    */
   async getTemplates(): Promise<MenuConfig[]> {
     try {
-      const url = this.buildUrl('/menus/templates');
-      
-      const response = await fetch(url, {
-        headers: this.getHeaders()
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch templates: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        return result.data;
-      } else {
-        throw new Error(result.error || 'Failed to fetch templates');
-      }
+      // Templates are configs with is_template = true
+      // For now, just return empty array - can implement if needed
+      console.log('📋 Templates not yet implemented');
+      return [];
     } catch (error) {
       console.error('Error fetching templates:', error);
       throw error;
@@ -411,41 +336,9 @@ class MenuConfigService {
    */
   async getAnalytics(query: AnalyticsQuery = {}): Promise<any[]> {
     try {
-      const params: Record<string, string> = {};
-      
-      if (query.config_id !== undefined) {
-        params.config_id = query.config_id.toString();
-      }
-      
-      if (query.location_id !== undefined) {
-        params.location_id = query.location_id.toString();
-      }
-      
-      if (query.start_date) {
-        params.start_date = query.start_date;
-      }
-      
-      if (query.end_date) {
-        params.end_date = query.end_date;
-      }
-      
-      const url = this.buildUrl('/menus/analytics', params);
-      
-      const response = await fetch(url, {
-        headers: this.getHeaders()
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch analytics: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        return result.data;
-      } else {
-        throw new Error(result.error || 'Failed to fetch analytics');
-      }
+      // Analytics not yet implemented via API route
+      console.log('📊 Analytics not yet implemented');
+      return [];
     } catch (error) {
       console.error('Error fetching analytics:', error);
       throw error;
@@ -455,4 +348,3 @@ class MenuConfigService {
 
 // Export singleton instance
 export const menuConfigService = new MenuConfigService();
-

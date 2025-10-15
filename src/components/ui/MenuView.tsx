@@ -1667,7 +1667,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
 
       {/* Store Layout Toolbar */}
       {viewMode === 'store-layout' && (
-        <div className="mb-3 relative z-50 pt-3 px-4 flex-shrink-0 w-full max-w-full">
+        <div className="mb-3 relative pt-3 px-4 flex-shrink-0 w-full max-w-full" style={{ zIndex: 999999 }}>
           <div className="flex items-center justify-between gap-3 bg-transparent px-0 py-0 w-full max-w-full overflow-hidden">
             {/* Left Side - Store Layout Tools */}
             <div className="flex items-center gap-2 flex-shrink min-w-0 bg-neutral-900/20 backdrop-blur-md border border-white/[0.06] rounded-2xl px-2 py-1.5 shadow-lg" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.03)' }}>
@@ -1709,7 +1709,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
       <div className="flex-1 flex overflow-hidden relative min-h-0">
         {/* Left Sidebar - TV Control Panel - Slide Out Overlay */}
         <div 
-          className={`absolute left-0 top-0 bottom-0 w-[700px] bg-[#1e1e1e]/95 backdrop-blur-xl border-r border-white/10 flex flex-col z-50 transition-transform duration-300 ease-out shadow-2xl ${
+          className={`absolute left-0 top-0 bottom-0 w-[700px] bg-[#1e1e1e]/95 backdrop-blur-xl border-r border-white/10 flex flex-col z-[70] transition-transform duration-300 ease-out shadow-2xl ${
             showTVPanel ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -2294,10 +2294,10 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
         </div>
 
         {/* Main Preview Area */}
-        <div className="flex-1 overflow-hidden relative bg-transparent min-w-0 pr-4">
+        <div className="flex-1 overflow-hidden relative bg-transparent min-w-0 pr-4" style={{ zIndex: 0 }}>
           {/* Preview - Full Width */}
           {viewMode === 'builder' ? (
-            <div className="w-full h-full overflow-hidden rounded-2xl">
+            <div className="w-full h-full overflow-hidden rounded-2xl" style={{ zIndex: 0 }}>
               {(() => {
                 console.log('📤 Passing to SharedMenuDisplay:', {
                 isDualMode: menuConfig.isDualMode,

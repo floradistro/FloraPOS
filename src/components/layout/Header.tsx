@@ -267,7 +267,7 @@ export function Header({
   };
 
   return (
-    <div className="header-nav flex-shrink-0 relative z-40">
+    <div className="header-nav flex-shrink-0 relative z-[100]">
       {/* Apple 2035 Style Header */}
       <div className="my-3">
         <div className="flex items-center h-full py-3 px-6 relative gap-3">
@@ -362,13 +362,13 @@ export function Header({
                 <>
                   {/* Backdrop */}
                   <div 
-                    className="fixed inset-0 z-40" 
+                    className="fixed inset-0 z-[110]" 
                     onClick={() => setShowViewOptionsDropdown(false)}
                   />
                   
                   {/* Dropdown - TV Menu Style */}
                   <div 
-                    className="absolute right-0 mt-2 w-56 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl z-50 overflow-hidden"
+                    className="absolute right-0 mt-2 w-56 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl z-[120] overflow-hidden"
                     style={{ 
                       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                     }}
@@ -678,11 +678,11 @@ export function Header({
                   {showAiToolsDropdown && (
                     <>
                       <div 
-                        className="fixed inset-0 z-40" 
+                        className="fixed inset-0 z-[110]" 
                         onClick={() => setShowAiToolsDropdown(false)}
                       />
                       <div 
-                        className="absolute top-full right-0 mt-2 w-64 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl z-50 overflow-hidden"
+                        className="absolute top-full right-0 mt-2 w-64 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl z-[120] overflow-hidden"
                         style={{ 
                           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                         }}
