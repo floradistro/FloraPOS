@@ -655,8 +655,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     }
     
     return `
-      <div class="print-page" style="position: relative; page-break-after: always; break-after: always; -webkit-break-after: always; width: 8.5in; height: 11in; overflow: hidden;">
-        <div class="label-grid" style="position: absolute; top: 0; left: 0; width: 8.5in; height: 11in; overflow: hidden;">
+      <div class="print-page" style="position: relative; page-break-after: always; break-after: always; -webkit-break-after: always; width: 816px; height: 1056px; overflow: hidden;">
+        <div class="label-grid" style="position: absolute; top: 0; left: 0; width: 816px; height: 1056px; overflow: hidden;">
           ${labelsHtml}
         </div>
       </div>
@@ -758,6 +758,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
               @page {
                 size: 8.5in 11in;
                 margin: 0;
+                padding: 0;
               }
               * {
                 box-sizing: border-box;
@@ -766,25 +767,44 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 color-adjust: exact !important;
               }
               html {
+                width: 816px;
+                height: 1056px;
                 margin: 0;
                 padding: 0;
               }
               body {
+                width: 816px;
+                height: 1056px;
                 margin: 0;
                 padding: 0;
                 font-family: ${template.text_style.font_family}, sans-serif;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 color-adjust: exact !important;
+                -webkit-text-size-adjust: 100%;
+                text-size-adjust: 100%;
               }
               @media print {
                 @page {
                   size: 8.5in 11in;
                   margin: 0;
+                  padding: 0;
                 }
-                html, body {
+                html {
+                  width: 816px !important;
+                  height: 1056px !important;
                   margin: 0 !important;
                   padding: 0 !important;
+                  -webkit-text-size-adjust: none !important;
+                  text-size-adjust: none !important;
+                }
+                body {
+                  width: 816px !important;
+                  height: 1056px !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  -webkit-text-size-adjust: none !important;
+                  text-size-adjust: none !important;
                 }
                 * {
                   -webkit-print-color-adjust: exact !important;
@@ -792,8 +812,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 }
               }
               .print-page {
-                width: 8.5in;
-                height: 11in;
+                width: 816px;
+                height: 1056px;
                 position: relative;
                 page-break-after: always;
                 break-after: always;
@@ -803,8 +823,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 8.5in;
-                height: 11in;
+                width: 816px;
+                height: 1056px;
                 overflow: hidden;
               }
               .label {
