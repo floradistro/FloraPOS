@@ -88,7 +88,41 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
   const loadTaxRates = async () => {
     try {
+      // If user has a location_id, fetch tax rates from API
+      if (user?.location_id) {
+        console.log(`🔍 Fetching tax rates for location ${user.location_id}...`);
+        
+        const response = await apiFetch(`/api/proxy/flora-im/locations/${user.location_id}/taxes`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const taxRates = await response.json();
+          
+          if (Array.isArray(taxRates) && taxRates.length > 0) {
+            // Use the default tax rate, or the first one if no default
+            const defaultTax = taxRates.find(t => t.is_default === '1' || t.is_default === 1) || taxRates[0];
+            const taxRateValue = parseFloat(defaultTax.tax_rate) / 100; // Convert from 8.0000 to 0.08
+            
+            console.log(`✅ Loaded tax rate for location ${user.location_id}: ${defaultTax.tax_rate_name} (${(taxRateValue * 100).toFixed(2)}%)`);
+            
+            setTaxRate({ 
+              rate: taxRateValue, 
+              name: defaultTax.tax_rate_name, 
+              location: user?.location || 'Default' 
+            });
+            return;
+          } else {
+            console.warn(`⚠️ No tax rates found for location ${user.location_id}, using fallback`);
+          }
+        }
+      }
+      
+      // Fallback to hardcoded mappings if API fails or no location_id
       const locationData = LOCATION_MAPPINGS[user?.location || 'Default'] || LOCATION_MAPPINGS['Default'];
+      console.log(`📍 Using hardcoded tax rate for ${user?.location || 'Default'}: ${(locationData.rate * 100).toFixed(2)}%`);
       setTaxRate({ 
         rate: locationData.rate, 
         name: locationData.name, 
