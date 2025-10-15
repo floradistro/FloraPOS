@@ -355,6 +355,62 @@ export type Database = {
           },
         ]
       }
+      menu_configs: {
+        Row: {
+          id: number
+          name: string
+          location_id: number | null
+          config_data: Json
+          config_type: string | null
+          is_active: boolean
+          is_template: boolean
+          display_order: number
+          version: number
+          parent_version_id: number | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          name: string
+          location_id?: number | null
+          config_data: Json
+          config_type?: string | null
+          is_active?: boolean
+          is_template?: boolean
+          display_order?: number
+          version?: number
+          parent_version_id?: number | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          name?: string
+          location_id?: number | null
+          config_data?: Json
+          config_type?: string | null
+          is_active?: boolean
+          is_template?: boolean
+          display_order?: number
+          version?: number
+          parent_version_id?: number | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_configs_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "menu_configs"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       tv_devices: {
         Row: {
           created_at: string | null
