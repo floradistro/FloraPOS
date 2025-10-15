@@ -704,54 +704,61 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   ]);
 
   const handlePrint = () => {
+    // Detect iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
     const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      let printableContent = '';
+    if (!printWindow) {
+      alert('Please allow popups to print labels');
+      return;
+    }
+    
+    let printableContent = '';
+    
+    if (bulkPrintMode && bulkProducts.length > 0) {
+      console.log('🖨️ Printing all bulk products:', bulkProducts.length);
       
-      if (bulkPrintMode && bulkProducts.length > 0) {
-        console.log('🖨️ Printing all bulk products:', bulkProducts.length);
-        
-        bulkProducts.forEach((product, index) => {
-          const productLabels = generateProductLabelData(product);
-          const pageContent = generatePrintableSheet(productLabels);
-          printableContent += pageContent;
-        });
-      } else if (printRef.current) {
-        printableContent = printRef.current.innerHTML;
-      }
-      
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = printableContent;
-      
-      tempDiv.querySelectorAll('img[src="/logoprint.png"]').forEach(img => {
-        img.className = 'label-logo';
+      bulkProducts.forEach((product, index) => {
+        const productLabels = generateProductLabelData(product);
+        const pageContent = generatePrintableSheet(productLabels);
+        printableContent += pageContent;
       });
-      
-      tempDiv.querySelectorAll('.flex-1.flex.flex-col').forEach(container => {
-        const newContainer = document.createElement('div');
-        newContainer.className = 'label-text';
-        Array.from(container.children).forEach((child, index) => {
-          const newDiv = document.createElement('div');
-          newDiv.textContent = child.textContent;
-          if (index === 0) {
-            newDiv.className = 'product-name';
-          }
-          newContainer.appendChild(newDiv);
-        });
-        container.parentNode?.replaceChild(newContainer, container);
+    } else if (printRef.current) {
+      printableContent = printRef.current.innerHTML;
+    }
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = printableContent;
+    
+    tempDiv.querySelectorAll('img[src="/logoprint.png"]').forEach(img => {
+      img.className = 'label-logo';
+    });
+    
+    tempDiv.querySelectorAll('.flex-1.flex.flex-col').forEach(container => {
+      const newContainer = document.createElement('div');
+      newContainer.className = 'label-text';
+      Array.from(container.children).forEach((child, index) => {
+        const newDiv = document.createElement('div');
+        newDiv.textContent = child.textContent;
+        if (index === 0) {
+          newDiv.className = 'product-name';
+        }
+        newContainer.appendChild(newDiv);
       });
-      
-      printableContent = tempDiv.innerHTML;
-
-      try {
-        printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Print Labels - ${template.template_name}</title>
-            <style>
+      container.parentNode?.replaceChild(newContainer, container);
+    });
+    
+    printableContent = tempDiv.innerHTML;
+    
+    // Write the document
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Print Labels</title>
+          <style>
               @font-face {
                 font-family: 'DonGraffiti';
                 src: url('/DonGraffiti.otf') format('opentype');
@@ -896,69 +903,30 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
             ${printableContent}
           </body>
         </html>
-      `);
-        printWindow.document.close();
+    `);
+    printWindow.document.close();
+    
+    // iOS specific handling
+    if (isIOS) {
+      // On iOS: Let the page fully load, then user manually triggers print
+      console.log('📱 iOS detected - page ready, use iOS print dialog');
+      
+      // Add instruction banner for iOS users
+      setTimeout(() => {
+        const banner = printWindow.document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#007AFF;color:white;padding:20px;text-align:center;font:600 18px -apple-system,sans-serif;z-index:999999;';
+        banner.innerHTML = '📄 Ready to Print - Use the browser menu to print';
+        printWindow.document.body.insertBefore(banner, printWindow.document.body.firstChild);
         
-        // Detect iOS
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        
-        if (isIOS) {
-          // On iOS: Add manual print button and wait for page to fully load
-          setTimeout(() => {
-            try {
-              // Add a visible print button for manual trigger
-              const printButton = printWindow.document.createElement('div');
-              printButton.innerHTML = `
-                <div style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 99999; background: #007AFF; color: white; padding: 16px 32px; border-radius: 12px; font-family: -apple-system, sans-serif; font-size: 18px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 20px rgba(0,122,255,0.5); text-align: center;" onclick="window.print()">
-                  📄 Tap Here to Print
-                </div>
-              `;
-              printWindow.document.body.appendChild(printButton.firstElementChild!);
-              
-              // Wait for images and fonts to fully load
-              Promise.all([
-                ...Array.from(printWindow.document.images).map(img => {
-                  if (img.complete) return Promise.resolve();
-                  return new Promise(resolve => {
-                    img.onload = resolve;
-                    img.onerror = resolve;
-                  });
-                }),
-                printWindow.document.fonts ? printWindow.document.fonts.ready : Promise.resolve()
-              ]).then(() => {
-                console.log('✅ iOS: All content loaded, triggering print after 2s');
-                // Wait additional time for iOS to fully render
-                setTimeout(() => {
-                  printWindow.focus();
-                  printWindow.print();
-                }, 2000);
-              });
-            } catch (error) {
-              console.error('iOS Print error:', error);
-              // Still try to print after delay
-              setTimeout(() => {
-                printWindow.print();
-              }, 2000);
-            }
-          }, 500);
-        } else {
-          // Desktop: Standard print flow
-          setTimeout(() => {
-            try {
-              printWindow.focus();
-              printWindow.print();
-            } catch (error) {
-              console.error('Print error:', error);
-              alert('Print failed. Please try again.');
-            }
-          }, 500);
-        }
-      } catch (error) {
-        console.error('Error generating print content:', error);
-        alert('Failed to generate print content. Please try again.');
-        printWindow.close();
-      }
+        // Focus the window
+        printWindow.focus();
+      }, 100);
+    } else {
+      // Desktop: Auto print after content loads
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 300);
     }
   };
 
