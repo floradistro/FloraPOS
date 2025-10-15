@@ -59,6 +59,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
   const [taxRate, setTaxRate] = useState<TaxRate>({ rate: 0.08, name: 'Sales Tax', location: user?.location || 'Default' });
   const [selectedCustomer, setSelectedCustomer] = useState<WordPressUser | null>(initialSelectedCustomer || null);
   const [splitPayments, setSplitPayments] = useState<SplitPayment[]>([]);
+  const [manualPreTaxAmount, setManualPreTaxAmount] = useState<string>('');
   
   // Alert state
   const [alertModal, setAlertModal] = useState<{
@@ -69,17 +70,26 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
 
   // Calculate totals with price overrides and discounts
-  const subtotal = items.reduce((sum, item) => {
+  const calculatedSubtotal = items.reduce((sum, item) => {
     let finalPrice = item.override_price !== undefined ? item.override_price : item.price;
     if (item.discount_percentage !== undefined && item.discount_percentage > 0) {
       finalPrice = finalPrice * (1 - item.discount_percentage / 100);
     }
     return sum + (finalPrice * item.quantity);
   }, 0);
+  
+  // Use manual pre-tax amount if set, otherwise use calculated subtotal
+  const manualAmount = parseFloat(manualPreTaxAmount);
+  const subtotal = manualAmount > 0 ? manualAmount : calculatedSubtotal;
   const taxAmount = Math.round(subtotal * taxRate.rate * 100) / 100;
   const total = Math.round((subtotal + taxAmount) * 100) / 100;
   const cashReceivedNum = parseFloat(cashReceived) || 0;
   const change = Math.round((cashReceivedNum - total) * 100) / 100;
+  
+  // Calculate what discount was applied if manual amount is used
+  const manualDiscountPercentage = manualAmount > 0 && calculatedSubtotal > 0 
+    ? ((calculatedSubtotal - manualAmount) / calculatedSubtotal * 100)
+    : 0;
 
   // Load tax rates for location
   useEffect(() => {
@@ -485,6 +495,10 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
             value: subtotal.toFixed(2)
           },
           {
+            key: '_calculated_subtotal',
+            value: calculatedSubtotal.toFixed(2)
+          },
+          {
             key: '_tax_total',
             value: taxAmount.toFixed(2)
           },
@@ -492,6 +506,13 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
             key: '_total',
             value: total.toFixed(2)
           },
+          ...(manualPreTaxAmount && parseFloat(manualPreTaxAmount) > 0 ? [{
+            key: '_manual_pre_tax_override',
+            value: manualPreTaxAmount
+          }, {
+            key: '_manual_discount_applied',
+            value: manualDiscountPercentage.toFixed(2) + '%'
+          }] : []),
           ...(isSplitPayment ? [
             {
               key: '_split_payment',
@@ -748,10 +769,14 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         <OrderSummary
           items={items}
           subtotal={subtotal}
+          calculatedSubtotal={calculatedSubtotal}
           taxRate={taxRate}
           taxAmount={taxAmount}
           total={total}
           selectedCustomer={selectedCustomer}
+          manualPreTaxAmount={manualPreTaxAmount}
+          onManualPreTaxAmountChange={setManualPreTaxAmount}
+          manualDiscountPercentage={manualDiscountPercentage}
         />
       </div>
 

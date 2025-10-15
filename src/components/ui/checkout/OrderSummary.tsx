@@ -6,10 +6,14 @@ import { useUserPointsBalance } from '../../../hooks/useRewards';
 interface OrderSummaryProps {
   items: CartItem[];
   subtotal: number;
+  calculatedSubtotal: number;
   taxRate: TaxRate;
   taxAmount: number;
   total: number;
   selectedCustomer?: WordPressUser | null;
+  manualPreTaxAmount?: string;
+  onManualPreTaxAmountChange?: (value: string) => void;
+  manualDiscountPercentage?: number;
 }
 
 const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
@@ -38,10 +42,14 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
 export const OrderSummary: React.FC<OrderSummaryProps> = ({
   items,
   subtotal,
+  calculatedSubtotal,
   taxRate,
   taxAmount,
   total,
-  selectedCustomer
+  selectedCustomer,
+  manualPreTaxAmount = '',
+  onManualPreTaxAmountChange,
+  manualDiscountPercentage = 0
 }) => {
   return (
     <div className="px-4 pt-2 pb-3 flex flex-col flex-1">
@@ -126,6 +134,52 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
 
       {/* Totals - Fixed at bottom */}
       <div className="pt-3 space-y-2 flex-shrink-0">
+        {/* Manual Pre-Tax Amount Input */}
+        <div className="mb-3 p-3 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-mono text-neutral-400 lowercase">
+              override pre-tax total
+            </label>
+            {manualPreTaxAmount && onManualPreTaxAmountChange && (
+              <button
+                onClick={() => onManualPreTaxAmountChange('')}
+                className="text-[10px] font-mono text-neutral-500 hover:text-white transition-colors px-2 py-0.5 rounded bg-white/5 hover:bg-white/10"
+              >
+                clear
+              </button>
+            )}
+          </div>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-mono text-sm">$</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={manualPreTaxAmount}
+              onChange={(e) => onManualPreTaxAmountChange && onManualPreTaxAmountChange(e.target.value)}
+              placeholder={calculatedSubtotal.toFixed(2)}
+              className="w-full bg-white/[0.05] text-white font-mono text-sm py-2 pl-6 pr-3 rounded-lg border border-white/[0.08] focus:border-white/20 focus:outline-none focus:ring-1 focus:ring-white/10 placeholder:text-neutral-600"
+            />
+          </div>
+          {manualPreTaxAmount && parseFloat(manualPreTaxAmount) > 0 && (
+            <div className="mt-2 text-[10px] font-mono text-neutral-500">
+              {manualDiscountPercentage && manualDiscountPercentage > 0 ? (
+                <span className="text-orange-400">
+                  ↓ {manualDiscountPercentage.toFixed(1)}% discount applied
+                </span>
+              ) : manualDiscountPercentage && manualDiscountPercentage < 0 ? (
+                <span className="text-blue-400">
+                  ↑ {Math.abs(manualDiscountPercentage).toFixed(1)}% markup applied
+                </span>
+              ) : (
+                <span className="text-green-400">
+                  ✓ matches calculated total
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        
         {/* Show total discounts if any */}
         {(() => {
           const originalSubtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -143,11 +197,13 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
         })()}
         
         <div className="flex justify-between text-xs font-mono text-neutral-400">
-          <span className="lowercase">subtotal</span>
-          <span>${subtotal.toFixed(2)}</span>
+          <span className="lowercase">subtotal (pre-tax)</span>
+          <span className={manualPreTaxAmount ? 'text-orange-400 font-bold' : ''}>
+            ${subtotal.toFixed(2)}
+          </span>
         </div>
         <div className="flex justify-between text-xs font-mono text-neutral-400">
-          <span className="lowercase">tax</span>
+          <span className="lowercase">tax ({(taxRate.rate * 100).toFixed(2)}%)</span>
           <span>${taxAmount.toFixed(2)}</span>
         </div>
         <div className="flex justify-between items-center py-2.5 px-3 bg-white/[0.02] rounded-xl mt-2">
