@@ -704,15 +704,13 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   ]);
 
   const handlePrint = () => {
-    // Detect iOS
+    // Detect iOS and PWA mode
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  (window.navigator as any).standalone === true;
     
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow popups to print labels');
-      return;
-    }
+    console.log('🖨️ Print mode:', { isIOS, isPWA });
     
     let printableContent = '';
     
@@ -750,6 +748,81 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     });
     
     printableContent = tempDiv.innerHTML;
+    
+    // PWA Mode: Use iframe instead of new window
+    if (isIOS && isPWA) {
+      console.log('📱 PWA mode - using iframe print');
+      
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;';
+      document.body.appendChild(iframe);
+      
+      const iframeDoc = iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        alert('Print failed');
+        document.body.removeChild(iframe);
+        return;
+      }
+      
+      iframeDoc.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Print Labels</title>
+  <style>
+    @font-face {
+      font-family: 'DonGraffiti';
+      src: url('/DonGraffiti.otf') format('opentype');
+      font-display: block;
+    }
+    @font-face {
+      font-family: 'Tiempos';
+      src: url('/Tiempos Text Regular.otf') format('opentype');
+      font-display: block;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page { size: 8.5in 11in; margin: 0; }
+    html, body { width: 8.5in; height: 11in; margin: 0; padding: 0; }
+    body { font-family: Helvetica, sans-serif; background: white; position: relative; }
+    .print-page { width: 8.5in; height: 11in; position: relative; page-break-after: always; }
+    .label-grid { position: absolute; top: 0; left: 0; width: 8.5in; height: 11in; }
+    @media print {
+      html, body { width: 8.5in !important; height: 11in !important; }
+      .print-page { width: 8.5in !important; height: 11in !important; page-break-after: always !important; }
+    }
+  </style>
+</head>
+<body>${printableContent}</body>
+</html>`);
+      iframeDoc.close();
+      
+      // Wait for fonts to load
+      const printIframe = () => {
+        if (iframeDoc.fonts) {
+          iframeDoc.fonts.ready.then(() => {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            setTimeout(() => document.body.removeChild(iframe), 1000);
+          });
+        } else {
+          setTimeout(() => {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            setTimeout(() => document.body.removeChild(iframe), 1000);
+          }, 1000);
+        }
+      };
+      
+      setTimeout(printIframe, 300);
+      return;
+    }
+    
+    // Non-PWA: Use new window
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups to print labels');
+      return;
+    }
     
     // Write HTML with consistent screen/print styles
     printWindow.document.write(`<!DOCTYPE html>
