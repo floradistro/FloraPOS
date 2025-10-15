@@ -36,10 +36,12 @@ export default function TestTVsPage() {
 
   // Load on mount
   useEffect(() => {
+    console.log('📺 Test TVs Page Mounted - Loading TVs for location:', locationId);
     loadTVs();
   }, [locationId]);
 
   const addTestTVs = async () => {
+    console.log('🔵 ADD BUTTON CLICKED!');
     setLoading(true);
     setMessage('');
     setDebugInfo('Starting to add TVs...');
@@ -152,26 +154,41 @@ export default function TestTVsPage() {
           <p className="text-xs text-white/40 mb-8 font-mono">Debug: {debugInfo}</p>
         )}
 
-        <div className="space-y-4 mb-8">
+        <div className="flex gap-4 mb-8">
           <button
-            onClick={addTestTVs}
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('🔵 BUTTON CLICKED - Add TVs');
+              addTestTVs();
+            }}
             disabled={loading}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 disabled:opacity-50 rounded-lg font-medium transition-colors"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-900 disabled:opacity-50 rounded-lg font-medium transition-colors cursor-pointer"
+            type="button"
           >
             {loading ? 'Adding...' : 'Add 3 Test TVs'}
           </button>
 
           <button
-            onClick={loadTVs}
-            className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-lg font-medium transition-colors ml-4"
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('🔵 BUTTON CLICKED - Refresh');
+              loadTVs();
+            }}
+            className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-lg font-medium transition-colors cursor-pointer"
+            type="button"
           >
             Refresh TVs
           </button>
 
           <button
-            onClick={clearAllTVs}
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('🔵 BUTTON CLICKED - Clear');
+              clearAllTVs();
+            }}
             disabled={loading}
-            className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-900 disabled:opacity-50 rounded-lg font-medium transition-colors ml-4"
+            className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-900 disabled:opacity-50 rounded-lg font-medium transition-colors cursor-pointer"
+            type="button"
           >
             Clear All TVs
           </button>

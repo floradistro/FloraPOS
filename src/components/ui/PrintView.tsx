@@ -751,12 +751,11 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     
     printableContent = tempDiv.innerHTML;
     
-    // Write clean HTML optimized for iOS
+    // Write HTML with consistent screen/print styles
     printWindow.document.write(`<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=816, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Print Labels</title>
   <style>
     @font-face {
@@ -769,20 +768,100 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       src: url('/Tiempos Text Regular.otf') format('opentype');
       font-display: block;
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    @page { size: letter; margin: 0; }
-    html, body { width: 816px; height: 1056px; overflow: hidden; }
-    body { font-family: Helvetica, sans-serif; position: relative; background: white; }
-    .print-page { width: 816px; height: 1056px; position: relative; page-break-after: always; }
-    .label-grid { position: absolute; top: 0; left: 0; width: 816px; height: 1056px; }
-    .label { position: absolute; overflow: hidden; }
-    .label-content { position: absolute; display: flex; align-items: flex-start; gap: 2px; }
-    .label-logo { flex-shrink: 0; object-fit: contain; }
-    .label-text { flex: 1; display: flex; flex-direction: column; gap: 1px; overflow: hidden; }
-    .product-name { font-weight: bold; word-wrap: break-word; overflow: hidden; }
+    
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    @page { 
+      size: 8.5in 11in;
+      margin: 0;
+    }
+    
+    html {
+      width: 8.5in;
+      height: 11in;
+    }
+    
+    body { 
+      width: 8.5in;
+      height: 11in;
+      margin: 0;
+      padding: 0;
+      font-family: Helvetica, sans-serif;
+      background: white;
+      position: relative;
+    }
+    
+    .print-page { 
+      width: 8.5in;
+      height: 11in;
+      position: relative;
+      page-break-after: always;
+      break-after: always;
+    }
+    
+    .label-grid { 
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 8.5in;
+      height: 11in;
+    }
+    
+    .label { 
+      position: absolute;
+      overflow: hidden;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    
+    .label-content { 
+      position: absolute;
+      display: flex;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    
+    .label-logo { 
+      flex-shrink: 0;
+      object-fit: contain;
+    }
+    
+    .label-text { 
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      overflow: hidden;
+    }
+    
+    .product-name { 
+      font-weight: bold;
+      word-wrap: break-word;
+      overflow: hidden;
+    }
+    
     @media print {
-      html, body { width: 100%; height: 100%; }
-      .print-page { page-break-after: always; }
+      html, body {
+        width: 8.5in !important;
+        height: 11in !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .print-page {
+        width: 8.5in !important;
+        height: 11in !important;
+        page-break-after: always !important;
+      }
+      .label-grid {
+        width: 8.5in !important;
+        height: 11in !important;
+      }
     }
   </style>
 </head>
