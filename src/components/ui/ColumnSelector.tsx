@@ -124,17 +124,32 @@ export function ColumnSelector({
             }
             
             product.meta_data.forEach((meta: any) => {
-              // Look for Flora Fields (_fd_field_*) or old blueprint fields (_blueprint_*)
+              // Look for ALL blueprint/field formats (same as UnifiedSearchInput)
+              if (!meta.key || !meta.value) return;
+              
               let fieldName = '';
-              if (meta.key && meta.key.startsWith('_fd_field_')) {
-                fieldName = meta.key.substring(10); // Remove _fd_field_ prefix
-              } else if (meta.key && meta.key.startsWith('_blueprint_')) {
-                fieldName = meta.key.substring(11); // Remove _blueprint_ prefix
+              
+              // Check all possible formats
+              if (meta.key.startsWith('_blueprint_')) {
+                fieldName = meta.key.substring(11); // _blueprint_effect -> effect
+              } else if (meta.key.startsWith('blueprint_')) {
+                fieldName = meta.key.substring(10); // blueprint_effect -> effect
+              } else if (meta.key.startsWith('_fd_field_')) {
+                fieldName = meta.key.substring(10); // _fd_field_effect -> effect
+              } else if (['effect', 'lineage', 'nose', 'terpene', 'strain_type', 'thca_percentage', 'supplier'].includes(meta.key)) {
+                fieldName = meta.key; // Direct field name
+              } else if (meta.key.startsWith('_') && ['effect', 'lineage', 'nose', 'terpene', 'strain_type', 'thca_percentage', 'supplier'].includes(meta.key.substring(1))) {
+                fieldName = meta.key.substring(1); // _effect -> effect
               } else {
                 return; // Skip non-field meta
               }
               
-              if (meta.value) {
+              // Normalize field names
+              if (fieldName === 'effects') fieldName = 'effect';
+              if (fieldName === 'thc_percentage') fieldName = 'thca_percentage';
+              
+              const value = String(meta.value).trim();
+              if (value) {
                 totalFieldsFound++;
                 if (fieldMap.has(fieldName)) {
                   fieldMap.get(fieldName)!.count++;
