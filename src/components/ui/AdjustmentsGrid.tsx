@@ -404,7 +404,13 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         }
 
         // Process products
-        const baseProducts: Product[] = filteredProducts.map((product: any) => {
+        console.log(`🔄 Processing ${filteredProducts.length} products into Product objects...`);
+        const baseProducts: Product[] = filteredProducts.map((product: any, index: number) => {
+          if (!product || !product.id) {
+            console.error(`❌ Invalid product at index ${index}:`, product);
+            return null;
+          }
+          
           const inventory = product.inventory?.map((inv: any) => ({
             location_id: inv.location_id?.toString() || '0',
             location_name: inv.location_name || `Location ${inv.location_id}`,
@@ -429,7 +435,9 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
             has_variants: product.type === 'variable',
             variants: undefined
           };
-        });
+        }).filter((p): p is Product => p !== null);
+        
+        console.log(`✅ Processed ${baseProducts.length} valid products (${filteredProducts.length - baseProducts.length} skipped due to errors)`);
 
         // OPTIMIZATION: Skip eager variant loading - load on-demand when product is clicked
         // This saves 20+ API calls on initial load (4 variable products × 5 variants each)
@@ -681,34 +689,101 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       setAdjustmentStatus({ type: null, message: '' });
 
       try {
-        console.log(`Creating PO "${supplierName}" with ${pendingRestockProducts.size} products...`);
+        console.log(`🔍 [Restock] Creating PO "${supplierName}" with ${pendingRestockProducts.size} products...`);
+        console.log(`🔍 [Restock] Current products state has ${products.length} products`);
+        console.log(`🔍 [Restock] Product IDs in state:`, products.map(p => p.id));
+        console.log(`🔍 [Restock] Pending restock products:`, Array.from(pendingRestockProducts.entries()));
         
         // Convert pending restock products to RestockProduct format
-        const restockProducts: RestockProduct[] = Array.from(pendingRestockProducts.entries()).map(([key, quantity]) => {
+        // If product not in state, fetch it from API
+        const restockProducts: RestockProduct[] = [];
+        
+        for (const [key, quantity] of pendingRestockProducts.entries()) {
           const [productId, variantId] = key.split('-').map(Number);
-          const product = products.find(p => p.id === productId);
+          let product = products.find(p => Number(p.id) === productId);
           
           if (!product) {
-            throw new Error(`Product not found: ${productId}`);
+            console.warn(`⚠️ [Restock] Product ${productId} not in state, fetching from API...`);
+            
+            // Fetch the product from API
+            try {
+              const response = await fetch(`/api/proxy/woocommerce/products/${productId}`);
+              if (response.ok) {
+                const fetchedProduct = await response.json();
+                product = {
+                  id: fetchedProduct.id,
+                  name: fetchedProduct.name,
+                  sku: fetchedProduct.sku || '',
+                  type: fetchedProduct.type || 'simple',
+                  status: fetchedProduct.status || 'publish',
+                  regular_price: fetchedProduct.regular_price || '0',
+                  sale_price: fetchedProduct.sale_price,
+                  image: fetchedProduct.images?.[0],
+                  categories: fetchedProduct.categories || [],
+                  inventory: [],
+                  total_stock: 0,
+                  meta_data: fetchedProduct.meta_data || [],
+                  blueprintPricing: null,
+                  has_variants: fetchedProduct.type === 'variable',
+                  variants: undefined
+                };
+                console.log(`✅ [Restock] Fetched product ${productId} from API: ${product.name}`);
+              } else {
+                console.error(`❌ [Restock] Failed to fetch product ${productId} from API: ${response.status}`);
+                throw new Error(`Product ${productId} not found and could not be fetched from API`);
+              }
+            } catch (fetchError) {
+              console.error(`❌ [Restock] Error fetching product ${productId}:`, fetchError);
+              throw new Error(`Product ${productId} not found: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
+            }
+          } else {
+            console.log(`✅ [Restock] Found product ${productId} in state: ${product.name}`);
           }
 
-          return {
+          restockProducts.push({
             product_id: productId,
             variation_id: variantId || undefined,
             name: product.name,
             sku: product.sku,
             restock_quantity: quantity,
-            suggested_cost: 0, // TODO: Could add cost estimation
+            suggested_cost: 0,
             current_stock: product.total_stock
-          };
-        });
+          });
+        }
+        
+        console.log(`✅ [Restock] ${restockProducts.length} products ready for PO`);
 
+        // Get or create supplier first
+        console.log('🔍 [Restock] Fetching suppliers...');
+        const suppliersResponse = await PurchaseOrdersService.getSuppliers();
+        
+        let supplierId = 1; // Fallback
+        if (suppliersResponse.success && suppliersResponse.data && suppliersResponse.data.length > 0) {
+          // Check if supplier with matching name exists
+          const existingSupplier = suppliersResponse.data.find(s => 
+            s.name.toLowerCase().trim() === supplierName.toLowerCase().trim()
+          );
+          
+          if (existingSupplier) {
+            supplierId = existingSupplier.id;
+            console.log(`✅ [Restock] Found existing supplier: ${existingSupplier.name} (ID: ${supplierId})`);
+          } else {
+            // Use first active supplier
+            supplierId = suppliersResponse.data[0].id;
+            console.log(`⚠️ [Restock] Supplier "${supplierName}" not found, using: ${suppliersResponse.data[0].name} (ID: ${supplierId})`);
+          }
+        } else {
+          console.warn('⚠️ [Restock] No suppliers found, attempting with default ID 1');
+        }
+        
         // Create purchase order using standard endpoint
         const poItems = PurchaseOrdersService.transformRestockProductsToPOItems(restockProducts);
         const totals = PurchaseOrdersService.calculatePOTotals(poItems);
         
+        console.log(`📝 [Restock] Creating PO with supplier_id: ${supplierId}, location_id: ${user?.location_id ? parseInt(user.location_id) : 20}`);
+        
         const result = await PurchaseOrdersService.createPurchaseOrder({
-          supplier_id: 1, // Default supplier - TODO: Add supplier selection
+          supplier_id: supplierId,
           location_id: user?.location_id ? parseInt(user.location_id) : 20,
           status: 'draft',
           subtotal: totals.subtotal,
@@ -720,6 +795,14 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           items: poItems
         });
 
+        console.log('📦 [Restock] PO Creation result:', result);
+        
+        if (!result.success) {
+          const errorMessage = result.error || 'Unknown error occurred';
+          console.error('❌ [Restock] PO creation failed:', errorMessage);
+          throw new Error(errorMessage);
+        }
+        
         if (result.success && result.data) {
           // For POS systems, we'll also update the stock immediately after creating the PO
           // This simulates receiving the purchase order instantly
@@ -797,8 +880,6 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           setPendingRestockProducts(new Map());
           
           console.log(`✅ Created purchase order: ${result.data?.po_number || 'Unknown'}`);
-        } else {
-          throw new Error(result.error || 'Failed to create purchase order');
         }
 
       } catch (error) {
@@ -966,13 +1047,28 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
+          let errorText = await response.text();
           console.error('❌ [Audit] API error response:', errorText);
-          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+          
+          // Try to parse error as JSON for better error messages
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorText = errorJson.error || errorJson.message || errorText;
+          } catch (e) {
+            // If not JSON, use the text as-is
+          }
+          
+          throw new Error(`API request failed (${response.status}): ${errorText}`);
         }
 
         const result = await response.json();
         console.log('📦 [Audit] API response:', result);
+        
+        if (!result.success) {
+          const errorMessage = result.error || result.message || 'Unknown error occurred';
+          console.error('❌ [Audit] Batch adjustment failed:', errorMessage);
+          throw new Error(errorMessage);
+        }
 
         if (result.success) {
           console.log('✅ [Audit] Batch adjustment completed:', result);
