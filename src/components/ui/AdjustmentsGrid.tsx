@@ -435,7 +435,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
             has_variants: product.type === 'variable',
             variants: undefined
           };
-        }).filter((p): p is Product => p !== null);
+        }).filter((p: Product | null): p is Product => p !== null);
         
         console.log(`✅ Processed ${baseProducts.length} valid products (${filteredProducts.length - baseProducts.length} skipped due to errors)`);
 
