@@ -222,7 +222,7 @@ export function TypographyDropdown({
               <input
                 type="range"
                 min="20"
-                max="120"
+                max="300"
                 value={headerTitleSize}
                 onChange={(e) => onFontSizesChange({ headerTitleSize: parseInt(e.target.value), cardTitleSize, priceSize, categorySize })}
                 className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer slider-thumb"
@@ -231,13 +231,13 @@ export function TypographyDropdown({
 
             <div className="px-1">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-white/60">Card Title</span>
+                <span className="text-xs text-white/60">Card Title / Product Name</span>
                 <span className="text-[11px] text-white/70 font-mono bg-white/5 px-2 py-0.5 rounded tracking-wide" style={{ fontWeight: 400, letterSpacing: '0.02em' }}>{cardTitleSize}px</span>
               </div>
               <input
                 type="range"
                 min="10"
-                max="40"
+                max="120"
                 value={cardTitleSize}
                 onChange={(e) => onFontSizesChange({ headerTitleSize, cardTitleSize: parseInt(e.target.value), priceSize, categorySize })}
                 className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer slider-thumb"
@@ -252,7 +252,7 @@ export function TypographyDropdown({
               <input
                 type="range"
                 min="12"
-                max="80"
+                max="200"
                 value={priceSize}
                 onChange={(e) => onFontSizesChange({ headerTitleSize, cardTitleSize, priceSize: parseInt(e.target.value), categorySize })}
                 className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer slider-thumb"
@@ -267,7 +267,7 @@ export function TypographyDropdown({
               <input
                 type="range"
                 min="16"
-                max="80"
+                max="200"
                 value={categorySize}
                 onChange={(e) => onFontSizesChange({ headerTitleSize, cardTitleSize, priceSize, categorySize: parseInt(e.target.value) })}
                 className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer slider-thumb"
