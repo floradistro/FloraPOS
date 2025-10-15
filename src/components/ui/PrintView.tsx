@@ -637,8 +637,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       `).join('') || '';
       
       labelsHtml += `
-        <div style="position: absolute; left: ${left}in; top: ${top}in; width: ${template.grid.label_width}in; height: ${template.grid.label_height}in; border-radius: ${template.label_style.corner_radius}in; overflow: hidden;">
-          <div style="position: absolute; top: ${basePadding}in; left: ${basePadding}in; right: ${basePadding}in; bottom: ${basePadding}in; display: flex; flex-direction: row; align-items: flex-start; gap: 2px; overflow: hidden;">
+        <div class="label" style="position: absolute; left: ${left}in; top: ${top}in; width: ${template.grid.label_width}in; height: ${template.grid.label_height}in; border-radius: ${template.label_style.corner_radius}in; overflow: hidden; page-break-inside: avoid; break-inside: avoid; -webkit-break-inside: avoid;">
+          <div class="label-content" style="position: absolute; top: ${basePadding}in; left: ${basePadding}in; right: ${basePadding}in; bottom: ${basePadding}in; display: flex; flex-direction: row; align-items: flex-start; gap: 2px; overflow: hidden;">
             ${showLogo ? `<img src="/logoprint.png" class="label-logo" style="width: ${logoSize}px; height: ${logoSize}px; flex-shrink: 0; object-fit: contain;" />` : ''}
             <div class="label-text" style="flex: 1; display: flex; flex-direction: column; gap: 1px; overflow: hidden;">
               <div class="product-name" style="font-size: ${adaptiveNameSize}pt; line-height: ${labelLineHeight}; color: ${productNameColor}; font-family: ${productNameFont}; font-weight: ${productNameWeight}; word-wrap: break-word; overflow: hidden;">
@@ -652,8 +652,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     }
     
     return `
-      <div class="print-page" style="position: relative; page-break-after: always; width: ${template.page.width}in; height: ${template.page.height}in;">
-        <div class="label-grid" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+      <div class="print-page" style="position: relative; page-break-after: always; break-after: always; -webkit-break-after: always; width: 8.5in; height: 11in; overflow: hidden;">
+        <div class="label-grid" style="position: absolute; top: 0; left: 0; width: 8.5in; height: 11in; overflow: hidden;">
           ${labelsHtml}
         </div>
       </div>
@@ -760,14 +760,10 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 color-adjust: exact !important;
               }
               html {
-                width: 100%;
-                height: 100%;
                 margin: 0;
                 padding: 0;
               }
               body {
-                width: 100%;
-                height: 100%;
                 margin: 0;
                 padding: 0;
                 font-family: ${template.text_style.font_family}, sans-serif;
@@ -781,8 +777,6 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                   margin: 0;
                 }
                 html, body {
-                  width: 100%;
-                  height: 100%;
                   margin: 0 !important;
                   padding: 0 !important;
                 }
@@ -792,17 +786,20 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 }
               }
               .print-page {
-                width: ${template.page.width}in;
-                height: ${template.page.height}in;
+                width: 8.5in;
+                height: 11in;
                 position: relative;
                 page-break-after: always;
+                break-after: always;
+                -webkit-break-after: always;
               }
               .label-grid {
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: ${template.page.width}in;
-                height: ${template.page.height}in;
+                width: 8.5in;
+                height: 11in;
+                overflow: hidden;
               }
               .label {
                 position: absolute;
@@ -810,6 +807,9 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 height: ${template.grid.label_height}in;
                 border-radius: ${template.label_style.corner_radius}in;
                 overflow: hidden;
+                page-break-inside: avoid;
+                break-inside: avoid;
+                -webkit-break-inside: avoid;
               }
               .label-content {
                 position: absolute;
