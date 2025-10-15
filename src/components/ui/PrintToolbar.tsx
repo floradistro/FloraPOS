@@ -296,14 +296,27 @@ export const PrintToolbar: React.FC<PrintToolbarProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => onBulkPrintModeChange(!bulkPrintMode)}
-            className={`px-2.5 py-1.5 text-[10px] rounded transition-all backdrop-blur-sm border ${
-              bulkPrintMode
-                ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-                : 'bg-white/5 text-neutral-300 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20'
-            }`}
+            className="group relative flex items-center gap-2 px-2.5 py-1.5 bg-white/5 hover:bg-white/[0.07] border border-white/10 hover:border-white/20 rounded transition-all backdrop-blur-sm"
             style={{ fontFamily: 'Tiempos, serif' }}
           >
-            {bulkPrintMode ? `Bulk (${selectedProducts.size})` : 'Single'}
+            <div className={`relative w-8 h-4 rounded-full transition-all duration-300 ${
+              bulkPrintMode 
+                ? 'bg-white/20' 
+                : 'bg-white/10'
+            }`}>
+              <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full transition-all duration-300 ${
+                bulkPrintMode 
+                  ? 'translate-x-4 bg-white' 
+                  : 'translate-x-0 bg-white/60'
+              }`} />
+            </div>
+            <span className={`text-[10px] transition-colors ${
+              bulkPrintMode 
+                ? 'text-white' 
+                : 'text-white/60 group-hover:text-white/80'
+            }`}>
+              {bulkPrintMode ? `Bulk (${selectedProducts.size})` : 'Single'}
+            </span>
           </button>
 
           <button

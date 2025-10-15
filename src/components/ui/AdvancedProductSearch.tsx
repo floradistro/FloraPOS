@@ -179,6 +179,20 @@ export function AdvancedProductSearch({
     }
   };
 
+  const handleSelectAll = () => {
+    const newSelection = new Set(selectedProducts);
+    displayProducts.forEach(p => newSelection.add(p.id));
+    onSelectedProductsChange(newSelection);
+  };
+
+  const handleDeselectAll = () => {
+    const displayProductIds = new Set(displayProducts.map(p => p.id));
+    const newSelection = new Set(Array.from(selectedProducts).filter(id => !displayProductIds.has(id)));
+    onSelectedProductsChange(newSelection);
+  };
+
+  const allCurrentSelected = displayProducts.length > 0 && displayProducts.every(p => selectedProducts.has(p.id));
+
   if (!isOpen) return null;
 
   return (
@@ -219,20 +233,7 @@ export function AdvancedProductSearch({
             />
             <select
               value={selectedCategory || ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === '__bulk__' && bulkMode && selectedCategory) {
-                  const categoryProducts = filteredProducts.filter(p => 
-                    p.categories?.some(c => c.slug === selectedCategory)
-                  );
-                  const newSelection = new Set(selectedProducts);
-                  categoryProducts.forEach(p => newSelection.add(p.id));
-                  onSelectedProductsChange(newSelection);
-                  setSelectedCategory(null);
-                } else {
-                  setSelectedCategory(value || null);
-                }
-              }}
+              onChange={(e) => setSelectedCategory(e.target.value || null)}
               className="px-3 py-1.5 bg-white/5 text-white/90 text-[10px] rounded border border-white/10 focus:outline-none focus:border-white/20"
               style={{ fontFamily: 'Tiempos, serif' }}
             >
@@ -240,9 +241,6 @@ export function AdvancedProductSearch({
               {categories.map(cat => (
                 <option key={cat.slug} value={cat.slug}>{cat.name}</option>
               ))}
-              {bulkMode && selectedCategory && (
-                <option value="__bulk__">✓ Select all in {categories.find(c => c.slug === selectedCategory)?.name}</option>
-              )}
             </select>
             <select
               value={stockFilter}
@@ -264,6 +262,15 @@ export function AdvancedProductSearch({
               <option value="low-high">Price ↑</option>
               <option value="high-low">Price ↓</option>
             </select>
+            {bulkMode && displayProducts.length > 0 && (
+              <button
+                onClick={allCurrentSelected ? handleDeselectAll : handleSelectAll}
+                className="px-3 py-1.5 text-[10px] bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded border border-white/10 hover:border-white/20 transition-all"
+                style={{ fontFamily: 'Tiempos, serif' }}
+              >
+                {allCurrentSelected ? 'Deselect All' : 'Select All'}
+              </button>
+            )}
             {(searchQuery || selectedCategory || stockFilter !== 'all' || priceSort !== 'default') && (
               <button
                 onClick={() => {
@@ -368,7 +375,11 @@ export function AdvancedProductSearch({
               ? `${selectedProducts.size} products selected • ${displayProducts.length} shown`
               : `${displayProducts.length} ${displayProducts.length === 1 ? 'product' : 'products'} shown`
             }
-            {bulkMode && <span className="ml-2 text-white/30">(Double-click category to select all)</span>}
+            {bulkMode && displayProducts.length > 0 && (
+              <span className="ml-2 text-white/30">
+                (Use "Select All" to add all {selectedCategory ? 'in category' : 'visible products'})
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {bulkMode && selectedProducts.size > 0 && (

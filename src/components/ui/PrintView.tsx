@@ -171,13 +171,13 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   const { user } = useAuth();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(propSelectedProduct || null);
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
-  const [bulkProductsData, setBulkProductsData] = useState<Product[]>([]);
-  const [bulkPreviewIndex, setBulkPreviewIndex] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState<keyof typeof TEMPLATES>('avery_5160');
   const [showBorders, setShowBorders] = useState(true);
   const [showLogo, setShowLogo] = useState(true);
   const [sheetScale, setSheetScale] = useState(0.7);
   const [bulkPrintMode, setBulkPrintMode] = useState(false);
+  const [bulkProducts, setBulkProducts] = useState<Product[]>([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
   
   const [showDate, setShowDate] = useState(false);
   const [showCategory, setShowCategory] = useState(false);
@@ -269,6 +269,62 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     
     applyDefaultTemplate();
   }, [savedTemplates]);
+
+  useEffect(() => {
+    const fetchBulkProducts = async () => {
+      if (!bulkPrintMode || selectedProducts.size === 0) {
+        setBulkProducts([]);
+        setCurrentPageIndex(0);
+        return;
+      }
+      
+      console.log('🔄 Fetching bulk products:', Array.from(selectedProducts));
+      
+      const productIds = Array.from(selectedProducts);
+      const products: Product[] = [];
+      
+      for (const productId of productIds) {
+        try {
+          const response = await fetch(`/api/proxy/woocommerce/products?include=${productId}&per_page=1`);
+          if (response.ok) {
+            const wcProducts = await response.json();
+            if (wcProducts && wcProducts.length > 0) {
+              const fullProduct = wcProducts[0];
+              console.log('✅ Fetched product:', fullProduct.name);
+              products.push(fullProduct);
+            }
+          } else {
+            console.error('Error fetching product:', productId, response.status);
+          }
+        } catch (error) {
+          console.error('Error fetching product:', productId, error);
+        }
+      }
+      
+      console.log('✅ Fetched bulk products:', products.length, 'of', productIds.length);
+      setBulkProducts(products);
+      setCurrentPageIndex(0);
+    };
+    
+    fetchBulkProducts();
+  }, [bulkPrintMode, selectedProducts]);
+
+  useEffect(() => {
+    if (!bulkPrintMode || bulkProducts.length <= 1) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setCurrentPageIndex(prev => Math.max(0, prev - 1));
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setCurrentPageIndex(prev => Math.min(bulkProducts.length - 1, prev + 1));
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [bulkPrintMode, bulkProducts.length]);
 
   const loadSavedTemplates = async () => {
     if (!user) return;
@@ -546,33 +602,65 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
 
   const inchesToPx = (inches: number) => Math.round(inches * 96);
   const ptToPx = (points: number) => Math.round(points * 1.333);
-  
-  useEffect(() => {
-    if (bulkPrintMode && selectedProducts.size > 0) {
-      const loadBulkProducts = async () => {
-        console.log('📦 Loading full data for', selectedProducts.size, 'products');
-        try {
-          const productIds = Array.from(selectedProducts).join(',');
-          const response = await fetch(`/api/proxy/woocommerce/products?include=${productIds}&per_page=${selectedProducts.size}`);
-          if (response.ok) {
-            const products = await response.json();
-            console.log('✅ Loaded', products.length, 'products with full data');
-            setBulkProductsData(products);
-          }
-        } catch (error) {
-          console.error('❌ Failed to load bulk products:', error);
-        }
-      };
-      loadBulkProducts();
-    } else {
-      setBulkProductsData([]);
+
+  const generatePrintableSheet = (labelData: any[]) => {
+    const totalLabels = template.grid.rows * template.grid.columns;
+    const basePadding = inchesToPx(template.label_style.safe_padding.top / 4);
+    const baseGap = 2;
+    
+    let labelsHtml = '';
+    
+    for (let i = 0; i < totalLabels; i++) {
+      const row = Math.floor(i / template.grid.columns);
+      const col = i % template.grid.columns;
+      
+      const left = template.page.margin_left + (col * template.grid.horizontal_pitch);
+      const top = template.page.margin_top + (row * template.grid.vertical_pitch);
+      
+      const dataIndex = i % labelData.length;
+      const label = labelData[dataIndex];
+      
+      const productNameLength = label.line1?.length || 0;
+      let adaptiveNameSize = productNameSize;
+      
+      if (productNameLength > 30) {
+        adaptiveNameSize = Math.max(5, productNameSize * 0.6);
+      } else if (productNameLength > 22) {
+        adaptiveNameSize = Math.max(5, productNameSize * 0.75);
+      } else if (productNameLength > 15) {
+        adaptiveNameSize = Math.max(6, productNameSize * 0.9);
+      }
+      
+      const additionalLinesHtml = label.additionalLines?.map((line: string) => `
+        <div style="font-size: ${detailsSize}pt; line-height: ${labelLineHeight}; color: ${detailsColor}; font-family: ${detailsFont}; word-wrap: break-word; overflow: hidden;">
+          ${line}
+        </div>
+      `).join('') || '';
+      
+      labelsHtml += `
+        <div style="position: absolute; left: ${inchesToPx(left)}px; top: ${inchesToPx(top)}px; width: ${inchesToPx(template.grid.label_width)}px; height: ${inchesToPx(template.grid.label_height)}px; border-radius: ${inchesToPx(template.label_style.corner_radius)}px; overflow: hidden;">
+          <div style="position: absolute; top: ${basePadding}px; left: ${basePadding}px; right: ${basePadding}px; bottom: ${basePadding}px; display: flex; flex-direction: row; align-items: flex-start; gap: ${baseGap}px; overflow: hidden;">
+            ${showLogo ? `<img src="/logoprint.png" class="label-logo" style="width: ${logoSize}px; height: ${logoSize}px; flex-shrink: 0; object-fit: contain;" />` : ''}
+            <div class="label-text" style="flex: 1; display: flex; flex-direction: column; gap: 1px; overflow: hidden;">
+              <div class="product-name" style="font-size: ${adaptiveNameSize}pt; line-height: ${labelLineHeight}; color: ${productNameColor}; font-family: ${productNameFont}; font-weight: ${productNameWeight}; word-wrap: break-word; overflow: hidden;">
+                ${label.line1}
+              </div>
+              ${additionalLinesHtml}
+            </div>
+          </div>
+        </div>
+      `;
     }
-  }, [selectedProducts, bulkPrintMode]);
-
-  const currentPreviewProduct = bulkPrintMode && bulkProductsData.length > 0 
-    ? bulkProductsData[bulkPreviewIndex] 
-    : selectedProduct;
-
+    
+    return `
+      <div class="print-page" style="position: relative; page-break-after: always;">
+        <div class="label-grid" style="position: absolute; top: 0; left: 0; width: ${template.page.width}in; height: ${template.page.height}in;">
+          ${labelsHtml}
+        </div>
+      </div>
+    `;
+  };
+  
   const printData = React.useMemo(() => {
     console.log('🔄 printData useMemo recalculating...');
     if (propData) {
@@ -580,9 +668,12 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       return propData;
     }
     
-    if (bulkPrintMode && bulkProductsData.length > 0) {
-      console.log('🏭 Generating bulk label data for', bulkProductsData.length, 'products');
-      return bulkProductsData.flatMap(product => generateProductLabelData(product));
+    if (bulkPrintMode && bulkProducts.length > 0) {
+      console.log('🏭 Generating bulk label data for product at index', currentPageIndex);
+      const currentProduct = bulkProducts[currentPageIndex];
+      if (currentProduct) {
+        return generateProductLabelData(currentProduct);
+      }
     }
     
     console.log('🏭 Generating new label data from product');
@@ -592,165 +683,169 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   }, [
     propData, 
     selectedProduct,
-    bulkProductsData,
+    bulkProducts,
+    currentPageIndex,
     bulkPrintMode,
+    template,
     showDate, showPrice, showSKU, showCategory, showMargin,
     showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier,
     selectedTier, showTierPrice, showTierLabel
   ]);
 
-  const currentPreviewData = React.useMemo(() => {
-    if (bulkPrintMode && bulkProductsData.length > 0) {
-      return generateProductLabelData(currentPreviewProduct);
-    }
-    return generateProductLabelData(selectedProduct);
-  }, [currentPreviewProduct, selectedProduct, bulkPrintMode, bulkProductsData, showDate, showPrice, showSKU, showCategory, showMargin, showEffect, showLineage, showNose, showTerpene, showStrainType, showTHCA, showSupplier, selectedTier, showTierPrice, showTierLabel]);
-
   const handlePrint = () => {
-    if (printRef.current) {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        let printableContent = printRef.current.innerHTML;
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      let printableContent = '';
+      
+      if (bulkPrintMode && bulkProducts.length > 0) {
+        console.log('🖨️ Printing all bulk products:', bulkProducts.length);
         
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = printableContent;
-        
-        tempDiv.querySelectorAll('img[src="/logoprint.png"]').forEach(img => {
-          img.className = 'label-logo';
+        bulkProducts.forEach((product, index) => {
+          const productLabels = generateProductLabelData(product);
+          const pageContent = generatePrintableSheet(productLabels);
+          printableContent += pageContent;
         });
-        
-        tempDiv.querySelectorAll('.flex-1.flex.flex-col').forEach(container => {
-          const newContainer = document.createElement('div');
-          newContainer.className = 'label-text';
-          Array.from(container.children).forEach((child, index) => {
-            const newDiv = document.createElement('div');
-            newDiv.textContent = child.textContent;
-            if (index === 0) {
-              newDiv.className = 'product-name';
-            }
-            newContainer.appendChild(newDiv);
-          });
-          container.parentNode?.replaceChild(newContainer, container);
-        });
-        
-        printableContent = tempDiv.innerHTML;
-
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Print Labels - ${template.template_name}</title>
-              <style>
-                @font-face {
-                  font-family: 'DonGraffiti';
-                  src: url('/DonGraffiti.otf') format('opentype');
-                  font-weight: normal;
-                  font-style: normal;
-                }
-                @font-face {
-                  font-family: 'Tiempos';
-                  src: url('/Tiempos Text Regular.otf') format('opentype');
-                  font-weight: normal;
-                  font-style: normal;
-                }
-                @page {
-                  size: ${template.page.size};
-                  margin: 0;
-                }
-                body {
-                  margin: 0;
-                  padding: 0;
-                  font-family: ${template.text_style.font_family}, sans-serif;
-                  -webkit-print-color-adjust: exact;
-                  color-adjust: exact;
-                }
-                .print-page {
-                  width: ${template.page.width}in;
-                  height: ${template.page.height}in;
-                  position: relative;
-                  page-break-after: always;
-                }
-                .label-grid {
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  width: ${template.page.width}in;
-                  height: ${template.page.height}in;
-                }
-                .label {
-                  position: absolute;
-                  width: ${template.grid.label_width}in;
-                  height: ${template.grid.label_height}in;
-                  border-radius: ${template.label_style.corner_radius}in;
-                  overflow: hidden;
-                }
-                .label-content {
-                  position: absolute;
-                  top: ${template.label_style.safe_padding.top / 4}in;
-                  left: ${template.label_style.safe_padding.left / 4}in;
-                  right: ${template.label_style.safe_padding.right / 4}in;
-                  bottom: ${template.label_style.safe_padding.bottom / 4}in;
-                  display: flex;
-                  flex-direction: row;
-                  align-items: flex-start;
-                  gap: 2px;
-                  overflow: hidden;
-                }
-                .label-logo {
-                  width: ${logoSize}px;
-                  height: ${logoSize}px;
-                  flex-shrink: 0;
-                  object-fit: contain;
-                }
-                .label-text {
-                  flex: 1;
-                  display: flex;
-                  flex-direction: column;
-                  gap: 1px;
-                  overflow: hidden;
-                }
-                .label-text .product-name,
-                .label-text > div:first-child {
-                  font-size: ${productNameSize}pt;
-                  line-height: ${labelLineHeight};
-                  color: ${productNameColor};
-                  font-family: ${productNameFont};
-                  font-weight: ${productNameWeight};
-                  overflow: hidden;
-                  word-wrap: break-word;
-                }
-                .label-text > div:not(:first-child),
-                .label-text > div:not(.product-name) {
-                  font-size: ${detailsSize}pt;
-                  line-height: ${labelLineHeight};
-                  color: ${detailsColor};
-                  font-family: ${detailsFont};
-                  overflow: hidden;
-                  word-wrap: break-word;
-                }
-              </style>
-            </head>
-            <body>
-              ${printableContent}
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 500);
+      } else if (printRef.current) {
+        printableContent = printRef.current.innerHTML;
       }
+      
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = printableContent;
+      
+      tempDiv.querySelectorAll('img[src="/logoprint.png"]').forEach(img => {
+        img.className = 'label-logo';
+      });
+      
+      tempDiv.querySelectorAll('.flex-1.flex.flex-col').forEach(container => {
+        const newContainer = document.createElement('div');
+        newContainer.className = 'label-text';
+        Array.from(container.children).forEach((child, index) => {
+          const newDiv = document.createElement('div');
+          newDiv.textContent = child.textContent;
+          if (index === 0) {
+            newDiv.className = 'product-name';
+          }
+          newContainer.appendChild(newDiv);
+        });
+        container.parentNode?.replaceChild(newContainer, container);
+      });
+      
+      printableContent = tempDiv.innerHTML;
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Print Labels - ${template.template_name}</title>
+            <style>
+              @font-face {
+                font-family: 'DonGraffiti';
+                src: url('/DonGraffiti.otf') format('opentype');
+                font-weight: normal;
+                font-style: normal;
+              }
+              @font-face {
+                font-family: 'Tiempos';
+                src: url('/Tiempos Text Regular.otf') format('opentype');
+                font-weight: normal;
+                font-style: normal;
+              }
+              @page {
+                size: ${template.page.size};
+                margin: 0;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: ${template.text_style.font_family}, sans-serif;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+              }
+              .print-page {
+                width: ${template.page.width}in;
+                height: ${template.page.height}in;
+                position: relative;
+                page-break-after: always;
+              }
+              .label-grid {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: ${template.page.width}in;
+                height: ${template.page.height}in;
+              }
+              .label {
+                position: absolute;
+                width: ${template.grid.label_width}in;
+                height: ${template.grid.label_height}in;
+                border-radius: ${template.label_style.corner_radius}in;
+                overflow: hidden;
+              }
+              .label-content {
+                position: absolute;
+                top: ${template.label_style.safe_padding.top / 4}in;
+                left: ${template.label_style.safe_padding.left / 4}in;
+                right: ${template.label_style.safe_padding.right / 4}in;
+                bottom: ${template.label_style.safe_padding.bottom / 4}in;
+                display: flex;
+                flex-direction: row;
+                align-items: flex-start;
+                gap: 2px;
+                overflow: hidden;
+              }
+              .label-logo {
+                width: ${logoSize}px;
+                height: ${logoSize}px;
+                flex-shrink: 0;
+                object-fit: contain;
+              }
+              .label-text {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 1px;
+                overflow: hidden;
+              }
+              .label-text .product-name,
+              .label-text > div:first-child {
+                font-size: ${productNameSize}pt;
+                line-height: ${labelLineHeight};
+                color: ${productNameColor};
+                font-family: ${productNameFont};
+                font-weight: ${productNameWeight};
+                overflow: hidden;
+                word-wrap: break-word;
+              }
+              .label-text > div:not(:first-child),
+              .label-text > div:not(.product-name) {
+                font-size: ${detailsSize}pt;
+                line-height: ${labelLineHeight};
+                color: ${detailsColor};
+                font-family: ${detailsFont};
+                overflow: hidden;
+                word-wrap: break-word;
+              }
+            </style>
+          </head>
+          <body>
+            ${printableContent}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 500);
     }
   };
 
-  const generateLabelGrid = (pageIndex: number = 0) => {
+  const generateLabelGrid = () => {
     const labels = [];
     const totalLabels = template.grid.rows * template.grid.columns;
     const basePadding = inchesToPx(template.label_style.safe_padding.top / 4);
     const baseGap = 2;
-    const startIndex = pageIndex * totalLabels;
     
     for (let i = 0; i < totalLabels; i++) {
       const row = Math.floor(i / template.grid.columns);
@@ -759,7 +854,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       const left = template.page.margin_left + (col * template.grid.horizontal_pitch);
       const top = template.page.margin_top + (row * template.grid.vertical_pitch);
       
-      const dataIndex = (startIndex + i) % printData.length;
+      const dataIndex = i % printData.length;
       const labelData = printData[dataIndex];
 
       labels.push(
@@ -862,7 +957,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
   };
 
   const generateSingleLabel = () => {
-    const labelData = currentPreviewData[0];
+    const labelData = printData[0];
     const basePadding = inchesToPx(template.label_style.safe_padding.top / 4);
     const baseGap = 2;
 
@@ -969,45 +1064,15 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 flex flex-col bg-transparent">
           <div 
-            className="px-6 py-4 border-b border-white/[0.06] transition-all duration-700 flex items-center justify-between"
+            className="px-6 py-4 border-b border-white/[0.06] transition-all duration-700"
             style={{
               opacity: focusedPreview === null ? 0.6 : focusedPreview === 'label' ? 0.85 : 0.4,
             }}
           >
-            <div>
-              <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Full Label</div>
-              <div className="text-xs text-white/30 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>
-                {template.grid.label_width}" × {template.grid.label_height}"
-                {bulkPrintMode && bulkProductsData.length > 0 && (
-                  <span className="ml-2">• {currentPreviewProduct?.name || 'Loading...'}</span>
-                )}
-              </div>
+            <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Full Label</div>
+            <div className="text-xs text-white/30 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>
+              {template.grid.label_width}" × {template.grid.label_height}"
             </div>
-            {bulkPrintMode && bulkProductsData.length > 1 && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setBulkPreviewIndex(Math.max(0, bulkPreviewIndex - 1))}
-                  disabled={bulkPreviewIndex === 0}
-                  className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/5 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <span className="text-[10px] text-white/40" style={{ fontFamily: 'Tiempos, serif' }}>
-                  {bulkPreviewIndex + 1} / {bulkProductsData.length}
-                </span>
-                <button
-                  onClick={() => setBulkPreviewIndex(Math.min(bulkProductsData.length - 1, bulkPreviewIndex + 1))}
-                  disabled={bulkPreviewIndex === bulkProductsData.length - 1}
-                  className="w-6 h-6 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/5 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            )}
           </div>
           <div 
             className="flex-1 flex items-center justify-center p-4 md:p-6 lg:p-8 cursor-pointer transition-all duration-700 ease-out overflow-hidden"
@@ -1060,7 +1125,9 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
             }}
           >
             <div>
-              <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>Sheet</div>
+              <div className="text-[10px] font-medium text-white/40 uppercase tracking-wider" style={{ fontFamily: 'Tiempos, serif' }}>
+                {bulkPrintMode && bulkProducts.length > 0 ? `Sheet ${currentPageIndex + 1} of ${bulkProducts.length}` : 'Sheet'}
+              </div>
               <div className="text-xs text-white/30 mt-0.5" style={{ fontFamily: 'Tiempos, serif' }}>
                 {Math.round(sheetScale * 100)}% scale
               </div>
@@ -1090,78 +1157,75 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
               </button>
             </div>
           </div>
+          
+          {bulkPrintMode && bulkProducts.length > 1 && (
+            <div className="px-4 py-2 border-b border-white/[0.06] flex items-center justify-between bg-white/[0.02]">
+              <button
+                onClick={() => setCurrentPageIndex(Math.max(0, currentPageIndex - 1))}
+                disabled={currentPageIndex === 0}
+                className="px-3 py-1.5 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1"
+                style={{ fontFamily: 'Tiempos, serif' }}
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Previous
+              </button>
+              <div className="text-xs text-white/50" style={{ fontFamily: 'Tiempos, serif' }}>
+                {bulkProducts[currentPageIndex]?.name || `Product ${currentPageIndex + 1}`}
+              </div>
+              <button
+                onClick={() => setCurrentPageIndex(Math.min(bulkProducts.length - 1, currentPageIndex + 1))}
+                disabled={currentPageIndex === bulkProducts.length - 1}
+                className="px-3 py-1.5 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1"
+                style={{ fontFamily: 'Tiempos, serif' }}
+              >
+                Next
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          )}
           <div 
             ref={sheetContainerRef}
-            className="flex-1 flex items-center justify-center p-4 overflow-auto cursor-pointer transition-all duration-700 ease-out"
+            className="flex-1 flex items-center justify-center p-4 overflow-hidden cursor-pointer transition-all duration-700 ease-out"
             onClick={() => setFocusedPreview(focusedPreview === 'sheet' ? null : 'sheet')}
             style={{
               opacity: focusedPreview === null ? 0.6 : focusedPreview === 'sheet' ? 0.85 : 0.4,
             }}
           >
             <div
-              className="transition-transform duration-700 ease-out flex flex-col gap-4"
+              className="transition-transform duration-700 ease-out"
               style={{
                 transform: `scale(${sheetScale * (focusedPreview === 'sheet' ? 1.03 : 1)})`,
-                transformOrigin: 'top center',
+                transformOrigin: 'center',
               }}
             >
-              {bulkPrintMode && bulkProductsData.length > 0 ? (
-                bulkProductsData.map((product, pageIdx) => (
-                  <div 
-                    key={pageIdx}
-                    ref={pageIdx === 0 ? printRef : undefined}
-                    className="bg-white transition-shadow duration-700"
-                    style={{
-                      width: `${inchesToPx(template.page.width)}px`,
-                      height: `${inchesToPx(template.page.height)}px`,
-                      position: 'relative',
-                      boxShadow: focusedPreview === 'sheet'
-                        ? '0 40px 100px -30px rgba(255, 255, 255, 0.15), 0 0 50px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
-                        : '0 25px 80px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: `${inchesToPx(template.page.width)}px`,
-                        height: `${inchesToPx(template.page.height)}px`,
-                      }}
-                    >
-                      {generateLabelGrid(pageIdx)}
-                    </div>
-                    <div className="absolute bottom-2 right-2 text-[8px] text-black/40" style={{ fontFamily: 'Tiempos, serif' }}>
-                      Page {pageIdx + 1} of {bulkProductsData.length}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div 
-                  ref={printRef}
-                  className="bg-white transition-shadow duration-700"
+              <div 
+                ref={printRef}
+                className="bg-white transition-shadow duration-700"
+                style={{
+                  width: `${inchesToPx(template.page.width)}px`,
+                  height: `${inchesToPx(template.page.height)}px`,
+                  position: 'relative',
+                  boxShadow: focusedPreview === 'sheet'
+                    ? '0 40px 100px -30px rgba(255, 255, 255, 0.15), 0 0 50px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
+                    : '0 25px 80px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06)',
+                }}
+              >
+                <div
                   style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
                     width: `${inchesToPx(template.page.width)}px`,
                     height: `${inchesToPx(template.page.height)}px`,
-                    position: 'relative',
-                    boxShadow: focusedPreview === 'sheet'
-                      ? '0 40px 100px -30px rgba(255, 255, 255, 0.15), 0 0 50px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
-                      : '0 25px 80px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06)',
                   }}
                 >
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: `${inchesToPx(template.page.width)}px`,
-                      height: `${inchesToPx(template.page.height)}px`,
-                    }}
-                  >
-                    {generateLabelGrid(0)}
-                  </div>
+                  {generateLabelGrid()}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
