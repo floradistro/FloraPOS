@@ -1054,6 +1054,48 @@ export const ProductGrid = forwardRef<{
                           </div>
                         )}
 
+                        {/* Pricing Tiers or Price Display - Only show when NOT selected */}
+                        {!isProductSelected && (() => {
+                          const hasPricingTiers = product.blueprintPricing?.ruleGroups && 
+                            Array.isArray(product.blueprintPricing.ruleGroups) && 
+                            product.blueprintPricing.ruleGroups.length > 0;
+                          
+                          if (hasPricingTiers) {
+                            const pricingTiers = product.blueprintPricing!.ruleGroups.slice(0, 2); // Show max 2 tiers
+                            return (
+                              <div className="flex-shrink-0 flex items-center gap-2 mr-4">
+                                {pricingTiers.map((group: any, idx: number) => (
+                                  <div 
+                                    key={idx}
+                                    className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08]"
+                                  >
+                                    <div className="text-[9px] font-mono text-neutral-500 uppercase tracking-wide mb-0.5">
+                                      {group.ruleName}
+                                    </div>
+                                    <div className="text-sm font-mono font-bold text-neutral-200">
+                                      ${parseFloat(group.price || '0').toFixed(2)}
+                                    </div>
+                                  </div>
+                                ))}
+                                {product.blueprintPricing!.ruleGroups.length > 2 && (
+                                  <div className="text-[10px] text-neutral-600 font-mono">
+                                    +{product.blueprintPricing!.ruleGroups.length - 2}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          } else {
+                            const price = parseFloat(displayPrice || '0');
+                            return price > 0 ? (
+                              <div className="flex-shrink-0 px-4 py-2 rounded-lg bg-white/[0.03] border border-white/[0.08] mr-4">
+                                <div className="text-lg font-mono font-bold text-neutral-200">
+                                  ${price.toFixed(2)}
+                                </div>
+                              </div>
+                            ) : null;
+                          }
+                        })()}
+
                         {/* Stock Display */}
                         <div className="flex-shrink-0 w-24 text-right">
                           <div className="text-sm font-medium text-neutral-400">
