@@ -114,7 +114,7 @@ const TEMPLATES = {
     units: "in",
     page: { size: "letter", width: 8.5, height: 11.0, margin_top: 0.5, margin_bottom: 0.5, margin_left: 0.21875, margin_right: 0.21875 },
     grid: { rows: 10, columns: 3, label_width: 2.625, label_height: 1.0, horizontal_pitch: 2.83333, vertical_pitch: 1.0, origin: "top-left" },
-    label_style: { safe_padding: { top: 0.15, right: 0.0625, bottom: 0.0625, left: 0.0625 }, corner_radius: 0.0625, background: "none", border: { enabled: false } },
+    label_style: { safe_padding: { top: 0.08, right: 0.05, bottom: 0.05, left: 0.05 }, corner_radius: 0.0625, background: "none", border: { enabled: false } },
     text_style: { font_family: "Helvetica", font_size_pt: 9, line_height_em: 1.1, color: "#000000", align: "left", vertical_align: "top", overflow: "shrink-to-fit" },
     fields: [
       { name: "line1", type: "text", required: true, max_length: 48 },
@@ -605,7 +605,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
 
   const generatePrintableSheet = (labelData: any[]) => {
     const totalLabels = template.grid.rows * template.grid.columns;
-    const basePadding = template.label_style.safe_padding.top / 4;
+    const basePadding = template.label_style.safe_padding.top;
     
     let labelsHtml = '';
     
@@ -813,10 +813,10 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
               }
               .label-content {
                 position: absolute;
-                top: ${template.label_style.safe_padding.top / 4}in;
-                left: ${template.label_style.safe_padding.left / 4}in;
-                right: ${template.label_style.safe_padding.right / 4}in;
-                bottom: ${template.label_style.safe_padding.bottom / 4}in;
+                top: ${template.label_style.safe_padding.top}in;
+                left: ${template.label_style.safe_padding.left}in;
+                right: ${template.label_style.safe_padding.right}in;
+                bottom: ${template.label_style.safe_padding.bottom}in;
                 display: flex;
                 flex-direction: row;
                 align-items: flex-start;
