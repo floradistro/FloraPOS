@@ -2385,10 +2385,6 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
                 console.log(`🖱️ Quadrant clicked: ${side}`);
               }}
               selectedMenuSection={null}
-              pricingTiersShape={menuConfig.pricingTiersShape}
-              pricingContainerOpacity={menuConfig.pricingContainerOpacity}
-              pricingBorderWidth={menuConfig.pricingBorderWidth}
-              pricingBorderOpacity={menuConfig.pricingBorderOpacity}
               isPreview={true}
             />
             </div>
