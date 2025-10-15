@@ -112,9 +112,9 @@ const TEMPLATES = {
     template_name: "Avery 5160",
     description: "30-up address labels on US Letter",
     units: "in",
-    page: { size: "letter", width: 8.5, height: 11.0, margin_top: 0.5, margin_bottom: 0.5, margin_left: 0.1875, margin_right: 0.1875 },
-    grid: { rows: 10, columns: 3, label_width: 2.625, label_height: 1.0, horizontal_pitch: 2.75, vertical_pitch: 1.0, origin: "top-left" },
-    label_style: { safe_padding: { top: 0.0625, right: 0.0625, bottom: 0.0625, left: 0.0625 }, corner_radius: 0.0625, background: "none", border: { enabled: false } },
+    page: { size: "letter", width: 8.5, height: 11.0, margin_top: 0.5, margin_bottom: 0.5, margin_left: 0.21875, margin_right: 0.21875 },
+    grid: { rows: 10, columns: 3, label_width: 2.625, label_height: 1.0, horizontal_pitch: 2.83333, vertical_pitch: 1.0, origin: "top-left" },
+    label_style: { safe_padding: { top: 0.15, right: 0.0625, bottom: 0.0625, left: 0.0625 }, corner_radius: 0.0625, background: "none", border: { enabled: false } },
     text_style: { font_family: "Helvetica", font_size_pt: 9, line_height_em: 1.1, color: "#000000", align: "left", vertical_align: "top", overflow: "shrink-to-fit" },
     fields: [
       { name: "line1", type: "text", required: true, max_length: 48 },
@@ -129,8 +129,8 @@ const TEMPLATES = {
     template_name: "Avery 5161",
     description: "20-up address labels on US Letter",
     units: "in",
-    page: { size: "letter", width: 8.5, height: 11.0, margin_top: 0.5, margin_bottom: 0.5, margin_left: 0.16, margin_right: 0.16 },
-    grid: { rows: 10, columns: 2, label_width: 4.0, label_height: 1.0, horizontal_pitch: 4.18, vertical_pitch: 1.0, origin: "top-left" },
+    page: { size: "letter", width: 8.5, height: 11.0, margin_top: 0.5, margin_bottom: 0.5, margin_left: 0.15625, margin_right: 0.15625 },
+    grid: { rows: 10, columns: 2, label_width: 4.0, label_height: 1.0, horizontal_pitch: 4.1875, vertical_pitch: 1.0, origin: "top-left" },
     label_style: { safe_padding: { top: 0.0625, right: 0.0625, bottom: 0.0625, left: 0.0625 }, corner_radius: 0.0625, background: "none", border: { enabled: false } },
     text_style: { font_family: "Helvetica", font_size_pt: 9, line_height_em: 1.1, color: "#000000", align: "left", vertical_align: "top", overflow: "shrink-to-fit" },
     fields: [
@@ -146,8 +146,8 @@ const TEMPLATES = {
     template_name: "Avery 5162",
     description: "14-up address labels on US Letter",
     units: "in",
-    page: { size: "letter", width: 8.5, height: 11.0, margin_top: 0.83, margin_bottom: 0.83, margin_left: 0.16, margin_right: 0.16 },
-    grid: { rows: 7, columns: 2, label_width: 4.0, label_height: 1.33, horizontal_pitch: 4.18, vertical_pitch: 1.33, origin: "top-left" },
+    page: { size: "letter", width: 8.5, height: 11.0, margin_top: 0.84, margin_bottom: 0.84, margin_left: 0.15625, margin_right: 0.15625 },
+    grid: { rows: 7, columns: 2, label_width: 4.0, label_height: 1.33, horizontal_pitch: 4.1875, vertical_pitch: 1.33, origin: "top-left" },
     label_style: { safe_padding: { top: 0.08, right: 0.08, bottom: 0.08, left: 0.08 }, corner_radius: 0.0625, background: "none", border: { enabled: false } },
     text_style: { font_family: "Helvetica", font_size_pt: 10, line_height_em: 1.2, color: "#000000", align: "left", vertical_align: "top", overflow: "shrink-to-fit" },
     fields: [
@@ -605,8 +605,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
 
   const generatePrintableSheet = (labelData: any[]) => {
     const totalLabels = template.grid.rows * template.grid.columns;
-    const basePadding = inchesToPx(template.label_style.safe_padding.top / 4);
-    const baseGap = 2;
+    const basePadding = template.label_style.safe_padding.top / 4;
     
     let labelsHtml = '';
     
@@ -638,8 +637,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       `).join('') || '';
       
       labelsHtml += `
-        <div style="position: absolute; left: ${inchesToPx(left)}px; top: ${inchesToPx(top)}px; width: ${inchesToPx(template.grid.label_width)}px; height: ${inchesToPx(template.grid.label_height)}px; border-radius: ${inchesToPx(template.label_style.corner_radius)}px; overflow: hidden;">
-          <div style="position: absolute; top: ${basePadding}px; left: ${basePadding}px; right: ${basePadding}px; bottom: ${basePadding}px; display: flex; flex-direction: row; align-items: flex-start; gap: ${baseGap}px; overflow: hidden;">
+        <div style="position: absolute; left: ${left}in; top: ${top}in; width: ${template.grid.label_width}in; height: ${template.grid.label_height}in; border-radius: ${template.label_style.corner_radius}in; overflow: hidden;">
+          <div style="position: absolute; top: ${basePadding}in; left: ${basePadding}in; right: ${basePadding}in; bottom: ${basePadding}in; display: flex; flex-direction: row; align-items: flex-start; gap: 2px; overflow: hidden;">
             ${showLogo ? `<img src="/logoprint.png" class="label-logo" style="width: ${logoSize}px; height: ${logoSize}px; flex-shrink: 0; object-fit: contain;" />` : ''}
             <div class="label-text" style="flex: 1; display: flex; flex-direction: column; gap: 1px; overflow: hidden;">
               <div class="product-name" style="font-size: ${adaptiveNameSize}pt; line-height: ${labelLineHeight}; color: ${productNameColor}; font-family: ${productNameFont}; font-weight: ${productNameWeight}; word-wrap: break-word; overflow: hidden;">
@@ -653,8 +652,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     }
     
     return `
-      <div class="print-page" style="position: relative; page-break-after: always;">
-        <div class="label-grid" style="position: absolute; top: 0; left: 0; width: ${template.page.width}in; height: ${template.page.height}in;">
+      <div class="print-page" style="position: relative; page-break-after: always; width: ${template.page.width}in; height: ${template.page.height}in;">
+        <div class="label-grid" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
           ${labelsHtml}
         </div>
       </div>
@@ -751,15 +750,46 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
                 font-style: normal;
               }
               @page {
-                size: ${template.page.size};
+                size: 8.5in 11in;
                 margin: 0;
               }
+              * {
+                box-sizing: border-box;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              html {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+              }
               body {
+                width: 100%;
+                height: 100%;
                 margin: 0;
                 padding: 0;
                 font-family: ${template.text_style.font_family}, sans-serif;
-                -webkit-print-color-adjust: exact;
-                color-adjust: exact;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              @media print {
+                @page {
+                  size: 8.5in 11in;
+                  margin: 0;
+                }
+                html, body {
+                  width: 100%;
+                  height: 100%;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                }
+                * {
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
               }
               .print-page {
                 width: ${template.page.width}in;

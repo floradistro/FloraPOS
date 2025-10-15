@@ -29,7 +29,7 @@ interface ProductAuditTableProps {
   sessionDescription?: string;
   onSessionNameChange?: (name: string) => void;
   onSessionDescriptionChange?: (description: string) => void;
-  onCompleteSession?: () => void;
+  onCompleteSession?: () => Promise<void> | void;
   isApplying?: boolean;
 }
 
@@ -434,7 +434,19 @@ export const ProductAuditTable: React.FC<ProductAuditTableProps> = ({
       {(isAuditMode || isRestockMode) && (
         <div className="flex-shrink-0 border-t border-white/[0.06] bg-black/20 backdrop-blur-xl p-4">
           <button
-            onClick={onCompleteSession}
+            onClick={async () => {
+              if (onCompleteSession) {
+                console.log(`🚀 Starting ${isRestockMode ? 'Purchase Order' : 'Audit'} completion...`);
+                try {
+                  await onCompleteSession();
+                  console.log(`✅ ${isRestockMode ? 'Purchase Order' : 'Audit'} completed successfully`);
+                } catch (error) {
+                  console.error(`❌ Error completing ${isRestockMode ? 'Purchase Order' : 'Audit'}:`, error);
+                }
+              } else {
+                console.error('❌ onCompleteSession is not defined!');
+              }
+            }}
             disabled={!canComplete || isApplying}
             className={`w-full py-4 rounded-xl text-sm font-medium transition-all duration-200 ${
               canComplete && !isApplying

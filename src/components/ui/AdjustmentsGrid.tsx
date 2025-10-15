@@ -629,7 +629,37 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
 
     // Wrapper function for inline restock completion
     const applyRestockAdjustments = async () => {
-      await createPurchaseOrderFromRestock(supplierName, poNotes);
+      console.log('🚀 [Restock] applyRestockAdjustments called');
+      console.log('📊 [Restock] Pending products:', pendingRestockProducts.size);
+      console.log('📝 [Restock] Supplier name:', supplierName);
+      
+      if (!supplierName || !supplierName.trim()) {
+        console.error('❌ [Restock] Supplier name is empty!');
+        setAdjustmentStatus({ 
+          type: 'error', 
+          message: 'Please provide a supplier name for the purchase order' 
+        });
+        return;
+      }
+      
+      if (pendingRestockProducts.size === 0) {
+        console.error('❌ [Restock] No pending restock products!');
+        setAdjustmentStatus({ 
+          type: 'error', 
+          message: 'Please add products to restock before completing' 
+        });
+        return;
+      }
+      
+      try {
+        await createPurchaseOrderFromRestock(supplierName, poNotes);
+      } catch (error) {
+        console.error('❌ [Restock] Error in applyRestockAdjustments:', error);
+        setAdjustmentStatus({
+          type: 'error',
+          message: `Failed to create purchase order: ${error instanceof Error ? error.message : 'Unknown error'}`
+        });
+      }
     };
 
     // Create purchase order from restock products
@@ -874,15 +904,27 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
 
     // Apply audit adjustments with batch audit trail
     const applyAuditAdjustments = async (customName?: string, customDescription?: string) => {
+      console.log('🚀 [Audit] applyAuditAdjustments called');
+      console.log('📊 [Audit] Pending adjustments:', pendingAdjustments.size);
+      console.log('📝 [Audit] Audit name state:', auditName);
+      console.log('📝 [Audit] Custom name param:', customName);
+      
       if (pendingAdjustments.size === 0) {
-        console.log('No adjustments to apply');
+        console.error('❌ [Audit] No adjustments to apply');
+        setAdjustmentStatus({ 
+          type: 'error', 
+          message: 'Please add adjustments before completing audit' 
+        });
         return;
       }
 
       const finalAuditName = customName || auditName;
       const finalAuditDescription = customDescription || auditDescription;
+      
+      console.log('📝 [Audit] Final audit name:', finalAuditName);
 
-      if (!finalAuditName.trim()) {
+      if (!finalAuditName || !finalAuditName.trim()) {
+        console.error('❌ [Audit] Audit name is empty!');
         setAdjustmentStatus({ 
           type: 'error', 
           message: 'Please provide an audit name for the audit trail' 
@@ -892,10 +934,9 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
 
       setIsApplying(true);
       setAdjustmentStatus({ type: null, message: '' });
-      // Dialog closed
 
       try {
-        console.log(`Applying audit "${finalAuditName}" with ${pendingAdjustments.size} adjustments...`);
+        console.log(`🔄 [Audit] Applying audit "${finalAuditName}" with ${pendingAdjustments.size} adjustments...`);
         
         // Convert pending adjustments to API format
         const adjustments = Array.from(pendingAdjustments.entries()).map(([key, adjustment]) => {
@@ -924,10 +965,17 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
           }),
         });
 
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ [Audit] API error response:', errorText);
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+
         const result = await response.json();
+        console.log('📦 [Audit] API response:', result);
 
         if (result.success) {
-          console.log('✅ Batch adjustment completed:', result);
+          console.log('✅ [Audit] Batch adjustment completed:', result);
           
           // Update UI optimistically
           setProducts(prevProducts => {
@@ -1012,17 +1060,21 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
         setAuditDescription('');
         
         // Force refresh inventory data
-        console.log('🔄 Force refreshing inventory data after audit...');
+        console.log('🔄 [Audit] Force refreshing inventory data after audit...');
         await refreshInventory();
+        console.log('✅ [Audit] Inventory refresh complete');
         
       } catch (error) {
-        console.error('❌ Error applying audit adjustments:', error);
+        console.error('❌ [Audit] Error applying audit adjustments:', error);
+        console.error('❌ [Audit] Error details:', error instanceof Error ? error.message : String(error));
+        console.error('❌ [Audit] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
         setAdjustmentStatus({
           type: 'error',
-          message: `Error: Failed to create audit`
+          message: `Failed to create audit: ${error instanceof Error ? error.message : 'Unknown error'}`
         });
       } finally {
         setIsApplying(false);
+        console.log('🏁 [Audit] applyAuditAdjustments finished, isApplying=false');
       }
     };
 

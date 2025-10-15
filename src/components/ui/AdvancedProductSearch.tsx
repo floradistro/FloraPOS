@@ -60,19 +60,23 @@ export function AdvancedProductSearch({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user) {
       searchInputRef.current?.focus();
       loadInitialData();
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
+
+  useEffect(() => {
+    console.log('📋 Categories state updated:', categories.length, 'categories');
+  }, [categories]);
 
   const loadInitialData = async () => {
+    console.log('🔄 Loading initial data for product search...');
     setIsLoading(true);
     try {
-      const [productsRes, categoriesRes] = await Promise.all([
-        apiFetch(`/api/proxy/flora-im/products/bulk?per_page=100&location_id=${user?.location_id || 20}`),
-        apiFetch(`/api/products/categories`)
-      ]);
+      // Fetch products first
+      const productsRes = await apiFetch(`/api/proxy/flora-im/products/bulk?per_page=100&location_id=${user?.location_id || 20}`);
+      console.log('📦 Products fetch completed:', productsRes.status);
 
       if (productsRes.ok) {
         const data = await productsRes.json();
@@ -81,14 +85,33 @@ export function AdvancedProductSearch({
         
         const recent = productsList.slice(0, 12);
         setRecentProducts(recent);
-      }
-
-      if (categoriesRes.ok) {
-        const catData = await categoriesRes.json();
-        setCategories(catData || []);
+        
+        // Extract categories from products
+        const categoryMap = new Map<string, Category>();
+        productsList.forEach((product: Product) => {
+          if (product.categories && Array.isArray(product.categories)) {
+            product.categories.forEach((cat: any) => {
+              if (cat.id && cat.name && cat.slug) {
+                const existing = categoryMap.get(cat.slug);
+                categoryMap.set(cat.slug, {
+                  id: cat.id,
+                  name: cat.name,
+                  slug: cat.slug,
+                  count: (existing?.count || 0) + 1
+                });
+              }
+            });
+          }
+        });
+        
+        const extractedCategories = Array.from(categoryMap.values())
+          .sort((a, b) => b.count - a.count);
+        
+        console.log('✅ Extracted categories from products:', extractedCategories.length);
+        setCategories(extractedCategories);
       }
     } catch (error) {
-      console.error('Failed to load products:', error);
+      console.error('❌ Failed to load products/categories:', error);
     } finally {
       setIsLoading(false);
     }
@@ -233,13 +256,16 @@ export function AdvancedProductSearch({
             />
             <select
               value={selectedCategory || ''}
-              onChange={(e) => setSelectedCategory(e.target.value || null)}
+              onChange={(e) => {
+                console.log('🔄 Category changed to:', e.target.value);
+                setSelectedCategory(e.target.value || null);
+              }}
               className="px-3 py-1.5 bg-white/5 text-white/90 text-[10px] rounded border border-white/10 focus:outline-none focus:border-white/20"
               style={{ fontFamily: 'Tiempos, serif' }}
             >
-              <option value="">All Categories</option>
+              <option value="">All Categories ({categories.length})</option>
               {categories.map(cat => (
-                <option key={cat.slug} value={cat.slug}>{cat.name}</option>
+                <option key={cat.slug} value={cat.slug}>{cat.name} ({cat.count})</option>
               ))}
             </select>
             <select
