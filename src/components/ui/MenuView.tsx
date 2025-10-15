@@ -1637,6 +1637,7 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
         onColumnsChange={(categorySlug, columns) => {
           setCategoryColumnConfigs(prev => new Map(prev).set(categorySlug, columns))
         }}
+        products={products}
         onLaunch={handleLaunch}
         canLaunch={true}
         launchTitle="Launch to TV"

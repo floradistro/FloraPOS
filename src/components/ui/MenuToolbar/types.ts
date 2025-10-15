@@ -95,6 +95,9 @@ export interface MenuToolbarProps {
   categoryColumnConfigs: Map<string, string[]>;
   onColumnsChange: (categorySlug: string, columns: string[]) => void;
   
+  // Products for field extraction
+  products?: Array<any>;
+  
   // Launch actions
   onLaunch: () => void;
   canLaunch: boolean;

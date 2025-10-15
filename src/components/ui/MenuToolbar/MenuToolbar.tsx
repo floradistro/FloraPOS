@@ -265,6 +265,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             selectedCategory={getCurrentConfig()?.category || undefined}
             categoryColumnConfigs={categoryColumnConfigs}
             onColumnsChange={onColumnsChange}
+            products={products || []}
           />
           
           <div className="w-px h-5 bg-white/[0.06]" />

@@ -2,23 +2,23 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { BlueprintFieldsService, BlueprintField, ProductBlueprintFields } from '../../services/blueprint-fields-service';
 import { LoadingSpinner } from './LoadingSpinner';
-import { Category } from '../../types';
+import { Category, Product } from '../../types';
 
 interface ColumnSelectorProps {
   categories: Category[];
   selectedCategory?: string;
-  categoryColumnConfigs: Map<string, string[]>; // Per-category column configurations
+  categoryColumnConfigs: Map<string, string[]>;
   onColumnsChange: (categorySlug: string, columns: string[]) => void;
   className?: string;
+  products: Product[]; // Pass products to extract fields from
 }
 
 interface FieldOption {
   field_name: string;
   field_label: string;
   field_type: string;
-  count: number; // How many products have this field
+  count: number;
 }
 
 export function ColumnSelector({ 
@@ -26,10 +26,12 @@ export function ColumnSelector({
   selectedCategory, 
   categoryColumnConfigs, 
   onColumnsChange,
-  className = ""
+  className = "",
+  products = []
 }: ColumnSelectorProps) {
-  const [loading, setLoading] = useState(false);
+  
   const [availableFields, setAvailableFields] = useState<FieldOption[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [buttonRef, setButtonRef] = useState<HTMLButtonElement | null>(null);
@@ -41,21 +43,19 @@ export function ColumnSelector({
   };
 
   const currentSelectedColumns = getCurrentColumns();
-
-  // Track last fetched category to prevent duplicate fetches
   const [lastFetchedCategory, setLastFetchedCategory] = useState<string | null>(null);
 
-  // Fetch blueprint fields for the selected category
+  // Extract fields from products for the selected category
   useEffect(() => {
-    const fetchCategoryFields = async () => {
+    const extractCategoryFields = () => {
       if (!selectedCategory) {
         setAvailableFields([]);
         setLastFetchedCategory(null);
         return;
       }
 
-      // Skip if already loading or already fetched this category
-      if (loading || selectedCategory === lastFetchedCategory) {
+      // Skip if already processed this category
+      if (selectedCategory === lastFetchedCategory) {
         return;
       }
 
@@ -69,17 +69,21 @@ export function ColumnSelector({
       setError(null);
 
       try {
-        console.log(`🔍 Fetching blueprint fields for category: ${category.name} (ID: ${category.id})`);
+        console.log(`🔍 Extracting Flora Fields for category: ${category.name} (ID: ${category.id})`);
         
-        const categoryProducts = await BlueprintFieldsService.getCategoryProductsBlueprintFields(category.id);
+        // Filter products in this category
+        const categoryProducts = products.filter(p => 
+          p.categories?.some(c => c.id === category.id)
+        );
+        
         setLastFetchedCategory(selectedCategory);
         
         if (categoryProducts.length === 0) {
-          console.log(`⚠️ No products with blueprint fields found for category: ${category.name}`);
-          // Only show product name if no blueprint fields found
+          console.log(`⚠️ No products found for category: ${category.name}`);
           setAvailableFields([
             { field_name: 'name', field_label: 'Product Name', field_type: 'text', count: 0 }
           ]);
+          setLoading(false);
           return;
         }
 
@@ -94,20 +98,25 @@ export function ColumnSelector({
           count: categoryProducts.length
         });
 
-        // Add only real blueprint fields from the API
-        categoryProducts.forEach(productFields => {
-          productFields.fields.forEach(field => {
-            if (fieldMap.has(field.field_name)) {
-              fieldMap.get(field.field_name)!.count++;
-            } else {
-              fieldMap.set(field.field_name, {
-                field_name: field.field_name,
-                field_label: field.field_label || field.field_name,
-                field_type: field.field_type || 'text',
-                count: 1
-              });
-            }
-          });
+        // Extract Flora Fields V2 from products
+        categoryProducts.forEach(product => {
+          if (product.fields && Array.isArray(product.fields)) {
+            product.fields.forEach(field => {
+              if (field.has_value && field.value) {
+                const fieldName = field.name;
+                if (fieldMap.has(fieldName)) {
+                  fieldMap.get(fieldName)!.count++;
+                } else {
+                  fieldMap.set(fieldName, {
+                    field_name: fieldName,
+                    field_label: field.label || fieldName,
+                    field_type: field.type || 'text',
+                    count: 1
+                  });
+                }
+              }
+            });
+          }
         });
 
         const fields = Array.from(fieldMap.values()).sort((a, b) => {
@@ -119,13 +128,13 @@ export function ColumnSelector({
           return a.field_label.localeCompare(b.field_label);
         });
 
-        console.log(`✅ Found ${fields.length} available fields for ${category.name}:`, 
+        console.log(`✅ Found ${fields.length} Flora Fields for ${category.name}:`, 
           fields.map(f => `${f.field_label} (${f.count} products)`));
         
         setAvailableFields(fields);
       } catch (err) {
-        console.error('Error fetching category blueprint fields:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load blueprint fields');
+        console.error('Error extracting Flora Fields:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load fields');
         // Fallback to just product name on error
         setAvailableFields([
           { field_name: 'name', field_label: 'Product Name', field_type: 'text', count: 0 }
@@ -135,8 +144,8 @@ export function ColumnSelector({
       }
     };
 
-    fetchCategoryFields();
-  }, [selectedCategory]); // Removed categories from deps to prevent infinite loop
+    extractCategoryFields();
+  }, [selectedCategory, products, categories]);
 
   const handleColumnToggle = (fieldName: string) => {
     if (!selectedCategory) return;
@@ -158,78 +167,59 @@ export function ColumnSelector({
     onColumnsChange(selectedCategory, ['name']); // Keep at least product name
   };
 
-  const handleSelectDefaults = () => {
-    if (!selectedCategory) return;
-    // Use the first 3-4 available fields as defaults
-    const defaultFields = availableFields.slice(0, Math.min(4, availableFields.length)).map(f => f.field_name);
-    onColumnsChange(selectedCategory, defaultFields);
-  };
+  if (!selectedCategory) {
+    return null;
+  }
+
+  const category = categories.find(c => c.slug === selectedCategory);
+  if (!category) {
+    return null;
+  }
 
   return (
-    <div className={`relative ${className}`}>
+    <>
       <button
         ref={setButtonRef}
-        onClick={() => selectedCategory && setIsOpen(!isOpen)}
-        disabled={!selectedCategory}
-        className={`flex items-center gap-2 px-3 h-[28px] text-xs transition-all duration-200 ease-out rounded border bg-transparent ${
-          selectedCategory 
-            ? 'text-white border-neutral-600/50 hover:bg-neutral-600/10 hover:border-neutral-500/70 cursor-pointer' 
-            : 'text-neutral-500 border-neutral-700/50 cursor-not-allowed'
-        }`}
-        title={selectedCategory ? "Select columns to display" : "Select a category first"}
+        onClick={() => setIsOpen(!isOpen)}
+        className={`px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs font-medium transition-all duration-200 backdrop-blur-sm flex items-center gap-2 ${className}`}
+        style={{ fontFamily: 'Tiempos, serif' }}
       >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h2z" />
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 0a2 2 0 012 2v10a2 2 0 01-2 2m-6 0a6 6 0 0012 0v-1" />
         </svg>
         Columns ({currentSelectedColumns.length})
-        <svg className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
       </button>
 
-      {/* Dropdown positioned relative to button */}
-      {isOpen && buttonRef && typeof window !== 'undefined' && ReactDOM.createPortal(
-        <div 
-          className="fixed inset-0" 
-          style={{ zIndex: 2147483647 }}
-          onClick={() => setIsOpen(false)}
-        >
+      {isOpen && buttonRef && ReactDOM.createPortal(
+        <>
+          {/* Backdrop */}
           <div 
-            className="absolute w-80 flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0"
+            style={{ zIndex: 999998 }}
+            onClick={() => setIsOpen(false)}
+          />
+          
+          {/* Dropdown Menu */}
+          <div
+            className="fixed bg-neutral-900/98 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl"
             style={{
-              backgroundColor: '#1f1f1f',
-              border: '1px solid #404040',
-              borderRadius: '8px',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
-              ...((() => {
-                const rect = buttonRef.getBoundingClientRect();
-                const dropdownHeight = 384; // max-h-96 = 384px
-                const spaceBelow = window.innerHeight - rect.bottom;
-                const spaceAbove = rect.top;
-                
-                // Position above if not enough space below
-                const shouldPositionAbove = spaceBelow < dropdownHeight + 8 && spaceAbove > dropdownHeight;
-                
-                return {
-                  top: shouldPositionAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
-                  left: Math.max(8, rect.right - 320),
-                  maxHeight: shouldPositionAbove 
-                    ? Math.min(384, spaceAbove - 8) 
-                    : Math.min(384, spaceBelow - 8)
-                };
-              })())
+              zIndex: 999999,
+              top: buttonRef.getBoundingClientRect().bottom + 8,
+              left: buttonRef.getBoundingClientRect().left,
+              minWidth: '320px',
+              maxWidth: '400px',
+              maxHeight: '500px',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+              fontFamily: 'Tiempos, serif'
             }}
           >
             {/* Header */}
-            <div className="p-3 border-b border-neutral-700" style={{ backgroundColor: '#1f1f1f', borderBottomColor: '#404040' }}>
+            <div className="px-4 py-3 border-b border-white/10">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-white" style={{ fontFamily: 'Tiempo, serif' }}>
-                  Column Selection
-                </h3>
+                <h3 className="text-sm font-semibold text-white">{category.name} - Columns</h3>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="text-neutral-400 hover:text-white transition-colors"
+                  className="text-white/40 hover:text-white/80 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -237,97 +227,96 @@ export function ColumnSelector({
                 </button>
               </div>
               
-              {/* Quick Actions */}
-              <div className="flex gap-1">
-                <button
-                  onClick={handleSelectDefaults}
-                  className="px-2 py-1 text-xs bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
-                >
-                  Defaults
-                </button>
+              {/* Quick actions */}
+              <div className="flex gap-2">
                 <button
                   onClick={handleSelectAll}
-                  className="px-2 py-1 text-xs bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+                  className="flex-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white rounded-lg text-xs transition-colors"
                 >
-                  All
+                  Select All
                 </button>
                 <button
                   onClick={handleSelectNone}
-                  className="px-2 py-1 text-xs bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+                  className="flex-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white rounded-lg text-xs transition-colors"
                 >
-                  Name Only
+                  Reset
                 </button>
               </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto min-h-0" style={{ backgroundColor: '#1f1f1f' }}>
+            <div className="p-2 overflow-y-auto" style={{ maxHeight: '350px' }}>
               {loading ? (
-                <div className="p-4 text-center">
+                <div className="py-8 flex justify-center">
                   <LoadingSpinner size="sm" />
-                  <p className="text-sm text-neutral-400 mt-2">Loading blueprint fields...</p>
                 </div>
               ) : error ? (
-                <div className="p-4 text-center">
-                  <p className="text-sm text-red-400 mb-2">Error loading fields</p>
-                  <p className="text-xs text-neutral-400">{error}</p>
+                <div className="px-4 py-3 text-xs text-red-400">
+                  {error}
+                </div>
+              ) : availableFields.length === 0 ? (
+                <div className="px-4 py-3 text-xs text-white/50">
+                  No fields available
                 </div>
               ) : (
-                <div className="p-2">
-                  {availableFields.map((field) => (
-                    <label
-                      key={field.field_name}
-                      className="flex items-center gap-3 p-2 hover:bg-neutral-700/50 rounded cursor-pointer transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={currentSelectedColumns.includes(field.field_name)}
-                        onChange={() => handleColumnToggle(field.field_name)}
-                        disabled={field.field_name === 'name'}
-                        className="w-4 h-4 rounded border-neutral-600 bg-neutral-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 focus:ring-2"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-white font-medium truncate">
+                <div className="space-y-1">
+                  {availableFields.map(field => {
+                    const isSelected = currentSelectedColumns.includes(field.field_name);
+                    const isProductName = field.field_name === 'name';
+                    
+                    return (
+                      <button
+                        key={field.field_name}
+                        onClick={() => !isProductName && handleColumnToggle(field.field_name)}
+                        disabled={isProductName}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                          isProductName
+                            ? 'bg-white/5 text-white/40 cursor-not-allowed'
+                            : isSelected
+                            ? 'bg-white/10 text-white hover:bg-white/15'
+                            : 'text-white/70 hover:bg-white/5 hover:text-white'
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+                          isSelected
+                            ? 'bg-blue-500/20 border-blue-400/50'
+                            : 'border-white/20'
+                        }`}>
+                          {isSelected && (
+                            <svg className="w-3 h-3 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        
+                        {/* Label */}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium truncate">
                             {field.field_label}
-                          </span>
-                          <span className="text-xs text-neutral-400 ml-2">
-                            {field.count > 0 ? `${field.count}` : 'All'}
-                          </span>
+                            {isProductName && <span className="text-white/30 ml-2">(Required)</span>}
+                          </div>
+                          <div className="text-[10px] text-white/40">
+                            {field.count} product{field.count !== 1 ? 's' : ''}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-neutral-500 font-mono">
-                            {field.field_name}
-                          </span>
-                          <span className="text-xs text-neutral-500 bg-neutral-700/50 px-1.5 py-0.5 rounded">
-                            {field.field_type}
-                          </span>
-                        </div>
-                      </div>
-                    </label>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
 
             {/* Footer */}
-            <div className="p-3 border-t border-neutral-700" style={{ backgroundColor: '#1f1f1f', borderTopColor: '#404040' }}>
-              <div className="flex items-center justify-between text-xs text-neutral-400">
-                <span>
-                  {currentSelectedColumns.length} of {availableFields.length} columns selected
-                </span>
-                <span>
-                  {selectedCategory ? 
-                    categories.find(c => c.slug === selectedCategory)?.name || 'Category' 
-                    : 'Select a Category'
-                  }
-                </span>
+            <div className="px-4 py-3 border-t border-white/10 bg-white/[0.02]">
+              <div className="text-[10px] text-white/40">
+                {currentSelectedColumns.length} column{currentSelectedColumns.length !== 1 ? 's' : ''} selected
               </div>
             </div>
           </div>
-        </div>,
+        </>,
         document.body
       )}
-    </div>
+    </>
   );
 }
