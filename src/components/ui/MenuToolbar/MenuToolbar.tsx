@@ -147,7 +147,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
       <div className="flex items-center justify-between bg-transparent px-0 py-0 w-full">
         {/* Left Side - Primary Actions (Canva-style: Templates/Load) */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="flex items-center gap-2 bg-neutral-900/20 backdrop-blur-md border border-white/[0.06] rounded-2xl px-2 py-1.5 shadow-lg" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.03)' }}>
+          <div className="flex items-center gap-2 bg-neutral-900/30 backdrop-blur-xl border border-white/[0.04] rounded-2xl px-2 py-1.5" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.02)' }}>
             <ConfigDropdown
               loadedConfigName={loadedConfigName}
               onLoadConfig={onLoadConfig}
@@ -163,7 +163,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
               hasLocation={hasLocation}
             />
             
-            <div className="w-px h-5 bg-white/[0.08]" />
+            <div className="w-px h-5 bg-white/[0.06]" />
             
             <LayoutDropdownV2
               orientation={orientation}
@@ -191,7 +191,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
 
         {/* Center - Design Tools & Content (Canva-style: Typography + Elements + Categories) */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="flex items-center gap-2 bg-neutral-900/20 backdrop-blur-md border border-white/[0.06] rounded-2xl px-2 py-1.5 shadow-lg" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.03)' }}>
+          <div className="flex items-center gap-2 bg-neutral-900/30 backdrop-blur-xl border border-white/[0.04] rounded-2xl px-2 py-1.5" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.02)' }}>
             <CategoriesDropdown
               categories={categories}
               isDualMode={isDualMode}
@@ -204,7 +204,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
               orientation={orientation}
             />
             
-            <div className="w-px h-5 bg-white/[0.08]" />
+            <div className="w-px h-5 bg-white/[0.06]" />
             
             <TypographyDropdown
               titleFont={titleFont}
@@ -229,7 +229,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
               }}
             />
             
-            <div className="w-px h-5 bg-white/[0.08]" />
+            <div className="w-px h-5 bg-white/[0.06]" />
 
             <ElementsDropdown
               backgroundColor={backgroundColor}
@@ -259,7 +259,7 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
         </div>
 
         {/* Right Side - Actions (Canva-style: Columns + Launch) */}
-        <div className="flex items-center gap-2 flex-shrink-0 bg-neutral-900/20 backdrop-blur-md border border-white/[0.06] rounded-2xl px-2 py-1.5 shadow-lg" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.03)' }}>
+        <div className="flex items-center gap-2 flex-shrink-0 bg-neutral-900/30 backdrop-blur-xl border border-white/[0.04] rounded-2xl px-2 py-1.5" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.02)' }}>
           <ColumnSelector
             categories={categories}
             selectedCategory={getCurrentConfig()?.category || undefined}
@@ -267,15 +267,15 @@ export const MenuToolbar: React.FC<MenuToolbarProps> = ({
             onColumnsChange={onColumnsChange}
           />
           
-          <div className="w-px h-5 bg-white/[0.08]" />
+          <div className="w-px h-5 bg-white/[0.06]" />
           
           {/* Launch Button - Primary Action */}
           <button
             onClick={onLaunch}
             disabled={!canLaunch || openWindowsCount >= maxWindows}
-            className="flex items-center gap-1.5 px-4 h-[28px] text-xs font-medium transition-all duration-300 ease-out rounded-full bg-blue-500/[0.18] hover:bg-blue-500/[0.28] text-blue-200 hover:text-white border border-blue-400/[0.30] hover:border-blue-400/[0.50] disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:scale-[1.05] active:scale-[0.95]"
+            className="flex items-center gap-1.5 px-4 h-[28px] text-xs font-medium transition-all duration-300 ease-out rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/70 hover:text-white border border-white/[0.08] hover:border-white/[0.16] disabled:opacity-30 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
             style={{ 
-              boxShadow: openWindowsCount >= maxWindows ? 'none' : '0 4px 16px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+              boxShadow: openWindowsCount >= maxWindows ? 'none' : '0 4px 16px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
               textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'
             }}
             title={

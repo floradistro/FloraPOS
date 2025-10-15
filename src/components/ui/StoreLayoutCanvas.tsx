@@ -89,6 +89,8 @@ export function StoreLayoutCanvas({ tvDevices, isOnline, locationId }: StoreLayo
   const [dragging, setDragging] = useState<string | null>(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [scale, setScale] = useState(1)
+  const [showGrid, setShowGrid] = useState(true)
+  const [selectedTV, setSelectedTV] = useState<string | null>(null)
 
   // Initialize TV positions (default layout)
   useEffect(() => {
@@ -145,54 +147,104 @@ export function StoreLayoutCanvas({ tvDevices, isOnline, locationId }: StoreLayo
     setScale(prev => Math.max(0.25, Math.min(2, prev + delta)))
   }
 
+  const handleAddTV = () => {
+    // Add a new TV at a default position
+    const newId = `temp-${Date.now()}`
+    const newPosition: TVPosition = {
+      tvId: newId,
+      x: 200,
+      y: 200,
+      width: 400,
+      height: 225,
+      orientation: 'horizontal'
+    }
+    setPositions(prev => new Map(prev).set(newId, newPosition))
+    setSelectedTV(newId)
+  }
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-transparent w-full h-full pr-4 rounded-2xl">
       {/* Toolbar */}
       <div className="flex-shrink-0 px-4 py-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 px-3 py-1.5 bg-neutral-900/20 backdrop-blur-md border border-white/[0.06] rounded-2xl shadow-lg" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.03)' }}>
-          <h2 className="text-sm font-medium text-white/90" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' }}>Store Layout Builder</h2>
-          <div className="w-px h-4 bg-white/[0.08]" />
+        <div className="flex items-center gap-3 px-3 py-1.5 bg-neutral-900/30 backdrop-blur-xl border border-white/[0.04] rounded-2xl" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.02)' }}>
+          <h2 className="text-sm font-medium text-white/90" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)', fontFamily: 'Tiempos, serif' }}>Store Layout Builder</h2>
+          <div className="w-px h-4 bg-white/[0.06]" />
           <span className="text-xs text-white/50 font-medium">
             {tvDevices.length} TVs • {tvDevices.filter(isOnline).length} Online
           </span>
         </div>
         
-        <div className="flex items-center gap-2 flex-shrink-0 bg-neutral-900/20 backdrop-blur-md border border-white/[0.06] rounded-2xl px-2 py-1.5 shadow-lg" style={{ boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.03)' }}>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Add Menu to Canvas */}
+          <div className="flex items-center gap-2 bg-neutral-900/30 backdrop-blur-xl border border-white/[0.04] rounded-2xl px-2 py-1.5" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.02)' }}>
+            <button
+              onClick={handleAddTV}
+              className="flex items-center gap-1.5 px-3 h-[26px] bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.16] text-white/70 hover:text-white rounded-full text-xs font-medium transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98]"
+              style={{ 
+                boxShadow: '0 4px 16px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'
+              }}
+              title="Add a new TV menu to canvas"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Menu
+            </button>
+            
+            <button
+              onClick={() => setShowGrid(!showGrid)}
+              className={`px-2 h-[26px] border rounded-full text-xs transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center ${
+                showGrid 
+                  ? 'bg-white/[0.12] border-white/[0.16] text-white/90' 
+                  : 'bg-white/[0.04] border-white/[0.08] text-white/50 hover:text-white/70'
+              }`}
+              style={{ boxShadow: '0 1px 8px rgba(0, 0, 0, 0.08)' }}
+              title={showGrid ? "Hide grid" : "Show grid"}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+              </svg>
+            </button>
+          </div>
+
           {/* Zoom Controls */}
-          <button
-            onClick={() => handleZoom(-0.1)}
-            className="px-2 h-[26px] bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.16] text-white/70 hover:text-white/90 rounded-full text-xs transition-all duration-300 ease-out hover:scale-[1.05] active:scale-95 flex items-center justify-center"
-            style={{ boxShadow: '0 1px 8px rgba(0, 0, 0, 0.08)' }}
-            title="Zoom out"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-            </svg>
-          </button>
-          <span className="text-xs text-white/60 w-10 text-center font-medium" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' }}>{Math.round(scale * 100)}%</span>
-          <button
-            onClick={() => handleZoom(0.1)}
-            className="px-2 h-[26px] bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.16] text-white/70 hover:text-white/90 rounded-full text-xs transition-all duration-300 ease-out hover:scale-[1.05] active:scale-95 flex items-center justify-center"
-            style={{ boxShadow: '0 1px 8px rgba(0, 0, 0, 0.08)' }}
-            title="Zoom in"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-          
-          <div className="w-px h-5 bg-white/[0.08]" />
-          
-          <button
-            onClick={() => setScale(1)}
-            className="px-3 h-[26px] bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] hover:border-white/[0.24] text-white/90 hover:text-white rounded-full text-xs font-medium transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
-            style={{ 
-              boxShadow: '0 2px 12px rgba(255, 255, 255, 0.04)',
-              textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
-            }}
-          >
-            Reset
-          </button>
+          <div className="flex items-center gap-2 bg-neutral-900/30 backdrop-blur-xl border border-white/[0.04] rounded-2xl px-2 py-1.5" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.02)' }}>
+            <button
+              onClick={() => handleZoom(-0.1)}
+              className="px-2 h-[26px] bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] text-white/60 hover:text-white/80 rounded-full text-xs transition-all duration-300 ease-out hover:scale-[1.02] active:scale-95 flex items-center justify-center"
+              style={{ boxShadow: '0 1px 8px rgba(0, 0, 0, 0.08)' }}
+              title="Zoom out"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+              </svg>
+            </button>
+            <span className="text-xs text-white/50 w-10 text-center font-medium" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' }}>{Math.round(scale * 100)}%</span>
+            <button
+              onClick={() => handleZoom(0.1)}
+              className="px-2 h-[26px] bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] text-white/60 hover:text-white/80 rounded-full text-xs transition-all duration-300 ease-out hover:scale-[1.02] active:scale-95 flex items-center justify-center"
+              style={{ boxShadow: '0 1px 8px rgba(0, 0, 0, 0.08)' }}
+              title="Zoom in"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            
+            <div className="w-px h-5 bg-white/[0.06]" />
+            
+            <button
+              onClick={() => setScale(1)}
+              className="px-3 h-[26px] bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08] hover:border-white/[0.16] text-white/80 hover:text-white rounded-full text-xs font-medium transition-all duration-300 ease-out hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
+              style={{ 
+                boxShadow: '0 2px 12px rgba(255, 255, 255, 0.02)',
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+              }}
+            >
+              Reset
+            </button>
+          </div>
         </div>
       </div>
 
@@ -203,10 +255,12 @@ export function StoreLayoutCanvas({ tvDevices, isOnline, locationId }: StoreLayo
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onClick={() => setSelectedTV(null)}
         style={{
-          backgroundImage: `radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px)`,
+          backgroundImage: showGrid ? `radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px)` : 'none',
           backgroundSize: '20px 20px',
-          cursor: dragging ? 'grabbing' : 'default'
+          cursor: dragging ? 'grabbing' : 'default',
+          backgroundColor: 'transparent'
         }}
       >
         <div 
@@ -227,7 +281,7 @@ export function StoreLayoutCanvas({ tvDevices, isOnline, locationId }: StoreLayo
             return (
               <div
                 key={tvId}
-                className={`absolute group ${dragging === tvId ? 'z-50' : 'z-10'}`}
+                className={`absolute group ${dragging === tvId ? 'z-50' : selectedTV === tvId ? 'z-40' : 'z-10'}`}
                 style={{
                   left: `${pos.x}px`,
                   top: `${pos.y}px`,
@@ -235,32 +289,54 @@ export function StoreLayoutCanvas({ tvDevices, isOnline, locationId }: StoreLayo
                   height: `${pos.height}px`,
                   cursor: dragging === tvId ? 'grabbing' : 'grab'
                 }}
-                onMouseDown={(e) => handleMouseDown(tvId, e)}
+                onMouseDown={(e) => {
+                  e.stopPropagation()
+                  handleMouseDown(tvId, e)
+                }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedTV(tvId)
+                }}
               >
                 {/* TV Container */}
                 <div className={`relative w-full h-full rounded-lg border-2 transition-all ${
                   dragging === tvId 
-                    ? 'border-blue-500 shadow-2xl shadow-blue-500/50'
+                    ? 'border-white/60 shadow-2xl' 
+                    : selectedTV === tvId
+                      ? 'border-white/40 shadow-xl'
                     : online 
-                      ? 'border-white/20 hover:border-white/40 shadow-xl' 
-                      : 'border-white/10 opacity-50'
-                }`}>
+                      ? 'border-white/15 hover:border-white/30 shadow-lg' 
+                      : 'border-white/08 opacity-40'
+                }`} style={{
+                  boxShadow: selectedTV === tvId || dragging === tvId 
+                    ? '0 12px 48px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)' 
+                    : '0 4px 24px rgba(0, 0, 0, 0.3)'
+                }}>
                   {/* TV Preview */}
                   <TVPreviewIframe tvId={tv.id} tvNumber={tv.tv_number} locationId={locationId} />
 
                   {/* TV Label */}
-                  <div className="absolute top-2 left-2 z-20 px-2 py-1 bg-neutral-900/90 backdrop-blur-sm border border-white/20 rounded text-xs font-bold text-white shadow-lg flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-green-500' : 'bg-white/20'}`} />
-                    TV {tv.tv_number}
+                  <div className="absolute top-2 left-2 z-20 px-2.5 py-1.5 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.12] rounded-lg text-xs font-medium text-white/90 shadow-lg flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${online ? 'bg-green-400' : 'bg-white/20'}`} style={{
+                      boxShadow: online ? '0 0 8px rgba(74, 222, 128, 0.4)' : 'none'
+                    }} />
+                    <span style={{ fontFamily: 'Tiempos, serif' }}>TV {tv.tv_number}</span>
                   </div>
 
                   {/* TV Name */}
-                  <div className="absolute bottom-2 left-2 right-2 z-20 px-2 py-1 bg-neutral-900/90 backdrop-blur-sm border border-white/20 rounded text-xs text-white/70 truncate">
+                  <div className="absolute bottom-2 left-2 right-2 z-20 px-2.5 py-1.5 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.12] rounded-lg text-xs text-white/60 truncate" style={{ fontFamily: 'Tiempos, serif' }}>
                     {tv.device_name}
                   </div>
 
+                  {/* Selection Indicator */}
+                  {selectedTV === tvId && (
+                    <div className="absolute -top-1 -left-1 -right-1 -bottom-1 rounded-lg border-2 border-white/40 pointer-events-none" style={{
+                      boxShadow: '0 0 20px rgba(255, 255, 255, 0.2)'
+                    }} />
+                  )}
+
                   {/* Resize Handle */}
-                  <div className="absolute bottom-1 right-1 w-4 h-4 border-r-2 border-b-2 border-white/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute bottom-1 right-1 w-4 h-4 border-r-2 border-b-2 border-white/20 opacity-0 group-hover:opacity-60 transition-opacity rounded-br" />
                 </div>
               </div>
             )
@@ -270,9 +346,9 @@ export function StoreLayoutCanvas({ tvDevices, isOnline, locationId }: StoreLayo
 
       {/* Instructions */}
       <div className="flex-shrink-0 px-4 py-3 bg-transparent">
-        <div className="flex items-center gap-6 text-xs text-white/40 px-3 py-2 bg-neutral-900/15 backdrop-blur-sm border border-white/[0.04] rounded-xl" style={{ boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.02)' }}>
+        <div className="flex items-center gap-6 text-xs text-white/40 px-3 py-2 bg-neutral-900/20 backdrop-blur-xl border border-white/[0.04] rounded-xl" style={{ boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.02)', fontFamily: 'Tiempos, serif' }}>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-white/5 border border-white/20 rounded flex items-center justify-center">
+            <div className="w-4 h-4 bg-white/[0.04] border border-white/[0.12] rounded flex items-center justify-center">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
               </svg>
@@ -280,15 +356,15 @@ export function StoreLayoutCanvas({ tvDevices, isOnline, locationId }: StoreLayo
             <span>Drag to position TVs</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-white/5 border border-white/20 rounded flex items-center justify-center">
+            <div className="w-4 h-4 bg-white/[0.04] border border-white/[0.12] rounded flex items-center justify-center">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
-            <span>Scroll to zoom</span>
+            <span>Click to select</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            <div className="w-1.5 h-1.5 rounded-full bg-green-400" style={{ boxShadow: '0 0 6px rgba(74, 222, 128, 0.4)' }} />
             <span>Live preview</span>
           </div>
         </div>

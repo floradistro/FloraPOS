@@ -605,7 +605,10 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
 
   const generatePrintableSheet = (labelData: any[]) => {
     const totalLabels = template.grid.rows * template.grid.columns;
-    const basePadding = template.label_style.safe_padding.top;
+    const paddingTop = template.label_style.safe_padding.top;
+    const paddingRight = template.label_style.safe_padding.right;
+    const paddingBottom = template.label_style.safe_padding.bottom;
+    const paddingLeft = template.label_style.safe_padding.left;
     
     let labelsHtml = '';
     
@@ -638,7 +641,7 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       
       labelsHtml += `
         <div class="label" style="position: absolute; left: ${left}in; top: ${top}in; width: ${template.grid.label_width}in; height: ${template.grid.label_height}in; border-radius: ${template.label_style.corner_radius}in; overflow: hidden; page-break-inside: avoid; break-inside: avoid; -webkit-break-inside: avoid;">
-          <div class="label-content" style="position: absolute; top: ${basePadding}in; left: ${basePadding}in; right: ${basePadding}in; bottom: ${basePadding}in; display: flex; flex-direction: row; align-items: flex-start; gap: 2px; overflow: hidden;">
+          <div class="label-content" style="position: absolute; top: ${paddingTop}in; left: ${paddingLeft}in; right: ${paddingRight}in; bottom: ${paddingBottom}in; display: flex; flex-direction: row; align-items: flex-start; gap: 2px; overflow: hidden;">
             ${showLogo ? `<img src="/logoprint.png" class="label-logo" style="width: ${logoSize}px; height: ${logoSize}px; flex-shrink: 0; object-fit: contain;" />` : ''}
             <div class="label-text" style="flex: 1; display: flex; flex-direction: column; gap: 1px; overflow: hidden;">
               <div class="product-name" style="font-size: ${adaptiveNameSize}pt; line-height: ${labelLineHeight}; color: ${productNameColor}; font-family: ${productNameFont}; font-weight: ${productNameWeight}; word-wrap: break-word; overflow: hidden;">

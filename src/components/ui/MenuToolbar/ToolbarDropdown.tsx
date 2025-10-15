@@ -64,12 +64,13 @@ export const ToolbarDropdown: React.FC<ToolbarDropdownProps & { trigger?: React.
       )}
       
       {isOpen && (
-        <div className={`absolute top-full mt-2 bg-neutral-900/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl min-w-56 max-h-[calc(100vh-120px)] overflow-y-auto ${
+        <div className={`absolute top-full mt-2 bg-neutral-900/98 backdrop-blur-xl border border-white/[0.06] rounded-2xl min-w-56 max-h-[calc(100vh-120px)] overflow-y-auto ${
           className?.includes('dropdown-right') ? 'right-0' : 'left-0'
         }`}
         style={{ 
           zIndex: 99999,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+          boxShadow: '0 12px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+          fontFamily: 'Tiempos, serif'
         }}>
           <div className="py-2">
             {children}

@@ -2140,35 +2140,23 @@ function MenuViewInner({ searchQuery = '', categoryFilter }: MenuViewProps) {
               {openWindows.size === 0 && tvDevices.length === 0 && (
                 <div className="flex items-center justify-center h-full min-h-[400px]">
                   <div className="text-center">
-                    <div className="w-32 h-32 flex items-center justify-center mb-4 relative mx-auto">
-                      <Image 
-                        src="/logo123.png" 
-                        alt="Flora POS Logo" 
-                        width={128}
-                        height={128}
-                        className="object-contain opacity-30 transition-all duration-500"
-                        style={{
-                          animation: 'subtle-float 3s ease-in-out infinite'
-                        }}
-                        priority
-                      />
+                    <div className="mb-8 relative">
+                      <div className="w-32 h-32 mx-auto rounded-2xl bg-white/[0.02] backdrop-blur-sm border border-white/[0.08] flex items-center justify-center relative overflow-hidden group transition-all duration-500" style={{
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03)'
+                      }}>
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
+                        <Image 
+                          src="/logo123.png" 
+                          alt="Flora POS Logo" 
+                          width={80}
+                          height={80}
+                          className="object-contain opacity-20 group-hover:opacity-30 transition-opacity duration-300 relative z-10"
+                          priority
+                        />
+                      </div>
                     </div>
-                    <p className="text-sm text-white/60 mb-3">No TV displays</p>
-                    <p className="text-xs text-white/40">Launch local or wait for network TVs to connect</p>
-                    
-                    {/* Custom CSS animations */}
-                    <style jsx>{`
-                      @keyframes subtle-float {
-                        0%, 100% { 
-                          transform: translateY(0px) scale(1);
-                          opacity: 0.3;
-                        }
-                        50% { 
-                          transform: translateY(-2px) scale(1.02);
-                          opacity: 0.4;
-                        }
-                      }
-                    `}</style>
+                    <p className="text-sm font-medium text-white/70 mb-2" style={{ fontFamily: 'Tiempos, serif' }}>No TV displays</p>
+                    <p className="text-xs text-white/40" style={{ fontFamily: 'Tiempos, serif' }}>Launch local or wait for network TVs to connect</p>
                   </div>
                 </div>
               )}
