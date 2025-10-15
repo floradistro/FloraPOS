@@ -731,10 +731,13 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       
       printableContent = tempDiv.innerHTML;
 
-      printWindow.document.write(`
+      try {
+        printWindow.document.write(`
         <!DOCTYPE html>
         <html>
           <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Print Labels - ${template.template_name}</title>
             <style>
               @font-face {
@@ -862,12 +865,23 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
           </body>
         </html>
       `);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
+        printWindow.document.close();
+        
+        // Wait for content to load, especially on iOS
+        setTimeout(() => {
+          try {
+            printWindow.focus();
+            printWindow.print();
+          } catch (error) {
+            console.error('Print error:', error);
+            alert('Print failed. Please try again.');
+          }
+        }, 1000);
+      } catch (error) {
+        console.error('Error generating print content:', error);
+        alert('Failed to generate print content. Please try again.');
         printWindow.close();
-      }, 500);
+      }
     }
   };
 

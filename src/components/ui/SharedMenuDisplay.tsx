@@ -1001,21 +1001,27 @@ export function SharedMenuDisplay({
           {!leftMenuCategory ? (
             <div className="flex items-center justify-center h-full w-full">
               <div className="text-center">
-                <div className="mb-4">
-                  <img src="/logo123.png" alt="Flora" className="w-24 h-24 mx-auto opacity-30" />
+                <div className="mb-6 relative">
+                  <div className="w-28 h-28 mx-auto rounded-2xl bg-white/[0.02] backdrop-blur-sm border border-white/[0.08] flex items-center justify-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
+                    <img src="/logo123.png" alt="Flora" className="w-16 h-16 object-contain opacity-20 group-hover:opacity-30 transition-opacity duration-300" />
+                  </div>
                 </div>
-                <p className="text-lg font-semibold mb-2" style={{ color: fontColor, fontFamily: titleFont }}>No Category Selected</p>
-                <p className="text-sm" style={{ color: `${fontColor}60`, fontFamily: cardFont }}>Click "Left" and select a category</p>
+                <p className="text-sm font-medium mb-2 text-white/70" style={{ fontFamily: titleFont }}>No Category Selected</p>
+                <p className="text-xs text-white/40" style={{ fontFamily: cardFont }}>Click "Left" and select a category</p>
               </div>
             </div>
           ) : leftProducts.length === 0 ? (
             <div className="flex items-center justify-center h-full w-full">
               <div className="text-center">
-                <div className="mb-4">
-                  <img src="/logo123.png" alt="Flora" className="w-24 h-24 mx-auto opacity-30" />
+                <div className="mb-6 relative">
+                  <div className="w-28 h-28 mx-auto rounded-2xl bg-white/[0.02] backdrop-blur-sm border border-white/[0.08] flex items-center justify-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
+                    <img src="/logo123.png" alt="Flora" className="w-16 h-16 object-contain opacity-20 group-hover:opacity-30 transition-opacity duration-300" />
+                  </div>
                 </div>
-                <p className="text-lg font-semibold mb-2" style={{ color: fontColor, fontFamily: titleFont }}>No Products</p>
-                <p className="text-sm" style={{ color: `${fontColor}60`, fontFamily: cardFont }}>No products in this category</p>
+                <p className="text-sm font-medium mb-2 text-white/70" style={{ fontFamily: titleFont }}>No Products</p>
+                <p className="text-xs text-white/40" style={{ fontFamily: cardFont }}>No products in this category</p>
               </div>
             </div>
           ) : leftMenuViewMode === 'card' ? (
@@ -1219,21 +1225,27 @@ export function SharedMenuDisplay({
           {!rightMenuCategory ? (
             <div className="flex items-center justify-center h-full w-full">
               <div className="text-center">
-                <div className="mb-4">
-                  <img src="/logo123.png" alt="Flora" className="w-24 h-24 mx-auto opacity-30" />
+                <div className="mb-6 relative">
+                  <div className="w-28 h-28 mx-auto rounded-2xl bg-white/[0.02] backdrop-blur-sm border border-white/[0.08] flex items-center justify-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
+                    <img src="/logo123.png" alt="Flora" className="w-16 h-16 object-contain opacity-20 group-hover:opacity-30 transition-opacity duration-300" />
+                  </div>
                 </div>
-                <p className="text-lg font-semibold mb-2" style={{ color: fontColor, fontFamily: titleFont }}>No Category Selected</p>
-                <p className="text-sm" style={{ color: `${fontColor}60`, fontFamily: cardFont }}>Click "Right" and select a category</p>
+                <p className="text-sm font-medium mb-2 text-white/70" style={{ fontFamily: titleFont }}>No Category Selected</p>
+                <p className="text-xs text-white/40" style={{ fontFamily: cardFont }}>Click "Right" and select a category</p>
               </div>
             </div>
           ) : rightProducts.length === 0 ? (
             <div className="flex items-center justify-center h-full w-full">
               <div className="text-center">
-                <div className="mb-4">
-                  <img src="/logo123.png" alt="Flora" className="w-24 h-24 mx-auto opacity-30" />
+                <div className="mb-6 relative">
+                  <div className="w-28 h-28 mx-auto rounded-2xl bg-white/[0.02] backdrop-blur-sm border border-white/[0.08] flex items-center justify-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
+                    <img src="/logo123.png" alt="Flora" className="w-16 h-16 object-contain opacity-20 group-hover:opacity-30 transition-opacity duration-300" />
+                  </div>
                 </div>
-                <p className="text-lg font-semibold mb-2" style={{ color: fontColor, fontFamily: titleFont }}>No Products</p>
-                <p className="text-sm" style={{ color: `${fontColor}60`, fontFamily: cardFont }}>No products in this category</p>
+                <p className="text-sm font-medium mb-2 text-white/70" style={{ fontFamily: titleFont }}>No Products</p>
+                <p className="text-xs text-white/40" style={{ fontFamily: cardFont }}>No products in this category</p>
               </div>
             </div>
           ) : rightMenuViewMode === 'card' ? (
