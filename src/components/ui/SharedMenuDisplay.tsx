@@ -133,9 +133,9 @@ export function SharedMenuDisplay({
     totalProducts: products.length
   });
   
-  // Get Flora Field value from V2 format
+  // Get Flora Field value - checks multiple formats
   const getFieldValue = (product: Product, fieldName: string): string => {
-    // V2 Flora Fields format: product.fields array
+    // Check V2 Flora Fields format: product.fields array
     if (product.fields && Array.isArray(product.fields)) {
       const field = product.fields.find(f => f.name === fieldName);
       if (field && field.has_value) {
@@ -143,10 +143,16 @@ export function SharedMenuDisplay({
       }
     }
     
-    // Fallback: Check meta_data for old format
+    // Fallback: Check meta_data for Flora Fields (_fd_field_*)
     if (product.meta_data && Array.isArray(product.meta_data)) {
-      const meta = product.meta_data.find(m => m.key === `_fd_field_${fieldName}`);
-      if (meta) {
+      let meta = product.meta_data.find(m => m.key === `_fd_field_${fieldName}`);
+      if (meta && meta.value) {
+        return meta.value?.toString() || '';
+      }
+      
+      // Also check old blueprint format (_blueprint_*)
+      meta = product.meta_data.find(m => m.key === `_blueprint_${fieldName}`);
+      if (meta && meta.value) {
         return meta.value?.toString() || '';
       }
     }

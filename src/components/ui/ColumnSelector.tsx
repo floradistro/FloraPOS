@@ -45,9 +45,9 @@ export function ColumnSelector({
   const currentSelectedColumns = getCurrentColumns();
   const [lastFetchedCategory, setLastFetchedCategory] = useState<string | null>(null);
 
-  // Extract fields from products for the selected category
+  // Fetch fields from WooCommerce for the selected category
   useEffect(() => {
-    const extractCategoryFields = () => {
+    const fetchCategoryFields = async () => {
       if (!selectedCategory) {
         setAvailableFields([]);
         setLastFetchedCategory(null);
@@ -69,7 +69,7 @@ export function ColumnSelector({
       setError(null);
 
       try {
-        console.log(`🔍 Extracting Flora Fields for category: ${category.name} (ID: ${category.id})`);
+        console.log(`🔍 Fetching Flora Fields for category: ${category.name} (ID: ${category.id})`);
         
         // Filter products in this category
         const categoryProducts = products.filter(p => 
@@ -87,6 +87,17 @@ export function ColumnSelector({
           return;
         }
 
+        // Fetch full product data from WooCommerce to get meta_data (same as UnifiedSearchInput)
+        const productIds = categoryProducts.map(p => p.id);
+        const response = await fetch(`/api/proxy/woocommerce/products?include=${productIds.join(',')}&per_page=100`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch product fields from WooCommerce');
+        }
+        
+        const wcProducts = await response.json();
+        console.log(`✅ Fetched ${wcProducts.length} products from WooCommerce for field extraction`);
+
         // Aggregate all unique fields from all products in the category
         const fieldMap = new Map<string, FieldOption>();
         
@@ -98,19 +109,28 @@ export function ColumnSelector({
           count: categoryProducts.length
         });
 
-        // Extract Flora Fields V2 from products
-        categoryProducts.forEach(product => {
-          if (product.fields && Array.isArray(product.fields)) {
-            product.fields.forEach(field => {
-              if (field.has_value && field.value) {
-                const fieldName = field.name;
+        // Extract fields from WooCommerce meta_data
+        wcProducts.forEach((product: any) => {
+          if (product.meta_data && Array.isArray(product.meta_data)) {
+            product.meta_data.forEach((meta: any) => {
+              // Look for Flora Fields (_fd_field_*) or old blueprint fields (_blueprint_*)
+              let fieldName = '';
+              if (meta.key && meta.key.startsWith('_fd_field_')) {
+                fieldName = meta.key.substring(10); // Remove _fd_field_ prefix
+              } else if (meta.key && meta.key.startsWith('_blueprint_')) {
+                fieldName = meta.key.substring(11); // Remove _blueprint_ prefix
+              } else {
+                return; // Skip non-field meta
+              }
+              
+              if (meta.value) {
                 if (fieldMap.has(fieldName)) {
                   fieldMap.get(fieldName)!.count++;
                 } else {
                   fieldMap.set(fieldName, {
                     field_name: fieldName,
-                    field_label: field.label || fieldName,
-                    field_type: field.type || 'text',
+                    field_label: ucfirst(fieldName.replace(/_/g, ' ')),
+                    field_type: 'text',
                     count: 1
                   });
                 }
@@ -144,8 +164,13 @@ export function ColumnSelector({
       }
     };
 
-    extractCategoryFields();
+    fetchCategoryFields();
   }, [selectedCategory, products, categories]);
+  
+  // Helper function to capitalize first letter
+  const ucfirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
 
   const handleColumnToggle = (fieldName: string) => {
     if (!selectedCategory) return;
