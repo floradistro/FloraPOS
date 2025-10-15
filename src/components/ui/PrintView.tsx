@@ -899,16 +899,61 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
       `);
         printWindow.document.close();
         
-        // Wait for content to load, especially on iOS
-        setTimeout(() => {
-          try {
-            printWindow.focus();
-            printWindow.print();
-          } catch (error) {
-            console.error('Print error:', error);
-            alert('Print failed. Please try again.');
-          }
-        }, 1000);
+        // Detect iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
+        if (isIOS) {
+          // On iOS: Add manual print button and wait for page to fully load
+          setTimeout(() => {
+            try {
+              // Add a visible print button for manual trigger
+              const printButton = printWindow.document.createElement('div');
+              printButton.innerHTML = `
+                <div style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 99999; background: #007AFF; color: white; padding: 16px 32px; border-radius: 12px; font-family: -apple-system, sans-serif; font-size: 18px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 20px rgba(0,122,255,0.5); text-align: center;" onclick="window.print()">
+                  📄 Tap Here to Print
+                </div>
+              `;
+              printWindow.document.body.appendChild(printButton.firstElementChild!);
+              
+              // Wait for images and fonts to fully load
+              Promise.all([
+                ...Array.from(printWindow.document.images).map(img => {
+                  if (img.complete) return Promise.resolve();
+                  return new Promise(resolve => {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                  });
+                }),
+                printWindow.document.fonts ? printWindow.document.fonts.ready : Promise.resolve()
+              ]).then(() => {
+                console.log('✅ iOS: All content loaded, triggering print after 2s');
+                // Wait additional time for iOS to fully render
+                setTimeout(() => {
+                  printWindow.focus();
+                  printWindow.print();
+                }, 2000);
+              });
+            } catch (error) {
+              console.error('iOS Print error:', error);
+              // Still try to print after delay
+              setTimeout(() => {
+                printWindow.print();
+              }, 2000);
+            }
+          }, 500);
+        } else {
+          // Desktop: Standard print flow
+          setTimeout(() => {
+            try {
+              printWindow.focus();
+              printWindow.print();
+            } catch (error) {
+              console.error('Print error:', error);
+              alert('Print failed. Please try again.');
+            }
+          }, 500);
+        }
       } catch (error) {
         console.error('Error generating print content:', error);
         alert('Failed to generate print content. Please try again.');
