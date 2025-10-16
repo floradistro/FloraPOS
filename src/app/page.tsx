@@ -538,7 +538,10 @@ export default function HomePage() {
         
         if (pricingData) {
           productWithPricing = { ...product, blueprintPricing: pricingData };
-          console.log(`✅ Loaded pricing for ${product.name} with ${pricingData.price_tiers?.length || 0} tiers`);
+          
+          // Count total tiers across all rule groups
+          const totalTiers = pricingData.ruleGroups?.reduce((sum, rg) => sum + (rg.tiers?.length || 0), 0) || 0;
+          console.log(`✅ Loaded pricing for ${product.name} with ${totalTiers} tiers`);
           
           // Check if pricing has conversion ratios
           const hasConversionRatio = pricingData.ruleGroups?.some(rg => 
