@@ -12,6 +12,7 @@ import { AdjustmentsGrid, AdjustmentsGridRef } from '../components/ui/Adjustment
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { SimpleAICanvas as AICanvas, AICanvasRef } from '../components/ui/SimpleAICanvas';
 import { AIChatPanel } from '../components/ui/AIChatPanel';
+import { CashManagementDashboard } from '../components/ui/CashManagementDashboard';
 
 
 
@@ -947,6 +948,18 @@ export default function HomePage() {
     // Clear cart and close checkout immediately for better UX
     setCartItems([]);
     setShowCheckout(false);
+    
+    // CRITICAL: Refresh product grid to show updated stock quantities
+    console.log('🔄 Refreshing product inventory...');
+    if (productGridRef.current?.refreshInventory) {
+      try {
+        await productGridRef.current.refreshInventory();
+        console.log('✅ Product inventory refreshed - stock counts updated');
+      } catch (error) {
+        console.error('❌ Failed to refresh product inventory:', error);
+      }
+    }
+    
     setIsCheckoutLoading(false);
     setSelectedCustomer(null);
     
@@ -1322,6 +1335,14 @@ export default function HomePage() {
                 <div className="w-80 flex-shrink-0">
                   <AIChatPanel canvasRef={aiCanvasRef} />
                 </div>
+              </StandardErrorBoundary>
+            </div>
+          )}
+
+          {currentView === 'cash' && (
+            <div className="h-full">
+              <StandardErrorBoundary componentName="CashManagement">
+                <CashManagementDashboard />
               </StandardErrorBoundary>
             </div>
           )}

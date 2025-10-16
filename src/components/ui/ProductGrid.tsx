@@ -486,8 +486,45 @@ export const ProductGrid = forwardRef<{
 
       const productsWithInventory = result.data;
 
-      // Bulk API already handles filtering, just process the products
-      const baseProducts: Product[] = productsWithInventory.map((product: any) => {
+      // CRITICAL: Filter products to show ONLY those with stock > 0 at current location
+      // This prevents 0-stock products from showing in sales view (they should only appear in restock view)
+      const inStockProducts = productsWithInventory.filter((product: any) => {
+        // If no location specified, show all products
+        if (!user?.location_id) return true;
+        
+        // Check if product has inventory at current location
+        const locationInventory = product.inventory?.find((inv: any) => 
+          inv.location_id?.toString() === user.location_id?.toString()
+        );
+        
+        const locationStock = locationInventory 
+          ? (parseFloat(locationInventory.stock) || parseFloat(locationInventory.quantity) || 0)
+          : 0;
+        
+        // For variable products, check if ANY variant has stock
+        if (product.type === 'variable' && product.variants && product.variants.length > 0) {
+          const hasVariantWithStock = product.variants.some((variant: any) => {
+            const variantInv = variant.inventory?.find((inv: any) => 
+              inv.location_id?.toString() === user.location_id?.toString()
+            );
+            const variantStock = variantInv 
+              ? (parseFloat(variantInv.stock) || parseFloat(variantInv.quantity) || 0)
+              : 0;
+            return variantStock > 0;
+          });
+          
+          // Show variable product if ANY variant has stock
+          return hasVariantWithStock;
+        }
+        
+        // For simple products, must have stock > 0
+        return locationStock > 0;
+      });
+      
+      console.log(`📦 Filtered to ${inStockProducts.length} products with stock > 0 at location ${user?.location_id} (from ${productsWithInventory.length} total)`);
+
+      // Process filtered products
+      const baseProducts: Product[] = inStockProducts.map((product: any) => {
             const inventory = product.inventory?.map((inv: any) => ({
               location_id: inv.location_id?.toString() || '0',
               location_name: inv.location_name || `Location ${inv.location_id}`,
