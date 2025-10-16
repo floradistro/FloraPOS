@@ -213,7 +213,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
       });
       return data;
     },
-    enabled: !!user?.location_id, // Only run if user has location_id
+    enabled: true, // Always fetch orders - backend handles filtering
     staleTime: 0, // Always fetch fresh data
     gcTime: 1000 * 60 * 15, // 15 minutes cache retention
     retry: (failureCount, error) => {

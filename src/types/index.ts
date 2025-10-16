@@ -280,7 +280,7 @@ export interface RestockProduct {
 // VIEW TYPES
 // ====================
 
-export type ViewType = 'products' | 'adjustments' | 'customers' | 'orders' | 'blueprint-fields' | 'history' | 'menu' | 'ai-view';
+export type ViewType = 'products' | 'adjustments' | 'customers' | 'orders' | 'blueprint-fields' | 'history' | 'menu' | 'ai-view' | 'cash';
 
 // ====================
 // API TYPES

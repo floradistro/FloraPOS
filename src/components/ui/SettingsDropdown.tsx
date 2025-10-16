@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { TerminalSettingsPanel } from './TerminalSettingsPanel';
 
 interface SettingsDropdownProps {
   isOpen: boolean;
@@ -132,8 +133,19 @@ export function SettingsDropdown({ isOpen, onClose, onToggle }: SettingsDropdown
         </div>
       )}
 
-      {/* Dev Tools Section */}
+      {/* Store Settings Section */}
       <div className="py-1">
+        <div className="px-4 py-1.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">
+          Store Settings
+        </div>
+        
+        <div className="px-4 py-2">
+          <TerminalSettingsPanel />
+        </div>
+      </div>
+
+      {/* Dev Tools Section */}
+      <div className="border-t border-neutral-700/50 py-1">
         <div className="px-4 py-1.5 text-xs font-medium text-neutral-500 uppercase tracking-wider">
           Development Tools
         </div>

@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(25000)
+      signal: AbortSignal.timeout(50000) // Increased to 50s to allow WordPress hooks to complete
     });
 
     if (!response.ok) {

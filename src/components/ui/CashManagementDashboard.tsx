@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { cashManagementService } from '../../services/cash-management-service';
 import { UnifiedLoadingScreen } from './UnifiedLoadingScreen';
+import { CashDrawerWidget } from './CashDrawerWidget';
+import { DailyReconciliationView } from './DailyReconciliationView';
+import { WeeklyDepositsView } from './WeeklyDepositsView';
 import type { CashOnHand, DrawerSession, DailyReconciliation } from '../../types/cash';
 
 interface CashManagementDashboardProps {
@@ -24,6 +27,9 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
   const [todayReconciliation, setTodayReconciliation] = useState<DailyReconciliation | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
+  const [showDrawerWidget, setShowDrawerWidget] = useState(false);
+  const [showReconciliation, setShowReconciliation] = useState(false);
+  const [showDeposits, setShowDeposits] = useState(false);
 
   useEffect(() => {
     if (user?.location_id) {
@@ -427,17 +433,29 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
             }}
           >
             <button
-              onClick={onOpenDrawer}
+              onClick={() => {
+                if (onOpenDrawer) {
+                  onOpenDrawer();
+                } else {
+                  setShowDrawerWidget(true);
+                }
+              }}
               className="bg-white/[0.02] backdrop-blur-xl rounded-xl p-6 border border-white/5 hover:bg-white/[0.04] hover:border-emerald-500/50 transition-all duration-300"
             >
               <div className="text-lg font-light text-white lowercase" 
                    style={{ fontFamily: 'Tiempos, serif' }}>
-                {hasOpenDrawer ? 'close drawer' : 'open drawer'}
+                {hasOpenDrawer ? 'manage drawer' : 'open drawer'}
               </div>
             </button>
 
             <button
-              onClick={onViewReconciliation}
+              onClick={() => {
+                if (onViewReconciliation) {
+                  onViewReconciliation();
+                } else {
+                  setShowReconciliation(true);
+                }
+              }}
               className="bg-white/[0.02] backdrop-blur-xl rounded-xl p-6 border border-white/5 hover:bg-white/[0.04] hover:border-blue-500/50 transition-all duration-300"
             >
               <div className="text-lg font-light text-white lowercase" 
@@ -447,7 +465,13 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
             </button>
 
             <button
-              onClick={onViewDeposits}
+              onClick={() => {
+                if (onViewDeposits) {
+                  onViewDeposits();
+                } else {
+                  setShowDeposits(true);
+                }
+              }}
               className="bg-white/[0.02] backdrop-blur-xl rounded-xl p-6 border border-white/5 hover:bg-white/[0.04] hover:border-yellow-500/50 transition-all duration-300"
             >
               <div className="text-lg font-light text-white lowercase" 
@@ -455,6 +479,48 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
                 deposits
               </div>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Drawer Widget Modal */}
+      {showDrawerWidget && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-8">
+          <div className="bg-neutral-900 rounded-2xl border border-white/10 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <CashDrawerWidget 
+              onClose={() => {
+                setShowDrawerWidget(false);
+                fetchDashboardData();
+              }} 
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Reconciliation Modal */}
+      {showReconciliation && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-8">
+          <div className="bg-neutral-900 rounded-2xl border border-white/10 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <DailyReconciliationView 
+              onClose={() => {
+                setShowReconciliation(false);
+                fetchDashboardData();
+              }} 
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Deposits Modal */}
+      {showDeposits && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-8">
+          <div className="bg-neutral-900 rounded-2xl border border-white/10 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <WeeklyDepositsView 
+              onClose={() => {
+                setShowDeposits(false);
+                fetchDashboardData();
+              }} 
+            />
           </div>
         </div>
       )}

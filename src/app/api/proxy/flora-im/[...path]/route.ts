@@ -34,10 +34,10 @@ export async function GET(
     const isInventoryRequest = path.includes('inventory');
     const isProductRequest = path.includes('products');
     
-    // Only add cache busting for critical real-time data
+    // CRITICAL: Always use fresh data for inventory - NO CACHING
     if (isInventoryRequest) {
-      // Inventory needs fresh data (5 second cache)
-      searchParams.set('_t', Math.floor(Date.now() / 5000).toString());
+      // Inventory MUST be real-time - use millisecond timestamp
+      searchParams.set('_t', Date.now().toString());
     } else if (isProductRequest) {
       // Products can be cached for 30 seconds
       searchParams.set('_t', Math.floor(Date.now() / 30000).toString());
@@ -62,15 +62,16 @@ export async function GET(
     
     console.log('Proxying Flora-IM request to:', apiUrl.toString());
     
-    // Make the request to the Flora API with smart caching
+    // Make the request to the Flora API - NEVER cache inventory
     const cacheStrategy = isInventoryRequest ? 'no-store' : 'default';
     const response = await fetch(apiUrl.toString(), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...(isInventoryRequest ? { 'Cache-Control': 'no-cache, no-store, must-revalidate' } : {})
       },
       cache: cacheStrategy,
-      next: isInventoryRequest ? { revalidate: 5 } : { revalidate: 30 }
+      next: isInventoryRequest ? { revalidate: 0 } : { revalidate: 30 }
     });
     
     if (!response.ok) {
@@ -93,9 +94,9 @@ export async function GET(
       }
     }
     
-    // Return the data with proper CORS and smart cache headers
+    // Return the data with proper CORS - NEVER cache inventory!
     const cacheControl = isInventoryRequest 
-      ? 'public, max-age=5, s-maxage=5, stale-while-revalidate=10'  // 5s cache, revalidate in background
+      ? 'no-store, no-cache, must-revalidate, max-age=0'  // NEVER cache inventory!
       : isProductRequest
       ? 'public, max-age=30, s-maxage=60, stale-while-revalidate=120' // 30s cache, revalidate in background
       : 'public, max-age=300, s-maxage=600, stale-while-revalidate=1200'; // 5min cache
