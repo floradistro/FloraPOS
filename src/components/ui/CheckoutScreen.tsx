@@ -13,6 +13,9 @@ import { ReloadDebugger } from '../../lib/debug-reload';
 import { InventoryDeductionService } from '../../services/inventory-deduction-service';
 import { ProductMappingService } from '../../services/product-mapping-service';
 import { useUserPointsBalance } from '../../hooks/useRewards';
+import { posTerminalsService } from '../../services/pos-terminals-service';
+import { dejavooPaymentService } from '../../services/dejavoo-payment-service';
+import type { POSTerminal } from '../../types/terminal';
 
 interface CheckoutScreenProps {
   items: CartItem[];
@@ -58,6 +61,9 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
   const [isProcessing, setIsProcessing] = useState(false);
   const [taxRate, setTaxRate] = useState<TaxRate>({ rate: 0.08, name: 'Sales Tax', location: user?.location || 'Default' });
   const [locationTaxRates, setLocationTaxRates] = useState<any[]>([]);
+  const [currentTerminal, setCurrentTerminal] = useState<POSTerminal | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentTransactionRef, setPaymentTransactionRef] = useState<string | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<WordPressUser | null>(initialSelectedCustomer || null);
   const [splitPayments, setSplitPayments] = useState<SplitPayment[]>([]);
   const [manualPreTaxAmount, setManualPreTaxAmount] = useState<string>('');
@@ -96,6 +102,31 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
   useEffect(() => {
     loadTaxRates();
   }, [user?.location]);
+
+  // Load POS terminal for location
+  useEffect(() => {
+    const loadTerminal = async () => {
+      if (!user?.location_id) return;
+      
+      try {
+        const locationId = parseInt(user.location_id);
+        const terminals = await posTerminalsService.getLocationTerminals(locationId);
+        
+        if (terminals.length > 0) {
+          // Use first active terminal for now
+          // TODO: Allow user to select their specific workstation
+          setCurrentTerminal(terminals[0]);
+          console.log('✅ Loaded POS terminal:', terminals[0].terminal_name);
+        } else {
+          console.warn('⚠️ No POS terminals configured for this location');
+        }
+      } catch (error) {
+        console.error('❌ Failed to load POS terminals:', error);
+      }
+    };
+    
+    loadTerminal();
+  }, [user?.location_id]);
 
   const loadTaxRates = async () => {
     try {
@@ -235,6 +266,77 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       
       // Get location ID from mapping
       const locationId = LOCATION_MAPPINGS[user?.location || 'Default']?.id || LOCATION_MAPPINGS['Default'].id;
+      
+      // ====================
+      // DEJAVOO CARD PAYMENT PROCESSING
+      // ====================
+      if (paymentMethod === 'card' && splitPayments.length === 0) {
+        // If terminal is configured, process through Dejavoo
+        if (currentTerminal) {
+          console.log('💳 Processing card payment via Dejavoo terminal:', currentTerminal.terminal_name);
+          setIsProcessingPayment(true);
+          
+          try {
+            // Process sale through Dejavoo terminal
+            const paymentResult = await dejavooPaymentService.processSale({
+              terminal_id: currentTerminal.id,
+              amount: total,
+              invoice_number: orderNum
+            });
+
+            setIsProcessingPayment(false);
+
+            if (!paymentResult.success) {
+              // Payment declined or failed
+              const errorMessage = paymentResult.error || 
+                                   paymentResult.response?.ResponseMessage || 
+                                   'Payment failed';
+              
+              console.error('❌ Card payment declined:', errorMessage);
+              
+              setAlertModal({
+                isOpen: true,
+                title: 'Payment Declined',
+                message: errorMessage + '\n\nPlease try again or use a different payment method.'
+              });
+              setIsProcessing(false);
+              return;
+            }
+
+            // Payment approved!
+            console.log('✅ Card payment approved:', paymentResult);
+            
+            // Store transaction reference for order
+            setPaymentTransactionRef(paymentResult.response?.TransactionID || null);
+            
+            // Display card info to user
+            const cardInfo = paymentResult.response?.CardType 
+              ? `${paymentResult.response.CardType} ending in ${paymentResult.response.CardLast4}` 
+              : 'Card';
+            
+            console.log(`💳 ${cardInfo} approved - Amount: $${total.toFixed(2)}`);
+            
+          } catch (paymentError) {
+            setIsProcessingPayment(false);
+            console.error('❌ Card payment error:', paymentError);
+            
+            setAlertModal({
+              isOpen: true,
+              title: 'Payment Error',
+              message: 'Unable to process card payment. Please try again or use a different payment method.'
+            });
+            setIsProcessing(false);
+            return;
+          }
+        } else {
+          // No terminal configured - just record as card payment
+          console.log('💳 No payment terminal configured - recording as card payment without processing');
+        }
+      }
+      
+      // ====================
+      // CONTINUE WITH ORDER CREATION
+      // ====================
       
       // Map cart items to include WooCommerce product IDs for rewards integration
       const mappedLineItems = await Promise.all(items.map(async item => {
@@ -556,6 +658,19 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
             key: '_total',
             value: total.toFixed(2)
           },
+          // Dejavoo Payment Terminal Info
+          ...(currentTerminal ? [{
+            key: '_payment_terminal_id',
+            value: currentTerminal.id.toString()
+          }, {
+            key: '_payment_terminal_name',
+            value: currentTerminal.terminal_name
+          }] : []),
+          // Dejavoo Transaction Reference
+          ...(paymentTransactionRef ? [{
+            key: '_dejavoo_transaction_ref',
+            value: paymentTransactionRef
+          }] : []),
           ...(manualPreTaxAmount && parseFloat(manualPreTaxAmount) > 0 ? [{
             key: '_manual_pre_tax_override',
             value: manualPreTaxAmount
@@ -683,6 +798,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       }
       
       let inventoryResult;
+      let inventoryWarning: string | null = null;
       try {
         inventoryResult = await InventoryDeductionService.deductInventoryForOrder(
           items,
@@ -691,16 +807,21 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         );
         
         if (!inventoryResult.success) {
-          throw new Error(inventoryResult.error || 'Inventory deduction failed');
+          // Log the error but don't block the order
+          inventoryWarning = inventoryResult.error || 'Inventory deduction failed';
+          console.warn(`⚠️ Inventory deduction failed (non-blocking): ${inventoryWarning}`);
+          console.warn('Order will complete but inventory must be adjusted manually');
+        } else {
+          console.log(`✅ STEP 2 Complete: Inventory deducted successfully`);
         }
-        console.log(`✅ STEP 2 Complete: Inventory deducted successfully`);
       } catch (inventoryError) {
-        console.error('❌ Inventory deduction failed:', inventoryError);
-        // Critical failure - don't complete the order
-        throw new Error(`Inventory deduction failed: ${inventoryError instanceof Error ? inventoryError.message : 'Unknown error'}. Order created but not completed.`);
+        // Log the error but don't block the order
+        inventoryWarning = inventoryError instanceof Error ? inventoryError.message : 'Unknown error';
+        console.warn('⚠️ Inventory deduction exception (non-blocking):', inventoryError);
+        console.warn('Order will complete but inventory must be adjusted manually');
       }
 
-      // STEP 3: Mark order as completed (only if inventory deduction succeeded)
+      // STEP 3: Mark order as completed
       console.log('🔄 STEP 3: Marking order as completed...');
       try {
         const completeResponse = await apiFetch(`/api/orders/${orderId}`, {
@@ -754,6 +875,17 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
       // STEP 5: Complete the UI flow
       console.log('✅ Order processing complete!');
+      
+      // Show warning if inventory failed but order succeeded
+      if (inventoryWarning) {
+        setAlertModal({
+          isOpen: true,
+          title: 'Order Complete (Inventory Warning)',
+          message: `Order #${orderId} was completed successfully, but inventory may need manual adjustment: ${inventoryWarning}`
+        });
+        // Don't return - still complete the order flow
+      }
+      
       try {
         await onOrderComplete();
       } catch (error) {

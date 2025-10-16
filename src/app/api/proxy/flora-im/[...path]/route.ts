@@ -139,6 +139,7 @@ export async function POST(
     apiUrl.searchParams.append('consumer_secret', CONSUMER_SECRET);
     
     console.log('Proxying Flora-IM POST request to:', apiUrl.toString());
+    console.log('Request body:', JSON.stringify(body));
     
     // Make the request to the Flora API - POST/PUT should not be cached
     const response = await fetch(apiUrl.toString(), {
@@ -151,9 +152,21 @@ export async function POST(
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
       console.error('Flora-IM API error:', response.status, response.statusText);
+      console.error('Flora-IM error details:', errorText);
+      
+      let errorMessage = `Flora-IM API error: ${response.status}`;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorMessage;
+      } catch (e) {
+        // Not JSON, use text
+        if (errorText) errorMessage = errorText.substring(0, 200);
+      }
+      
       return NextResponse.json(
-        { error: `Flora-IM API error: ${response.status}` },
+        { error: errorMessage, details: errorText.substring(0, 500) },
         { status: response.status }
       );
     }
