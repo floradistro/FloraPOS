@@ -257,6 +257,84 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
     }
 
     setIsProcessing(true);
+    
+    // CRITICAL: Get location ID early for validation
+    let locationId: number;
+    
+    if (user?.location_id) {
+      locationId = typeof user.location_id === 'string' ? parseInt(user.location_id, 10) : user.location_id;
+      
+      if (isNaN(locationId) || locationId <= 0) {
+        console.error('🚨 CRITICAL: Invalid location_id:', user.location_id);
+        setAlertModal({
+          isOpen: true,
+          title: 'Configuration Error',
+          message: 'Invalid location ID. Please contact support.'
+        });
+        setIsProcessing(false);
+        return;
+      }
+    } else {
+      console.error('🚨 CRITICAL: User has no location_id');
+      setAlertModal({
+        isOpen: true,
+        title: 'Configuration Error',
+        message: 'You are not assigned to a location. Please contact your administrator.'
+      });
+      setIsProcessing(false);
+      return;
+    }
+    
+    // STOCK VALIDATION: Check all items have sufficient stock BEFORE creating order
+    console.log('🔍 Validating stock availability...');
+    try {
+      for (const item of items) {
+        const productId = item.product_id;
+        const variationId = item.variation_id || 0;
+        const requestedQty = item.quantity;
+        
+        // Validate product_id exists
+        if (!productId || productId <= 0) {
+          throw new Error(`Invalid product: "${item.name}". Please remove this item and try again.`);
+        }
+        
+        // Fetch current inventory
+        const invResponse = await apiFetch(
+          `/api/proxy/flora-im/inventory?product_id=${productId}&location_id=${locationId}&variation_id=${variationId}&_nocache=${crypto.randomUUID()}`,
+          { method: 'GET' }
+        );
+        
+        if (!invResponse.ok) {
+          throw new Error(`Cannot verify stock for "${item.name}". Please try again.`);
+        }
+        
+        const invData = await invResponse.json();
+        const availableQty = Array.isArray(invData) && invData.length > 0 
+          ? parseFloat(invData[0].quantity) 
+          : 0;
+        
+        if (availableQty < requestedQty) {
+          throw new Error(
+            `Insufficient stock for "${item.name}". ` +
+            `Available: ${availableQty}, Requested: ${requestedQty}. ` +
+            `Please reduce quantity or remove item.`
+          );
+        }
+        
+        console.log(`  ✓ ${item.name}: ${requestedQty} available (${availableQty} in stock)`);
+      }
+      
+      console.log('✅ All items have sufficient stock');
+    } catch (stockError) {
+      console.error('❌ Stock validation failed:', stockError);
+      setAlertModal({
+        isOpen: true,
+        title: 'Insufficient Stock',
+        message: stockError instanceof Error ? stockError.message : 'Stock validation failed. Please try again.'
+      });
+      setIsProcessing(false);
+      return;
+    }
     let orderCreated = false;
     let orderId: number | null = null;
 
@@ -264,8 +342,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       // Generate order number
       const orderNum = `POS-${Date.now()}`;
       
-      // Get location ID from mapping
-      const locationId = LOCATION_MAPPINGS[user?.location || 'Default']?.id || LOCATION_MAPPINGS['Default'].id;
+      console.log('📍 Location ID:', locationId, '(', user.location, ')');
       
       // ====================
       // DEJAVOO CARD PAYMENT PROCESSING
@@ -331,27 +408,22 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       
       // Map cart items to include WooCommerce product IDs for rewards integration
       const mappedLineItems = await Promise.all(items.map(async item => {
-        // CRITICAL FIX: Use item.product_id FIRST (set by CartService), not name search
-        // ProductMappingService.findWooCommerceProductId is slow and unreliable
-        let productId = item.product_id;
+        // CRITICAL: Use item.product_id (set by CartService)
+        // Never fallback to name search - it's slow and unreliable
+        const productId = item.product_id;
         
-        // Only fallback to name search if product_id is missing
-        if (!productId || productId <= 0) {
-          console.warn(`⚠️ Cart item missing product_id, attempting name search for: ${item.name}`);
-          const wooCommerceProductId = await ProductMappingService.findWooCommerceProductId(item.name);
-          productId = wooCommerceProductId || undefined;
-        }
-        
-        // CRITICAL VALIDATION: Ensure product_id is valid
+        // STRICT VALIDATION: Product ID must be valid
         if (!productId || isNaN(productId) || productId <= 0) {
-          console.error(`❌ Invalid product_id for item: ${item.name}`, {
+          console.error(`❌ CRITICAL: Invalid product_id for item: ${item.name}`, {
             item_product_id: item.product_id,
             item_id: item.id,
             item_sku: item.sku,
-            final_productId: productId,
             cart_item: item
           });
-          throw new Error(`Invalid product ID for "${item.name}". Cannot create order with invalid product. Remove this item and try again.`);
+          throw new Error(
+            `Cannot process "${item.name}" - invalid product configuration. ` +
+            `Please remove this item from cart and re-add it, or contact support if the problem persists.`
+          );
         }
         
         // Calculate final price after overrides and discounts
@@ -623,7 +695,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
           },
           {
             key: '_flora_inventory_processed',
-            value: 'no' // Explicitly prevent automatic inventory deduction
+            value: 'yes' // Mark as processed - frontend will handle deduction
           },
           {
             key: '_tax_rate',
@@ -798,18 +870,63 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         );
         
         if (!inventoryResult.success) {
-          // Log the error but don't block the order
+          // CRITICAL: Inventory deduction failed - flag order for manual review
           inventoryWarning = inventoryResult.error || 'Inventory deduction failed';
-          console.warn(`⚠️ Inventory deduction failed (non-blocking): ${inventoryWarning}`);
-          console.warn('Order will complete but inventory must be adjusted manually');
+          console.error(`❌ Inventory deduction failed: ${inventoryWarning}`);
+          
+          // Flag order for manual review by setting it to on-hold
+          try {
+            await apiFetch(`/api/orders/${orderId}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                status: 'on-hold',
+                customer_note: 'ALERT: This order requires manual inventory adjustment. Inventory deduction failed during checkout.'
+              })
+            });
+            
+            console.warn('⚠️ Order placed on-hold for manual inventory adjustment');
+          } catch (flagError) {
+            console.error('Failed to flag order for review:', flagError);
+          }
+          
+          // Show error to user but allow them to see order was created
+          throw new Error(
+            `Order #${orderId} created but inventory could not be deducted automatically. ` +
+            `Reason: ${inventoryWarning}. ` +
+            `Order has been flagged for manual inventory adjustment. Please notify management.`
+          );
         } else {
           console.log(`✅ STEP 2 Complete: Inventory deducted successfully`);
         }
       } catch (inventoryError) {
-        // Log the error but don't block the order
+        // Re-throw the error if it's from the if block above
+        if (inventoryError instanceof Error && inventoryError.message.includes('Order #')) {
+          throw inventoryError;
+        }
+        
+        // Log unexpected errors
         inventoryWarning = inventoryError instanceof Error ? inventoryError.message : 'Unknown error';
-        console.warn('⚠️ Inventory deduction exception (non-blocking):', inventoryError);
-        console.warn('Order will complete but inventory must be adjusted manually');
+        console.error('❌ Inventory deduction exception:', inventoryError);
+        
+        // Flag order and fail checkout
+        try {
+          await apiFetch(`/api/orders/${orderId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: 'on-hold',
+              customer_note: 'ALERT: This order requires manual inventory adjustment. System error during inventory deduction.'
+            })
+          });
+        } catch (flagError) {
+          console.error('Failed to flag order for review:', flagError);
+        }
+        
+        throw new Error(
+          `Order #${orderId} created but inventory deduction encountered an error. ` +
+          `Order has been flagged for manual review. Please notify management immediately.`
+        );
       }
 
       // STEP 3: Mark order as completed
@@ -867,16 +984,7 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       // STEP 5: Complete the UI flow
       console.log('✅ Order processing complete!');
       
-      // Show warning if inventory failed but order succeeded
-      if (inventoryWarning) {
-        setAlertModal({
-          isOpen: true,
-          title: 'Order Complete (Inventory Warning)',
-          message: `Order #${orderId} was completed successfully, but inventory may need manual adjustment: ${inventoryWarning}`
-        });
-        // Don't return - still complete the order flow
-      }
-      
+      // If we got here, everything succeeded
       try {
         await onOrderComplete();
       } catch (error) {

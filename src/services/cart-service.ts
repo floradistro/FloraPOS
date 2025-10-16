@@ -22,7 +22,37 @@ export class CartService {
     try {
       // Portal2 style - use selected pricing or fallback to regular price
       const selectedQuantity = product.selected_quantity || 1;
-      const selectedPrice = product.selected_price || parseFloat(product.regular_price) || 0;
+      
+      // CRITICAL FIX: Use blueprint pricing if available, otherwise fall back to regular_price
+      let selectedPrice = product.selected_price;
+      
+      if (!selectedPrice || selectedPrice === 0) {
+        // Try to get price from blueprint pricing if available
+        if (product.blueprintPricing && product.blueprintPricing.price_tiers) {
+          // Use the first tier price as default
+          const firstTier = product.blueprintPricing.price_tiers[0];
+          if (firstTier && firstTier.tier_price) {
+            selectedPrice = parseFloat(firstTier.tier_price);
+            console.log(`📊 Using blueprint price for ${product.name}: $${selectedPrice}`);
+          }
+        }
+        
+        // Fall back to regular_price
+        if (!selectedPrice || selectedPrice === 0) {
+          selectedPrice = parseFloat(product.regular_price) || 0;
+        }
+        
+        // VALIDATION: Prevent $0.00 products from being added to cart
+        if (selectedPrice === 0) {
+          console.error(`❌ Product ${product.name} has no price set!`, {
+            regular_price: product.regular_price,
+            selected_price: product.selected_price,
+            blueprintPricing: product.blueprintPricing
+          });
+          throw new Error(`Cannot add "${product.name}" to cart: Product has no price set. Please set a price in WooCommerce or configure blueprint pricing.`);
+        }
+      }
+      
       const selectedCategory = product.selected_category;
 
       // Calculate per-unit price (in case the selected price is for multiple units)
