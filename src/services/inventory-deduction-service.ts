@@ -59,8 +59,25 @@ export class InventoryDeductionService {
         
         console.log(`  📊 Current stock: ${currentStock}`);
         
-        // STEP 2: Calculate new stock
-        const quantityToDeduct = item.quantity;
+        // STEP 2: Calculate quantity to deduct (with conversion ratio support)
+        let quantityToDeduct = item.quantity;
+        
+        // CRITICAL: Check for conversion ratios (e.g., pre-rolls = 0.7g flower per unit)
+        if (item.pricing_tier?.conversion_ratio) {
+          const cr = item.pricing_tier.conversion_ratio;
+          
+          // Validate conversion ratio has required fields
+          if (cr.input_amount && cr.output_amount && cr.output_amount > 0) {
+            // Calculate actual quantity to deduct from inventory
+            // Formula: sold_quantity * (input_amount / output_amount)
+            // Example: 1 pre-roll sold = 1 * (0.7g / 1 unit) = 0.7g deducted from flower
+            const conversionMultiplier = cr.input_amount / cr.output_amount;
+            quantityToDeduct = item.quantity * conversionMultiplier;
+            
+            console.log(`  🔄 Conversion ratio applied: ${item.quantity} ${cr.output_unit} × (${cr.input_amount} ${cr.input_unit} / ${cr.output_amount} ${cr.output_unit}) = ${quantityToDeduct} ${cr.input_unit}`);
+          }
+        }
+        
         const newStock = Math.max(0, currentStock - quantityToDeduct);
         
         console.log(`  ➖ Deducting: ${quantityToDeduct}`);
