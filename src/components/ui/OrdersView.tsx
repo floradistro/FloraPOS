@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { WordPressUser } from '../../services/users-service';
 import { UnifiedLoadingScreen } from './UnifiedLoadingScreen';
+import { formatOrderDate, formatOrderDateTime } from '../../utils/date-utils';
 
 export interface WooCommerceOrder {
   id: number;
@@ -457,18 +458,8 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
     }
   };
 
-  // Format date in EST
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/New_York' // Force EST/EDT
-    });
-  };
+  // Use imported date formatting utility
+  const formatDate = formatOrderDateTime;
 
   // Format status text
   const formatStatus = (status: string) => {
@@ -770,11 +761,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                               </div>
                               <div className="text-sm text-neutral-400" 
                                    style={{ fontFamily: 'Tiempos, serif' }}>
-                                {new Date(order.date_created).toLocaleDateString('en-US', { 
-                                  month: 'short', 
-                                  day: 'numeric',
-                                  year: 'numeric'
-                                })}
+                                {formatOrderDate(order.date_created)}
                               </div>
                             </div>
                           )}

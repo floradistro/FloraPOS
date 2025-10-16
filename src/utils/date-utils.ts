@@ -1,202 +1,150 @@
 /**
- * Date and time utilities for consistent timezone handling across the application
- * All times are displayed in Eastern Time (EST/EDT)
+ * Date formatting utilities with proper timezone handling
  */
-
-// Force EST/EDT timezone for all date operations
-const SYSTEM_TIMEZONE = 'America/New_York';
 
 /**
- * Format a date string or Date object for display with EST timezone
- * @param dateInput - Date string (ISO format) or Date object
- * @param options - Optional formatting options
- * @returns Formatted date string in EST timezone
+ * Format date in Eastern Time (EST/EDT) - matches WooCommerce server timezone
  */
-export function formatDateTime(
-  dateInput: string | Date,
-  options: {
-    includeTimezone?: boolean;
-    format?: 'short' | 'medium' | 'long';
-    timeOnly?: boolean;
-    dateOnly?: boolean;
-  } = {}
-): string {
-  const {
-    includeTimezone = false,  // Changed default to false
-    format = 'medium',
-    timeOnly = false,
-    dateOnly = false
-  } = options;
-
+export function formatOrderDate(dateString: string | null | undefined): string {
+  if (!dateString) return 'N/A';
+  
   try {
-    let date: Date;
+    const date = new Date(dateString);
     
-    if (typeof dateInput === 'string') {
-      // Clean up the date string - sometimes APIs return malformed timestamps
-      let cleanDateString = dateInput.trim();
-      
-      // If it looks like a MySQL datetime (YYYY-MM-DD HH:MM:SS), ensure it's ISO format
-      if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(cleanDateString)) {
-        cleanDateString = cleanDateString.replace(' ', 'T') + 'Z'; // Assume UTC
-      }
-      
-      date = new Date(cleanDateString);
-    } else {
-      date = dateInput;
-    }
-    
-    // Check if the date is valid
+    // Check if date is valid
     if (isNaN(date.getTime())) {
-      console.warn('Invalid date input:', dateInput);
       return 'Invalid Date';
     }
     
-    // TEMPORARY FIX: Check for future years (likely timezone conversion bug)
-    const currentYear = new Date().getFullYear();
-    if (date.getFullYear() > currentYear) {
-      console.warn(`🚨 Future year detected: ${date.getFullYear()}, correcting to ${currentYear}`, {
-        original: dateInput,
-        parsed: date.toISOString(),
-        correcting_to: currentYear
-      });
-      
-      // Create a corrected date by setting the year to current year
-      date = new Date(date.getTime());
-      date.setFullYear(currentYear);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'America/New_York' // Force Eastern Time
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid Date';
+  }
+}
+
+/**
+ * Format date with time in Eastern Time (EST/EDT)
+ */
+export function formatOrderDateTime(dateString: string | null | undefined): string {
+  if (!dateString) return 'N/A';
+  
+  try {
+    const date = new Date(dateString);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
     }
+    
+    return date.toLocaleString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit',
+      timeZone: 'America/New_York' // Force Eastern Time
+    });
+  } catch (error) {
+    console.error('Error formatting date time:', error);
+    return 'Invalid Date';
+  }
+}
 
-    // Base formatting options - ALWAYS use EST
-    const baseOptions: Intl.DateTimeFormatOptions = {
-      timeZone: SYSTEM_TIMEZONE // Force EST/EDT
-    };
-
-    if (timeOnly) {
-      // Time only
-      return date.toLocaleString('en-US', {
-        ...baseOptions,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: format === 'long' ? '2-digit' : undefined,
-        timeZoneName: includeTimezone ? 'short' : undefined
-      });
+/**
+ * Format date as time only in Eastern Time (EST/EDT)
+ */
+export function formatOrderTime(dateString: string | null | undefined): string {
+  if (!dateString) return 'N/A';
+  
+  try {
+    const date = new Date(dateString);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid Time';
     }
+    
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      timeZone: 'America/New_York' // Force Eastern Time
+    });
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return 'Invalid Time';
+  }
+}
 
-    if (dateOnly) {
-      // Date only
-      return date.toLocaleString('en-US', {
-        ...baseOptions,
-        month: format === 'short' ? 'numeric' : 'short',
-        day: 'numeric',
-        year: format === 'long' ? 'numeric' : '2-digit'
-      });
-    }
-
-    // Full date and time - custom format: M/D/YYYY, h:mma
+/**
+ * Format date for API query parameters (YYYY-MM-DD)
+ */
+export function formatDateForAPI(date: Date): string {
+  try {
+    // Get date in Eastern Time
     const dateStr = date.toLocaleDateString('en-US', {
-      ...baseOptions,
-      month: 'numeric',
-      day: 'numeric', 
-      year: 'numeric'
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: 'America/New_York'
     });
     
-    const timeStr = date.toLocaleTimeString('en-US', {
-      ...baseOptions,
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    }).toLowerCase(); // Convert AM/PM to am/pm
-    
-    return `${dateStr}, ${timeStr}`;
-
+    // Convert MM/DD/YYYY to YYYY-MM-DD
+    const [month, day, year] = dateStr.split('/');
+    return `${year}-${month}-${day}`;
   } catch (error) {
-    console.error('Error formatting date:', dateInput, error);
-    return 'Error formatting date';
+    console.error('Error formatting date for API:', error);
+    return '';
   }
 }
 
 /**
- * Get the current timestamp in ISO format (UTC)
- * This should be used when creating timestamps for storage
+ * Get relative time string (e.g., "2 hours ago", "3 days ago")
  */
-export function getCurrentTimestamp(): string {
-  return new Date().toISOString();
-}
-
-/**
- * Get the current timestamp in EST timezone
- * This should be used for display purposes only
- */
-export function getCurrentLocalTimestamp(): string {
-  return new Date().toLocaleString('en-US', {
-    timeZone: SYSTEM_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-}
-
-/**
- * Check if a timestamp is in the future compared to now
- * @param timestamp - ISO timestamp string or Date object
- * @returns true if the timestamp is in the future
- */
-export function isFutureTimestamp(timestamp: string | Date): boolean {
+export function getRelativeTime(dateString: string | null | undefined): string {
+  if (!dateString) return 'N/A';
+  
   try {
-    const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    const date = new Date(dateString);
     const now = new Date();
-    return date.getTime() > now.getTime();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 604800)}w ago`;
+    
+    // For older dates, return formatted date
+    return formatOrderDate(dateString);
   } catch (error) {
-    console.error('Error checking if timestamp is future:', timestamp, error);
+    console.error('Error getting relative time:', error);
+    return 'N/A';
+  }
+}
+
+/**
+ * Check if date is today (in Eastern Time)
+ */
+export function isToday(dateString: string | null | undefined): boolean {
+  if (!dateString) return false;
+  
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+    
+    const dateET = new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const nowET = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    
+    return dateET.getDate() === nowET.getDate() &&
+           dateET.getMonth() === nowET.getMonth() &&
+           dateET.getFullYear() === nowET.getFullYear();
+  } catch (error) {
     return false;
   }
-}
-
-/**
- * Get the EST timezone information
- */
-export function getTimezoneInfo(): {
-  timeZone: string;
-  offset: number;
-  offsetString: string;
-} {
-  const timeZone = SYSTEM_TIMEZONE;
-  const now = new Date();
-  
-  // Get the EST offset (this will be -5 for EST, -4 for EDT)
-  const estDate = new Date(now.toLocaleString('en-US', { timeZone: SYSTEM_TIMEZONE }));
-  const utcDate = new Date(now.toUTCString());
-  const offset = (estDate.getTime() - utcDate.getTime()) / (1000 * 60); // in minutes
-  
-  const offsetHours = Math.floor(Math.abs(offset) / 60);
-  const offsetMinutes = Math.abs(offset) % 60;
-  const offsetString = `UTC${offset >= 0 ? '+' : '-'}${offsetHours.toString().padStart(2, '0')}:${offsetMinutes.toString().padStart(2, '0')}`;
-
-  return {
-    timeZone,
-    offset,
-    offsetString
-  };
-}
-
-/**
- * Debug function to log timezone information
- * Useful for troubleshooting timezone issues
- */
-export function debugTimezone() {
-  const info = getTimezoneInfo();
-  console.log('🌍 Timezone Debug Info:', {
-    ...info,
-    currentTime: getCurrentLocalTimestamp(),
-    currentUTC: getCurrentTimestamp(),
-    sampleFormatting: {
-      short: formatDateTime(new Date(), { format: 'short' }),
-      medium: formatDateTime(new Date(), { format: 'medium' }),
-      long: formatDateTime(new Date(), { format: 'long' }),
-      timeOnly: formatDateTime(new Date(), { timeOnly: true }),
-      dateOnly: formatDateTime(new Date(), { dateOnly: true })
-    }
-  });
 }

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { WooCommerceOrder } from './OrdersView';
 import { UnifiedLoadingScreen } from './UnifiedLoadingScreen';
+import { formatOrderDateTime } from '../../utils/date-utils';
 
 interface DashboardMetrics {
   totalOrders: number;
@@ -742,12 +743,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                     </div>
                     <div className="text-xs text-neutral-600 mt-1" 
                          style={{ fontFamily: 'Tiempos, serif' }}>
-                      {new Date(order.date_created).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
+                      {formatOrderDateTime(order.date_created)}
                     </div>
                   </div>
                   <div className="text-right">
