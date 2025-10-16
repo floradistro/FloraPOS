@@ -42,15 +42,17 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
 
     try {
       setLoading(true);
+      
+      const locationId = typeof user.location_id === 'string' ? parseInt(user.location_id) : user.location_id;
 
       // Fetch cash on hand
-      const cashResponse = await cashManagementService.getCashOnHand(user.location_id);
+      const cashResponse = await cashManagementService.getCashOnHand(locationId);
       if (cashResponse.success && cashResponse.data) {
         setCashOnHand(cashResponse.data);
       }
 
       // Fetch current drawer session
-      const drawerResponse = await cashManagementService.getCurrentDrawer(user.location_id);
+      const drawerResponse = await cashManagementService.getCurrentDrawer(locationId);
       if (drawerResponse.success && drawerResponse.data?.session) {
         setCurrentSession(drawerResponse.data.session);
       }
@@ -61,7 +63,7 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
       weekAgo.setDate(weekAgo.getDate() - 7);
       
       const sessionsResponse = await cashManagementService.getDrawerSessions(
-        user.location_id,
+        locationId,
         weekAgo.toISOString().split('T')[0],
         today.toISOString().split('T')[0]
       );
@@ -73,7 +75,7 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
       // Fetch today's reconciliation
       const todayDate = today.toISOString().split('T')[0];
       const reconResponse = await cashManagementService.getDailyReconciliation(
-        user.location_id,
+        locationId,
         todayDate
       );
       
@@ -92,11 +94,11 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
     return <UnifiedLoadingScreen message="loading cash data..." />;
   }
 
-  const totalCashOnHand = cashOnHand?.total_cash_on_hand || 0;
-  const cashInDrawers = cashOnHand?.cash_in_drawers || 0;
-  const cashInSafe = cashOnHand?.cash_in_safe || 0;
-  const weekAccumulated = cashOnHand?.current_week_cash_accumulated || 0;
-  const pendingDeposit = cashOnHand?.pending_deposit_amount || 0;
+  const totalCashOnHand = Number(cashOnHand?.total_cash_on_hand) || 0;
+  const cashInDrawers = Number(cashOnHand?.cash_in_drawers) || 0;
+  const cashInSafe = Number(cashOnHand?.cash_in_safe) || 0;
+  const weekAccumulated = Number(cashOnHand?.current_week_cash_accumulated) || 0;
+  const pendingDeposit = Number(cashOnHand?.pending_deposit_amount) || 0;
 
   // Calculate health color
   const getHealthColor = (amount: number) => {
@@ -276,7 +278,7 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
                     </div>
                     <div className="text-xl font-light text-white" 
                          style={{ fontFamily: 'Tiempos, serif' }}>
-                      ${currentSession.opening_float.toFixed(2)}
+                      ${Number(currentSession.opening_float).toFixed(2)}
                     </div>
                   </div>
                   
@@ -287,7 +289,7 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
                     </div>
                     <div className="text-xl font-light text-white" 
                          style={{ fontFamily: 'Tiempos, serif' }}>
-                      ${currentSession.expected_total.toFixed(2)}
+                      ${Number(currentSession.expected_total).toFixed(2)}
                     </div>
                   </div>
                   
@@ -298,7 +300,7 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
                     </div>
                     <div className="text-xl font-light text-emerald-400" 
                          style={{ fontFamily: 'Tiempos, serif' }}>
-                      ${currentSession.expected_cash_sales.toFixed(2)}
+                      ${Number(currentSession.expected_cash_sales).toFixed(2)}
                     </div>
                   </div>
                   
@@ -309,7 +311,7 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
                     </div>
                     <div className="text-xl font-light text-yellow-400" 
                          style={{ fontFamily: 'Tiempos, serif' }}>
-                      ${currentSession.cash_drops_total.toFixed(2)}
+                      ${Number(currentSession.cash_drops_total).toFixed(2)}
                     </div>
                   </div>
                   
@@ -384,7 +386,7 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
                           </div>
                           <div className="text-sm font-light text-white" 
                                style={{ fontFamily: 'Tiempos, serif' }}>
-                            ${session.expected_total.toFixed(2)}
+                            ${Number(session.expected_total).toFixed(2)}
                           </div>
                         </div>
                         
@@ -396,24 +398,24 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
                             </div>
                             <div className="text-sm font-light text-white" 
                                  style={{ fontFamily: 'Tiempos, serif' }}>
-                              ${session.actual_cash_counted.toFixed(2)}
+                              ${Number(session.actual_cash_counted).toFixed(2)}
                             </div>
                           </div>
                         )}
                         
-                        {session.variance !== 0 && (
+                        {Number(session.variance) !== 0 && (
                           <div className="text-right">
                             <div className="text-xs text-neutral-600 lowercase mb-1" 
                                  style={{ fontFamily: 'Tiempos, serif' }}>
                               variance
                             </div>
                             <div className={`text-sm font-light ${
-                              Math.abs(session.variance) > 10 ? 'text-red-400' :
-                              Math.abs(session.variance) > 5 ? 'text-yellow-400' :
+                              Math.abs(Number(session.variance)) > 10 ? 'text-red-400' :
+                              Math.abs(Number(session.variance)) > 5 ? 'text-yellow-400' :
                               'text-emerald-400'
                             }`} 
                                  style={{ fontFamily: 'Tiempos, serif' }}>
-                              {session.variance > 0 ? '+' : ''}{session.variance.toFixed(2)}
+                              {Number(session.variance) > 0 ? '+' : ''}{Number(session.variance).toFixed(2)}
                             </div>
                           </div>
                         )}

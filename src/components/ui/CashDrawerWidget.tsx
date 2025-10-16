@@ -77,8 +77,9 @@ export const CashDrawerWidget: React.FC<CashDrawerWidgetProps> = ({ onClose }) =
     setError(null);
 
     try {
+      const locationId = typeof user.location_id === 'string' ? parseInt(user.location_id) : user.location_id;
       const response = await cashManagementService.openDrawer({
-        location_id: user.location_id,
+        location_id: locationId,
         register_name: registerName,
         opening_float: parseFloat(openingFloat),
         notes: notes || undefined
@@ -148,9 +149,10 @@ export const CashDrawerWidget: React.FC<CashDrawerWidgetProps> = ({ onClose }) =
     setError(null);
 
     try {
+      const locationId = typeof user.location_id === 'string' ? parseInt(user.location_id) : user.location_id;
       const response = await cashManagementService.recordCashDrop({
         drawer_session_id: currentSession.id,
-        location_id: user.location_id,
+        location_id: locationId,
         amount: parseFloat(dropAmount),
         drop_type: 'safe_drop',
         notes: notes || undefined
