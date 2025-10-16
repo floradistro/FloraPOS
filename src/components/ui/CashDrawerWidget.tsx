@@ -45,7 +45,8 @@ export const CashDrawerWidget: React.FC<CashDrawerWidgetProps> = ({ onClose }) =
 
     try {
       setLoading(true);
-      const response = await cashManagementService.getCurrentDrawer(user.location_id);
+      const locationId = typeof user.location_id === 'string' ? parseInt(user.location_id) : user.location_id;
+      const response = await cashManagementService.getCurrentDrawer(locationId);
       
       if (response.success && response.data?.session) {
         setCurrentSession(response.data.session);
