@@ -520,11 +520,49 @@ export default function HomePage() {
   //   }
   // }, [user?.location_id, fetchAllProducts, allProducts.length]);
 
-  const handleAddToCart = (product: Product) => {
-    const result = CartService.createCartItemFromProduct(product);
+  const handleAddToCart = async (product: Product) => {
+    // CRITICAL: Ensure blueprint pricing is loaded before adding to cart
+    // This is essential for conversion ratios (e.g., pre-rolls = 0.7g)
+    let productWithPricing = product;
+    
+    if (!product.blueprintPricing && product.categories && product.categories.length > 0) {
+      console.log(`⏳ Blueprint pricing not loaded for ${product.name}, loading now...`);
+      
+      try {
+        // Load pricing on-demand
+        const { BlueprintPricingService } = await import('../services/blueprint-pricing-service');
+        const pricingData = await BlueprintPricingService.getBlueprintPricing(
+          product.id,
+          product.categories.map(c => c.id)
+        );
+        
+        if (pricingData) {
+          productWithPricing = { ...product, blueprintPricing: pricingData };
+          console.log(`✅ Loaded pricing for ${product.name} with ${pricingData.price_tiers?.length || 0} tiers`);
+          
+          // Check if pricing has conversion ratios
+          const hasConversionRatio = pricingData.ruleGroups?.some(rg => 
+            rg.tiers.some(t => t.conversion_ratio)
+          );
+          if (hasConversionRatio) {
+            console.log(`🔄 Product has conversion ratios - will use for inventory deduction`);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load blueprint pricing, continuing without it:', error);
+      }
+    }
+    
+    const result = CartService.createCartItemFromProduct(productWithPricing);
     
     if (result.success && result.cartItem) {
       setCartItems(items => CartService.mergeCartItem(items, result.cartItem!));
+      
+      // Log if conversion ratio was attached
+      if (result.cartItem.pricing_tier?.conversion_ratio) {
+        const cr = result.cartItem.pricing_tier.conversion_ratio;
+        console.log(`✅ Cart item has conversion ratio: ${cr.input_amount}${cr.input_unit} per ${cr.output_amount}${cr.output_unit}`);
+      }
     } else {
       setAlertModal({
         isOpen: true,
