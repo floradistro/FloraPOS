@@ -271,9 +271,10 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       // DEJAVOO CARD PAYMENT PROCESSING
       // ====================
       if (paymentMethod === 'card' && splitPayments.length === 0) {
-        // If terminal is configured, process through Dejavoo
+        // If terminal is configured, TRY to process through Dejavoo
+        // But if it fails for any reason (API error, network, etc), just record as card payment
         if (currentTerminal) {
-          console.log('💳 Processing card payment via Dejavoo terminal:', currentTerminal.terminal_name);
+          console.log('💳 Attempting card payment via Dejavoo terminal:', currentTerminal.terminal_name);
           setIsProcessingPayment(true);
           
           try {
@@ -287,46 +288,36 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
             setIsProcessingPayment(false);
 
             if (!paymentResult.success) {
-              // Payment declined or failed
+              // Payment processor failed - log it and continue as manual card payment
               const errorMessage = paymentResult.error || 
                                    paymentResult.response?.ResponseMessage || 
-                                   'Payment failed';
+                                   'Payment processor unavailable';
               
-              console.error('❌ Card payment declined:', errorMessage);
+              console.warn('⚠️ Card payment processor failed (non-blocking):', errorMessage);
+              console.log('💳 Recording as manual card payment instead');
               
-              setAlertModal({
-                isOpen: true,
-                title: 'Payment Declined',
-                message: errorMessage + '\n\nPlease try again or use a different payment method.'
-              });
-              setIsProcessing(false);
-              return;
+              // Don't block - just continue as card payment without processor
+            } else {
+              // Payment approved!
+              console.log('✅ Card payment approved via terminal:', paymentResult);
+              
+              // Store transaction reference for order
+              setPaymentTransactionRef(paymentResult.response?.TransactionID || null);
+              
+              // Display card info to user
+              const cardInfo = paymentResult.response?.CardType 
+                ? `${paymentResult.response.CardType} ending in ${paymentResult.response.CardLast4}` 
+                : 'Card';
+              
+              console.log(`💳 ${cardInfo} approved - Amount: $${total.toFixed(2)}`);
             }
-
-            // Payment approved!
-            console.log('✅ Card payment approved:', paymentResult);
-            
-            // Store transaction reference for order
-            setPaymentTransactionRef(paymentResult.response?.TransactionID || null);
-            
-            // Display card info to user
-            const cardInfo = paymentResult.response?.CardType 
-              ? `${paymentResult.response.CardType} ending in ${paymentResult.response.CardLast4}` 
-              : 'Card';
-            
-            console.log(`💳 ${cardInfo} approved - Amount: $${total.toFixed(2)}`);
             
           } catch (paymentError) {
             setIsProcessingPayment(false);
-            console.error('❌ Card payment error:', paymentError);
+            console.warn('⚠️ Card payment processor exception (non-blocking):', paymentError);
+            console.log('💳 Recording as manual card payment instead');
             
-            setAlertModal({
-              isOpen: true,
-              title: 'Payment Error',
-              message: 'Unable to process card payment. Please try again or use a different payment method.'
-            });
-            setIsProcessing(false);
-            return;
+            // Don't block - just continue as card payment without processor
           }
         } else {
           // No terminal configured - just record as card payment
