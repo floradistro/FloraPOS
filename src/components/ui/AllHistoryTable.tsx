@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../lib/api-fetch';
 import { useAuth } from '../../contexts/AuthContext';
-import { formatDateTime as formatDateTimeUtil } from '../../utils/date-utils';
+import { formatOrderDateTime as formatDateTimeUtil } from '../../utils/date-utils';
 
 interface AuditLogEntry {
   id: number;
