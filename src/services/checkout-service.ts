@@ -193,7 +193,7 @@ export class CheckoutService {
       const lineTotal = discountedPrice * item.quantity;
 
       const lineItem: any = {
-        product_id: parseInt(item.product_id.toString()),
+        product_id: parseInt((item.product_id || 0).toString()),
         quantity: parseFloat(item.quantity.toString()),
         subtotal: lineTotal.toFixed(2),
         total: lineTotal.toFixed(2),

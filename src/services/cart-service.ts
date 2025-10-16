@@ -28,11 +28,12 @@ export class CartService {
       
       if (!selectedPrice || selectedPrice === 0) {
         // Try to get price from blueprint pricing if available
-        if (product.blueprintPricing && product.blueprintPricing.price_tiers) {
-          // Use the first tier price as default
-          const firstTier = product.blueprintPricing.price_tiers[0];
-          if (firstTier && firstTier.tier_price) {
-            selectedPrice = parseFloat(firstTier.tier_price);
+        if (product.blueprintPricing && product.blueprintPricing.ruleGroups && product.blueprintPricing.ruleGroups.length > 0) {
+          // Use the first tier from the first rule group as default
+          const firstRuleGroup = product.blueprintPricing.ruleGroups[0];
+          const firstTier = firstRuleGroup?.tiers?.[0];
+          if (firstTier && firstTier.price) {
+            selectedPrice = parseFloat(firstTier.price.toString());
             console.log(`📊 Using blueprint price for ${product.name}: $${selectedPrice}`);
           }
         }

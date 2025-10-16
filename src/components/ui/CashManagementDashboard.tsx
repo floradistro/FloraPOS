@@ -91,7 +91,7 @@ export const CashManagementDashboard: React.FC<CashManagementDashboardProps> = (
   };
 
   if (loading) {
-    return <UnifiedLoadingScreen message="loading cash data..." />;
+    return <UnifiedLoadingScreen />;
   }
 
   const totalCashOnHand = Number(cashOnHand?.total_cash_on_hand) || 0;

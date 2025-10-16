@@ -30,10 +30,12 @@ export const DailyReconciliationView: React.FC<DailyReconciliationViewProps> = (
     try {
       setLoading(true);
       setError(null);
+      
+      const locationId = typeof user.location_id === 'string' ? parseInt(user.location_id) : user.location_id;
 
       // Fetch reconciliation for selected date
       const reconResponse = await cashManagementService.getDailyReconciliation(
-        user.location_id,
+        locationId,
         selectedDate
       );
 
@@ -45,7 +47,7 @@ export const DailyReconciliationView: React.FC<DailyReconciliationViewProps> = (
 
       // Fetch drawer sessions for this date
       const sessionsResponse = await cashManagementService.getDrawerSessions(
-        user.location_id,
+        locationId,
         selectedDate,
         selectedDate
       );
@@ -68,8 +70,9 @@ export const DailyReconciliationView: React.FC<DailyReconciliationViewProps> = (
     setError(null);
 
     try {
+      const locationId = typeof user.location_id === 'string' ? parseInt(user.location_id) : user.location_id;
       const response = await cashManagementService.createDailyReconciliation({
-        location_id: user.location_id,
+        location_id: locationId,
         business_date: selectedDate
       });
 

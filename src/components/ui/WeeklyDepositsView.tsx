@@ -36,15 +36,17 @@ export const WeeklyDepositsView: React.FC<WeeklyDepositsViewProps> = ({ onClose 
     try {
       setLoading(true);
       setError(null);
+      
+      const locationId = typeof user.location_id === 'string' ? parseInt(user.location_id) : user.location_id;
 
       // Fetch deposits
-      const depositsResponse = await cashManagementService.getWeeklyDeposits(user.location_id);
+      const depositsResponse = await cashManagementService.getWeeklyDeposits(locationId);
       if (depositsResponse.success && depositsResponse.data?.deposits) {
         setDeposits(depositsResponse.data.deposits);
       }
 
       // Fetch cash on hand
-      const cashResponse = await cashManagementService.getCashOnHand(user.location_id);
+      const cashResponse = await cashManagementService.getCashOnHand(locationId);
       if (cashResponse.success && cashResponse.data) {
         setCashOnHand(cashResponse.data);
       }
@@ -63,8 +65,9 @@ export const WeeklyDepositsView: React.FC<WeeklyDepositsViewProps> = ({ onClose 
     setError(null);
 
     try {
+      const locationId = typeof user.location_id === 'string' ? parseInt(user.location_id) : user.location_id;
       const response = await cashManagementService.createWeeklyDeposit({
-        location_id: user.location_id
+        location_id: locationId
       });
 
       if (response.success && response.data?.deposit) {

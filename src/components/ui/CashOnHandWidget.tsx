@@ -35,7 +35,8 @@ export const CashOnHandWidget: React.FC<CashOnHandWidgetProps> = ({
     if (!user?.location_id) return;
 
     try {
-      const response = await cashManagementService.getCashOnHand(user.location_id);
+      const locationId = typeof user.location_id === 'string' ? parseInt(user.location_id) : user.location_id;
+      const response = await cashManagementService.getCashOnHand(locationId);
       
       if (response.success && response.data) {
         setCashOnHand(response.data);
