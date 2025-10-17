@@ -25,6 +25,7 @@
     "@types/react-window": "^1.8.8",
     "@types/three": "^0.180.0",
     "autoprefixer": "^10.4.21",
+    "framer-motion": "^12.23.24",
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
