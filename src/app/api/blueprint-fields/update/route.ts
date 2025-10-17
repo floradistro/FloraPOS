@@ -18,56 +18,42 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log(`🔄 API: Updating blueprint fields for product ${productId}:`, fields);
+    console.log(`🔄 API: Updating fields for product ${productId}:`, fields);
 
-    // Convert fields to magic2 plugin meta_data format
-    const metaData = fields.map(field => {
-      let metaKey;
-      switch (field.field_name) {
-        case 'supplier':
-          metaKey = '_supplier'; // magic2 supplier meta key
-          break;
-        case 'cost':
-          metaKey = '_cost_price'; // magic2 cost meta key
-          break;
-        default:
-          metaKey = `_${field.field_name}`; // Standard underscore prefix
-      }
-      
-      return {
-        key: metaKey,
-        value: field.field_value
-      };
-    });
+    // Convert fields array to V3 native fields object format
+    const fieldsObject = fields.reduce((acc, field) => {
+      acc[field.field_name] = field.field_value;
+      return acc;
+    }, {} as Record<string, any>);
 
-    console.log(`🔄 Converting to WooCommerce meta_data format:`, metaData);
+    console.log(`🔄 Converting to V3 native fields format:`, fieldsObject);
 
-    // Update product using WooCommerce API with meta_data
+    // Update product using V3 Native Flora Fields API
     const response = await fetch(
-      `${FLORA_API_BASE}/wp-json/wc/v3/products/${productId}?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+      `${FLORA_API_BASE}/wp-json/fd/v3/products/${productId}/fields?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
       {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          meta_data: metaData
+          fields: fieldsObject
         })
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to update product meta_data: ${response.status}`, errorText);
+      console.error(`Failed to update product fields: ${response.status}`, errorText);
       return NextResponse.json({
         success: false,
-        error: `Failed to update product meta_data: ${response.statusText}`,
+        error: `Failed to update product fields: ${response.statusText}`,
         details: errorText
       }, { status: response.status });
     }
 
     const result = await response.json();
-    console.log(`✅ API: Successfully updated product meta_data for product ${productId}:`, result);
+    console.log(`✅ API: Successfully updated product fields for product ${productId}:`, result);
 
     return NextResponse.json({
       success: true,
@@ -75,10 +61,10 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Product meta_data update error:', error);
+    console.error('Product fields update error:', error);
     return NextResponse.json({
       success: false,
-      error: 'Failed to update product meta_data',
+      error: 'Failed to update product fields',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }

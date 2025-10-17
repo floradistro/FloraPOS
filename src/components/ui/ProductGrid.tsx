@@ -8,14 +8,14 @@ import { BlueprintPricingService, BlueprintPricingData } from '../../services/bl
 import ProductCard from './ProductCard';
 // import { inventoryEventBus } from '../../utils/inventoryEventBus'; // Disabled to prevent automatic refresh
 
-// Category Header Component with smooth animations
+// Category Header Component - Clean iOS Style
 const CategoryHeader = ({ categoryName, productCount }: { categoryName: string; productCount: number }) => (
-  <div className="col-span-full px-6 py-4 sticky top-0 z-20 category-header-animate">
-    <div className="flex items-center justify-center gap-4">
-      <h2 className="text-2xl font-mono font-medium text-neutral-300 tracking-wider text-center category-title-animate transform transition-all duration-700 ease-out hover:scale-105 hover:text-neutral-100 lowercase">
+  <div className="col-span-full px-6 py-3 sticky top-0 z-20">
+    <div className="flex items-center justify-center gap-3">
+      <h2 className="text-title-3 font-tiempo font-medium text-white tracking-tight">
         {categoryName}
       </h2>
-      <span className="text-xs font-mono font-medium text-neutral-500 bg-white/5 px-2.5 py-1 rounded-lg">
+      <span className="text-caption-1 font-mono font-medium text-neutral-500 bg-white/5 px-2 py-0.5 rounded-ios-sm">
         {productCount}
       </span>
     </div>
@@ -150,30 +150,9 @@ export const ProductGrid = forwardRef<{
       
       products.forEach((product) => {
         if (product.meta_data && Array.isArray(product.meta_data)) {
-          // Extract ALL blueprint-related meta from bulk endpoint data
+          // Extract V3 Native Flora Fields ONLY from bulk endpoint data
           blueprintFieldsMap[product.id] = product.meta_data.filter((meta: any) => 
-            meta.key && (
-              meta.key.startsWith('_blueprint_') || 
-              meta.key.startsWith('blueprint_') ||
-              meta.key === 'effect' ||
-              meta.key === 'lineage' ||
-              meta.key === 'nose' ||
-              meta.key === 'terpene' ||
-              meta.key === 'strain_type' ||
-              meta.key === 'thca_percentage' ||
-              meta.key === 'supplier' ||
-              meta.key === '_effect' ||
-              meta.key === '_lineage' ||
-              meta.key === '_nose' ||
-              meta.key === '_terpene' ||
-              meta.key === '_strain_type' ||
-              meta.key === '_thca_percentage' ||
-              meta.key === '_supplier' ||
-              meta.key === 'effects' ||
-              meta.key === '_effects' ||
-              meta.key === 'thc_percentage' ||
-              meta.key === '_thc_percentage'
-            )
+            meta.key && meta.key.startsWith('_field_') // V3 Native format ONLY
           );
         }
       });
@@ -210,19 +189,12 @@ export const ProductGrid = forwardRef<{
           return false;
         }
         
-        // Look for field with various possible formats (same as UnifiedSearchInput)
+        // Look for field with V3 Native format ONLY
         const possibleKeys = [
-          selectedBlueprintField,
-          `_${selectedBlueprintField}`,
-          `blueprint_${selectedBlueprintField}`,
-          `_blueprint_${selectedBlueprintField}`,
-          // Special cases for known field name variations
-          selectedBlueprintField === 'effect' ? '_blueprint_effects' : null,
-          selectedBlueprintField === 'effect' ? 'effects' : null,
-          selectedBlueprintField === 'effect' ? '_effects' : null,
-          selectedBlueprintField === 'thca_percentage' ? '_blueprint_thc_percentage' : null,
-          selectedBlueprintField === 'thca_percentage' ? 'thc_percentage' : null,
-          selectedBlueprintField === 'thca_percentage' ? '_thc_percentage' : null
+          `_field_${selectedBlueprintField}`,
+          // Handle field name variations
+          selectedBlueprintField === 'effect' ? '_field_effects' : null,
+          selectedBlueprintField === 'thca_percentage' ? '_field_thc_percentage' : null
         ].filter(Boolean);
         
         const fieldMeta = blueprintMeta.find((meta: any) => possibleKeys.includes(meta.key));

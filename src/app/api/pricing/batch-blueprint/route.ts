@@ -185,12 +185,12 @@ async function loadBlueprintData(apiEnv: ApiEnvironment) {
   }
 }
 
-// Load blueprint assignments from category fields (V2 API)
+// Load blueprint assignments from category fields (V3 Native API)
 async function loadBlueprintAssignments(apiEnv: ApiEnvironment) {
   const baseUrl = getApiBaseUrl(apiEnv);
   const credentials = getApiCredentials(apiEnv);
   
-  console.log(`\n🔍 [${apiEnv.toUpperCase()}] Building blueprint assignments from category fields...`);
+  console.log(`\n🔍 [${apiEnv.toUpperCase()}] Building blueprint assignments from V3 native category fields...`);
   
   // Category IDs to check (Production: Flower=25, Concentrate=22, Edibles=21, Vape=19, Moonwater=16)
   const categoryIds = apiEnv === 'docker' 
@@ -200,7 +200,8 @@ async function loadBlueprintAssignments(apiEnv: ApiEnvironment) {
   
   for (const categoryId of categoryIds) {
     try {
-      const url = `${baseUrl}/wp-json/fd/v2/categories/${categoryId}/fields?consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}&_t=${Date.now()}`;
+      // V3 Native API endpoint
+      const url = `${baseUrl}/wp-json/fd/v3/categories/${categoryId}/fields?consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}&_t=${Date.now()}`;
       
       const response = await fetch(url, {
         method: 'GET',
@@ -213,42 +214,39 @@ async function loadBlueprintAssignments(apiEnv: ApiEnvironment) {
 
       if (response.ok) {
         const result = await response.json();
-        const fields = result.fields || [];
+        const assignedFields = result.assigned_fields || {};
         
-        console.log(`   📊 Category ${categoryId} returned ${fields.length} fields`);
-        if (fields.length > 0) {
-          console.log(`      Sample fields:`, fields.slice(0, 3).map((f: any) => ({
-            id: f.id,
-            name: f.name,
-            group: f.group || f.group_label
-          })));
-        }
+        console.log(`   📊 Category ${categoryId} returned ${Object.keys(assignedFields).length} fields from native storage`);
         
-        // Group fields by group_label (this is the "blueprint" in V2)
+        // Group fields by 'group' property (this defines pricing tier blueprints)
         const groupedByLabel: Record<string, any[]> = {};
-        fields.forEach((field: any) => {
-          const groupLabel = field.group || field.group_label || 'default';
+        Object.entries(assignedFields).forEach(([fieldName, fieldConfig]: [string, any]) => {
+          const groupLabel = fieldConfig.group || 'default';
           if (!groupedByLabel[groupLabel]) {
             groupedByLabel[groupLabel] = [];
           }
-          groupedByLabel[groupLabel].push(field);
+          groupedByLabel[groupLabel].push({
+            name: fieldName,
+            ...fieldConfig
+          });
         });
         
         console.log(`   📁 Grouped into ${Object.keys(groupedByLabel).length} groups:`, Object.keys(groupedByLabel));
         
-        // Create one assignment per group - BUT only for actual "blueprint" fields
-        // Skip utility fields like "Product Info", "Lab Data", "default"
-        const skipGroups = ['Product Info', 'Lab Data', 'default', 'null', ''];
+        // Create one assignment per group - only for pricing blueprint groups
+        const skipGroups = ['default', '', 'null'];
         
         Object.entries(groupedByLabel).forEach(([groupLabel, groupFields]) => {
-          // Skip utility/system fields
           if (skipGroups.includes(groupLabel)) {
             console.log(`      ⏭️  Skipping utility group: ${groupLabel}`);
             return;
           }
           
-          // Use the first field's ID as the blueprint ID - ensure it's a number
-          const blueprintId = parseInt(groupFields[0].id);
+          // Use hash of group label as blueprint ID for consistency
+          const blueprintId = Math.abs(groupLabel.split('').reduce((a, b) => {
+            a = ((a << 5) - a) + b.charCodeAt(0);
+            return a & a;
+          }, 0));
           
           console.log(`      → Creating assignment: ${groupLabel} (ID ${blueprintId}) for Category ${categoryId}`);
           
@@ -261,34 +259,36 @@ async function loadBlueprintAssignments(apiEnv: ApiEnvironment) {
           });
         });
       } else {
-        console.log(`   ❌ Category ${categoryId} API returned status: ${response.status}`);
+        console.log(`   ❌ Category ${categoryId} V3 API returned status: ${response.status}`);
       }
     } catch (error) {
       console.warn(`❌ Failed to fetch fields for category ${categoryId}:`, error);
     }
   }
   
-    console.log(`✅ [${apiEnv.toUpperCase()}] Built ${allAssignments.length} blueprint assignments from V2 field groups`);
+  console.log(`✅ [${apiEnv.toUpperCase()}] Built ${allAssignments.length} blueprint assignments from V3 native field groups`);
   if (allAssignments.length > 0) {
     console.log(`   📋 All assignments created:`);
     allAssignments.forEach((a: any) => {
       console.log(`      → ${a.blueprint_name} (Blueprint ID ${a.blueprint_id}) → Category ${a.category_id}`);
     });
   } else {
-    console.log(`   ⚠️  NO ASSIGNMENTS CREATED - Check if V2 API is returning fields for categories: ${categoryIds}`);
+    console.log(`   ⚠️  NO ASSIGNMENTS CREATED - Check if V3 API is returning fields for categories: ${categoryIds}`);
   }
   
   return allAssignments;
 }
 
-// Load all pricing rules once (V2 API - pricing rules table unchanged)
+// Load all pricing tiers from native WooCommerce meta (V3 Native System)
 async function loadAllPricingRules(apiEnv: ApiEnvironment) {
   const baseUrl = getApiBaseUrl(apiEnv);
   const credentials = getApiCredentials(apiEnv);
-  // Note: Pricing rules are still in the same table, just accessed via V2 endpoint
-  const url = `${baseUrl}/wp-json/fd/v2/pricing/rules?consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}&_t=${Date.now()}`;
   
-  console.log(`🔍 [${apiEnv.toUpperCase()}] Fetching pricing rules from V2 API:`, url);
+  console.log(`🔍 [${apiEnv.toUpperCase()}] Loading pricing tiers from V3 native WooCommerce meta...`);
+  
+  // V3 uses native product meta (_product_price_tiers) instead of custom pricing rules table
+  // We need to fetch products and extract their pricing tiers from meta
+  const url = `${baseUrl}/wp-json/wc/v3/products?per_page=100&consumer_key=${credentials.consumerKey}&consumer_secret=${credentials.consumerSecret}&_t=${Date.now()}`;
   
   const response = await fetch(url, {
     method: 'GET',
@@ -300,44 +300,56 @@ async function loadAllPricingRules(apiEnv: ApiEnvironment) {
   });
 
   if (!response.ok) {
-    console.error(`❌ [${apiEnv.toUpperCase()}] Pricing rules API error:`, response.status, response.statusText);
-    throw new Error(`Pricing rules API error: ${response.status}`);
+    console.error(`❌ [${apiEnv.toUpperCase()}] Products API error:`, response.status, response.statusText);
+    throw new Error(`Products API error: ${response.status}`);
   }
 
-  const result = await response.json();
-  console.log(`📊 [${apiEnv.toUpperCase()}] Raw pricing rules response:`, {
-    isArray: Array.isArray(result),
-    hasRulesProperty: 'rules' in result,
-    totalCount: Array.isArray(result) ? result.length : (result.rules?.length || 0),
-    sampleKeys: Array.isArray(result) ? Object.keys(result[0] || {}) : Object.keys(result)
-  });
+  const products = await response.json();
+  console.log(`📊 [${apiEnv.toUpperCase()}] Loaded ${products.length} products`);
   
-  // Handle both array and object with rules property
-  let allRules = Array.isArray(result) ? result : (result.rules || []);
+  const allPricingData: any[] = [];
   
-  // Log sample rule for debugging
-  if (allRules.length > 0) {
-    console.log(`📋 [${apiEnv.toUpperCase()}] Sample rule:`, {
-      id: allRules[0].id,
-      rule_name: allRules[0].rule_name,
-      rule_type: allRules[0].rule_type,
-      status: allRules[0].status,
-      is_active: allRules[0].is_active,
-      conditions: typeof allRules[0].conditions === 'string' ? 'string' : 'object'
-    });
+  // Extract pricing tiers from product meta_data
+  for (const product of products) {
+    if (!product.meta_data) continue;
+    
+    const priceTiersMeta = product.meta_data.find((meta: any) => meta.key === '_product_price_tiers');
+    if (!priceTiersMeta || !priceTiersMeta.value) continue;
+    
+    try {
+      const tiers = typeof priceTiersMeta.value === 'string' 
+        ? JSON.parse(priceTiersMeta.value) 
+        : priceTiersMeta.value;
+      
+      if (Array.isArray(tiers) && tiers.length > 0) {
+        // Create a "rule" object that matches the old format for compatibility
+        allPricingData.push({
+          id: product.id,
+          rule_name: product.name,
+          rule_type: 'quantity_break',
+          status: 'active',
+          is_active: true,
+          product_id: product.id,
+          category_ids: product.categories.map((c: any) => c.id),
+          conditions: JSON.stringify({
+            product_id: product.id,
+            unit_type: 'g',
+            tiers: tiers.map((tier: any) => ({
+              min_quantity: tier.qty || 1,
+              max_quantity: null,
+              price: tier.price,
+              name: tier.weight || tier.label || `${tier.qty}x`
+            }))
+          })
+        });
+      }
+    } catch (error) {
+      console.warn(`⚠️  Failed to parse pricing tiers for product ${product.id}:`, error);
+    }
   }
-  
-  // More lenient filtering - accept if either status is active OR is_active is true
-  const activeRules = allRules.filter((rule: any) => {
-    const isActive = rule.status === 'active' || 
-                     rule.is_active === '1' || 
-                     rule.is_active === 1 || 
-                     rule.is_active === true;
-    return isActive;
-  });
 
-  console.log(`✅ [${apiEnv.toUpperCase()}] Loaded ${activeRules.length} active rules (from ${allRules.length} total)`);
-  return activeRules;
+  console.log(`✅ [${apiEnv.toUpperCase()}] Loaded ${allPricingData.length} products with native pricing tiers`);
+  return allPricingData;
 }
 
 // Find blueprint assignment from cached data (environment-aware)
@@ -387,19 +399,27 @@ function findBlueprintAssignmentFromCache(productId: number, categoryIds: number
   return null;
 }
 
-// Find blueprint rules from cached data (environment-aware)
+// Find pricing rules for products matching the blueprint's category (environment-aware)
 function findBlueprintRulesFromCache(blueprintId: number, apiEnv: ApiEnvironment = 'production') {
   const envCache = blueprintCache[apiEnv];
-  if (!envCache?.rules) return [];
+  if (!envCache?.rules || !envCache?.assignments) return [];
 
+  // Find the category ID for this blueprint
+  const assignment = envCache.assignments.find((a: any) => 
+    a.blueprint_id === blueprintId && a.entity_type === 'category'
+  );
+  
+  if (!assignment) {
+    console.log(`   ⚠️  No assignment found for blueprint ${blueprintId}`);
+    return [];
+  }
+
+  const categoryId = assignment.category_id;
+  console.log(`   🔍 Finding pricing rules for blueprint ${blueprintId} (category ${categoryId})`);
+
+  // Return all rules that match this category
   return envCache.rules.filter((rule: any) => {
-    try {
-      const conditions = JSON.parse(rule.conditions || '{}');
-      const ruleBlueprintId = conditions.blueprint_id;
-      return ruleBlueprintId && parseInt(ruleBlueprintId.toString()) === parseInt(blueprintId.toString());
-    } catch (e) {
-      return false;
-    }
+    return rule.category_ids && rule.category_ids.includes(categoryId);
   });
 }
 

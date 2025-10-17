@@ -73,82 +73,46 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
     try {
       setLoading(true);
 
-      // Calculate date ranges
+      console.log('📊 Orders Dashboard - Fetching metrics for location:', user.location_id);
+
+      // Fetch orders for the location - simple, no complex filtering
+      const ordersResponse = await fetch(
+        `/api/orders?per_page=200&location_id=${user.location_id}&_t=${Date.now()}`
+      );
+
+      if (!ordersResponse.ok) {
+        console.error(`❌ Failed to fetch orders`);
+        throw new Error('Failed to fetch orders');
+      }
+
+      const ordersData = await ordersResponse.json();
+      const orders = ordersData.data || [];
+      
+      console.log(`✅ Fetched ${orders.length} orders for location ${user.location_id}`);
+
+      // Simple metrics
+      const totalOrders = orders.length;
+      const completedOrders = orders.filter(o => o.status === 'completed').length;
+      const pendingOrders = orders.filter(o => o.status === 'pending').length;
+      const processingOrders = orders.filter(o => o.status === 'processing').length;
+      const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
+      const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+      // Calculate today/week/month based on order dates
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const weekAgo = new Date(today);
       weekAgo.setDate(weekAgo.getDate() - 7);
       const monthAgo = new Date(today);
       monthAgo.setDate(monthAgo.getDate() - 30);
-      const lastPeriodStart = new Date(today);
-      lastPeriodStart.setDate(lastPeriodStart.getDate() - 60);
-
-      console.log('📊 Orders Dashboard - Fetching metrics for location:', user.location_id);
-
-      // Fetch ALL orders for the location (last 60 days for comparison) - handle pagination
-      let allOrders: WooCommerceOrder[] = [];
-      let currentPage = 1;
-      let hasMorePages = true;
       
-      while (hasMorePages) {
-        console.log(`🔄 Fetching page ${currentPage}...`);
-        
-        const ordersResponse = await fetch(
-          `/api/orders?per_page=100&page=${currentPage}&location_id=${user.location_id}&date_from=${lastPeriodStart.toISOString().split('T')[0]}`
-        );
+      // Calculate last period start for growth comparison
+      const lastPeriodStart = new Date(monthAgo);
+      lastPeriodStart.setDate(lastPeriodStart.getDate() - 30);
 
-        if (!ordersResponse.ok) {
-          console.error(`❌ Failed to fetch page ${currentPage}`);
-          throw new Error('Failed to fetch orders');
-        }
-
-        const ordersData = await ordersResponse.json();
-        const pageOrders = ordersData.data || [];
-        
-        console.log(`✓ Page ${currentPage}: ${pageOrders.length} orders received`);
-        
-        if (pageOrders.length === 0) {
-          // No more orders
-          hasMorePages = false;
-        } else {
-          allOrders = [...allOrders, ...pageOrders];
-          console.log(`  Total so far: ${allOrders.length} orders`);
-          
-          // If we got less than per_page, this is the last page
-          if (pageOrders.length < 100) {
-            hasMorePages = false;
-          } else {
-            currentPage++;
-          }
-        }
-      }
-
-      const orders = allOrders;
-      console.log(`✅ All orders fetched: ${orders.length} total orders`);
-
-      // Calculate metrics
-      const totalOrders = orders.length;
-      const completedOrders = orders.filter(o => o.status === 'completed').length;
-      const pendingOrders = orders.filter(o => o.status === 'pending').length;
-      const processingOrders = orders.filter(o => o.status === 'processing').length;
-
-      // Revenue calculations
-      const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
-      const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-      // Period-based revenue (only count completed orders for revenue)
-      const todayOrders = orders.filter(o => {
-        const orderDate = new Date(o.date_created);
-        return orderDate >= today;
-      });
-      const weekOrders = orders.filter(o => {
-        const orderDate = new Date(o.date_created);
-        return orderDate >= weekAgo;
-      });
-      const monthOrders = orders.filter(o => {
-        const orderDate = new Date(o.date_created);
-        return orderDate >= monthAgo;
-      });
+      const todayOrders = orders.filter(o => new Date(o.date_created) >= today);
+      const weekOrders = orders.filter(o => new Date(o.date_created) >= weekAgo);
+      const monthOrders = orders.filter(o => new Date(o.date_created) >= monthAgo);
       
       // Calculate revenue from all orders (including pending/processing)
       const todayRevenue = todayOrders.reduce((sum, o) => sum + parseFloat(o.total || '0'), 0);
@@ -372,9 +336,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                        fulfillmentScore >= 75 ? 'good' : 
                        fulfillmentScore >= 50 ? 'fair' : 'needs attention';
   
-  const healthColor = fulfillmentScore >= 90 ? 'text-green-400' : 
-                      fulfillmentScore >= 75 ? 'text-blue-400' : 
-                      fulfillmentScore >= 50 ? 'text-orange-400' : 'text-red-400';
+  const healthColor = 'text-white';
 
   // Calculate period-specific metrics dynamically based on selectedPeriod
   const now = new Date();
@@ -408,17 +370,14 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
           }}
         >
           {/* Hero Number */}
-          <div className="text-center mb-6">
-            <div className={`text-[180px] font-extralight leading-none tracking-tighter ${healthColor} mb-6`} 
-                 style={{ fontFamily: 'Tiempos, serif' }}>
+          <div className="text-center mb-8">
+            <div className={`text-[140px] font-tiempo font-semibold leading-none tracking-tighter ${healthColor} mb-4`}>
               {fulfillmentScore}
             </div>
-            <div className="text-2xl text-neutral-400 font-light lowercase tracking-wider mb-3" 
-                 style={{ fontFamily: 'Tiempos, serif' }}>
+            <div className="text-title-2 text-neutral-400 font-tiempo font-medium tracking-wide mb-2">
               order fulfillment
             </div>
-            <div className="text-base text-neutral-600 font-light lowercase" 
-                 style={{ fontFamily: 'Tiempos, serif' }}>
+            <div className="text-body text-neutral-500 font-tiempo">
               {healthStatus}
             </div>
           </div>
@@ -426,60 +385,49 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-5 gap-6 pt-8 max-w-5xl mx-auto">
             <div className="text-center">
-              <div className="text-3xl font-extralight text-white mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
                 {periodOrderCount}
               </div>
-              <div className="text-xs text-neutral-600 font-light lowercase" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 orders ({selectedPeriod})
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-extralight text-green-400 mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
                 {periodRevenue >= 1000 
                   ? `$${(periodRevenue / 1000).toFixed(1)}k`
                   : `$${periodRevenue.toFixed(0)}`
                 }
               </div>
-              <div className="text-xs text-neutral-600 font-light lowercase" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 revenue ({selectedPeriod})
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-extralight text-white mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
                 ${metrics.averageOrderValue.toFixed(0)}
               </div>
-              <div className="text-xs text-neutral-600 font-light lowercase" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 avg order
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-extralight text-blue-400 mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
                 {metrics.completedOrders}
               </div>
-              <div className="text-xs text-neutral-600 font-light lowercase" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 completed
               </div>
             </div>
             
             <div className="text-center">
-              <div className={`text-3xl font-extralight mb-2 tracking-tight ${
-                metrics.revenueGrowth >= 0 ? 'text-green-400' : 'text-red-400'
-              }`} style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
                 {metrics.revenueGrowth >= 0 ? '+' : ''}{metrics.revenueGrowth.toFixed(1)}%
               </div>
-              <div className="text-xs text-neutral-600 font-light lowercase" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 growth
               </div>
             </div>
@@ -491,12 +439,11 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
               <button
                 key={period}
                 onClick={() => setSelectedPeriod(period)}
-                className={`px-4 py-2 text-xs rounded-xl transition-all duration-200 ${
+                className={`px-4 py-2 text-caption-1 font-tiempo font-medium rounded-ios transition-all duration-200 ${
                   selectedPeriod === period
-                    ? 'bg-white/[0.08] text-neutral-300 border border-white/10'
+                    ? 'bg-surface-elevated text-white border border-border'
                     : 'text-neutral-500 hover:text-neutral-400'
                 }`}
-                style={{ fontFamily: 'Tiempos, serif' }}
               >
                 {period}
               </button>
@@ -534,9 +481,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
           {/* Order Status Breakdown */}
           <div className="grid grid-cols-2 gap-8 mb-12">
             {/* Status Distribution */}
-            <div className="bg-white/[0.02] backdrop-blur-xl rounded-3xl p-10 border border-white/5">
-              <div className="text-sm text-neutral-500 font-light mb-6 lowercase" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+            <div className="bg-surface-card border border-border-subtle rounded-ios-lg p-8">
+              <div className="text-body-sm font-tiempo font-medium text-neutral-400 mb-6">
                 Order Status
               </div>
               <div className="space-y-4">
@@ -568,7 +514,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                     </div>
                     <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-blue-400 rounded-full transition-all duration-1000"
+                        className="h-full bg-white/30 rounded-full transition-all duration-1000"
                         style={{ width: `${statusData.percentage}%` }}
                       ></div>
                     </div>
@@ -578,9 +524,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
             </div>
 
             {/* Order Sources */}
-            <div className="bg-white/[0.02] backdrop-blur-xl rounded-3xl p-10 border border-white/5">
-              <div className="text-sm text-neutral-500 font-light mb-6 lowercase" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+            <div className="bg-surface-card border border-border-subtle rounded-ios-lg p-8">
+              <div className="text-body-sm font-tiempo font-medium text-neutral-400 mb-6">
                 Order Sources
               </div>
               <div className="space-y-6">
@@ -589,7 +534,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                         style={{ fontFamily: 'Tiempos, serif' }}>
                     POS
                   </span>
-                  <span className="text-3xl font-extralight text-green-400" 
+                  <span className="text-3xl font-extralight text-white" 
                         style={{ fontFamily: 'Tiempos, serif' }}>
                     {metrics.ordersBySource.pos}
                   </span>
@@ -600,7 +545,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                         style={{ fontFamily: 'Tiempos, serif' }}>
                     Online
                   </span>
-                  <span className="text-3xl font-extralight text-blue-400" 
+                  <span className="text-3xl font-extralight text-neutral-400" 
                         style={{ fontFamily: 'Tiempos, serif' }}>
                     {metrics.ordersBySource.online}
                   </span>
@@ -645,7 +590,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-extralight text-green-400 mb-1" 
+                        <div className="text-2xl font-extralight text-white mb-1" 
                              style={{ fontFamily: 'Tiempos, serif' }}>
                           ${customer.totalSpent.toFixed(0)}
                         </div>
@@ -667,26 +612,26 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
       {metrics.orderHealth.delayed > 0 && (
         <div className="max-w-5xl mx-auto px-12 pb-16">
           <div 
-            className="bg-orange-500/5 border border-orange-500/20 rounded-3xl p-10"
+            className="bg-surface-card border border-border rounded-ios-lg p-8"
             style={{
               animation: 'fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s both'
             }}
           >
-            <div className="flex items-start justify-between">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl font-light text-orange-400 mb-2" 
-                     style={{ fontFamily: 'Tiempos, serif' }}>
+                <div className="text-headline font-tiempo font-semibold text-white mb-1">
                   Attention Required
                 </div>
-                <div className="text-sm text-neutral-500 font-light" 
-                     style={{ fontFamily: 'Tiempos, serif' }}>
+                <div className="text-body-sm font-tiempo text-neutral-500">
                   {metrics.orderHealth.delayed} orders pending for over 24 hours
                 </div>
               </div>
               <button
-                onClick={() => onFilterOrders?.({ status: 'pending' })}
-                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl text-sm font-light transition-all duration-200"
-                style={{ fontFamily: 'Tiempos, serif' }}
+                onClick={() => {
+                  // Show all orders that need attention (pending/processing) without date filter
+                  onFilterOrders?.({ status: 'any', dateFrom: '', dateTo: '' });
+                }}
+                className="px-5 py-2.5 bg-white hover:bg-neutral-100 text-black rounded-ios text-body-sm font-tiempo font-semibold transition-all duration-200 active:scale-95"
               >
                 Review Orders
               </button>
@@ -728,12 +673,8 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                            style={{ fontFamily: 'Tiempos, serif' }}>
                         #{order.id}
                       </div>
-                      <div className={`text-xs px-2 py-1 rounded-full ${
-                        order.status === 'completed' ? 'bg-green-500/10 text-green-400' :
-                        order.status === 'processing' ? 'bg-blue-500/10 text-blue-400' :
-                        order.status === 'pending' ? 'bg-orange-500/10 text-orange-400' :
-                        'bg-neutral-500/10 text-neutral-400'
-                      }`} style={{ fontFamily: 'Tiempos, serif' }}>
+                      <div className="text-xs font-light text-neutral-500 lowercase tracking-wide" 
+                           style={{ fontFamily: 'Tiempos, serif' }}>
                         {order.status}
                       </div>
                     </div>

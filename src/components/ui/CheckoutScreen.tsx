@@ -43,7 +43,7 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
   const pointsUnit = balance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
   
   return (
-    <span className="text-white text-xs font-mono bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 px-2 py-0.5 rounded animate-pulse bg-[length:200%_100%]">
+    <span className="text-accent-primary text-caption-1 font-mono font-medium">
       {balance.balance.toLocaleString()} {pointsUnit.toLowerCase()}
     </span>
   );
@@ -144,54 +144,36 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
           const taxRates = await response.json();
           
           if (Array.isArray(taxRates) && taxRates.length > 0) {
-            // Filter to only standard tax rates (exclude hemp/other special classes)
-            const standardTaxRates = taxRates.filter(t => !t.tax_rate_class || t.tax_rate_class === 'standard');
+            // CRITICAL FIX: Include ALL tax rates assigned to location (including hemp tax)
+            // Sort by priority
+            const sortedTaxRates = taxRates.sort((a, b) => 
+              parseInt(a.tax_rate_priority || 0) - parseInt(b.tax_rate_priority || 0)
+            );
             
-            if (standardTaxRates.length > 0) {
-              // Calculate COMBINED tax rate (add all standard taxes together)
-              const combinedRate = standardTaxRates.reduce((sum, tax) => {
-                return sum + (parseFloat(tax.tax_rate) / 100);
-              }, 0);
-              
-              // Sort by priority
-              const sortedTaxRates = standardTaxRates.sort((a, b) => 
-                parseInt(a.tax_rate_priority || 0) - parseInt(b.tax_rate_priority || 0)
-              );
-              
-              // Create combined name from all tax rates
-              const taxNames = sortedTaxRates.map(t => t.tax_rate_name).join(' + ');
-              
-              console.log(`✅ Loaded ${standardTaxRates.length} tax rate(s) for location ${user.location_id}:`);
-              sortedTaxRates.forEach(t => {
-                console.log(`   - ${t.tax_rate_name}: ${t.tax_rate}% (Priority: ${t.tax_rate_priority})`);
-              });
-              console.log(`   COMBINED RATE: ${(combinedRate * 100).toFixed(4)}%`);
-              
-              // Store individual tax rates for order creation
-              setLocationTaxRates(sortedTaxRates);
-              
-              setTaxRate({ 
-                rate: combinedRate, 
-                name: taxNames, 
-                location: user?.location || 'Default' 
-              });
-              return;
-            } else {
-              console.warn(`⚠️ No standard tax rates found for location ${user.location_id}, checking all rates...`);
-              // If no standard rates, use all rates
-              const combinedRate = taxRates.reduce((sum, tax) => {
-                return sum + (parseFloat(tax.tax_rate) / 100);
-              }, 0);
-              
-              const taxNames = taxRates.map(t => t.tax_rate_name).join(' + ');
-              
-              setTaxRate({ 
-                rate: combinedRate, 
-                name: taxNames, 
-                location: user?.location || 'Default' 
-              });
-              return;
-            }
+            // Calculate COMBINED tax rate (add ALL taxes together)
+            const combinedRate = sortedTaxRates.reduce((sum, tax) => {
+              return sum + (parseFloat(tax.tax_rate) / 100);
+            }, 0);
+            
+            // Create combined name from all tax rates
+            const taxNames = sortedTaxRates.map(t => t.tax_rate_name).join(' + ');
+            
+            console.log(`✅ Loaded ${sortedTaxRates.length} tax rate(s) for location ${user.location_id}:`);
+            sortedTaxRates.forEach(t => {
+              const taxClass = t.tax_rate_class ? ` [${t.tax_rate_class}]` : '';
+              console.log(`   - ${t.tax_rate_name}${taxClass}: ${t.tax_rate}% (Priority: ${t.tax_rate_priority})`);
+            });
+            console.log(`   COMBINED RATE: ${(combinedRate * 100).toFixed(4)}%`);
+            
+            // Store individual tax rates for order creation
+            setLocationTaxRates(sortedTaxRates);
+            
+            setTaxRate({ 
+              rate: combinedRate, 
+              name: taxNames, 
+              location: user?.location || 'Default' 
+            });
+            return;
           } else {
             console.warn(`⚠️ No tax rates found for location ${user.location_id}, using fallback`);
           }
@@ -285,56 +267,10 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
       return;
     }
     
-    // STOCK VALIDATION: Check all items have sufficient stock BEFORE creating order
-    console.log('🔍 Validating stock availability...');
-    try {
-      for (const item of items) {
-        const productId = item.product_id;
-        const variationId = item.variation_id || 0;
-        const requestedQty = item.quantity;
-        
-        // Validate product_id exists
-        if (!productId || productId <= 0) {
-          throw new Error(`Invalid product: "${item.name}". Please remove this item and try again.`);
-        }
-        
-        // Fetch current inventory
-        const invResponse = await apiFetch(
-          `/api/proxy/flora-im/inventory?product_id=${productId}&location_id=${locationId}&variation_id=${variationId}&_nocache=${crypto.randomUUID()}`,
-          { method: 'GET' }
-        );
-        
-        if (!invResponse.ok) {
-          throw new Error(`Cannot verify stock for "${item.name}". Please try again.`);
-        }
-        
-        const invData = await invResponse.json();
-        const availableQty = Array.isArray(invData) && invData.length > 0 
-          ? parseFloat(invData[0].quantity) 
-          : 0;
-        
-        if (availableQty < requestedQty) {
-          throw new Error(
-            `Insufficient stock for "${item.name}". ` +
-            `Available: ${availableQty}, Requested: ${requestedQty}. ` +
-            `Please reduce quantity or remove item.`
-          );
-        }
-        
-        console.log(`  ✓ ${item.name}: ${requestedQty} available (${availableQty} in stock)`);
-      }
-      
-      console.log('✅ All items have sufficient stock');
-    } catch (stockError) {
-      console.error('❌ Stock validation failed:', stockError);
-      setAlertModal({
-        isOpen: true,
-        title: 'Insufficient Stock',
-        message: stockError instanceof Error ? stockError.message : 'Stock validation failed. Please try again.'
-      });
-      setIsProcessing(false);
-      return;
-    }
+    // Stock validation DISABLED for POS - Allow overselling
+    // Inventory is deducted by WordPress Flora IM plugin after order creation
+    // Stock levels shown on cards are for informational purposes only
+    console.log('📦 Stock validation skipped (POS allows overselling)');
     let orderCreated = false;
     let orderId: number | null = null;
 
@@ -1017,26 +953,26 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
 
 
   return (
-    <div ref={ref} className="flex-1 backdrop-blur-xl flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-600/50 scrollbar-track-transparent hover:scrollbar-thumb-neutral-500/50">
+    <div ref={ref} className="flex-1 flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto">
         
-        {/* Customer Card - Shows at top when customer is selected */}
+        {/* Customer Card - iOS Clean Style */}
         {selectedCustomer && selectedCustomer.id >= 0 && (
-          <div className="sticky top-0 z-20 mx-4 mt-4 mb-3">
-            <div className="bg-white/[0.02] backdrop-blur-xl rounded-2xl p-4 transition-all duration-300">
+          <div className="sticky top-0 z-20 mx-4 mt-4 mb-4">
+            <div className="bg-surface-elevated border border-border-subtle rounded-ios p-4 transition-all duration-200">
               <div className="flex items-center gap-3">
                 {/* Customer Avatar */}
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neutral-700 to-neutral-800 flex items-center justify-center text-white font-mono font-bold text-lg flex-shrink-0">
+                <div className="w-10 h-10 rounded-ios-sm bg-surface-card flex items-center justify-center text-white font-tiempo font-semibold text-body flex-shrink-0">
                   {selectedCustomer.id === 0 ? '👤' : (selectedCustomer.display_name || selectedCustomer.name || 'U')[0].toUpperCase()}
                 </div>
                 
                 {/* Customer Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-white truncate">
+                  <div className="text-body font-tiempo font-medium text-white truncate">
                     {selectedCustomer.id === 0 ? 'Guest' : (selectedCustomer.display_name || selectedCustomer.name || selectedCustomer.username)}
                   </div>
                   {selectedCustomer.id > 0 && (
-                    <div className="text-xs text-neutral-500 font-mono mt-1">
+                    <div className="text-caption-1 font-mono text-neutral-500 mt-0.5">
                       <CustomerPointsDisplay customerId={selectedCustomer.id} />
                     </div>
                   )}
@@ -1076,14 +1012,14 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
         />
       </div>
 
-      {/* Footer */}
-      <div className="px-4 py-4 border-t border-white/5 space-y-2">
+      {/* Footer - iOS Clean Buttons */}
+      <div className="px-4 py-4 border-t border-border-subtle space-y-3">
         <button
           onClick={onClose}
           disabled={isProcessing}
-          className="w-full bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white font-mono font-medium py-2.5 px-4 transition-all duration-300 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-xs lowercase"
+          className="w-full bg-surface-elevated hover:bg-surface-elevated-hover border border-border-subtle text-white font-tiempo font-medium py-3 px-4 transition-all duration-200 rounded-ios disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 text-body"
         >
-          cancel
+          Cancel
         </button>
         <button
           onClick={processOrder}
@@ -1094,17 +1030,17 @@ const CheckoutScreenComponent = React.forwardRef<HTMLDivElement, CheckoutScreenP
               : paymentMethod === 'cash' && (cashReceivedNum < total || !cashReceived)
             )
           }
-          className="w-full bg-neutral-200 text-neutral-900 hover:bg-neutral-100 font-mono font-bold py-4 px-5 transition-all duration-300 flex items-center justify-center gap-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:text-neutral-500 active:scale-95 text-sm lowercase"
+          className="w-full bg-white hover:bg-neutral-100 text-black font-tiempo font-semibold py-4 px-5 transition-all duration-200 flex items-center justify-between rounded-ios disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 text-body shadow-sm"
         >
           {isProcessing ? (
             <>
-              <div className="w-4 h-4 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin"></div>
-              <span>processing...</span>
+              <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+              <span>Processing...</span>
             </>
           ) : (
             <>
-              <span>pay</span>
-              <span className="ml-auto text-lg">${total.toFixed(2)}</span>
+              <span>Complete Sale</span>
+              <span className="font-mono text-headline">${total.toFixed(2)}</span>
             </>
           )}
         </button>

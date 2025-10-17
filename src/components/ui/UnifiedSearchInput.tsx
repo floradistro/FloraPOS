@@ -300,30 +300,9 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
       // Extract blueprint fields from WooCommerce products
       wcProducts.forEach((product: any, index: number) => {
         if (product.meta_data && Array.isArray(product.meta_data)) {
-          // Find ALL blueprint-related meta (same logic as ProductGrid)
+          // Find V3 Native Flora Fields ONLY
           const blueprintMeta = product.meta_data.filter((meta: any) => 
-            meta.key && (
-              meta.key.startsWith('_blueprint_') || 
-              meta.key.startsWith('blueprint_') ||
-              meta.key === 'effect' ||
-              meta.key === 'lineage' ||
-              meta.key === 'nose' ||
-              meta.key === 'terpene' ||
-              meta.key === 'strain_type' ||
-              meta.key === 'thca_percentage' ||
-              meta.key === 'supplier' ||
-              meta.key === '_effect' ||
-              meta.key === '_lineage' ||
-              meta.key === '_nose' ||
-              meta.key === '_terpene' ||
-              meta.key === '_strain_type' ||
-              meta.key === '_thca_percentage' ||
-              meta.key === '_supplier' ||
-              meta.key === 'effects' ||
-              meta.key === '_effects' ||
-              meta.key === 'thc_percentage' ||
-              meta.key === '_thc_percentage'
-            )
+            meta.key && meta.key.startsWith('_field_') // V3 Native format ONLY
           );
           
           if (index === 0 && blueprintMeta.length > 0) {
@@ -331,14 +310,10 @@ export const UnifiedSearchInput = forwardRef<UnifiedSearchInputRef, UnifiedSearc
           }
           
           blueprintMeta.forEach((meta: any) => {
-            // Try to extract field name from various formats
+            // Extract field name from V3 Native format
             let fieldName = meta.key;
-            if (fieldName.startsWith('_blueprint_')) {
-              fieldName = fieldName.substring(11);
-            } else if (fieldName.startsWith('blueprint_')) {
-              fieldName = fieldName.substring(10);
-            } else if (fieldName.startsWith('_')) {
-              fieldName = fieldName.substring(1);
+            if (fieldName.startsWith('_field_')) {
+              fieldName = fieldName.substring(7); // V3 Native: _field_effect -> effect
             }
             
             // Handle special case variations

@@ -66,14 +66,14 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
   };
   if (isSplitMode) {
     return (
-      <div className="bg-white/[0.02] backdrop-blur-md border border-white/[0.08] rounded-2xl p-4 relative transition-all duration-300 ease-out mb-3">
+      <div className="bg-surface-card border border-border-subtle rounded-ios p-4 relative transition-all duration-200 mb-3">
         <div className="pb-3 flex items-center justify-between">
-          <h3 className="text-sm font-mono font-medium text-neutral-300 lowercase">split payment</h3>
+          <h3 className="text-body-sm font-tiempo font-medium text-white">Split Payment</h3>
           <button
             onClick={handleDisableSplitMode}
-            className="text-xs font-mono text-neutral-400 hover:text-white transition-colors lowercase"
+            className="text-caption-1 font-tiempo text-neutral-400 hover:text-white transition-colors"
           >
-            cancel
+            Cancel
           </button>
         </div>
 

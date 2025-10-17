@@ -1329,18 +1329,18 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
       return (
         <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 120px)' }}>
           <div className="text-center">
-            <div className="text-red-400 text-base font-normal mb-4" style={{ fontFamily: 'Tiempos, serif' }}>
-              <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-body font-tiempo font-medium text-white mb-4">
+              <svg className="w-12 h-12 mx-auto mb-2 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p className="text-neutral-400 text-xs" style={{ fontFamily: 'Tiempos, serif' }}>{error}</p>
+            <p className="text-caption-1 font-tiempo text-neutral-400 mb-4">{error}</p>
             <button 
               onClick={() => {
                 setError(null);
                 fetchProducts();
               }}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-5 py-2.5 bg-white hover:bg-neutral-100 text-black rounded-ios text-body-sm font-tiempo font-semibold transition-all active:scale-95"
             >
               Retry
             </button>
@@ -1392,8 +1392,7 @@ export const AdjustmentsGrid = forwardRef<AdjustmentsGridRef, AdjustmentsGridPro
               {/* Back to Products Button */}
               <button
                 onClick={() => setActiveTab('products')}
-                className="flex items-center gap-2 px-4 py-2 text-xs bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-neutral-200 border border-white/10 hover:border-white/20 rounded-xl transition-all duration-300"
-                style={{ fontFamily: 'Tiempos, serif' }}
+                className="flex items-center gap-2 px-4 py-2 text-caption-1 font-tiempo font-medium bg-surface-elevated hover:bg-surface-elevated-hover text-white border border-border-subtle rounded-ios transition-all duration-200 active:scale-95"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

@@ -51,6 +51,21 @@ export const CACHE_TIMES = {
 
 export const FOCUS_REFRESH_THROTTLE = 30000; // 30 seconds
 
+// iOS-style stock level indicators
+export const STOCK_LEVELS = {
+  HIGH: 50,       // Green - healthy stock
+  MEDIUM: 20,     // Yellow - low stock warning
+  LOW: 10,        // Orange - critical stock
+  OUT: 0,         // Red - out of stock
+} as const;
+
+export const STOCK_COLORS = {
+  HIGH: 'text-white',
+  MEDIUM: 'text-neutral-400',
+  LOW: 'text-neutral-500',
+  OUT: 'text-neutral-600',
+} as const;
+
 // ====================
 // ORDER CONSTANTS
 // ====================
@@ -92,7 +107,6 @@ export const API_ENDPOINTS = {
   CATEGORIES: '/api/categories',
   PRICING: {
     BATCH_BLUEPRINT: '/api/pricing/batch-blueprint',
-    RULES: '/api/pricing/rules',
   },
 } as const;
 

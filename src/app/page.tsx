@@ -1303,12 +1303,18 @@ export default function HomePage() {
                 <Suspense fallback={<LoadingSpinner size="lg" />}>
                   {ordersViewMode === 'dashboard' ? (
                     <OrdersDashboardLazy
-                      onViewAllOrders={() => setOrdersViewMode('list')}
+                      onViewAllOrders={() => {
+                        // Clear all filters and show all orders
+                        setOrderStatusFilter('any');
+                        setOrderDateFrom('');
+                        setOrderDateTo('');
+                        setOrdersViewMode('list');
+                      }}
                       onFilterOrders={(filter) => {
                         // Apply filter and switch to list view
-                        if (filter.status) setOrderStatusFilter(filter.status);
-                        if (filter.dateFrom) setOrderDateFrom(filter.dateFrom);
-                        if (filter.dateTo) setOrderDateTo(filter.dateTo);
+                        if (filter.status !== undefined) setOrderStatusFilter(filter.status);
+                        if (filter.dateFrom !== undefined) setOrderDateFrom(filter.dateFrom);
+                        if (filter.dateTo !== undefined) setOrderDateTo(filter.dateTo);
                         setOrdersViewMode('list');
                       }}
                     />

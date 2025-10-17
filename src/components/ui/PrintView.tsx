@@ -525,9 +525,27 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     console.log('📦 Product meta_data:', metaData.map(m => m.key));
     
     const getMetaValue = (key: string) => {
-      const meta = metaData.find(m => m.key === key || m.key === `_${key}`);
-      console.log(`🔎 Looking for meta "${key}":`, meta?.value || 'NOT FOUND');
-      return meta?.value;
+      // V3 Native format with plural/singular variations
+      const possibleKeys = [
+        `_field_${key}`,           // V3 Native exact
+        `_field_${key}s`,          // V3 Native plural (effect → effects)
+        `_field_${key.replace('s', '')}`,  // V3 Native singular (effects → effect)
+        key,                       // Direct
+        `${key}s`,                 // Direct plural
+        `_${key}`,                 // Underscore-prefixed
+        `_${key}s`                 // Underscore plural
+      ];
+      
+      for (const possibleKey of possibleKeys) {
+        const meta = metaData.find(m => m.key === possibleKey);
+        if (meta && meta.value) {
+          console.log(`✅ Found meta "${key}" as "${possibleKey}":`, meta.value);
+          return meta.value;
+        }
+      }
+      
+      console.log(`❌ Meta "${key}" not found. Checked:`, possibleKeys);
+      return null;
     };
     
     if (showEffect) {
@@ -571,7 +589,8 @@ export function PrintView({ template: propTemplate, data: propData, selectedProd
     }
     
     if (showTHCA) {
-      const thca = getMetaValue('thca_percentage');
+      // Try both thca_percentage and thc_percentage
+      const thca = getMetaValue('thca_percentage') || getMetaValue('thc_percentage');
       if (thca) {
         console.log('✅ Adding THCA:', thca);
         additionalFields.push(`THCA: ${thca}%`);

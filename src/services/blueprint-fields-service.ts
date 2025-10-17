@@ -41,26 +41,23 @@ export class BlueprintFieldsService {
   private static readonly CONSUMER_SECRET = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
 
   /**
-   * Get blueprint fields for a specific blueprint
-   * Uses V2 API - fetches by field name/group instead of blueprint ID
+   * Get blueprint fields for a specific category
+   * Uses V3 Native API - reads from wp_termmeta
    */
-  static async getBlueprintFields(blueprintId: number): Promise<BlueprintField[]> {
+  static async getBlueprintFields(categoryId: number): Promise<BlueprintField[]> {
     try {
-      // V2 API uses field names instead of blueprint IDs
-      // Map old blueprint IDs to new field group names
-      const blueprintNameMap: Record<number, string> = {
-        39: 'flower_blueprint',
-        41: 'vape_blueprint',
-        42: 'concentrate_blueprint',
-        43: 'edible_blueprint',
-        44: 'moonwater_blueprint'
-      };
-      
-      const fieldName = blueprintNameMap[blueprintId] || `blueprint_${blueprintId}`;
-      
-      // Use Flora IM proxy with V2 endpoint
-      const response = await apiFetch(
-        `/api/proxy/flora-im/v2/fields?name=${fieldName}`
+      // V3 Native API reads directly from category term meta
+      const baseUrl = process.env.NEXT_PUBLIC_WC_API_URL || 'https://api.floradistro.com';
+      const response = await fetch(
+        `${baseUrl}/wp-json/fd/v3/categories/${categoryId}/fields?consumer_key=${this.CONSUMER_KEY}&consumer_secret=${this.CONSUMER_SECRET}&_t=${Date.now()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'POSV1/1.0'
+          },
+          cache: 'no-store'
+        }
       );
 
       if (!response.ok) {
@@ -68,25 +65,25 @@ export class BlueprintFieldsService {
       }
 
       const result = await response.json();
-      const fields = result.fields || [];
+      const assignedFields = result.assigned_fields || {};
       
-      // Transform V2 field structure to match old BlueprintField interface
-      return fields.map((field: any) => ({
-        id: field.id,
-        blueprint_id: blueprintId,
-        field_name: field.name,
-        field_type: field.type,
-        field_label: field.label,
-        field_description: field.description || '',
-        field_default_value: field.config?.default_value || '',
-        validation_rules: field.config?.validation || [],
-        display_options: field.config?.display || [],
-        is_required: field.config?.required || false,
-        is_searchable: field.config?.searchable || false,
-        sort_order: field.sort_order,
-        status: field.status,
-        created_at: field.created_at,
-        updated_at: field.updated_at
+      // Transform V3 native structure to BlueprintField interface
+      return Object.entries(assignedFields).map(([fieldName, fieldConfig]: [string, any], index) => ({
+        id: index + 1,
+        blueprint_id: categoryId,
+        field_name: fieldName,
+        field_type: fieldConfig.type,
+        field_label: fieldConfig.label,
+        field_description: '',
+        field_default_value: '',
+        validation_rules: [],
+        display_options: fieldConfig.config || [],
+        is_required: fieldConfig.required || false,
+        is_searchable: false,
+        sort_order: fieldConfig.order || index,
+        status: 'active',
+        created_at: '',
+        updated_at: ''
       }));
     } catch (error) {
       console.error('Error fetching blueprint fields:', error);
@@ -95,57 +92,51 @@ export class BlueprintFieldsService {
   }
 
   /**
-   * Get product meta data with blueprint fields from WooCommerce API
-   * Uses proxy to respect environment toggle (production vs docker)
+   * Get product fields from V3 Native API
+   * Reads field values from wp_postmeta (_field_{name})
    */
   static async getProductBlueprintFields(productId: number): Promise<ProductBlueprintFields | null> {
     try {
-      // Use proxy route instead of direct API call to avoid CORS and respect environment toggle
-      const response = await apiFetch(
-        `/api/proxy/woocommerce/products/${productId}`
+      const baseUrl = process.env.NEXT_PUBLIC_WC_API_URL || 'https://api.floradistro.com';
+      const response = await fetch(
+        `${baseUrl}/wp-json/fd/v3/products/${productId}/fields?consumer_key=${this.CONSUMER_KEY}&consumer_secret=${this.CONSUMER_SECRET}&_t=${Date.now()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'POSV1/1.0'
+          },
+          cache: 'no-store'
+        }
       );
 
       if (!response.ok) {
         if (response.status === 404) {
-          return null; // No product found
+          return null;
         }
-        throw new Error(`Failed to fetch product: ${response.statusText}`);
+        throw new Error(`Failed to fetch product fields: ${response.statusText}`);
       }
 
-      const product = await response.json();
+      const result = await response.json();
       
-      if (!product.meta_data || !Array.isArray(product.meta_data)) {
-        return null; // No meta data
+      if (!result.fields || Object.keys(result.fields).length === 0) {
+        return null;
       }
 
-      // Extract new Blueprints plugin fields from meta_data (_blueprint_ prefix)
-      const blueprintMetaData = product.meta_data.filter((meta: any) => 
-        meta.key.startsWith('_blueprint_')
-      );
-
-      if (blueprintMetaData.length === 0) {
-        return null; // No blueprint fields found
-      }
-
-      // Convert meta_data back to fields format
-      const fields = blueprintMetaData.map((meta: any) => {
-        // New format: _blueprint_effect → effect
-        let fieldName = meta.key.substring(11); // Remove '_blueprint_' prefix
-        
-        return {
-          field_name: fieldName,
-          field_label: this.getFieldLabel(fieldName),
-          field_type: this.getFieldType(fieldName),
-          field_value: meta.value,
-          field_id: meta.key // Store original key for updates
-        };
-      });
+      // Convert V3 native fields format
+      const fields = Object.entries(result.fields).map(([fieldName, fieldData]: [string, any]) => ({
+        field_name: fieldName,
+        field_label: fieldData.label || this.getFieldLabel(fieldName),
+        field_type: fieldData.type || this.getFieldType(fieldName),
+        field_value: fieldData.value || '',
+        field_description: fieldData.description || ''
+      }));
 
       return {
         product_id: productId,
-        product_name: product.name,
-        blueprint_id: 39, // Default blueprint ID
-        blueprint_name: 'magic2_fields',
+        product_name: result.product_name || '',
+        blueprint_id: 0,
+        blueprint_name: result.category_name || 'native_fields',
         fields
       };
     } catch (error) {
@@ -239,46 +230,47 @@ export class BlueprintFieldsService {
 
 
   /**
-   * Update product blueprint field values using WooCommerce API
+   * Update product field values using V3 Native API
+   * Stores in wp_postmeta as _field_{name}
    */
   static async updateProductBlueprintFields(
     productId: number, 
     fields: Array<{ field_name: string; field_value: any }>
   ): Promise<boolean> {
     try {
-      console.log(`🔄 Updating blueprint fields for product ${productId}:`, fields);
+      console.log(`🔄 Updating fields for product ${productId}:`, fields);
 
-      // Convert fields to new Blueprints plugin meta_data format (_blueprint_ prefix)
-      const metaData = fields.map(field => ({
-        key: `_blueprint_${field.field_name}`,
-        value: field.field_value
-      }));
+      // Convert to V3 native format
+      const fieldsObject = fields.reduce((acc, field) => {
+        acc[field.field_name] = field.field_value;
+        return acc;
+      }, {} as Record<string, any>);
 
-      // Use proxy to respect environment toggle
-      const response = await apiFetch(
-        `/api/proxy/woocommerce/products/${productId}`,
+      const baseUrl = process.env.NEXT_PUBLIC_WC_API_URL || 'https://api.floradistro.com';
+      const response = await fetch(
+        `${baseUrl}/wp-json/fd/v3/products/${productId}/fields?consumer_key=${this.CONSUMER_KEY}&consumer_secret=${this.CONSUMER_SECRET}`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            meta_data: metaData
+            fields: fieldsObject
           })
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`Failed to update product blueprint fields: ${response.status}`, errorText);
-        throw new Error(`Failed to update product blueprint fields: ${response.statusText}`);
+        console.error(`Failed to update product fields: ${response.status}`, errorText);
+        throw new Error(`Failed to update product fields: ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log(`✅ Successfully updated blueprint fields for product ${productId}:`, result);
+      console.log(`✅ Successfully updated fields for product ${productId}:`, result);
       return true;
     } catch (error) {
-      console.error('Error updating product blueprint fields:', error);
+      console.error('Error updating product fields:', error);
       throw error;
     }
   }

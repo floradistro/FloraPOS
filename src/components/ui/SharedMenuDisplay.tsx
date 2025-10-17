@@ -160,20 +160,10 @@ export function SharedMenuDisplay({
     
     // Check meta_data for ALL possible formats (same as ColumnSelector)
     if (product.meta_data && Array.isArray(product.meta_data)) {
-      // Try all possible key formats - PRIORITIZE non-underscore keys first
+      // V3 Native format ONLY
       const possibleKeys = [
-        // First try keys WITHOUT underscore (these have actual values)
-        normalizedFieldName,
-        fieldName,
-        `_fd_field_${normalizedFieldName}`,
-        `_fd_field_${fieldName}`,
-        `_blueprint_${normalizedFieldName}`,
-        `_blueprint_${fieldName}`,
-        `blueprint_${normalizedFieldName}`,
-        `blueprint_${fieldName}`,
-        // Last resort: underscore-prefixed (but skip ACF field IDs)
-        `_${normalizedFieldName}`,
-        `_${fieldName}`
+        `_field_${normalizedFieldName}`,
+        `_field_${fieldName}`
       ];
       
       for (const key of possibleKeys) {

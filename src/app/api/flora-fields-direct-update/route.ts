@@ -221,11 +221,11 @@ export async function POST(request: NextRequest) {
       // Save blueprint field values directly to the Flora Fields database
       if (Object.keys(blueprintFieldsToUpdate).length > 0) {
         try {
-          console.log(`  🔄 Saving ${Object.keys(blueprintFieldsToUpdate).length} blueprint fields via V2 API...`);
+          console.log(`  🔄 Saving ${Object.keys(blueprintFieldsToUpdate).length} blueprint fields via V3 Native API...`);
           
-          // Save field values using V2 API (stores in WordPress post meta)
+          // Save field values using V3 Native API (stores in WordPress post meta)
           const response = await fetch(
-            `${FLORA_API_BASE}/wp-json/fd/v2/products/${parseInt(productId)}/fields?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+            `${FLORA_API_BASE}/wp-json/fd/v3/products/${parseInt(productId)}/fields?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
             {
               method: 'PUT',
               headers: {

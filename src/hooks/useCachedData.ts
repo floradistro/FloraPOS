@@ -88,30 +88,18 @@ export function useTaxRates() {
 
 /**
  * Hook for caching blueprint pricing assignments
- * Blueprint assignments change occasionally
+ * V3 Native System - Blueprint assignments are now derived from category fields
+ * No longer needed as batch-blueprint route handles all pricing logic
+ * Kept for backward compatibility but returns empty data
  */
 export function useBlueprintAssignments() {
   return useQuery({
     queryKey: ['blueprint-assignments'],
     queryFn: async () => {
-      try {
-        const response = await apiFetch('/api/pricing/rules/blueprint', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch blueprint assignments');
-        }
-
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error('Error fetching blueprint assignments:', error);
-        return { assignments: [] };
-      }
+      // V3 Native System: Assignments are derived from category field groups
+      // This hook is deprecated but kept for backward compatibility
+      console.warn('useBlueprintAssignments is deprecated in V3 Native System');
+      return { assignments: [] };
     },
     staleTime: 300000, // 5 minutes
     gcTime: 900000, // 15 minutes

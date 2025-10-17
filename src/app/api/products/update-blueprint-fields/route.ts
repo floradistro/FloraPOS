@@ -38,22 +38,16 @@ export async function POST(request: NextRequest) {
 
         console.log(`🔄 Updating product ${productId} with blueprint fields...`);
         
-        // Convert fields to WooCommerce meta_data format
-        const metaData = Object.entries(fields).map(([key, value]) => ({
-          key: `_${key}`, // Add underscore prefix for custom fields
-          value: value
-        }));
-
-        // Update product using WooCommerce API
+        // Use V3 Native Flora Fields API to update fields
         const response = await fetch(
-          `${FLORA_API_BASE}/wp-json/wc/v3/products/${productId}?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
+          `${FLORA_API_BASE}/wp-json/fd/v3/products/${productId}/fields?consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`,
           {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              meta_data: metaData
+              fields: fields
             })
           }
         );

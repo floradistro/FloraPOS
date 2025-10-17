@@ -666,9 +666,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                        inventoryHealthScore >= 60 ? 'good' : 
                        inventoryHealthScore >= 40 ? 'fair' : 'poor';
   
-  const healthColor = inventoryHealthScore >= 80 ? 'text-green-400' : 
-                      inventoryHealthScore >= 60 ? 'text-blue-400' : 
-                      inventoryHealthScore >= 40 ? 'text-orange-400' : 'text-red-400';
+  const healthColor = 'text-white';
   
   // Calculate aging inventory value
   const agingInventoryValue = metrics.agingProducts.slice(0, 3).reduce((sum, p) => {
@@ -687,17 +685,14 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
           }}
         >
           {/* Hero Number */}
-          <div className="text-center mb-6">
-            <div className={`text-[180px] font-extralight leading-none tracking-tighter ${healthColor} mb-6`} 
-                 style={{ fontFamily: 'Tiempos, serif' }}>
+          <div className="text-center mb-8">
+            <div className={`text-[140px] font-tiempo font-semibold leading-none tracking-tighter ${healthColor} mb-4`}>
               {inventoryHealthScore}
             </div>
-            <div className="text-2xl text-neutral-400 font-light lowercase tracking-wider mb-3" 
-                 style={{ fontFamily: 'Tiempos, serif' }}>
+            <div className="text-title-2 text-neutral-400 font-tiempo font-medium tracking-wide mb-2">
               inventory health
             </div>
-            <div className="text-base text-neutral-600 font-light lowercase" 
-                 style={{ fontFamily: 'Tiempos, serif' }}>
+            <div className="text-body text-neutral-500 font-tiempo">
               {healthStatus} condition
             </div>
           </div>
@@ -716,45 +711,37 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-extralight text-green-400 mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
                 {metrics.inStockProducts}
               </div>
-              <div className="text-xs text-neutral-600 font-light lowercase" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 in stock
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-extralight text-white mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
                 ${(metrics.totalInventoryValue / 1000).toFixed(0)}k
               </div>
-              <div className="text-xs text-neutral-600 font-light lowercase" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 value
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-extralight text-green-400 mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
                 {metrics.fastMoversCount}
               </div>
-              <div className="text-xs text-neutral-600 font-light lowercase" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 fast movers
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-extralight text-blue-400 mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
-                {metrics.inventoryTurnoverRate.toFixed(1)}<span className="text-xl">×</span>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
+                {metrics.inventoryTurnoverRate.toFixed(1)}×
               </div>
-              <div className="text-xs text-neutral-600 font-light lowercase" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 velocity
               </div>
             </div>
@@ -808,13 +795,13 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                           <span className="text-xs text-neutral-600 font-light" style={{ fontFamily: 'Tiempos, serif' }}>
                             Fresh (0-7 days)
                           </span>
-                          <span className="text-xl font-extralight text-green-400" style={{ fontFamily: 'Tiempos, serif' }}>
+                          <span className="text-xl font-extralight text-white" style={{ fontFamily: 'Tiempos, serif' }}>
                             {metrics.inventoryHealth.fresh}
                           </span>
                         </div>
                         <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-green-400 rounded-full transition-all duration-1000"
+                            className="h-full bg-white/30 rounded-full transition-all duration-1000"
                             style={{ width: `${getPercentage(metrics.inventoryHealth.fresh)}%` }}
                           ></div>
                         </div>
@@ -825,13 +812,13 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                           <span className="text-xs text-neutral-600 font-light" style={{ fontFamily: 'Tiempos, serif' }}>
                             Aging (7-14 days)
                           </span>
-                          <span className="text-xl font-extralight text-yellow-400" style={{ fontFamily: 'Tiempos, serif' }}>
+                          <span className="text-xl font-extralight text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
                             {metrics.inventoryHealth.aging}
                           </span>
                         </div>
                         <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-yellow-400 rounded-full transition-all duration-1000"
+                            className="h-full bg-white/20 rounded-full transition-all duration-1000"
                             style={{ width: `${getPercentage(metrics.inventoryHealth.aging)}%` }}
                           ></div>
                         </div>
@@ -842,13 +829,13 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                           <span className="text-xs text-neutral-600 font-light" style={{ fontFamily: 'Tiempos, serif' }}>
                             Stale (14-21 days)
                           </span>
-                          <span className="text-xl font-extralight text-orange-400" style={{ fontFamily: 'Tiempos, serif' }}>
+                          <span className="text-xl font-extralight text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
                             {metrics.inventoryHealth.stale}
                           </span>
                         </div>
                         <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-orange-400 rounded-full transition-all duration-1000"
+                            className="h-full bg-white/15 rounded-full transition-all duration-1000"
                             style={{ width: `${getPercentage(metrics.inventoryHealth.stale)}%` }}
                           ></div>
                         </div>
@@ -859,13 +846,13 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                           <span className="text-xs text-neutral-600 font-light" style={{ fontFamily: 'Tiempos, serif' }}>
                             Old (21+ days)
                           </span>
-                          <span className="text-xl font-extralight text-red-400" style={{ fontFamily: 'Tiempos, serif' }}>
+                          <span className="text-xl font-extralight text-neutral-600" style={{ fontFamily: 'Tiempos, serif' }}>
                             {metrics.inventoryHealth.old}
                           </span>
                         </div>
                         <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-red-400 rounded-full transition-all duration-1000"
+                            className="h-full bg-white/10 rounded-full transition-all duration-1000"
                             style={{ width: `${getPercentage(metrics.inventoryHealth.old)}%` }}
                           ></div>
                         </div>
@@ -899,7 +886,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                     Out of Stock
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-3xl font-extralight text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
+                    <span className="text-3xl font-extralight text-white" style={{ fontFamily: 'Tiempos, serif' }}>
                       {metrics.outOfStockProducts}
                     </span>
                     {metrics.outOfStockProducts > 0 && (
@@ -931,12 +918,12 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                     Low Stock
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-3xl font-extralight text-orange-400" style={{ fontFamily: 'Tiempos, serif' }}>
+                    <span className="text-3xl font-extralight text-neutral-400" style={{ fontFamily: 'Tiempos, serif' }}>
                       {metrics.lowStockProducts}
                     </span>
                     {metrics.lowStockProducts > 0 && (
                       <svg 
-                        className="w-4 h-4 text-neutral-700 group-hover:text-orange-500 transition-all group-hover:translate-x-1" 
+                        className="w-4 h-4 text-neutral-700 group-hover:text-neutral-500 transition-all group-hover:translate-x-1" 
                         fill="none" 
                         stroke="currentColor" 
                         viewBox="0 0 24 24"
@@ -963,12 +950,12 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                     At Risk
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-3xl font-extralight text-red-400" style={{ fontFamily: 'Tiempos, serif' }}>
+                    <span className="text-3xl font-extralight text-neutral-500" style={{ fontFamily: 'Tiempos, serif' }}>
                       {metrics.stockoutRisk}
                     </span>
                     {metrics.stockoutRisk > 0 && (
                       <svg 
-                        className="w-4 h-4 text-neutral-700 group-hover:text-red-500 transition-all group-hover:translate-x-1" 
+                        className="w-4 h-4 text-neutral-700 group-hover:text-neutral-500 transition-all group-hover:translate-x-1" 
                         fill="none" 
                         stroke="currentColor" 
                         viewBox="0 0 24 24"
@@ -998,8 +985,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                    style={{ fontFamily: 'Tiempos, serif' }}>
                 Sell-Through Rate
               </div>
-              <div className="text-4xl font-extralight text-blue-400 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white">
                 {metrics.sellThroughRate.toFixed(1)}%
               </div>
             </div>
@@ -1009,8 +995,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                    style={{ fontFamily: 'Tiempos, serif' }}>
                 Average Stock Level
               </div>
-              <div className="text-4xl font-extralight text-white tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white">
                 {metrics.averageStockLevel.toFixed(1)}
               </div>
             </div>
@@ -1020,8 +1005,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                    style={{ fontFamily: 'Tiempos, serif' }}>
                 Fast Movers
               </div>
-              <div className="text-4xl font-extralight text-green-400 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white">
                 {metrics.fastMoversCount}
               </div>
               <div className="text-xs text-neutral-700 font-light mt-1" 
@@ -1071,7 +1055,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                       className="bg-white/[0.02] backdrop-blur-xl rounded-2xl p-8 border border-white/5 hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300 text-left group"
                     >
                       <div className="flex items-center justify-between mb-4">
-                        <div className="text-sm font-light text-white group-hover:text-blue-400 transition-colors" 
+                        <div className="text-sm font-light text-white transition-colors" 
                              style={{ fontFamily: 'Tiempos, serif' }}>
                           {category.name}
                         </div>
@@ -1081,7 +1065,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                             {category.count}
                           </div>
                           <svg 
-                            className="w-4 h-4 text-neutral-600 group-hover:text-blue-400 transition-all group-hover:translate-x-1" 
+                            className="w-4 h-4 text-neutral-700 group-hover:text-neutral-500 transition-all group-hover:translate-x-1" 
                             fill="none" 
                             stroke="currentColor" 
                             viewBox="0 0 24 24"
@@ -1105,7 +1089,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                           </div>
                           <div className="h-1 bg-white/5 rounded-full overflow-hidden">
                             <div 
-                              className="h-full bg-blue-400 rounded-full transition-all duration-1000"
+                              className="h-full bg-white/30 rounded-full transition-all duration-1000"
                               style={{ width: `${valuePercentage}%` }}
                             ></div>
                           </div>
@@ -1131,19 +1115,17 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
       {(metrics.stockoutRisk > 0 || metrics.inventoryHealth.old > 0) && (
         <div className="max-w-5xl mx-auto px-12 pb-16">
           <div 
-            className="bg-orange-500/5 border border-orange-500/20 rounded-3xl p-10"
+            className="bg-surface-card border border-border rounded-ios-lg p-8"
             style={{
               animation: 'fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s both'
             }}
           >
-            <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl font-light text-orange-400 mb-2" 
-                     style={{ fontFamily: 'Tiempos, serif' }}>
+                <div className="text-headline font-tiempo font-semibold text-white mb-1">
                   Action Required
                 </div>
-                <div className="text-sm text-neutral-500 font-light" 
-                     style={{ fontFamily: 'Tiempos, serif' }}>
+                <div className="text-body-sm font-tiempo text-neutral-500">
                   {metrics.inventoryHealth.old} aging products need attention
                 </div>
               </div>
@@ -1158,8 +1140,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                     onSelectMode('audit');
                   }
                 }}
-                className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl text-sm font-light transition-all duration-200"
-                style={{ fontFamily: 'Tiempos, serif' }}
+                className="px-5 py-2.5 bg-white hover:bg-neutral-100 text-black rounded-ios text-body-sm font-tiempo font-semibold transition-all duration-200 active:scale-95"
               >
                 Review Now
               </button>
@@ -1216,7 +1197,7 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
                   </div>
                   
                   <div className="flex items-baseline gap-3">
-                    <div className="text-5xl font-extralight text-green-400 tracking-tight" 
+                    <div className="text-5xl font-extralight text-white tracking-tight" 
                          style={{ fontFamily: 'Tiempos, serif' }}>
                       {product.sales.toFixed(0)}
                     </div>
@@ -1248,20 +1229,18 @@ export const ProductDashboard: React.FC<ProductDashboardProps> = ({ onSelectMode
         >
           <button
             onClick={() => onSelectMode('restock')}
-            className="px-8 py-4 bg-white/[0.03] hover:bg-white/[0.06] backdrop-blur-xl rounded-2xl transition-all duration-300 border border-white/5"
-            style={{ fontFamily: 'Tiempos, serif' }}
+            className="px-8 py-4 bg-white hover:bg-neutral-100 text-black rounded-ios transition-all duration-200 active:scale-95"
           >
-            <div className="text-base font-light text-white lowercase">
+            <div className="text-body font-tiempo font-semibold">
               Receive Inventory
             </div>
           </button>
           
           <button
             onClick={() => onSelectMode('audit')}
-            className="px-8 py-4 bg-white/[0.03] hover:bg-white/[0.06] backdrop-blur-xl rounded-2xl transition-all duration-300 border border-white/5"
-            style={{ fontFamily: 'Tiempos, serif' }}
+            className="px-8 py-4 bg-surface-elevated hover:bg-surface-elevated-hover text-white rounded-ios transition-all duration-200 border border-border-subtle active:scale-95"
           >
-            <div className="text-base font-light text-white lowercase">
+            <div className="text-body font-tiempo font-medium">
               Audit Stock
             </div>
           </button>

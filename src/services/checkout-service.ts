@@ -89,31 +89,12 @@ export class CheckoutService {
       const orderId = result.data.id;
       console.log('✅ Order created successfully:', orderId);
       
-      // CRITICAL: WordPress hooks NOT deducting inventory reliably
-      // We MUST deduct manually from frontend for now
-      console.log('📦 STEP 2: Deducting inventory manually (WordPress hooks broken)...');
+      // WordPress Flora IM plugin handles inventory deduction via process_pos_order hook
+      // The _flora_inventory_processed flag prevents double deduction
+      // NO frontend deduction needed - WordPress handles it all
+      console.log('✅ Inventory deducted by WordPress Flora IM plugin');
       
-      try {
-        // Import inventory service dynamically to avoid circular dependency
-        const { InventoryDeductionService } = await import('./inventory-deduction-service');
-        
-        const inventoryResult = await InventoryDeductionService.deductInventoryForOrder(
-          data.cartItems,
-          data.locationId,
-          orderId
-        );
-        
-        if (!inventoryResult.success) {
-          console.warn('⚠️ Inventory deduction failed:', inventoryResult.error);
-          console.warn('Order created but inventory NOT deducted - manual adjustment required!');
-        } else {
-          console.log('✅ Inventory deducted successfully');
-        }
-      } catch (invError) {
-        console.error('❌ Inventory deduction exception:', invError);
-      }
-
-      // Wait a moment for any async operations
+      // Brief wait for WordPress to complete background processing
       await new Promise(resolve => setTimeout(resolve, 500));
 
       return {

@@ -181,71 +181,59 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             animation: 'fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0s both'
           }}
         >
-          {/* Hero Number */}
-          <div className="text-center mb-6">
-            <div className={`text-[180px] font-extralight leading-none tracking-tighter ${healthColor} mb-6`} 
-                 style={{ fontFamily: 'Tiempos, serif' }}>
+          {/* Hero Number - iOS Clean */}
+          <div className="text-center mb-8">
+            <div className={`text-[140px] font-tiempo font-semibold leading-none tracking-tighter ${healthColor} mb-4`}>
               {Math.round(avgHealth)}
             </div>
-            <div className="text-xl text-neutral-500 font-light tracking-wide mb-2" 
-                 style={{ fontFamily: 'Tiempos, serif' }}>
+            <div className="text-title-2 text-neutral-400 font-tiempo font-medium tracking-wide mb-2">
               customer health
             </div>
           </div>
 
-          {/* Quick Stats Grid */}
+          {/* Quick Stats Grid - iOS Clean */}
           <div className="grid grid-cols-5 gap-6 pt-8 max-w-5xl mx-auto">
             <div className="text-center">
-              <div className="text-3xl font-extralight text-white mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
                 {metrics.totalCustomers}
               </div>
-              <div className="text-xs text-neutral-600 font-light" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 total
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-extralight text-white mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
                 {metrics.activeCustomers}
               </div>
-              <div className="text-xs text-neutral-600 font-light" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 active
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-extralight text-white mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-white mb-1">
                 ${(metrics.lifetimeValue / 1000).toFixed(0)}k
               </div>
-              <div className="text-xs text-neutral-600 font-light" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 lifetime value
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-extralight text-neutral-400 mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-neutral-400 mb-1">
                 {metrics.atRiskCount}
               </div>
-              <div className="text-xs text-neutral-600 font-light" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 at-risk
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-3xl font-extralight text-neutral-400 mb-2 tracking-tight" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-title-1 font-tiempo font-medium text-neutral-400 mb-1">
                 {Math.round(metrics.averagePoints)}
               </div>
-              <div className="text-xs text-neutral-600 font-light" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-caption-1 font-tiempo text-neutral-500">
                 avg points
               </div>
             </div>
@@ -281,9 +269,8 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
           {/* Segment Breakdown */}
           <div className="grid grid-cols-2 gap-8 mb-12">
             {/* Customer Segments */}
-            <div className="bg-white/[0.02] backdrop-blur-xl rounded-3xl p-10 border border-white/5">
-            <div className="text-xs text-neutral-600 font-light mb-6 uppercase tracking-wider" 
-                 style={{ fontFamily: 'Tiempos, serif' }}>
+            <div className="bg-surface-card border border-border-subtle rounded-ios-lg p-8">
+            <div className="text-body-sm font-tiempo font-medium text-neutral-400 mb-6">
               Segments
             </div>
               <div className="space-y-4">
@@ -358,9 +345,8 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
             </div>
 
             {/* Activity Stats */}
-            <div className="bg-white/[0.02] backdrop-blur-xl rounded-3xl p-10 border border-white/5">
-            <div className="text-xs text-neutral-600 font-light mb-6 uppercase tracking-wider" 
-                 style={{ fontFamily: 'Tiempos, serif' }}>
+            <div className="bg-surface-card border border-border-subtle rounded-ios-lg p-8">
+            <div className="text-body-sm font-tiempo font-medium text-neutral-400 mb-6">
               Activity
             </div>
               <div className="space-y-6">
@@ -400,26 +386,23 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
       {(metrics.atRiskCount > 0 || metrics.dormantCount > 0) && (
         <div className="max-w-6xl mx-auto px-12 pb-16">
           <div 
-            className="bg-white/[0.02] border border-white/5 rounded-3xl p-10"
+            className="bg-surface-card border border-border rounded-ios-lg p-8"
             style={{
               animation: 'fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s both'
             }}
           >
-            <div className="flex items-start justify-between">
+            <div className="flex items-center justify-between">
               <div>
-              <div className="text-lg font-light text-white mb-2" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-headline font-tiempo font-semibold text-white mb-1">
                 {metrics.atRiskCount + metrics.dormantCount} customers need attention
               </div>
-              <div className="text-sm text-neutral-600 font-light" 
-                   style={{ fontFamily: 'Tiempos, serif' }}>
+              <div className="text-body-sm font-tiempo text-neutral-500">
                 Review at-risk and dormant accounts
               </div>
               </div>
               <button
                 onClick={() => console.log('Filter customers by at-risk segment')}
-                className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-light transition-all duration-200"
-                style={{ fontFamily: 'Tiempos, serif' }}
+                className="px-5 py-2.5 bg-white hover:bg-neutral-100 text-black rounded-ios text-body-sm font-tiempo font-semibold transition-all duration-200 active:scale-95"
               >
                 Review
               </button>
@@ -437,8 +420,7 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
               animation: 'fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s both'
             }}
           >
-            <div className="text-xs text-neutral-600 font-light uppercase tracking-wider mb-8" 
-                 style={{ fontFamily: 'Tiempos, serif' }}>
+            <div className="text-body-sm font-tiempo font-medium text-neutral-400 mb-8">
               Top Customers
             </div>
           </div>
@@ -459,46 +441,30 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                 <button
                   key={customer.id}
                   onClick={() => handleCustomerClick(customer)}
-                  className="bg-white/[0.01] backdrop-blur-xl rounded-2xl overflow-hidden hover:bg-white/[0.02] transition-all duration-500 group border border-white/[0.03] text-left"
+                  className="bg-surface-card border border-border-subtle rounded-ios-lg overflow-hidden hover:bg-surface-elevated hover:border-border transition-all duration-200 group text-left"
                 >
-                  {/* Customer Icon/Avatar */}
-                  <div className="aspect-square w-full bg-neutral-900/20 flex items-center justify-center">
-                    <svg className="w-32 h-32 text-neutral-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  
                   {/* Customer Info */}
-                  <div className="p-8">
+                  <div className="p-6">
                     {/* Segment Badge */}
-                    <div className={`text-[10px] font-light mb-3 ${segmentColor} uppercase tracking-wider`}
-                         style={{ fontFamily: 'Tiempos, serif' }}>
+                    <div className={`text-caption-2 font-tiempo font-medium mb-3 ${segmentColor} uppercase tracking-wider`}>
                       {customer.health.segment}
                     </div>
 
-                    <div className="text-lg font-light text-white mb-2 line-clamp-2" 
-                         style={{ fontFamily: 'Tiempos, serif' }}>
+                    <div className="text-headline font-tiempo font-semibold text-white mb-1 line-clamp-2">
                       {customer.display_name}
                     </div>
                     
-                    <div className="text-xs text-neutral-600 mb-6" 
-                         style={{ fontFamily: 'Tiempos, serif' }}>
+                    <div className="text-caption-1 font-tiempo text-neutral-500 mb-4 truncate">
                       {customer.email}
                     </div>
                     
-                    <div className="flex items-baseline gap-3 mb-4">
-                      <div className="text-5xl font-extralight text-white tracking-tight" 
-                           style={{ fontFamily: 'Tiempos, serif' }}>
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <div className="text-display font-tiempo font-semibold text-white tracking-tight">
                         ${(customer.lifetimeValue / 1000).toFixed(1)}k
-                      </div>
-                      <div className="text-xs text-neutral-600 font-light" 
-                           style={{ fontFamily: 'Tiempos, serif' }}>
-                        lifetime
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4 text-xs text-neutral-600" 
-                         style={{ fontFamily: 'Tiempos, serif' }}>
+                    <div className="flex items-center gap-3 text-caption-1 font-tiempo text-neutral-500">
                       <span>{customer.totalOrders} orders</span>
                       <span>•</span>
                       <span>{customer.totalPoints} pts</span>
@@ -524,76 +490,56 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
               <button
                 key={customer.id}
                 onClick={() => handleCustomerClick(customer)}
-                className="bg-transparent p-6 border-b border-white/5 hover:bg-white/[0.02] transition-all duration-200 text-left group"
+                className="bg-surface-card border-b border-border-subtle hover:bg-surface-elevated transition-all duration-200 text-left group p-5"
               >
                 <div className="flex items-center gap-6">
-                  {/* Customer Icon */}
-                  <div className="w-16 h-16 rounded-full bg-neutral-900/20 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-8 h-8 text-neutral-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-
                   {/* Customer Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-lg font-light text-white" style={{ fontFamily: 'Tiempos, serif' }}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-body font-tiempo font-medium text-white">
                         {customer.display_name}
                       </span>
-                      <span className={`text-[10px] font-light ${segmentColor} uppercase tracking-wider`}
-                            style={{ fontFamily: 'Tiempos, serif' }}>
+                      <span className={`text-caption-2 font-tiempo font-medium ${segmentColor} uppercase tracking-wider`}>
                         {customer.health.segment}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-neutral-600" style={{ fontFamily: 'Tiempos, serif' }}>
-                      <span>{customer.email}</span>
-                      {customer.billing?.phone && (
-                        <>
-                          <span>•</span>
-                          <span>{customer.billing.phone}</span>
-                        </>
-                      )}
+                    <div className="text-caption-1 font-tiempo text-neutral-500 truncate">
+                      {customer.email}
                     </div>
                   </div>
 
-                  {/* Customer Metrics */}
+                  {/* Customer Metrics - Minimal */}
                   <div className="flex items-center gap-8">
                     <div className="text-right">
-                      <div className="text-2xl font-extralight text-white tracking-tight" 
-                           style={{ fontFamily: 'Tiempos, serif' }}>
+                      <div className="text-title-2 font-tiempo font-medium text-white">
                         ${(customer.lifetimeValue / 1000).toFixed(1)}k
                       </div>
-                      <div className="text-xs text-neutral-600 font-light" 
-                           style={{ fontFamily: 'Tiempos, serif' }}>
+                      <div className="text-caption-1 font-tiempo text-neutral-500">
                         lifetime
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <div className="text-xl font-extralight text-white" 
-                           style={{ fontFamily: 'Tiempos, serif' }}>
+                      <div className="text-title-3 font-tiempo font-medium text-white">
                         {customer.totalOrders}
                       </div>
-                      <div className="text-xs text-neutral-600 font-light" 
-                           style={{ fontFamily: 'Tiempos, serif' }}>
+                      <div className="text-caption-1 font-tiempo text-neutral-500">
                         orders
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <div className="text-xl font-extralight text-neutral-400" 
-                           style={{ fontFamily: 'Tiempos, serif' }}>
+                      <div className="text-title-3 font-tiempo font-medium text-neutral-400">
                         {customer.totalPoints}
                       </div>
-                      <div className="text-xs text-neutral-600 font-light" 
-                           style={{ fontFamily: 'Tiempos, serif' }}>
+                      <div className="text-caption-1 font-tiempo text-neutral-500">
                         points
                       </div>
                     </div>
 
                     {/* Arrow */}
                     <svg 
-                      className="w-5 h-5 text-neutral-700 group-hover:text-neutral-400 transition-all group-hover:translate-x-1" 
+                      className="w-5 h-5 text-neutral-700 group-hover:text-neutral-500 transition-all" 
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"
@@ -602,16 +548,6 @@ export const CustomerDashboard: React.FC<CustomerDashboardProps> = ({
                     </svg>
                   </div>
                 </div>
-
-                {/* Last Activity */}
-                {customer.lastOrderDate && (
-                  <div className="mt-3 pt-3 border-t border-white/5 text-xs text-neutral-600" 
-                       style={{ fontFamily: 'Tiempos, serif' }}>
-                    Last order: {customer.health.daysSinceLastOrder < 1 ? 'Today' :
-                                customer.health.daysSinceLastOrder === 1 ? 'Yesterday' :
-                                `${customer.health.daysSinceLastOrder} days ago`}
-                  </div>
-                )}
               </button>
             );
           })}

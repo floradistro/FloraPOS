@@ -3,7 +3,7 @@ import { IconButton } from './IconButton';
 import { Button } from './Button';
 import { ConfirmModal, LoadingSpinner } from './';
 import { useAuth } from '../../contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { WordPressUser } from '../../services/users-service';
 import { UnifiedLoadingScreen } from './UnifiedLoadingScreen';
 import { formatOrderDate, formatOrderDateTime } from '../../utils/date-utils';
@@ -134,6 +134,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
   // State declarations MUST come before useQuery
   const [orders, setOrders] = useState<WooCommerceOrder[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
   const [activeOrderTab, setActiveOrderTab] = useState<{ [orderId: number]: OrderTab }>({});
@@ -145,8 +146,12 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
   
   // Additional filter states to match portal2
   const [selectedEmployee, setSelectedEmployee] = useState('');
+  
+  // Refund processing state
+  const [refundingOrders, setRefundingOrders] = useState<Set<number>>(new Set());
 
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Use React Query for optimized orders fetching
   const {
@@ -197,10 +202,16 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
         params.append('customer', selectedCustomer.id.toString());
       }
 
-      // Use /api/orders
-      const url = `/api/orders?${params}`;
+      // Use /api/orders with cache busting
+      const url = `/api/orders?${params}&_t=${Date.now()}`;
       console.log('🌐 Fetching from:', url);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        cache: 'no-store', // Force no cache
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (!response.ok) {
         console.error('❌ Orders fetch failed:', response.status, response.statusText);
         throw new Error('Failed to fetch orders');
@@ -215,7 +226,9 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
     },
     enabled: true, // Always fetch orders - backend handles filtering
     staleTime: 0, // Always fetch fresh data
-    gcTime: 1000 * 60 * 15, // 15 minutes cache retention
+    gcTime: 0, // Don't cache at all
+    refetchOnMount: 'always', // Always refetch on mount
+    refetchOnWindowFocus: true, // Refetch when window focused
     retry: (failureCount, error) => {
       // Don't retry if it's a 404 or 401 error
       if (error instanceof Error && error.message.includes('404')) return false;
@@ -397,7 +410,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
     setActiveOrderTab(prev => ({ ...prev, [orderId]: tab }));
   };
 
-  // Update order status - Fixed setLoading issue
+  // Update order status
   const updateOrderStatus = async (orderId: number, newStatus: string) => {
     try {
       setError(null);
@@ -411,17 +424,21 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: 'Server error' }));
         throw new Error(errorData.error || 'Failed to update order status');
       }
 
       const result = await response.json();
-      if (result.success) {
-        // Update local state
-        setOrders(prev => prev.map(order => 
-          order.id === orderId ? { ...order, status: newStatus } : order
-        ));
+      
+      if (!result.success) {
+        throw new Error('Update failed - invalid response from server');
       }
+
+      // Update local state immediately
+      setOrders(prev => prev.map(order => 
+        order.id === orderId ? { ...order, status: newStatus, date_modified: new Date().toISOString() } : order
+      ));
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update order status');
     }
@@ -456,6 +473,50 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete order');
     }
+  };
+
+  // Refund order - Simple and clean
+  const refundOrder = (orderId: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Refund Order',
+      message: 'Refund this order? This updates the status to "refunded" and cannot be undone.',
+      onConfirm: async () => {
+        try {
+          setError(null);
+          setRefundingOrders(prev => new Set(prev).add(orderId));
+          
+          // Call API to update status
+          const res = await fetch('/api/orders', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, status: 'refunded' })
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ error: 'Server error' }));
+            throw new Error(errorData.error || 'Failed to refund order');
+          }
+
+          const result = await res.json();
+          
+          // Update UI with successful refund
+          setOrders(prev => prev.map(o => 
+            o.id === orderId ? { ...o, status: 'refunded', date_modified: new Date().toISOString() } : o
+          ));
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Refund failed');
+        } finally {
+          setRefundingOrders(prev => {
+            const next = new Set(prev);
+            next.delete(orderId);
+            return next;
+          });
+        }
+      },
+      confirmText: 'Refund',
+      variant: 'danger'
+    });
   };
 
   // Use imported date formatting utility
@@ -573,6 +634,20 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
           </div>
         )}
         
+        {/* Success Display */}
+        {successMessage && (
+          <div className="max-w-5xl mx-auto px-12 pt-12">
+            <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-6">
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-green-300 text-sm" style={{ fontFamily: 'Tiempos, serif' }}>{successMessage}</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Error Display */}
         {error && (
           <div className="max-w-5xl mx-auto px-12 pt-12">
@@ -593,12 +668,50 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
             <div className="max-w-6xl mx-auto px-12 pt-12 pb-24">
               {/* View Controls */}
               <div className="flex items-center justify-between mb-8">
-                <div className="text-sm text-neutral-500 font-light lowercase" style={{ fontFamily: 'Tiempos, serif' }}>
-                  {totalOrders} orders found
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-neutral-500 font-light lowercase" style={{ fontFamily: 'Tiempos, serif' }}>
+                    {totalOrders} orders found
+                  </div>
+                  
+                  {/* Quick Filter: Show Refunded Orders */}
+                  {statusFilter === 'refunded' && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                      <svg className="w-3.5 h-3.5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                      </svg>
+                      <span className="text-xs text-orange-400 font-light" style={{ fontFamily: 'Tiempos, serif' }}>
+                        refund history
+                      </span>
+                      <button
+                        onClick={() => onStatusFilterChange?.('any')}
+                        className="ml-2 text-orange-400 hover:text-orange-300"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
-                {/* Column Selector */}
-                <div className="relative" ref={columnSelectorRef}>
+                <div className="flex items-center gap-3">
+                  {/* Refund History Button */}
+                  <button
+                    onClick={() => onStatusFilterChange?.('refunded')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-ios transition text-caption-1 font-tiempo font-medium ${
+                      statusFilter === 'refunded'
+                        ? 'bg-white/10 text-white border border-border'
+                        : 'bg-surface-elevated text-neutral-400 hover:bg-surface-elevated-hover border border-border-subtle'
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                    </svg>
+                    <span>refund history</span>
+                  </button>
+                
+                  {/* Column Selector */}
+                  <div className="relative" ref={columnSelectorRef}>
                   <button
                     onClick={() => setIsColumnSelectorOpen(!isColumnSelectorOpen)}
                     className="flex items-center gap-2 px-3 py-2 bg-white/[0.03] text-neutral-400 rounded-xl hover:bg-white/[0.06] transition text-xs"
@@ -626,7 +739,7 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                                 checked={column.visible}
                                 onChange={() => toggleColumn(column.id)}
                                 disabled={column.required}
-                                className="rounded text-blue-500 bg-neutral-800 border-neutral-700 focus:ring-blue-500 focus:ring-1 disabled:opacity-30"
+                                className="rounded text-white bg-neutral-800 border-neutral-700 focus:ring-white focus:ring-1 disabled:opacity-30"
                               />
                               <span className={column.required ? 'text-neutral-600' : ''} style={{ fontFamily: 'Tiempos, serif' }}>
                                 {column.label.toLowerCase()}
@@ -659,17 +772,18 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                     </div>
                   )}
                 </div>
+                </div>
               </div>
 
               {/* Orders Grid */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {orders.map((order) => (
                   <div
                     key={order.id}
-                    className={`group transition-all duration-300 rounded-2xl overflow-hidden ${
+                    className={`group transition-all duration-200 rounded-ios overflow-hidden ${
                       selectedOrders.has(order.id)
-                        ? 'bg-white/[0.06] border-2 border-white/20 shadow-lg'
-                        : 'bg-white/[0.02] border border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.04] hover:shadow-lg'
+                        ? 'bg-surface-elevated border border-border'
+                        : 'bg-surface-card border border-border-subtle hover:border-border hover:bg-surface-elevated'
                     }`}
                   >
                     {/* Modern Order Card */}
@@ -714,10 +828,15 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
 
                           {/* Order Number */}
                           {columns.find(c => c.id === 'order')?.visible && (
-                            <div>
-                              <div className="text-2xl font-extralight text-white tracking-tight" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                            <div className="flex items-center gap-3">
+                              <div className="text-title-1 font-tiempo font-medium text-white">
                                 #{order.id}
+                              </div>
+                              {/* Status Badge - Monochrome */}
+                              <div className="px-2 py-1 bg-surface-elevated border border-border-subtle rounded-ios-sm">
+                                <span className="text-caption-1 font-tiempo font-medium text-neutral-400">
+                                  {formatStatus(order.status)}
+                                </span>
                               </div>
                             </div>
                           )}
@@ -725,42 +844,37 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                           {/* Customer */}
                           {columns.find(c => c.id === 'customer')?.visible && (
                             <div className="flex-1 min-w-0">
-                              <div className="text-base font-light text-white mb-1" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-body font-tiempo font-medium text-white mb-0.5">
                                 {order.billing?.first_name || 'Guest'} {order.billing?.last_name || ''}
                               </div>
-                              <div className="text-xs text-neutral-600" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-caption-1 font-tiempo text-neutral-500 truncate">
                                 {order.billing?.email || 'No email'}
                               </div>
-                            </div>
-                          )}
-
-                          {/* Status Badge */}
-                          {columns.find(c => c.id === 'status')?.visible && (
-                            <div className={`px-3 py-1.5 rounded-full text-xs font-light ${
-                              order.status === 'completed' ? 'bg-green-500/10 text-green-400' :
-                              order.status === 'processing' ? 'bg-blue-500/10 text-blue-400' :
-                              order.status === 'pending' ? 'bg-orange-500/10 text-orange-400' :
-                              order.status === 'cancelled' ? 'bg-red-500/10 text-red-400' :
-                              'bg-neutral-500/10 text-neutral-400'
-                            }`} style={{ fontFamily: 'Tiempos, serif' }}>
-                              {formatStatus(order.status)}
                             </div>
                           )}
                         </div>
 
                         {/* Right Side - Metadata */}
                         <div className="flex items-center gap-8">
+                          {/* Status - Aligned with other metadata */}
+                          {columns.find(c => c.id === 'status')?.visible && (
+                            <div className="text-right">
+                              <div className="text-caption-1 font-tiempo text-neutral-500 mb-1">
+                                status
+                              </div>
+                              <div className="text-body-sm font-tiempo font-medium text-white">
+                                {formatStatus(order.status)}
+                              </div>
+                            </div>
+                          )}
+                          
                           {/* Date */}
                           {columns.find(c => c.id === 'date')?.visible && (
                             <div className="text-right">
-                              <div className="text-xs text-neutral-600 lowercase mb-1" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-caption-1 font-tiempo text-neutral-500 mb-1">
                                 date
                               </div>
-                              <div className="text-sm text-neutral-400" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-body-sm font-tiempo text-neutral-400">
                                 {formatOrderDate(order.date_created)}
                               </div>
                             </div>
@@ -769,12 +883,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                           {/* Location */}
                           {columns.find(c => c.id === 'location')?.visible && (
                             <div className="text-right">
-                              <div className="text-xs text-neutral-600 lowercase mb-1" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-caption-1 font-tiempo text-neutral-500 mb-1">
                                 location
                               </div>
-                              <div className="text-sm text-neutral-400" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-body-sm font-tiempo text-neutral-400">
                                 {getOrderLocation(order)}
                               </div>
                             </div>
@@ -783,12 +895,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                           {/* Source */}
                           {columns.find(c => c.id === 'source')?.visible && (
                             <div className="text-right">
-                              <div className="text-xs text-neutral-600 lowercase mb-1" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-caption-1 font-tiempo text-neutral-500 mb-1">
                                 source
                               </div>
-                              <div className="text-sm text-neutral-400" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-body-sm font-tiempo text-neutral-400">
                                 {getOrderSource(order)}
                               </div>
                             </div>
@@ -797,12 +907,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                           {/* Items Count */}
                           {columns.find(c => c.id === 'items')?.visible && (
                             <div className="text-right">
-                              <div className="text-xs text-neutral-600 lowercase mb-1" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-caption-1 font-tiempo text-neutral-500 mb-1">
                                 items
                               </div>
-                              <div className="text-sm text-neutral-400" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-body-sm font-tiempo text-neutral-400">
                                 {order.line_items?.length || 0}
                               </div>
                             </div>
@@ -811,12 +919,10 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                           {/* Total - Always visible and prominent */}
                           {columns.find(c => c.id === 'total')?.visible && (
                             <div className="text-right">
-                              <div className="text-xs text-neutral-600 lowercase mb-1" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-caption-1 font-tiempo text-neutral-500 mb-1">
                                 total
                               </div>
-                              <div className="text-2xl font-extralight text-green-400 tracking-tight" 
-                                   style={{ fontFamily: 'Tiempos, serif' }}>
+                              <div className="text-title-1 font-tiempo font-semibold text-white">
                                 ${parseFloat(order.total).toFixed(2)}
                               </div>
                             </div>
@@ -827,8 +933,8 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
 
                 {/* Expanded View */}
                 {expandedCards.has(order.id) && (
-                  <div className="px-6 pb-6 pt-4 bg-white/[0.01] border-t border-white/[0.06]">
-                    {/* Modern Tab Controls */}
+                  <div className="px-6 pb-6 pt-4 border-t border-border-subtle">
+                    {/* Tab Controls - Clean */}
                     <div className="flex items-center gap-2 mb-6">
                       {[
                         { id: 'items', label: 'items' },
@@ -840,12 +946,11 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                         <button
                           key={tab.id}
                           onClick={() => setOrderTab(order.id, tab.id as OrderTab)}
-                          className={`px-4 py-2 text-xs rounded-xl transition-all duration-200 ${
+                          className={`px-4 py-2 text-caption-1 font-tiempo font-medium rounded-ios transition-all duration-200 ${
                             (activeOrderTab[order.id] === tab.id || (!activeOrderTab[order.id] && tab.id === 'items'))
-                              ? 'bg-white/[0.08] text-neutral-300 border border-white/10'
-                              : 'text-neutral-500 hover:text-neutral-400 hover:bg-white/[0.03]'
+                              ? 'bg-surface-elevated text-white border border-border'
+                              : 'text-neutral-500 hover:text-neutral-400 hover:bg-surface-card border border-transparent'
                           }`}
-                          style={{ fontFamily: 'Tiempos, serif' }}
                         >
                           {tab.label}
                         </button>
@@ -889,20 +994,11 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                                       <div className="text-neutral-600 text-xs">SKU: {item.sku || 'N/A'}</div>
                                       
                                       {/* Display pricing tier information if available */}
-                                      {tierLabel ? (
-                                        <div className="text-xs text-neutral-500 mt-1">
-                                          <div className="text-blue-400">{tierLabel}</div>
-                                          {tierRuleName && (
-                                            <div className="text-neutral-600">({tierRuleName})</div>
-                                          )}
+                                      {tierLabel && (
+                                        <div className="text-caption-1 font-tiempo text-neutral-500 mt-1">
+                                          {tierLabel}
+                                          {tierRuleName && <span className="text-neutral-600"> ({tierRuleName})</span>}
                                         </div>
-                                      ) : (
-                                        /* Fallback: Show category information if no tier data */
-                                        tierCategory && (
-                                          <div className="text-xs text-orange-400 mt-1">
-                                            Category: {tierCategory}
-                                          </div>
-                                        )
                                       )}
                                       
                             </div>
@@ -1077,12 +1173,34 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                             </div>
                             <div className="bg-transparent border border-white/[0.06] rounded p-2">
                               <div className="flex justify-between items-center">
-                                <span className="text-neutral-600 text-xs">Status:</span>
-                                <span className="text-neutral-500 text-xs">
+                                <span className="text-caption-1 font-tiempo text-neutral-500">Status:</span>
+                                <span className="text-caption-1 font-tiempo font-medium text-white">
                                   {formatStatus(order.status)}
                                 </span>
                               </div>
                             </div>
+                            
+                            {/* Refund Information */}
+                            {order.status === 'refunded' && (
+                              <div className="bg-surface-elevated border border-border rounded-ios-sm p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                                  </svg>
+                                  <span className="text-caption-1 font-tiempo font-medium text-white">Refund Issued</span>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-caption-1 font-tiempo text-neutral-500">Amount:</span>
+                                    <span className="text-caption-1 font-tiempo font-medium text-white">${parseFloat(order.total).toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-caption-1 font-tiempo text-neutral-500">Date:</span>
+                                    <span className="text-caption-1 font-tiempo text-neutral-400">{formatDate(order.date_modified)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <div className="text-neutral-300 font-medium text-xs mb-2">
@@ -1102,9 +1220,29 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
                                 <option value="refunded">Refunded</option>
                                 <option value="failed">Failed</option>
                               </select>
+                              
+                              {/* Refund Button - Only show for completed orders (not refunded/cancelled) */}
+                              {(order.status === 'completed' || order.status === 'processing') && (
+                                <button
+                                  onClick={() => refundOrder(order.id)}
+                                  disabled={refundingOrders.has(order.id)}
+                                  className="w-full mt-2 px-3 py-2 bg-white hover:bg-neutral-100 text-black rounded-ios text-caption-1 font-tiempo font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+                                >
+                                  {refundingOrders.has(order.id) ? 'Processing Refund...' : 'Refund Order'}
+                                </button>
+                              )}
+                              
+                              {/* Already Refunded Message */}
+                              {order.status === 'refunded' && (
+                                <div className="w-full mt-2 px-3 py-2 bg-surface-elevated border border-border-subtle rounded-ios text-caption-1 font-tiempo text-neutral-400 text-center">
+                                  Order Already Refunded
+                                </div>
+                              )}
+                              
                               <button
                                 onClick={() => deleteOrder(order.id)}
                                 className="w-full mt-2 px-2 py-1 bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] rounded text-neutral-400 hover:text-neutral-300 text-xs"
+                                style={{ fontFamily: 'Tiempos, serif' }}
                               >
                                 Delete Order
                               </button>
@@ -1168,26 +1306,24 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-12 pt-8 border-t border-white/[0.06]">
-                  <div className="text-xs text-neutral-500 font-light lowercase" style={{ fontFamily: 'Tiempos, serif' }}>
+                <div className="flex items-center justify-between mt-8 pt-6 border-t border-border-subtle">
+                  <div className="text-caption-1 font-tiempo text-neutral-500">
                     page {currentPage} of {totalPages}
                   </div>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
-                      className="px-6 py-3 text-xs bg-white/[0.03] hover:bg-white/[0.06] disabled:bg-transparent disabled:text-neutral-700 text-neutral-400 rounded-xl transition-all duration-200 border border-white/[0.05] disabled:border-transparent"
-                      style={{ fontFamily: 'Tiempos, serif' }}
+                      className="px-5 py-2 text-caption-1 font-tiempo font-medium bg-surface-elevated hover:bg-surface-elevated-hover disabled:bg-transparent disabled:text-neutral-600 disabled:cursor-not-allowed text-white rounded-ios transition-all duration-200 border border-border-subtle disabled:border-transparent active:scale-95"
                     >
-                      previous
+                      Previous
                     </button>
                     <button
                       onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
-                      className="px-6 py-3 text-xs bg-white/[0.03] hover:bg-white/[0.06] disabled:bg-transparent disabled:text-neutral-700 text-neutral-400 rounded-xl transition-all duration-200 border border-white/[0.05] disabled:border-transparent"
-                      style={{ fontFamily: 'Tiempos, serif' }}
+                      className="px-5 py-2 text-caption-1 font-tiempo font-medium bg-surface-elevated hover:bg-surface-elevated-hover disabled:bg-transparent disabled:text-neutral-600 disabled:cursor-not-allowed text-white rounded-ios transition-all duration-200 border border-border-subtle disabled:border-transparent active:scale-95"
                     >
-                      next
+                      Next
                     </button>
                   </div>
                 </div>

@@ -69,7 +69,7 @@ export function ColumnSelector({
       setError(null);
 
       try {
-        console.log(`🔍 Fetching Flora Fields for category: ${category.name} (ID: ${category.id})`);
+        console.log(`🔍 Fetching Flora Fields V3 for category: ${category.name} (ID: ${category.id})`);
         
         // Filter products in this category
         const categoryProducts = products.filter(p => 
@@ -78,27 +78,16 @@ export function ColumnSelector({
         
         setLastFetchedCategory(selectedCategory);
         
-        if (categoryProducts.length === 0) {
-          console.log(`⚠️ No products found for category: ${category.name}`);
-          setAvailableFields([
-            { field_name: 'name', field_label: 'Product Name', field_type: 'text', count: 0 }
-          ]);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch full product data from WooCommerce to get meta_data (same as UnifiedSearchInput)
-        const productIds = categoryProducts.map(p => p.id);
-        const response = await fetch(`/api/proxy/woocommerce/products?include=${productIds.join(',')}&per_page=100`);
+        // Use V3 Native Flora Fields API to get field definitions directly
+        const response = await fetch(`/api/proxy/flora-fields/categories/${category.id}/fields`);
         
         if (!response.ok) {
-          throw new Error('Failed to fetch product fields from WooCommerce');
+          throw new Error('Failed to fetch category fields from V3 API');
         }
         
-        const wcProducts = await response.json();
-        console.log(`✅ Fetched ${wcProducts.length} products from WooCommerce for field extraction`);
-
-        // Aggregate all unique fields from all products in the category
+        const result = await response.json();
+        console.log(`✅ Fetched V3 field definitions for ${category.name}:`, result);
+        
         const fieldMap = new Map<string, FieldOption>();
         
         // Always add product name as the first field
@@ -109,76 +98,31 @@ export function ColumnSelector({
           count: categoryProducts.length
         });
 
-        // Extract fields from WooCommerce meta_data
-        let totalFieldsFound = 0;
-        wcProducts.forEach((product: any, idx: number) => {
-          if (product.meta_data && Array.isArray(product.meta_data)) {
-            // Debug first product
-            if (idx === 0) {
-              console.log('🔬 First product meta_data:', {
-                productId: product.id,
-                productName: product.name,
-                metaCount: product.meta_data.length,
-                allKeys: product.meta_data.map((m: any) => m.key).slice(0, 20)
-              });
-            }
+        // Extract fields from V3 Native API response
+        if (result.assigned_fields && typeof result.assigned_fields === 'object') {
+          Object.entries(result.assigned_fields).forEach(([fieldName, fieldConfig]: [string, any]) => {
+            // Skip blueprint type fields (internal use only)
+            if (fieldConfig.type === 'blueprint') return;
             
-            product.meta_data.forEach((meta: any) => {
-              // Look for ALL blueprint/field formats (same as UnifiedSearchInput)
-              if (!meta.key || !meta.value) return;
-              
-              let fieldName = '';
-              
-              // Check all possible formats
-              if (meta.key.startsWith('_blueprint_')) {
-                fieldName = meta.key.substring(11); // _blueprint_effect -> effect
-              } else if (meta.key.startsWith('blueprint_')) {
-                fieldName = meta.key.substring(10); // blueprint_effect -> effect
-              } else if (meta.key.startsWith('_fd_field_')) {
-                fieldName = meta.key.substring(10); // _fd_field_effect -> effect
-              } else if (['effect', 'lineage', 'nose', 'terpene', 'strain_type', 'thca_percentage', 'supplier'].includes(meta.key)) {
-                fieldName = meta.key; // Direct field name
-              } else if (meta.key.startsWith('_') && ['effect', 'lineage', 'nose', 'terpene', 'strain_type', 'thca_percentage', 'supplier'].includes(meta.key.substring(1))) {
-                fieldName = meta.key.substring(1); // _effect -> effect
-              } else {
-                return; // Skip non-field meta
-              }
-              
-              // Normalize field names
-              if (fieldName === 'effects') fieldName = 'effect';
-              if (fieldName === 'thc_percentage') fieldName = 'thca_percentage';
-              
-              const value = String(meta.value).trim();
-              if (value) {
-                totalFieldsFound++;
-                if (fieldMap.has(fieldName)) {
-                  fieldMap.get(fieldName)!.count++;
-                } else {
-                  fieldMap.set(fieldName, {
-                    field_name: fieldName,
-                    field_label: ucfirst(fieldName.replace(/_/g, ' ')),
-                    field_type: 'text',
-                    count: 1
-                  });
-                }
-              }
+            fieldMap.set(fieldName, {
+              field_name: fieldName,
+              field_label: fieldConfig.label || ucfirst(fieldName.replace(/_/g, ' ')),
+              field_type: fieldConfig.type || 'text',
+              count: categoryProducts.length // All products in category have access to these fields
             });
-          }
-        });
-        
-        console.log(`📊 Total field instances found: ${totalFieldsFound}`);
+          });
+        }
 
         const fields = Array.from(fieldMap.values()).sort((a, b) => {
           // Product name always first
           if (a.field_name === 'name') return -1;
           if (b.field_name === 'name') return 1;
-          // Then sort by count (most common first), then by label
-          if (a.count !== b.count) return b.count - a.count;
+          // Then sort by order if available, otherwise by label
           return a.field_label.localeCompare(b.field_label);
         });
 
-        console.log(`✅ Found ${fields.length} Flora Fields for ${category.name}:`, 
-          fields.map(f => `${f.field_label} (${f.count} products)`));
+        console.log(`✅ Found ${fields.length} Flora Fields V3 for ${category.name}:`, 
+          fields.map(f => `${f.field_label} (${f.field_type})`));
         
         setAvailableFields(fields);
       } catch (err) {

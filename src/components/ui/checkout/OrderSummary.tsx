@@ -34,7 +34,7 @@ const CustomerPointsDisplay = ({ customerId }: { customerId: number }) => {
   const pointsUnit = balance.balance === 1 ? (singular || 'Point') : (plural || 'Points');
   
   return (
-    <span className="text-white text-xs font-mono bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 px-2 py-0.5 rounded animate-pulse bg-[length:200%_100%]">
+    <span className="text-caption-1 font-mono text-white">
       {balance.balance.toLocaleString()} {pointsUnit.toLowerCase()}
     </span>
   );
@@ -57,7 +57,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
     <div className="px-4 pt-2 pb-3 flex flex-col flex-1">
       {/* Header */}
       <div className="mb-3">
-        <h3 className="text-xs font-mono text-neutral-500 lowercase tracking-wider">order summary</h3>
+        <h3 className="text-caption-1 font-tiempo font-medium text-neutral-500">Order Summary</h3>
       </div>
       
       {/* Products List - Scrollable */}
@@ -76,10 +76,10 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
           const hasDiscount = item.discount_percentage !== undefined && item.discount_percentage > 0;
           
           return (
-            <div key={item.id} className="flex items-center justify-between p-3 bg-white/[0.02] backdrop-blur-sm hover:bg-white/[0.04] rounded-xl transition-all duration-300">
+            <div key={item.id} className="flex items-center justify-between p-3 bg-surface-card hover:bg-surface-elevated border border-border-subtle rounded-ios transition-all duration-200">
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                {/* Product Image - Smaller */}
-                <div className="w-10 h-10 relative overflow-hidden flex-shrink-0 rounded-lg bg-neutral-800/50">
+                {/* Product Image */}
+                <div className="w-10 h-10 relative overflow-hidden flex-shrink-0 rounded-ios-sm bg-surface-elevated">
                   {item.image ? (
                     <img 
                       src={item.image} 
@@ -102,21 +102,21 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
                 
                 {/* Product Details */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-white truncate mb-0.5">
+                  <div className="text-body-sm font-tiempo font-medium text-white truncate mb-0.5">
                     {item.name}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-neutral-400">
+                    <span className="text-caption-1 font-mono text-neutral-400">
                       ${(item.override_price ?? originalPrice).toFixed(2)} × {item.quantity}
                     </span>
                     {hasDiscount && (
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 bg-orange-500/20 text-orange-400 rounded">
+                      <span className="text-caption-2 font-mono px-1.5 py-0.5 bg-white/5 text-neutral-400 rounded-ios-sm">
                         -{item.discount_percentage}%
                       </span>
                     )}
                   </div>
                   {item.pricing_tier && (
-                    <div className="text-[10px] font-mono text-neutral-500 mt-0.5">
+                    <div className="text-caption-2 font-mono text-neutral-500 mt-0.5">
                       {item.pricing_tier.tier_label}
                     </div>
                   )}
@@ -125,7 +125,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
               
               {/* Final Total */}
               <div className="text-right ml-3 flex-shrink-0">
-                <div className="text-base font-mono font-bold text-white">
+                <div className="text-body font-mono font-semibold text-white">
                   ${(finalPrice * item.quantity).toFixed(2)}
                 </div>
               </div>
@@ -164,18 +164,18 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
             />
           </div>
           {manualPreTaxAmount && parseFloat(manualPreTaxAmount) > 0 && (
-            <div className="mt-2 text-[10px] font-mono text-neutral-500">
+            <div className="mt-2 text-caption-2 font-mono text-neutral-500">
               {manualDiscountPercentage && manualDiscountPercentage > 0 ? (
-                <span className="text-orange-400">
-                  ↓ {manualDiscountPercentage.toFixed(1)}% discount applied
+                <span>
+                  {manualDiscountPercentage.toFixed(1)}% discount applied
                 </span>
               ) : manualDiscountPercentage && manualDiscountPercentage < 0 ? (
-                <span className="text-blue-400">
-                  ↑ {Math.abs(manualDiscountPercentage).toFixed(1)}% markup applied
+                <span>
+                  {Math.abs(manualDiscountPercentage).toFixed(1)}% markup applied
                 </span>
               ) : (
-                <span className="text-green-400">
-                  ✓ matches calculated total
+                <span>
+                  matches calculated total
                 </span>
               )}
             </div>
@@ -189,8 +189,8 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
           
           if (totalDiscount > 0) {
             return (
-              <div className="flex justify-between text-xs font-mono text-neutral-500 mb-2">
-                <span className="lowercase">discount</span>
+              <div className="flex justify-between text-caption-1 font-mono text-neutral-500 mb-2">
+                <span>discount</span>
                 <span>-${totalDiscount.toFixed(2)}</span>
               </div>
             );
@@ -198,9 +198,9 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
           return null;
         })()}
         
-        <div className="flex justify-between text-xs font-mono text-neutral-400">
-          <span className="lowercase">subtotal (pre-tax)</span>
-          <span className={manualPreTaxAmount ? 'text-orange-400 font-bold' : ''}>
+        <div className="flex justify-between text-caption-1 font-mono text-neutral-400">
+          <span>subtotal (pre-tax)</span>
+          <span className={manualPreTaxAmount ? 'text-white font-semibold' : ''}>
             ${subtotal.toFixed(2)}
           </span>
         </div>
@@ -211,26 +211,26 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
             {locationTaxRates.map((tax, index) => {
               const individualTaxAmount = Math.round(subtotal * (parseFloat(tax.tax_rate) / 100) * 100) / 100;
               return (
-                <div key={index} className="flex justify-between text-xs font-mono text-neutral-500">
-                  <span className="lowercase pl-2">→ {tax.tax_rate_name} ({tax.tax_rate}%)</span>
+                <div key={index} className="flex justify-between text-caption-1 font-mono text-neutral-500">
+                  <span className="pl-2">→ {tax.tax_rate_name} ({tax.tax_rate}%)</span>
                   <span>${individualTaxAmount.toFixed(2)}</span>
                 </div>
               );
             })}
-            <div className="flex justify-between text-xs font-mono text-neutral-400 pt-1 border-t border-white/5">
-              <span className="lowercase">total tax ({(taxRate.rate * 100).toFixed(2)}%)</span>
-              <span className="font-bold">${taxAmount.toFixed(2)}</span>
+            <div className="flex justify-between text-caption-1 font-mono text-neutral-400 pt-1 border-t border-border-subtle">
+              <span>total tax ({(taxRate.rate * 100).toFixed(2)}%)</span>
+              <span className="font-semibold">${taxAmount.toFixed(2)}</span>
             </div>
           </>
         ) : (
-          <div className="flex justify-between text-xs font-mono text-neutral-400">
-            <span className="lowercase">tax ({(taxRate.rate * 100).toFixed(2)}%)</span>
+          <div className="flex justify-between text-caption-1 font-mono text-neutral-400">
+            <span>tax ({(taxRate.rate * 100).toFixed(2)}%)</span>
             <span>${taxAmount.toFixed(2)}</span>
           </div>
         )}
-        <div className="flex justify-between items-center py-2.5 px-3 bg-white/[0.02] rounded-xl mt-2">
-          <span className="text-xs font-mono text-neutral-400 lowercase">total</span>
-          <span className="text-xl font-mono font-bold text-white">${total.toFixed(2)}</span>
+        <div className="flex justify-between items-center py-3 px-4 bg-surface-elevated border border-border-subtle rounded-ios mt-2">
+          <span className="text-body-sm font-tiempo font-medium text-neutral-400">total</span>
+          <span className="text-title-1 font-mono font-semibold text-white">${total.toFixed(2)}</span>
         </div>
       </div>
     </div>

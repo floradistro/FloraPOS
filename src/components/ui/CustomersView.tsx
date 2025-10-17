@@ -838,10 +838,10 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
           {filteredCustomers.map((user) => (
             <div
               key={user.id}
-              className={`group mb-2 rounded-lg relative overflow-visible transition-all duration-200 ease-out ${
+              className={`group mb-2 rounded-ios relative overflow-visible transition-all duration-200 ${
                 selectedUsers.has(user.id)
-                  ? 'border-2 border-white/20 bg-gradient-to-br from-neutral-500/20 to-neutral-600/40 shadow-md shadow-white/5'
-                  : 'border border-white/[0.06] bg-transparent hover:border-white/[0.12] hover:bg-white/[0.02] hover:shadow-md hover:shadow-neutral-700/10'
+                  ? 'border border-border bg-surface-elevated'
+                  : 'border border-border-subtle bg-surface-card hover:border-border hover:bg-surface-elevated'
               } ${expandedCards.has(user.id) ? 'h-[calc(100vh-200px)] min-h-[600px]' : 'h-auto'}`}
               style={{
                 transition: 'height 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease',
@@ -889,10 +889,10 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
                 {/* Customer Name */}
                 {columns.find(c => c.id === 'customer')?.visible && (
                   <div className="flex-1 min-w-0">
-                    <div className="text-neutral-200 text-base font-normal" style={{ fontFamily: 'Tiempos, serif', textShadow: '0 1px 3px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 0, 0, 0.3)' }}>
+                    <div className="text-body font-tiempo font-medium text-white">
                       {user.display_name || user.name || user.username}
                     </div>
-                    <div className="text-xs text-neutral-500 truncate" style={{ fontFamily: 'Tiempos, serif' }}>
+                    <div className="text-caption-1 font-tiempo text-neutral-500 truncate">
                       ID: {user.id}
                     </div>
                   </div>
@@ -900,14 +900,14 @@ const CustomersViewComponent = React.forwardRef<CustomersViewRef, CustomersViewP
 
                 {/* Email */}
                 {columns.find(c => c.id === 'email')?.visible && (
-                  <div className="w-64 text-neutral-300 text-xs truncate" style={{ fontFamily: 'Tiempos, serif' }}>
+                  <div className="w-64 text-caption-1 font-tiempo text-neutral-400 truncate">
                     {user.email}
                   </div>
                 )}
 
                 {/* Joined Date */}
                 {columns.find(c => c.id === 'joined')?.visible && (
-                  <div className="w-40 text-neutral-500 text-xs">
+                  <div className="w-40 text-caption-1 font-tiempo text-neutral-500">
                     {new Date().toLocaleDateString()}
                   </div>
                 )}

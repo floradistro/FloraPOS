@@ -268,9 +268,23 @@ export function Header({
 
   return (
     <div className="header-nav flex-shrink-0 relative z-[100]">
-      {/* Apple 2035 Style Header */}
+      {/* iOS-Style Clean Header */}
       <div className="my-3">
         <div className="flex items-center h-full py-3 px-6 relative gap-3">
+          {/* Brand Logo - iOS Clean Style */}
+          {currentView !== 'adjustments' && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <img 
+                src="/logo123.png" 
+                alt="Flora Distro" 
+                className="h-7 w-7 object-contain"
+              />
+              <span className="text-white font-tiempo text-headline tracking-tight hidden sm:block">
+                FLORA DISTRO
+              </span>
+            </div>
+          )}
+          
           {/* Left Controls - Adjustments Controls */}
           {currentView === 'adjustments' && (
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -572,28 +586,69 @@ export function Header({
                   </select>
                 </div>
 
-                {/* Date Range Filters with Icon - Responsive */}
+                {/* Quick Date Filters */}
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <svg className="w-4 h-4 text-neutral-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => onDateFromChange?.(e.target.value)}
-                    className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none transition-all duration-200 backdrop-blur-sm w-32 sm:w-36"
+                  <select
+                    value={(() => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const weekAgo = new Date(today);
+                      weekAgo.setDate(weekAgo.getDate() - 7);
+                      const monthAgo = new Date(today);
+                      monthAgo.setDate(monthAgo.getDate() - 30);
+                      const thirtyDaysAgo = new Date(today);
+                      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                      
+                      const todayStr = today.toISOString().split('T')[0];
+                      const weekAgoStr = weekAgo.toISOString().split('T')[0];
+                      const monthAgoStr = monthAgo.toISOString().split('T')[0];
+                      
+                      if (!dateFrom && !dateTo) return 'all';
+                      if (dateFrom === todayStr && !dateTo) return 'today';
+                      if (dateFrom === weekAgoStr && !dateTo) return 'week';
+                      if (dateFrom === monthAgoStr && !dateTo) return 'month';
+                      return 'custom';
+                    })()}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      
+                      switch (value) {
+                        case 'all':
+                          onDateFromChange?.('');
+                          onDateToChange?.('');
+                          break;
+                        case 'today':
+                          onDateFromChange?.(today.toISOString().split('T')[0]);
+                          onDateToChange?.('');
+                          break;
+                        case 'week':
+                          const weekAgo = new Date(today);
+                          weekAgo.setDate(weekAgo.getDate() - 7);
+                          onDateFromChange?.(weekAgo.toISOString().split('T')[0]);
+                          onDateToChange?.('');
+                          break;
+                        case 'month':
+                          const monthAgo = new Date(today);
+                          monthAgo.setDate(monthAgo.getDate() - 30);
+                          onDateFromChange?.(monthAgo.toISOString().split('T')[0]);
+                          onDateToChange?.('');
+                          break;
+                      }
+                    }}
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none transition-all duration-200 backdrop-blur-sm cursor-pointer appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTEgMS41TDYgNi41TDExIDEuNSIgc3Ryb2tlPSIjOTk5OTk5IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+')] bg-[length:12px] bg-[position:right_12px_center] bg-no-repeat pr-10 min-w-[140px]"
                     style={{ fontFamily: 'Tiempo, serif' }}
-                    title="From Date"
-                  />
-                  <span className="text-neutral-400 text-xs sm:text-sm" style={{ fontFamily: 'Tiempo, serif' }}>to</span>
-                  <input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => onDateToChange?.(e.target.value)}
-                    className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl text-neutral-300 hover:text-white text-xs focus:bg-white/10 focus:border-white/20 focus:outline-none transition-all duration-200 backdrop-blur-sm w-32 sm:w-36"
-                    style={{ fontFamily: 'Tiempo, serif' }}
-                    title="To Date"
-                  />
+                  >
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">Last 7 Days</option>
+                    <option value="month">Last 30 Days</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
                 </div>
 
                 {/* Show Selected Only Filter Toggle */}
