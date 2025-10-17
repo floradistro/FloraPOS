@@ -33,14 +33,14 @@ const SidebarButton: React.FC<SidebarButtonProps> = ({
       disabled={disabled}
       title={title}
       className={`
-        relative w-10 h-10 rounded-full
+        relative w-10 h-10 rounded-ios
         flex items-center justify-center
-        transition-all duration-300 ease-out border
+        transition-all duration-200 border
         ${isActive 
-          ? 'bg-white/10 text-white font-medium border-white/40 shadow-lg shadow-black/20' 
-          : 'bg-neutral-800/40 text-neutral-400 hover:bg-neutral-700/60 hover:text-neutral-300 border-neutral-500/30 hover:border-neutral-400/50 hover:shadow-md'
+          ? 'bg-white/8 text-white border-border' 
+          : 'bg-surface-card text-neutral-400 hover:bg-surface-elevated hover:text-white border-border-subtle hover:border-border'
         }
-        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
+        ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
       `}
     >
       {children}
@@ -194,6 +194,16 @@ export function Sidebar({
           </SidebarButton>
 
           <div className="w-8 h-px bg-white/[0.08] my-1" />
+
+          {/* Training */}
+          <SidebarButton
+            onClick={() => window.open('/training', '_blank')}
+            title="Training & Help"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </SidebarButton>
 
           {/* Settings */}
           <SidebarButton
