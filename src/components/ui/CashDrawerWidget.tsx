@@ -247,7 +247,7 @@ export const CashDrawerWidget: React.FC<CashDrawerWidgetProps> = ({ onClose }) =
                   </div>
                   <div className="text-2xl font-light text-white" 
                        style={{ fontFamily: 'Tiempos, serif' }}>
-                    ${currentSession.opening_float.toFixed(2)}
+                    ${Number(currentSession.opening_float).toFixed(2)}
                   </div>
                 </div>
 
@@ -258,7 +258,7 @@ export const CashDrawerWidget: React.FC<CashDrawerWidgetProps> = ({ onClose }) =
                   </div>
                   <div className="text-2xl font-light text-emerald-400" 
                        style={{ fontFamily: 'Tiempos, serif' }}>
-                    ${currentSession.expected_cash_sales.toFixed(2)}
+                    ${Number(currentSession.expected_cash_sales).toFixed(2)}
                   </div>
                 </div>
 
@@ -269,7 +269,7 @@ export const CashDrawerWidget: React.FC<CashDrawerWidgetProps> = ({ onClose }) =
                   </div>
                   <div className="text-2xl font-light text-yellow-400" 
                        style={{ fontFamily: 'Tiempos, serif' }}>
-                    ${currentSession.cash_drops_total.toFixed(2)}
+                    ${Number(currentSession.cash_drops_total).toFixed(2)}
                   </div>
                 </div>
 
@@ -280,7 +280,7 @@ export const CashDrawerWidget: React.FC<CashDrawerWidgetProps> = ({ onClose }) =
                   </div>
                   <div className="text-2xl font-light text-white" 
                        style={{ fontFamily: 'Tiempos, serif' }}>
-                    ${currentSession.expected_total.toFixed(2)}
+                    ${Number(currentSession.expected_total).toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -304,7 +304,7 @@ export const CashDrawerWidget: React.FC<CashDrawerWidgetProps> = ({ onClose }) =
                   'text-emerald-400'
                 }`} 
                      style={{ fontFamily: 'Tiempos, serif' }}>
-                  {variance > 0 ? '+' : ''}{variance.toFixed(2)}
+                  {variance > 0 ? '+' : ''}{Number(variance).toFixed(2)}
                 </div>
               </div>
             </div>
@@ -457,7 +457,7 @@ export const CashDrawerWidget: React.FC<CashDrawerWidgetProps> = ({ onClose }) =
             </div>
             <div className="text-sm text-neutral-500 lowercase" 
                  style={{ fontFamily: 'Tiempos, serif' }}>
-              expected: ${currentSession.expected_total.toFixed(2)}
+              expected: ${Number(currentSession.expected_total).toFixed(2)}
             </div>
           </div>
 
