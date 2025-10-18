@@ -92,10 +92,10 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
 
       // Simple metrics
       const totalOrders = orders.length;
-      const completedOrders = orders.filter(o => o.status === 'completed').length;
-      const pendingOrders = orders.filter(o => o.status === 'pending').length;
-      const processingOrders = orders.filter(o => o.status === 'processing').length;
-      const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
+      const completedOrders = orders.filter((o: WooCommerceOrder) => o.status === 'completed').length;
+      const pendingOrders = orders.filter((o: WooCommerceOrder) => o.status === 'pending').length;
+      const processingOrders = orders.filter((o: WooCommerceOrder) => o.status === 'processing').length;
+      const totalRevenue = orders.reduce((sum: number, order: WooCommerceOrder) => sum + parseFloat(order.total || '0'), 0);
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
       // Calculate today/week/month based on order dates
@@ -110,21 +110,21 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
       const lastPeriodStart = new Date(monthAgo);
       lastPeriodStart.setDate(lastPeriodStart.getDate() - 30);
 
-      const todayOrders = orders.filter(o => new Date(o.date_created) >= today);
-      const weekOrders = orders.filter(o => new Date(o.date_created) >= weekAgo);
-      const monthOrders = orders.filter(o => new Date(o.date_created) >= monthAgo);
+      const todayOrders = orders.filter((o: WooCommerceOrder) => new Date(o.date_created) >= today);
+      const weekOrders = orders.filter((o: WooCommerceOrder) => new Date(o.date_created) >= weekAgo);
+      const monthOrders = orders.filter((o: WooCommerceOrder) => new Date(o.date_created) >= monthAgo);
       
       // Calculate revenue from all orders (including pending/processing)
-      const todayRevenue = todayOrders.reduce((sum, o) => sum + parseFloat(o.total || '0'), 0);
-      const weekRevenue = weekOrders.reduce((sum, o) => sum + parseFloat(o.total || '0'), 0);
-      const monthRevenue = monthOrders.reduce((sum, o) => sum + parseFloat(o.total || '0'), 0);
+      const todayRevenue = todayOrders.reduce((sum: number, o: WooCommerceOrder) => sum + parseFloat(o.total || '0'), 0);
+      const weekRevenue = weekOrders.reduce((sum: number, o: WooCommerceOrder) => sum + parseFloat(o.total || '0'), 0);
+      const monthRevenue = monthOrders.reduce((sum: number, o: WooCommerceOrder) => sum + parseFloat(o.total || '0'), 0);
 
       // Calculate growth (compare current 30 days to previous 30 days)
-      const lastPeriodOrders = orders.filter(o => {
+      const lastPeriodOrders = orders.filter((o: WooCommerceOrder) => {
         const orderDate = new Date(o.date_created);
         return orderDate >= lastPeriodStart && orderDate < monthAgo;
       });
-      const lastPeriodRevenue = lastPeriodOrders.reduce((sum, o) => sum + parseFloat(o.total || '0'), 0);
+      const lastPeriodRevenue = lastPeriodOrders.reduce((sum: number, o: WooCommerceOrder) => sum + parseFloat(o.total || '0'), 0);
       const revenueGrowth = lastPeriodRevenue > 0 
         ? ((monthRevenue - lastPeriodRevenue) / lastPeriodRevenue) * 100 
         : monthRevenue > 0 ? 100 : 0; // 100% growth if previous period was 0
@@ -224,12 +224,12 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
       const now_time = new Date().getTime();
       const dayInMs = 24 * 60 * 60 * 1000;
       
-      const pendingRecent = orders.filter(o => {
+      const pendingRecent = orders.filter((o: WooCommerceOrder) => {
         const age = now_time - new Date(o.date_created).getTime();
         return (o.status === 'pending' || o.status === 'processing') && age < dayInMs;
       });
       
-      const delayedOrders = orders.filter(o => {
+      const delayedOrders = orders.filter((o: WooCommerceOrder) => {
         const age = now_time - new Date(o.date_created).getTime();
         return (o.status === 'pending' || o.status === 'processing') && age >= dayInMs;
       });
@@ -351,10 +351,10 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
                        metrics.monthRevenue;
   
   const periodOrderCount = selectedPeriod === 'today' 
-    ? metrics.allOrders.filter(o => new Date(o.date_created) >= today).length
+    ? metrics.allOrders.filter((o: WooCommerceOrder) => new Date(o.date_created) >= today).length
     : selectedPeriod === 'week'
-    ? metrics.allOrders.filter(o => new Date(o.date_created) >= weekAgo).length
-    : metrics.allOrders.filter(o => new Date(o.date_created) >= monthAgo).length;
+    ? metrics.allOrders.filter((o: WooCommerceOrder) => new Date(o.date_created) >= weekAgo).length
+    : metrics.allOrders.filter((o: WooCommerceOrder) => new Date(o.date_created) >= monthAgo).length;
   
   // Log current period
   console.log(`📊 Period: ${selectedPeriod.toUpperCase()} - ${periodOrderCount} orders, $${periodRevenue.toFixed(2)}`);
