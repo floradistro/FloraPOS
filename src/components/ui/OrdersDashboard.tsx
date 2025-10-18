@@ -254,7 +254,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
 
       // Recent orders (last 5)
       const recentOrders = orders
-        .sort((a, b) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime())
+        .sort((a: WooCommerceOrder, b: WooCommerceOrder) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime())
         .slice(0, 5);
 
       // Peak hours (orders by hour of day)
