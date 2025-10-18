@@ -245,6 +245,8 @@ const OrdersViewComponent = React.forwardRef<OrdersViewRef, OrdersViewProps>(({
     title: string;
     message: string;
     onConfirm: () => void;
+    confirmText?: string;
+    variant?: string;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   // Column configuration
