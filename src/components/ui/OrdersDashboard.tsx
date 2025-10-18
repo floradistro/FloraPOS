@@ -138,7 +138,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
 
       // Orders by status
       const statusMap = new Map<string, { count: number; revenue: number }>();
-      orders.forEach(order => {
+      orders.forEach((order: WooCommerceOrder) => {
         const existing = statusMap.get(order.status) || { count: 0, revenue: 0 };
         statusMap.set(order.status, {
           count: existing.count + 1,
@@ -162,7 +162,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
 
       // Top customers
       const customerMap = new Map<number, { name: string; email: string; spent: number; orders: number }>();
-      orders.forEach(order => {
+      orders.forEach((order: WooCommerceOrder) => {
         if (order.customer_id) {
           const existing = customerMap.get(order.customer_id) || { 
             name: `${order.billing.first_name} ${order.billing.last_name}`,
@@ -196,7 +196,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
         admin: 0
       };
       
-      orders.forEach(order => {
+      orders.forEach((order: WooCommerceOrder) => {
         // Check for POS indicators in metadata
         const isPOS = order.created_via?.toLowerCase().includes('pos') || 
                       order.meta_data?.some(m => 
@@ -259,7 +259,7 @@ export const OrdersDashboard: React.FC<OrdersDashboardProps> = ({
 
       // Peak hours (orders by hour of day)
       const hourMap = new Map<number, number>();
-      orders.forEach(order => {
+      orders.forEach((order: WooCommerceOrder) => {
         const hour = new Date(order.date_created).getHours();
         hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
       });
